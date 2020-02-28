@@ -17,17 +17,18 @@ limitations under the License.
 package cspccontroller
 
 import (
-	"github.com/openebs/maya/pkg/util"
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
-	"k8s.io/klog"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// ToDo: Move this util package to cstor-operatrs from api repo
+	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
+
 // cleanupCSPIResources removes the CSPI resources when a CSPI is
 // deleted or downscaled
-func (c *Controller)cleanupCSPIResources(cspcObj *apis.CStorPoolCluster) error {
+func (c *Controller) cleanupCSPIResources(cspcObj *apis.CStorPoolCluster) error {
 	cspiList, err := c.GetCSPIListForCSPC(cspcObj)
 	if err != nil {
 		return errors.Errorf("failed to list cspi for cspc %s to perform cleanup: %s", cspcObj.Name, err.Error())
@@ -104,7 +105,7 @@ func hasNoPoolProtectionFinalizer(cspiObj apis.CStorPoolInstance) bool {
 type cspiCleanupOptions func(apis.CStorPoolInstance) error
 
 // cleanupBDC deletes the BDCs for the CSPI which has been deleted or downscaled
-func (c *Controller)cleanupBDC(cspiObj apis.CStorPoolInstance) error {
+func (c *Controller) cleanupBDC(cspiObj apis.CStorPoolInstance) error {
 	bdcList, err := c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspiObj.Namespace).List(
 		metav1.ListOptions{
 			LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspiObj.Labels[string(types.CStorPoolClusterLabelKey)],

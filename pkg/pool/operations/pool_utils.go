@@ -25,8 +25,7 @@ import (
 	zpool "github.com/openebs/api/pkg/internalapis/apis/cstor"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
-	env "github.com/openebs/maya/pkg/env/v1alpha1"
-	"github.com/openebs/maya/pkg/util"
+	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -52,7 +51,7 @@ func (oc *OperationsConfig)getPathForBDev(bdev string) ([]string, error) {
 	// TODO: replace `NAMESPACE` with env variable from CSP deployment
 	bd,err :=oc.openebsclientset.
 		OpenebsV1alpha1().
-		BlockDevices(env.Get(env.Namespace)).
+		BlockDevices(util.GetEnv(util.Namespace)).
 		Get(bdev, metav1.GetOptions{})
 	if err != nil {
 		return path, err
@@ -183,7 +182,7 @@ func (oc *OperationsConfig)checkIfPoolNotImported(cspi *cstor.CStorPoolInstance)
 // label passed to the function
 func (oc *OperationsConfig)getBlockDeviceClaimList(key, value string) (
 	*openebsapis.BlockDeviceClaimList, error) {
-	namespace := env.Get(env.Namespace)
+	namespace := util.GetEnv(util.Namespace)
 	bdcClient := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(namespace)
 	bdcAPIList, err := bdcClient.List(metav1.ListOptions{
 		LabelSelector: key + "=" + value,

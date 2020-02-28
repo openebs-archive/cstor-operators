@@ -25,7 +25,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	"github.com/openebs/maya/pkg/util"
+	"github.com/openebs/api/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )

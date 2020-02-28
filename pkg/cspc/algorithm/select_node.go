@@ -17,15 +17,19 @@ limitations under the License.
 package algorithm
 
 import (
+	"fmt"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
-	"github.com/openebs/maya/pkg/volume"
 	"github.com/pkg/errors"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
+)
+
+const (
+	unit = 1024
 )
 
 // SelectNode returns a node where pool should be created.
@@ -149,7 +153,7 @@ func (ac *Config) ClaimBDsForNode(BD []string) error {
 
 // ClaimBD claims a given BlockDevice
 func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
-	resourceList,err:=GetCapacity(volume.ByteCount(bdObj.Spec.Capacity.Storage))
+	resourceList,err:=GetCapacity(ByteCount(bdObj.Spec.Capacity.Storage))
 	if err!=nil{
 		return err
 	}
@@ -219,4 +223,18 @@ func GetCapacity(capacity string) (resource.Quantity,error) {
 		return resource.Quantity{}, errors.Errorf("Failed to parse capacity:{%s}",err.Error())
 	}
 	return resCapacity,nil
+}
+
+// ByteCount converts bytes into corresponding unit
+func ByteCount(b uint64) string {
+	if b < unit {
+		return fmt.Sprintf("%dB", b)
+	}
+	div, index := uint64(unit), 0
+	for val := b / unit; val >= unit; val /= unit {
+		div *= unit
+		index++
+	}
+	return fmt.Sprintf("%d%c",
+		uint64(b)/uint64(div), "KMGTPE"[index])
 }

@@ -58,8 +58,8 @@ func (pc *PoolConfig) CreateCSPI(cspc *cstor.CStorPoolCluster) error {
 	if err != nil {
 		return err
 	}
-	err=pc.CreateCSPIDeployment(cspc,cspi)
-	if err!=nil{
+	err = pc.CreateCSPIDeployment(cspc, cspi)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -68,7 +68,7 @@ func (pc *PoolConfig) CreateCSPI(cspc *cstor.CStorPoolCluster) error {
 func (pc *PoolConfig) createDeployForCSPList(cspc *cstor.CStorPoolCluster, cspList []cstor.CStorPoolInstance) {
 	for _, cspObj := range cspList {
 		cspObj := cspObj
-		err := pc.CreateCSPIDeployment(cspc,&cspObj)
+		err := pc.CreateCSPIDeployment(cspc, &cspObj)
 		if err != nil {
 			message := fmt.Sprintf("Failed to create pool deployment for CSP %s: %s", cspObj.Name, err.Error())
 			pc.Controller.recorder.Event(cspc, corev1.EventTypeWarning, "PoolDeploymentCreate", message)
@@ -76,14 +76,12 @@ func (pc *PoolConfig) createDeployForCSPList(cspc *cstor.CStorPoolCluster, cspLi
 		}
 	}
 }
+
 // CreateStoragePool creates the required resource to provision a cStor pool
-func (pc *PoolConfig) CreateCSPIDeployment(cspc *cstor.CStorPoolCluster,cspi *cstor.CStorPoolInstance) error {
-	deploy,err:=pc.AlgorithmConfig.GetPoolDeploySpec(cspi)
+func (pc *PoolConfig) CreateCSPIDeployment(cspc *cstor.CStorPoolCluster, cspi *cstor.CStorPoolInstance) error {
+	deploy := pc.AlgorithmConfig.GetPoolDeploySpec(cspi)
+	_, err := pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Create(deploy)
 	if err != nil {
-		return err
-	}
-	_,err=pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Create(deploy)
-	if err!=nil{
 		return err
 	}
 	return nil
@@ -152,4 +150,3 @@ func (pc *PoolConfig) getNodePresentOnCSPC(cspc *cstor.CStorPoolCluster) (map[st
 	}
 	return nodeMap, nil
 }
-

@@ -154,8 +154,16 @@ github.com/openebs/api v0.0.0-20200220121220-ae079eebd9a7 h1:FajCvl9tVFFIfUzwXqK
 github.com/openebs/api v0.0.0-20200220121220-ae079eebd9a7/go.mod h1:2Ee/Nh6s68tENDDDoIp832NqRAvfmmzDJuLqwSZig/M=
 github.com/openebs/api v0.0.0-20200226091107-d9754cd803c6 h1:VriZ8LTg7NMgOMKz2qJ9SL2NELsRQplWI32jq7ycASA=
 github.com/openebs/api v0.0.0-20200226091107-d9754cd803c6/go.mod h1:2Ee/Nh6s68tENDDDoIp832NqRAvfmmzDJuLqwSZig/M=
+github.com/openebs/api v0.0.0-20200228061750-1babdecc909b h1:u3SPxQV1oOqorhajvMixndn6boIcx7TCogymk7ay6gU=
+github.com/openebs/api v0.0.0-20200228061750-1babdecc909b/go.mod h1:2Ee/Nh6s68tENDDDoIp832NqRAvfmmzDJuLqwSZig/M=
+github.com/openebs/api v0.0.0-20200228085622-f3442fff37bf h1:81KBr+EVu5hiXhfOZgQb7jZJ3dmdJMuM1yZAHHAk9Rg=
+github.com/openebs/api v0.0.0-20200228085622-f3442fff37bf/go.mod h1:2Ee/Nh6s68tENDDDoIp832NqRAvfmmzDJuLqwSZig/M=
+github.com/openebs/api v0.0.0-20200228103056-9223c2d78927 h1:jmHHnQv8WRdVosT3D44fGN9sAVcyrU+mGLrBJEMMT10=
+github.com/openebs/api v0.0.0-20200228103056-9223c2d78927/go.mod h1:2Ee/Nh6s68tENDDDoIp832NqRAvfmmzDJuLqwSZig/M=
 github.com/openebs/maya v0.0.0-20200211084127-dd6152021192 h1:WqAgEtPa/owsF89MIKliYbgwn9nvF6JE+giJBDzzAqo=
 github.com/openebs/maya v0.0.0-20200211084127-dd6152021192/go.mod h1:QQY9cOHKQwZ73qbv6O//UYUBLNV2S0MRDIfG7t5KOCk=
+github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8 h1:ud86nr1TRU9fB3IeBzymBqYjaha/GjgjHCTeFTKeT8A=
+github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8/go.mod h1:QQY9cOHKQwZ73qbv6O//UYUBLNV2S0MRDIfG7t5KOCk=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

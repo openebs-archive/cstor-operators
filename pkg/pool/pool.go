@@ -22,7 +22,7 @@ import (
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	zpool "github.com/openebs/api/pkg/internalapis/apis/cstor"
-	"github.com/openebs/maya/pkg/util"
+	"github.com/openebs/api/pkg/util"
 	"k8s.io/klog"
 )
 

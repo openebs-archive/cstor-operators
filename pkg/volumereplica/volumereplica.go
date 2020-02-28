@@ -25,9 +25,9 @@ import (
 	"encoding/json"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/maya/pkg/debug"
-	"github.com/openebs/maya/pkg/hash"
-	"github.com/openebs/maya/pkg/util"
+	"github.com/openebs/cstor-operators/pkg/debug"
+	"github.com/openebs/cstor-operators/pkg/hash"
+	"github.com/openebs/api/pkg/util"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
 	"k8s.io/klog"

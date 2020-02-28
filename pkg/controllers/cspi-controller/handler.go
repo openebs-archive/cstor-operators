@@ -20,10 +20,9 @@ import (
 	"fmt"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/pool-manager-utils"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
-	apiscspc "github.com/openebs/maya/pkg/cstor/poolcluster/v1alpha1"
-	"github.com/openebs/maya/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -132,7 +131,7 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 func (c *CStorPoolInstanceController) destroy(cspi *cstor.CStorPoolInstance) error {
 	var phase cstor.CStorPoolInstancePhase
 
-	if !util.ContainsString(cspi.Finalizers, apiscspc.PoolProtectionFinalizer) {
+	if !util.ContainsString(cspi.Finalizers, types.PoolProtectionFinalizer) {
 		return nil
 	}
 	// Instantiate the pool operation config

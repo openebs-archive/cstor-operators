@@ -17,21 +17,17 @@ limitations under the License.
 package algorithm
 
 import (
-	"github.com/openebs/maya/pkg/version"
-	"github.com/pkg/errors"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
+	deployapi "github.com/openebs/api/pkg/kubernetes/apps"
+	coreapi "github.com/openebs/api/pkg/kubernetes/core"
+	util "github.com/openebs/api/pkg/util"
+	"github.com/openebs/maya/pkg/version"
 	appsv1 "k8s.io/api/apps/v1"
-	deploy "github.com/openebs/maya/pkg/kubernetes/deployment/appsv1/v1alpha1"
-	pts "github.com/openebs/maya/pkg/kubernetes/podtemplatespec/v1alpha1"
-	container "github.com/openebs/maya/pkg/kubernetes/container/v1alpha1"
-	volume "github.com/openebs/maya/pkg/kubernetes/volume/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	env "github.com/openebs/maya/pkg/env/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 )
-
 
 // OpenEBSServiceAccount name of the openebs service accout with required
 // permissions
@@ -81,8 +77,8 @@ var (
 )
 
 // GetPoolDeploySpec returns the pool deployment spec.
-func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deployment, error) {
-	deployObj, err := deploy.NewBuilder().
+func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deployment) {
+	deployObj := deployapi.NewDeployment().
 		WithName(cspi.Name).
 		WithNamespace(cspi.Namespace).
 		WithAnnotationsNew(getDeployAnnotations()).
@@ -91,17 +87,16 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deplo
 		WithReplicas(getReplicaCount()).
 		WithStrategyType(appsv1.RecreateDeploymentStrategyType).
 		WithSelectorMatchLabelsNew(getDeployMatchLabels()).
-		WithPodTemplateSpecBuilder(
-			pts.NewBuilder().
+		WithPodTemplateSpec(
+			coreapi.NewPodTemplateSpec().
 				WithLabelsNew(getPodLabels(cspi)).
 				WithPriorityClassName(getPriorityClass(cspi)).
 				WithNodeSelector(cspi.Spec.NodeSelector).
 				WithAnnotationsNew(getPodAnnotations()).
 				WithServiceAccountName(OpenEBSServiceAccount).
-				WithTolerationsByValue(getPoolPodToleration(cspi)...).
-				// For CStor-Pool-Mgmt container
-				WithContainerBuilders(
-					container.NewBuilder().
+				WithTolerations(getPoolPodToleration(cspi)...).
+				WithContainers(
+					coreapi.NewContainer().
 						WithImage(getPoolMgmtImage()).
 						WithName(PoolMgmtContainerName).
 						WithImagePullPolicy(corev1.PullAlways).
@@ -110,8 +105,7 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deplo
 						WithEnvs(getPoolUIDAsEnv(c.CSPC)).
 						WithResources(getAuxResourceRequirement(cspi)).
 						WithVolumeMountsNew(getPoolMgmtMounts()),
-					// For CStor-Pool container
-					container.NewBuilder().
+					coreapi.NewContainer().
 						WithImage(getPoolImage()).
 						WithName(PoolContainerName).
 						WithResources(getResourceRequirementForCStorPool(cspi)).
@@ -123,8 +117,7 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deplo
 						WithEnvs(getPoolUIDAsEnv(c.CSPC)).
 						WithLifeCycle(getPoolLifeCycle()).
 						WithVolumeMountsNew(getPoolMounts()),
-					// For maya exporter
-					container.NewBuilder().
+					coreapi.NewContainer().
 						WithImage(getMayaExporterImage()).
 						WithName(PoolExporterContainerName).
 						// TODO: add default values for resources
@@ -135,52 +128,49 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deplo
 						WithArgumentsNew([]string{"-e=pool"}).
 						WithVolumeMountsNew(getPoolMounts()),
 				).
-				// TODO : Add toleration
-				WithVolumeBuilders(
-					volume.NewBuilder().
+				WithVolumes(
+					coreapi.NewVolume().
 						WithName("device").
 						WithHostPathAndType(
 							"/dev",
 							&hostpathTypeDirectory,
 						),
-					volume.NewBuilder().
+					coreapi.NewVolume().
 						WithName("udev").
 						WithHostPathAndType(
 							"/run/udev",
 							&hostpathTypeDirectory,
 						),
-					volume.NewBuilder().
+					coreapi.NewVolume().
 						WithName("tmp").
 						WithHostPathAndType(
-						// NS + CstorPool + Name
-						// ToDo: Add Namespace
-							env.GetOpenebsBaseDirPath()+"/cstor-pool/"+c.CSPC.Name,
+							// NS + CstorPool + Name
+							// ToDo: Add Namespace
+							util.GetOpenebsBaseDirPath()+"/cstor-pool/"+c.CSPC.Name,
 							&hostpathTypeDirectoryOrCreate,
 						),
-					volume.NewBuilder().
+					coreapi.NewVolume().
 						WithName("sparse").
 						WithHostPathAndType(
 							getSparseDirPath(),
 							&hostpathTypeDirectoryOrCreate,
 						),
-					volume.NewBuilder().
+					coreapi.NewVolume().
 						WithName("storagepath").
 						WithHostPathAndType(
 							// NS + CstorPool + Name
 							// ToDo: Add Namespace
-							env.GetOpenebsBaseDirPath()+"/cstor-pool/"+c.CSPC.Name,
+							util.GetOpenebsBaseDirPath()+"/cstor-pool/"+c.CSPC.Name,
 							&hostpathTypeDirectoryOrCreate,
 						),
-					volume.NewBuilder().
+					coreapi.NewVolume().
 						WithName("sockfile").
 						WithEmptyDir(&corev1.EmptyDirVolumeSource{}),
 				),
-		).
-		Build()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build pool deployment object")
-	}
-	return deployObj, nil
+		).Build()
+
+	return deployObj
+
 }
 
 func getReplicaCount() *int32 {
@@ -199,9 +189,9 @@ func getDeployOwnerReference(cspi *cstor.CStorPoolInstance) []metav1.OwnerRefere
 func getDeployLabels(csp *cstor.CStorPoolInstance) map[string]string {
 	return map[string]string{
 		string(types.CStorPoolClusterLabelKey):  csp.Labels[types.CStorPoolClusterLabelKey],
-		"app":                             "cstor-pool",
+		"app":                                   "cstor-pool",
 		string(types.CStorPoolInstanceLabelKey): csp.Name,
-		"openebs.io/version":              version.GetVersion(),
+		"openebs.io/version":                    version.GetVersion(),
 	}
 }
 
@@ -375,24 +365,24 @@ func getPoolLifeCycle() *corev1.Lifecycle {
 }
 
 // getResourceRequirementForCStorPool returns resource requirement for cstor pool container.
-func getResourceRequirementForCStorPool(cspi *cstor.CStorPoolInstance) *corev1.ResourceRequirements {
-	var resourceRequirements *corev1.ResourceRequirements
+func getResourceRequirementForCStorPool(cspi *cstor.CStorPoolInstance) corev1.ResourceRequirements {
+	var resourceRequirements corev1.ResourceRequirements
 	if cspi.Spec.PoolConfig.Resources == nil {
-		resourceRequirements = &corev1.ResourceRequirements{}
+		resourceRequirements = corev1.ResourceRequirements{}
 	} else {
-		resourceRequirements = cspi.Spec.PoolConfig.Resources
+		resourceRequirements = *cspi.Spec.PoolConfig.Resources
 	}
 	// TODO: add default values for resources if both are nil
 	return resourceRequirements
 }
 
 // getAuxResourceRequirement returns resource requirement for cstor pool side car containers.
-func getAuxResourceRequirement(cspi *cstor.CStorPoolInstance) *corev1.ResourceRequirements {
-	var auxResourceRequirements *corev1.ResourceRequirements
+func getAuxResourceRequirement(cspi *cstor.CStorPoolInstance) corev1.ResourceRequirements {
+	var auxResourceRequirements corev1.ResourceRequirements
 	if cspi.Spec.PoolConfig.AuxResources == nil {
-		auxResourceRequirements = &corev1.ResourceRequirements{}
+		auxResourceRequirements = corev1.ResourceRequirements{}
 	} else {
-		auxResourceRequirements = cspi.Spec.PoolConfig.AuxResources
+		auxResourceRequirements = *cspi.Spec.PoolConfig.AuxResources
 	}
 	// TODO: add default values for resources if both are nil
 	return auxResourceRequirements

@@ -3,20 +3,16 @@ module github.com/openebs/cstor-operators
 go 1.13
 
 require (
-	github.com/Masterminds/goutils v1.1.0 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
-	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
-	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/mitchellh/copystructure v1.0.0 // indirect
-	github.com/openebs/api v0.0.0-20200226091107-d9754cd803c6
-	github.com/openebs/maya v0.0.0-20200211084127-dd6152021192
+	github.com/openebs/api v0.0.0-20200304063552-e5b95fdc6b7e
+	github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.4.1 // indirect
-	github.com/prometheus/client_golang v1.4.1 // indirect
+	github.com/spf13/cobra v0.0.5
 	go.uber.org/zap v1.13.0 // indirect
+	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	google.golang.org/grpc v1.23.1
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v11.0.0+incompatible
@@ -26,7 +22,6 @@ require (
 )
 
 replace (
-	github.com/openebs/api => /home/prateek/gocode/src/github.com/openebs/api
 	k8s.io/api => k8s.io/api v0.17.3
 
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.3

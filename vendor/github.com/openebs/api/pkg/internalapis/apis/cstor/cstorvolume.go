@@ -42,7 +42,6 @@ type CStorVolumeSpec struct {
 	TargetPort        string            `json:"targetPort"`
 	Iqn               string            `json:"iqn"`
 	TargetPortal      string            `json:"targetPortal"`
-	Status            string            `json:"status"`
 	NodeBase          string            `json:"nodeBase"`
 	ReplicationFactor int               `json:"replicationFactor"`
 	ConsistencyFactor int               `json:"consistencyFactor"`
@@ -113,14 +112,27 @@ type CVStatus struct {
 
 // ReplicaStatus stores the status of replicas
 type ReplicaStatus struct {
-	ID                string `json:"replicaId"`
-	Mode              string `json:"mode"`
+	// ID is replica unique identifier
+	ID string `json:"replicaId"`
+	// Mode represents replica status i.e. Healthy, Degraded
+	Mode string `json:"mode"`
+	//
 	CheckpointedIOSeq string `json:"checkpointedIOSeq"`
-	InflightRead      string `json:"inflightRead"`
-	InflightWrite     string `json:"inflightWrite"`
-	InflightSync      string `json:"inflightSync"`
-	UpTime            int    `json:"upTime"`
-	Quorum            string `json:"quorum"`
+	// Ongoing reads I/O from target to replica
+	InflightRead string `json:"inflightRead"`
+	// ongoing writes I/O from target to replica
+	InflightWrite string `json:"inflightWrite"`
+	// Ongoing sync I/O from target to replica
+	InflightSync string `json:"inflightSync"`
+	// time since the replica connected to target
+	UpTime int `json:"upTime"`
+	// Quorum indicates wheather data wrtitten to the replica
+	// is lost or exists.
+	// "0" means: data has been lost( might be ephimeral case)
+	// and will recostruct data from other Healthy replicas in a write-only
+	// mode
+	// 1 means: written data is exists on replica
+	Quorum string `json:"quorum"`
 }
 
 // CStorVolumeCondition contains details about state of cstorvolume

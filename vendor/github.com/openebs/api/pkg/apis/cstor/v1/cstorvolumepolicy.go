@@ -80,8 +80,8 @@ type TargetSpec struct {
 	// Tolerations, if specified, are the target pod's tolerations
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
-	// Affinity if specified, are the target pod's affinities
-	Affinity *corev1.PodAffinity `json:"affinity,omitempty"`
+	// PodAffinity if specified, are the target pod's affinities
+	PodAffinity *corev1.PodAffinity `json:"affinity,omitempty"`
 
 	// NodeSelector is the labels that will be used to select
 	// a node for target pod scheduleing
@@ -97,8 +97,6 @@ type TargetSpec struct {
 type ReplicaSpec struct {
 	// ZvolWorkers represents number of threads that executes client IOs
 	ZvolWorkers string `json:"zvolWorkers,omitempty"`
-	// Affinity if specified, are the replica affinities
-	Affinity *corev1.PodAffinity `json:"affinity,omitempty"`
 }
 
 // Provision represents volume provisioning configuration

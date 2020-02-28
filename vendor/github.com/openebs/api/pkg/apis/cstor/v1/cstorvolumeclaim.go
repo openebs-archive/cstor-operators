@@ -56,9 +56,9 @@ type CStorVolumeClaimSpec struct {
 	// CStorVolumeRef has the information about where CstorVolumeClaim
 	// is created from.
 	CStorVolumeRef *corev1.ObjectReference `json:"cstorVolumeRef,omitempty"`
-	// CstorVolumeSource contains the source volumeName@snapShotname
+	// CStorVolumeSource contains the source volumeName@snapShotname
 	// combaination.  This will be filled only if it is a clone creation.
-	CstorVolumeSource string `json:"cstorVolumeSource,omitempty"`
+	CStorVolumeSource string `json:"cstorVolumeSource,omitempty"`
 	// Policy contains volume specific required policies target and replicas
 	Policy CStorVolumePolicySpec `json:"policy"`
 }

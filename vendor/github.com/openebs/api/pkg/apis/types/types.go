@@ -30,7 +30,7 @@ const (
 	CStorPoolInstanceLabelKey = "openebs.io/cstor-pool-instance"
 
 	// OpenEBSVersionLabelKey is the openebs version key.
-	OpenEBSVersionLabelKey  = "openebs.io/version"
+	OpenEBSVersionLabelKey = "openebs.io/version"
 
 	// CASTypeLabelKey is the label key to fetch storage engine for the volume
 	CASTypeLabelKey = "openebs.io/cas-type"
@@ -38,19 +38,31 @@ const (
 	// PredecessorBDKey is the key to fetch the predecessor BD in case of
 	// block device replacement.
 	PredecessorBDLabelKey = "openebs.io/bd-predecessor"
+
+	//PodDisruptionBudgetKey is the key used to identify the PDB
+	PodDisruptionBudgetKey = "openebs.io/pod-disruption-budget"
+
+	// VolumePolicyKey is the key to fetch name of CStorVolume Policies
+	VolumePolicyKey = "openebs.io/volume-policy"
+
+	// CStorPoolInstanceNameLabelKey is the key used on pool dependent resources
+	CStorPoolInstanceNameLabelKey = "cstorpoolinstance.openebs.io/name"
+
+	// PersistentVolumeLabelKey label key set in all cstorvolume replicas of a
+	// given volume
+	PersistentVolumeLabelKey = "openebs.io/persistent-volume"
 )
 
-const  (
+const (
 	// CSPCFinalizer represents finalizer value used by cspc
 	CSPCFinalizer = "cstorpoolcluster.openebs.io/finalizer"
 
 	// PoolProtectionFinalizer is used to make sure cspi and it's bdcs
 	// are not deleted before destroying the zpool
 	PoolProtectionFinalizer = "openebs.io/pool-protection"
-
 )
 
-const  (
+const (
 	// CasTypeCStor is the key for cas type cStor
 	CasTypeCStor = "cstor"
 

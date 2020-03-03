@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/openebs/cstor-operators/cspc-operator/app"
+	"github.com/openebs/cstor-operators/cmd/cspc-operator/app"
 	"k8s.io/klog"
 )
 

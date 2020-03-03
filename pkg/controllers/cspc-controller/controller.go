@@ -180,7 +180,7 @@ func (cb *ControllerBuilder) Build() (*Controller, error) {
 	return cb.Controller, nil
 }
 
-// addSpc is the add event handler for cspc
+// addCSPC is the add event handler for cspc
 func (c *Controller) addCSPC(obj interface{}) {
 	cspc, ok := obj.(*cstor.CStorPoolCluster)
 	if !ok {
@@ -196,7 +196,7 @@ func (c *Controller) addCSPC(obj interface{}) {
 	c.enqueueCSPC(cspc)
 }
 
-// updateSpc is the update event handler for cspc.
+// updateCSPC is the update event handler for cspc.
 func (c *Controller) updateCSPC(oldCSPC, newCSPC interface{}) {
 	cspc, ok := newCSPC.(*cstor.CStorPoolCluster)
 	if !ok {
@@ -211,7 +211,7 @@ func (c *Controller) updateCSPC(oldCSPC, newCSPC interface{}) {
 	c.enqueueCSPC(cspc)
 }
 
-// deleteSpc is the delete event handler for cspc.
+// deleteCSPC is the delete event handler for cspc.
 func (c *Controller) deleteCSPC(obj interface{}) {
 	cspc, ok := obj.(*cstor.CStorPoolCluster)
 	if !ok {
@@ -241,11 +241,6 @@ func GetVersionedCSPCInterface(cspcInformerFactory informers.SharedInformerFacto
 
 func GetStoredCSPIVersionInterface(cspiInformerFactory informers.SharedInformerFactory) v1interface.Interface{
 	return cspiInformerFactory.Cstor().V1()
-}
-
-// ToDO: Fix the function.
-func GetCSPCForCSPI(cspc *cstor.CStorPoolInstance)*cstor.CStorPoolCluster  {
-	return nil
 }
 
 func (c *Controller)GetStoredCStorVersionClient() cstorstoredversion.CstorV1Interface {

@@ -17,7 +17,7 @@ limitations under the License.
 package main
 
 import (
-	"github.com/openebs/cstor-operators/pool-manager/app"
+	"github.com/openebs/cstor-operators/cmd/pool-manager/app"
 	"k8s.io/klog"
 	"os"
 )

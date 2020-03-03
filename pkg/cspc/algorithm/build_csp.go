@@ -72,9 +72,6 @@ func (ac *Config) GetCSPISpec() (*cstor.CStorPoolInstance, error) {
 		WithFinalizer(types.CSPCFinalizer).
 		WithNewVersion(version.GetVersion()).
 		WithDependentsUpgraded()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build CSPI object for node selector {%v}", poolSpec.NodeSelector)
-	}
 
 	err = ac.ClaimBDsForNode(GetBDListForNode(*poolSpec))
 	if err != nil {

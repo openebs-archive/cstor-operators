@@ -1,0 +1,30 @@
+apiVersion: cstor.openebs.io/v1
+kind: CStorPoolCluster
+metadata:
+  name: cspc-stripe
+  namespace: openebs
+spec:
+  pools:
+    - nodeSelector:
+        kubernetes.io/hostname: "gke-cstor-demo-default-pool-3385ab41-2hkc"
+      dataRaidGroups:
+      - blockDevices:
+          - blockDeviceName: "sparse-d1cd029f5ba4ada0db75adc8f6c88653"
+      poolConfig:
+        dataRaidGroupType: "stripe"
+
+    - nodeSelector:
+        kubernetes.io/hostname: "gke-cstor-demo-default-pool-3385ab41-v2x2" 
+      dataRaidGroups:
+        - blockDevices:
+            - blockDeviceName: "sparse-79fe8245efd25bd7e7aabdf29eae4d71"
+      poolConfig:
+        dataRaidGroupType: "stripe"
+
+    - nodeSelector:
+        kubernetes.io/hostname: "gke-cstor-demo-default-pool-3385ab41-zntw"
+      dataRaidGroups:
+        - blockDevices:
+            - blockDeviceName: "sparse-50761ff2c406004e68ac2920e7215679"
+      poolConfig:
+        dataRaidGroupType: "stripe"

@@ -17,14 +17,21 @@ limitations under the License.
 package v1
 
 import (
+	"fmt"
+	"strings"
+	"sync"
+
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
 
+	"github.com/openebs/maya/pkg/version"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 const (
+
 	//CStorNodeBase nodeBase for cstor volume
 	CStorNodeBase string = "iqn.2016-09.com.openebs.cstor"
 
@@ -33,6 +40,17 @@ const (
 
 	// CStorVolumeReplicaFinalizer is the name of finalizer on CStorVolumeClaim
 	CStorVolumeReplicaFinalizer = "cstorvolumereplica.openebs.io/finalizer"
+)
+
+var (
+	// ConfFileMutex is to hold the lock while updating istgt.conf file
+	ConfFileMutex = &sync.Mutex{}
+
+	validCurrentVersions = map[string]bool{
+		"1.0.0": true, "1.1.0": true, "1.2.0": true, "1.3.0": true,
+		"1.4.0": true, "1.5.0": true, "1.6.0": true,
+	}
+	validDesiredVersion = version.GetVersion()
 )
 
 func NewCStorVolumeClaim() *CStorVolumeClaim {
@@ -93,12 +111,6 @@ func (cvc *CStorVolumeClaim) WithLabels(labels map[string]string) *CStorVolumeCl
 	}
 	return cvc
 }
-
-// WithNodeSelectorByReference sets the node selector field of CVC with provided argument.
-//func (cvc *CStorVolumeClaim) WithNodeSelectorByReference(nodeSelector map[string]string) *CStorVolumeClaim {
-//	cvc.Spec.NodeSelector = nodeSelector
-//	return cvc
-//}
 
 // WithFinalizer sets the finalizer field in the CVC
 func (cvc *CStorVolumeClaim) WithFinalizer(finalizers ...string) *CStorVolumeClaim {
@@ -163,6 +175,11 @@ func IsScaleDownInProgress(cv *CStorVolume) bool {
 
 func NewCStorVolume() *CStorVolume {
 	return &CStorVolume{}
+}
+
+// NewCStorVolumeObj returns a new instance of cstorvolume
+func NewCStorVolumeObj(obj *CStorVolume) *CStorVolume {
+	return obj
 }
 
 // WithName sets the Name field of CVC with provided value.
@@ -318,6 +335,204 @@ func (cv *CStorVolume) HasFinalizer(finalizer string) bool {
 // RemoveFinalizer removes the given finalizer from the ocvject.
 func (cv *CStorVolume) RemoveFinalizer(finalizer string) {
 	cv.Finalizers = util.RemoveString(cv.Finalizers, finalizer)
+}
+
+// IsResizePending return true if resize is in progress
+func (c *CStorVolume) IsResizePending() bool {
+	curCapacity := c.Status.Capacity
+	desiredCapacity := c.Spec.Capacity
+	// Cmp returns 0 if the curCapacity is equal to desiredCapacity,
+	// -1 if the curCapacity is less than desiredCapacity, or 1 if the
+	// curCapacity is greater than desiredCapacity.
+	return curCapacity.Cmp(desiredCapacity) == -1
+}
+
+// IsDRFPending return true if drf update is required else false
+// Steps to verify whether drf is required
+// 1. Read DesiredReplicationFactor configurations from istgt conf file
+// 2. Compare the value with spec.DesiredReplicationFactor and return result
+func (c *CStorVolume) IsDRFPending() bool {
+	fileOperator := util.RealFileOperator{}
+	ConfFileMutex.Lock()
+	//If it has proper config then we will get --> "  DesiredReplicationFactor 3"
+	i, gotConfig, err := fileOperator.GetLineDetails(types.IstgtConfPath, types.DesiredReplicationFactorKey)
+	ConfFileMutex.Unlock()
+	if err != nil || i == -1 {
+		klog.Infof("failed to get %s config details error: %v",
+			types.DesiredReplicationFactorKey,
+			err,
+		)
+		return false
+	}
+	drfStringValue := fmt.Sprintf(" %d", c.Spec.DesiredReplicationFactor)
+	// gotConfig will have "  DesiredReplicationFactor  3" and we will extract
+	// numeric character from output
+	if !strings.HasSuffix(gotConfig, drfStringValue) {
+		return true
+	}
+	// reconciliation check for replica scaledown scenarion
+	return (len(c.Spec.ReplicaDetails.KnownReplicas) <
+		len(c.Status.ReplicaDetails.KnownReplicas))
+}
+
+// GetCVCondition returns corresponding cstorvolume condition based argument passed
+func (c *CStorVolume) GetCVCondition(
+	condType CStorVolumeConditionType) CStorVolumeCondition {
+	for _, cond := range c.Status.Conditions {
+		if condType == cond.Type {
+			return cond
+		}
+	}
+	return CStorVolumeCondition{}
+}
+
+// IsConditionPresent returns true if condition is available
+func (c *CStorVolume) IsConditionPresent(condType CStorVolumeConditionType) bool {
+	for _, cond := range c.Status.Conditions {
+		if condType == cond.Type {
+			return true
+		}
+	}
+	return false
+}
+
+// AreSpecReplicasHealthy return true if all the spec replicas are in Healthy
+// state else return false
+func (c *CStorVolume) AreSpecReplicasHealthy(volStatus *CVStatus) bool {
+	var isReplicaExist bool
+	var replicaInfo ReplicaStatus
+	for _, replicaValue := range c.Spec.ReplicaDetails.KnownReplicas {
+		isReplicaExist = false
+		for _, replicaInfo = range volStatus.ReplicaStatuses {
+			if replicaInfo.ID == replicaValue {
+				isReplicaExist = true
+				break
+			}
+		}
+		if (isReplicaExist && replicaInfo.Mode != "Healthy") || !isReplicaExist {
+			return false
+		}
+	}
+	return true
+}
+
+// GetRemovingReplicaID return replicaID that present in status but not in spec
+func (c *CStorVolume) GetRemovingReplicaID() string {
+	for repID := range c.Status.ReplicaDetails.KnownReplicas {
+		// If known replica is not exist in spec but if it exist in status then
+		// user/operator selected that replica for removal
+		if _, isReplicaExist :=
+			c.Spec.ReplicaDetails.KnownReplicas[repID]; !isReplicaExist {
+			return string(repID)
+		}
+	}
+	return ""
+}
+
+// BuildScaleDownConfigData build data based on replica that needs to remove
+func (c *CStorVolume) BuildScaleDownConfigData(repID string) map[string]string {
+	configData := map[string]string{}
+	newReplicationFactor := c.Spec.DesiredReplicationFactor
+	newConsistencyFactor := (newReplicationFactor / 2) + 1
+	key := fmt.Sprintf("  ReplicationFactor")
+	value := fmt.Sprintf("  ReplicationFactor %d", newReplicationFactor)
+	configData[key] = value
+	key = fmt.Sprintf("  ConsistencyFactor")
+	value = fmt.Sprintf("  ConsistencyFactor %d", newConsistencyFactor)
+	configData[key] = value
+	key = fmt.Sprintf("  DesiredReplicationFactor")
+	value = fmt.Sprintf("  DesiredReplicationFactor %d",
+		c.Spec.DesiredReplicationFactor)
+	configData[key] = value
+	key = fmt.Sprintf("  Replica %s", repID)
+	value = fmt.Sprintf("")
+	configData[key] = value
+	return configData
+}
+
+// Conditions enables building CRUD operations on cstorvolume conditions
+type Conditions []CStorVolumeCondition
+
+// AddCondition appends the new condition to existing conditions
+func (c Conditions) AddCondition(cond CStorVolumeCondition) []CStorVolumeCondition {
+	c = append(c, cond)
+	return c
+}
+
+// UpdateCondition updates the condition if it is present in Conditions
+func (c Conditions) UpdateCondition(cond CStorVolumeCondition) []CStorVolumeCondition {
+	for i, condObj := range c {
+		if condObj.Type == cond.Type {
+			c[i] = cond
+		}
+	}
+	return c
+}
+
+// DeleteCondition deletes the condition from conditions
+func (c Conditions) DeleteCondition(cond CStorVolumeCondition) []CStorVolumeCondition {
+	newConditions := []CStorVolumeCondition{}
+	for _, condObj := range c {
+		if condObj.Type != cond.Type {
+			newConditions = append(newConditions, condObj)
+		}
+	}
+	return newConditions
+}
+
+// GetResizeCondition will return resize condtion related to
+// cstorvolume condtions
+func GetResizeCondition() CStorVolumeCondition {
+	resizeConditions := CStorVolumeCondition{
+		Type:               CStorVolumeResizing,
+		Status:             ConditionInProgress,
+		LastProbeTime:      metav1.Now(),
+		LastTransitionTime: metav1.Now(),
+		Reason:             "Resizing",
+		Message:            "Triggered resize by changing capacity in spec",
+	}
+	return resizeConditions
+}
+
+// ****************************************************************************
+//
+//                       Version Details
+//
+//
+// ****************************************************************************
+// SetErrorStatus sets the message and reason for the error
+func (vs *VersionStatus) SetErrorStatus(msg string, err error) {
+	vs.Message = msg
+	vs.Reason = err.Error()
+	vs.LastUpdateTime = metav1.Now()
+}
+
+// SetInProgressStatus sets the state as ReconcileInProgress
+func (vs *VersionStatus) SetInProgressStatus() {
+	vs.State = ReconcileInProgress
+	vs.LastUpdateTime = metav1.Now()
+}
+
+// SetSuccessStatus resets the message and reason and sets the state as
+// Reconciled
+func (vd *VersionDetails) SetSuccessStatus() {
+	vd.Status.Current = vd.Desired
+	vd.Status.Message = ""
+	vd.Status.Reason = ""
+	vd.Status.State = ReconcileComplete
+	vd.Status.LastUpdateTime = metav1.Now()
+}
+
+// IsCurrentVersionValid verifies if the  current version is valid or not
+func IsCurrentVersionValid(v string) bool {
+	currentVersion := strings.Split(v, "-")[0]
+	return validCurrentVersions[currentVersion]
+}
+
+// IsDesiredVersionValid verifies the desired version is valid or not
+func IsDesiredVersionValid(v string) bool {
+	desiredVersion := strings.Split(v, "-")[0]
+	return validDesiredVersion == desiredVersion
 }
 
 // **************************************************************************

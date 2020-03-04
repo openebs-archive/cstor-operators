@@ -16,9 +16,13 @@ limitations under the License.
 
 package types
 
+import "sync"
+
 const (
 	// OpenEBSDisableReconcileLabelKey is the label key decides to reconcile or not
 	OpenEBSDisableReconcileLabelKey = "reconcile.openebs.io/disable"
+	// CStorAPIVersion is group version for cstor apis
+	CStorAPIVersion = "cstor.openebs.io/v1"
 
 	// HostNameLabelKey is label key present on kubernetes node object.
 	HostNameLabelKey = "kubernetes.io/hostname"
@@ -60,6 +64,12 @@ const (
 	// PoolProtectionFinalizer is used to make sure cspi and it's bdcs
 	// are not deleted before destroying the zpool
 	PoolProtectionFinalizer = "openebs.io/pool-protection"
+
+	// CstorVolumeKind is a K8s CR of kind CStorVolume
+	CStorVolumeKind = "CStorVolume"
+
+	// CstorVolumeReplicaKind is a K8s CR of kind CStorVolumeReplica
+	CStorVolumeReplicaKind = "CStorVolumeReplica"
 )
 
 const (
@@ -73,4 +83,24 @@ const (
 const (
 	CStorPoolBasePath = "/var/openebs/cstor-pool"
 	CacheFileName     = "pool.cache"
+)
+
+var (
+	// ConfFileMutex is to hold the lock while updating istgt.conf file
+	ConfFileMutex = &sync.Mutex{}
+	// IstgtConfPath will locate path for istgt configurations
+	IstgtConfPath = "/usr/local/etc/istgt/istgt.conf"
+	//DesiredReplicationFactorKey is plain text in istgt configuration file informs
+	//about desired replication factor used by target
+	DesiredReplicationFactorKey = "  DesiredReplicationFactor"
+	//TargetNamespace is namespace where target pod and cstorvolume is present
+	//and this is updated by addEventHandler function
+	TargetNamespace = ""
+)
+
+const (
+	//IoWaitTime is the time interval for which the IO has to be stopped before doing snapshot operation
+	IoWaitTime = 10
+	//TotalWaitTime is the max time duration to wait for doing snapshot operation on all the replicas
+	TotalWaitTime = 60
 )

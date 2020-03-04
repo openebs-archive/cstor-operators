@@ -52,6 +52,7 @@ type CStorVolumeReplica struct {
 // CStorVolumeReplicaSpec is the spec for a CStorVolumeReplica resource
 type CStorVolumeReplicaSpec struct {
 	TargetIP string `json:"targetIP"`
+	//Represents the actual capacity of the underlying volume
 	Capacity string `json:"capacity"`
 	// ZvolWorkers represents number of threads that executes client IOs
 	ZvolWorkers string `json:"zvolWorkers"`
@@ -118,18 +119,28 @@ const (
 
 // CStorVolumeReplicaStatus is for handling status of cvr.
 type CStorVolumeReplicaStatus struct {
-	Phase    CStorVolumeReplicaPhase `json:"phase"`
-	Capacity CStorVolumeCapacityAttr `json:"capacity"`
+	// CStorVolumeReplicaPhase is to holds different phases of replica
+	Phase CStorVolumeReplicaPhase `json:"phase"`
+	// CStorVolumeCapacityDetails represents capacity info of replica
+	Capacity CStorVolumeCapacityDetails `json:"capacity"`
 	// LastTransitionTime refers to the time when the phase changes
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
-	LastUpdateTime     metav1.Time `json:"lastUpdateTime,omitempty"`
-	Message            string      `json:"message,omitempty"`
+	// The last updated time
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
+	// A human readable message indicating details about the transition.
+	Message string `json:"message,omitempty"`
 }
 
-// CStorVolumeCapacityAttr is for storing the volume capacity.
-type CStorVolumeCapacityAttr struct {
-	TotalAllocated string `json:"totalAllocated"`
-	Used           string `json:"used"`
+// CStorVolumeCapacityDetails represents capacity information releated to volume
+// replica
+type CStorVolumeCapacityDetails struct {
+	// The amount of space consumed by this volume replica and all its descendents
+	Total string `json:"totalAllocated"`
+	// The amount of space that is "logically" accessible by this dataset. The logical
+	// space ignores the effect of the compression and copies properties, giving a
+	// quantity closer to the amount of data that applications see.  However, it does
+	// include space consumed by metadata
+	Used string `json:"used"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

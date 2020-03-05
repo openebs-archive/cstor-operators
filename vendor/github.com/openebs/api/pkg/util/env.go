@@ -70,3 +70,9 @@ func GetOpenebsBaseDirPath() string {
 	}
 	return baseDir
 }
+
+// GetNamespace gets the namespace OPENEBS_NAMESPACE env value which is set by the
+// downward API where CVC-Operator has been deployed
+func GetNamespace() string {
+	return GetEnv(OpenEBSNamespace)
+}

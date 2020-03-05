@@ -192,7 +192,6 @@ func HasNodeName(nodeName string) CSPIPredicate {
 // provided CStorPoolInstance
 type CSPIPredicate func(*CStorPoolInstance) bool
 
-
 // PredicateList holds the list of Predicates
 type cspiPredicateList []CSPIPredicate
 
@@ -226,4 +225,3 @@ func (cspiList *CStorPoolInstanceList) Filter(p ...CSPIPredicate) *CStorPoolInst
 	}
 	return filtered
 }
-

@@ -163,12 +163,12 @@ func (d *Deployment) WithStrategyType(strategytype appsv1.DeploymentStrategyType
 
 // WithPodTemplateSpecBuilder sets the template field of the deployment
 func (d *Deployment) WithPodTemplateSpec(pts *corebuilder.PodTemplateSpec) *Deployment {
-	templatespecObj:= pts.Build()
+	templatespecObj := pts.Build()
 	d.Spec.Template = *templatespecObj
 	return d
 }
 
 // Build returns a deployment instance
-func (d *Deployment) Build() (*appsv1.Deployment) {
+func (d *Deployment) Build() *appsv1.Deployment {
 	return d.Deployment
 }

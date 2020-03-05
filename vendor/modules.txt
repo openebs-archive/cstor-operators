@@ -6,10 +6,8 @@ github.com/beorn7/perks/quantile
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/evanphx/json-patch v4.2.0+incompatible
+# github.com/evanphx/json-patch v4.5.0+incompatible
 github.com/evanphx/json-patch
-# github.com/ghodss/yaml v1.0.0
-github.com/ghodss/yaml
 # github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
@@ -48,7 +46,7 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/openebs/api v0.0.0-20200304063552-e5b95fdc6b7e
+# github.com/openebs/api v0.0.0-20200304155919-9ac1d4814a3f
 github.com/openebs/api/pkg/apis/cstor
 github.com/openebs/api/pkg/apis/cstor/v1
 github.com/openebs/api/pkg/apis/openebs.io
@@ -72,25 +70,11 @@ github.com/openebs/api/pkg/client/listers/openebs.io/v1alpha1
 github.com/openebs/api/pkg/internalapis/apis/cstor
 github.com/openebs/api/pkg/kubernetes/apps
 github.com/openebs/api/pkg/kubernetes/core
+github.com/openebs/api/pkg/kubernetes/leaderelection
 github.com/openebs/api/pkg/proto
 github.com/openebs/api/pkg/util
 github.com/openebs/api/pkg/util/signals
 # github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8
-github.com/openebs/maya/pkg/alertlog
-github.com/openebs/maya/pkg/apis/openebs.io
-github.com/openebs/maya/pkg/apis/openebs.io/ndm/v1alpha1
-github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1
-github.com/openebs/maya/pkg/apis/stringer/v1alpha1
-github.com/openebs/maya/pkg/client/generated/clientset/versioned
-github.com/openebs/maya/pkg/client/generated/clientset/versioned/scheme
-github.com/openebs/maya/pkg/client/generated/clientset/versioned/typed/openebs.io/v1alpha1
-github.com/openebs/maya/pkg/cstor/volume/v1alpha1
-github.com/openebs/maya/pkg/cstor/volumereplica/v1alpha1
-github.com/openebs/maya/pkg/env/v1alpha1
-github.com/openebs/maya/pkg/kubernetes/client/v1alpha1
-github.com/openebs/maya/pkg/kubernetes/leaderelection
-github.com/openebs/maya/pkg/logs
-github.com/openebs/maya/pkg/util
 github.com/openebs/maya/pkg/version
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
@@ -331,7 +315,6 @@ k8s.io/apimachinery/third_party/forked/golang/reflect
 # k8s.io/client-go v11.0.0+incompatible => k8s.io/client-go v0.17.3
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake
-k8s.io/client-go/dynamic
 k8s.io/client-go/informers
 k8s.io/client-go/informers/admissionregistration
 k8s.io/client-go/informers/admissionregistration/v1

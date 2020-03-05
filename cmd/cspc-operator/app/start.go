@@ -17,11 +17,12 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"flag"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	informers "github.com/openebs/api/pkg/client/informers/externalversions"
-	cspccontroller "github.com/openebs/cstor-operators/pkg/controllers/cspc-controller"
-	"github.com/openebs/cstor-operators/pkg/signals"
+	leader "github.com/openebs/api/pkg/kubernetes/leaderelection"
+	"github.com/openebs/cstor-operators/pkg/controllers/cspc-controller"
 	"github.com/pkg/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -29,14 +30,22 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 	"os"
+	"os/signal"
 	"strconv"
 	"time"
 )
 
 var (
 	kubeconfig = flag.String("kubeconfig", "", "Path for kube config")
+	// lease lock resource name for lease API resource
+	leaderElectionLockName = "cspc-controller-leader"
 )
 
+// Command line flags
+var (
+	leaderElection          = flag.Bool("leader-election", false, "Enables leader election.")
+	leaderElectionNamespace = flag.String("leader-election-namespace", "", "The namespace where the leader election resource exists. Defaults to the pod namespace if not set.")
+)
 const (
 	// ResyncInterval is sync interval of the watcher
 	ResyncInterval = 30 * time.Second
@@ -44,8 +53,6 @@ const (
 
 // Start starts the cstor-operator.
 func Start() error {
-	// set up signals so we handle the first shutdown signal gracefully
-	stopCh := signals.SetupSignalHandler()
 	klog.InitFlags(nil)
 	err := flag.Set("logtostderr", "true")
 	if err != nil {
@@ -96,13 +103,33 @@ func Start() error {
 		return errors.Wrapf(err, "error building controller instance")
 	}
 
-	go kubeInformerFactory.Start(stopCh)
-	go cspcInformerFactory.Start(stopCh)
+	run := func(context.Context) {
+		stopCh := make(chan struct{})
+		kubeInformerFactory.Start(stopCh)
+		cspcInformerFactory.Start(stopCh)
+		go controller.Run(2,stopCh)
 
-	// Threadiness defines the number of workers to be launched in Run function
-	return controller.Run(2, stopCh)
+		// ...until SIGINT
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		close(stopCh)
+	}
 
+
+	if !*leaderElection {
+		run(context.TODO())
+	} else {
+		le := leader.NewLeaderElection(kubeClient, leaderElectionLockName, run)
+		if *leaderElectionNamespace != "" {
+			le.WithNamespace(*leaderElectionNamespace)
+		}
+		if err := le.Run(); err != nil {
+			klog.Fatalf("failed to initialize leader election: %v", err)
+		}
+	}
 	return nil
+
 }
 
 // GetClusterConfig return the config for k8s.

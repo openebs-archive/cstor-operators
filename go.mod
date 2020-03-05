@@ -3,12 +3,14 @@ module github.com/openebs/cstor-operators
 go 1.13
 
 require (
+	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/openebs/api v0.0.0-20200304063552-e5b95fdc6b7e
+	github.com/openebs/api v0.0.0-20200304155919-9ac1d4814a3f
 	github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5
-	go.uber.org/zap v1.13.0 // indirect
+	github.com/spf13/pflag v1.0.5
+	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
@@ -22,6 +24,7 @@ require (
 )
 
 replace (
+	//github.com/openebs/api => /home/prateek/gocode/src/github.com/openebs/api
 	k8s.io/api => k8s.io/api v0.17.3
 
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.3

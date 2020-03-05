@@ -26,7 +26,6 @@ import (
 	errors "github.com/pkg/errors"
 	"k8s.io/klog"
 
-	cvr "github.com/openebs/maya/pkg/cstor/volumereplica/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -282,7 +281,7 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeClaim) (*apis
 
 	// Fetch the volume replica pool names and use them in PDB and updating in
 	// spec and status of CVC
-	poolNames, err := cvr.GetVolumeReplicaPoolNames(cvc.Name, openebsNamespace)
+	poolNames, err := GetVolumeReplicaPoolNames(c.clientset, cvc.Name, openebsNamespace)
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"failed to get volume replica pool names of volume %s", cvObj.Name)

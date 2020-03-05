@@ -1,0 +1,802 @@
+/*
+Copyright 2020 The OpenEBS Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package volumemgmt
+
+import (
+	"fmt"
+	"os"
+	"reflect"
+	"time"
+
+	errors "github.com/pkg/errors"
+
+	"strings"
+
+	apis "github.com/openebs/api/pkg/apis/cstor/v1"
+	"github.com/openebs/api/pkg/apis/types"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	"github.com/openebs/api/pkg/util"
+	"github.com/openebs/cstor-operators/pkg/controllers/volume-mgmt/volume"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog"
+)
+
+type upgradeParams struct {
+	cv     *apis.CStorVolume
+	client clientset.Interface
+}
+
+type upgradeFunc func(u *upgradeParams) (*apis.CStorVolume, error)
+
+var (
+	v130       = "1.3.0"
+	upgradeMap = map[string]upgradeFunc{
+		"1.0.0": setDesiredRF,
+		"1.1.0": setDesiredRF,
+		"1.2.0": setDesiredRF,
+	}
+)
+
+// syncHandler compares the actual state with the desired, and attempts to
+// converge the two. It then updates the Status block of the cStorVolumeUpdated
+// resource with the current status of the resource.
+func (c *CStorVolumeController) syncHandler(
+	key string,
+	operation QueueOperation,
+) error {
+	klog.V(4).Infof("Handling %v operation for resource : %s ", operation, key)
+	cStorVolumeGot, err := c.getVolumeResource(key)
+	if err != nil {
+		return err
+	}
+	cStorVolumeGot, err = c.populateVersion(cStorVolumeGot)
+	if err != nil {
+		klog.Errorf("failed to add versionDetails to cv %s:%s", cStorVolumeGot.Name, err.Error())
+		c.recorder.Event(
+			cStorVolumeGot,
+			corev1.EventTypeWarning,
+			"FailedPopulate",
+			fmt.Sprintf("Failed to add current version: %s", err.Error()),
+		)
+		return nil
+	}
+	cStorVolumeGot, err = c.reconcileVersion(cStorVolumeGot)
+	if err != nil {
+		klog.Errorf("failed to upgrade cv %s:%s", cStorVolumeGot.Name, err.Error())
+		c.recorder.Event(
+			cStorVolumeGot,
+			corev1.EventTypeWarning,
+			"FailedUpgrade",
+			fmt.Sprintf("Failed to upgrade cv to %s version: %s",
+				cStorVolumeGot.VersionDetails.Desired,
+				err.Error(),
+			),
+		)
+		cStorVolumeGot.VersionDetails.Status.SetErrorStatus(
+			"Failed to reconcile cv version",
+			err,
+		)
+		_, err = c.clientset.CstorV1().
+			CStorVolumes(cStorVolumeGot.Namespace).Update(cStorVolumeGot)
+		if err != nil {
+			klog.Errorf("failed to update versionDetails status for cv %s:%s", cStorVolumeGot.Name, err.Error())
+		}
+		return nil
+	}
+	status, err := c.cStorVolumeEventHandler(operation, cStorVolumeGot)
+	if status == CVStatusIgnore {
+		return nil
+	}
+	cStorVolumeGot.Status.LastUpdateTime = metav1.Now()
+	if cStorVolumeGot.Status.Phase != apis.CStorVolumePhase(status) {
+		cStorVolumeGot.Status.LastTransitionTime = cStorVolumeGot.Status.LastUpdateTime
+		cStorVolumeGot.Status.Phase = apis.CStorVolumePhase(status)
+	}
+	if err != nil {
+		klog.Errorf(err.Error())
+		klog.Infof("cStorVolume:%v, %v; Status: %v", cStorVolumeGot.Name,
+			string(cStorVolumeGot.GetUID()), cStorVolumeGot.Status.Phase)
+		_, err1 := c.clientset.CstorV1().
+			CStorVolumes(cStorVolumeGot.Namespace).
+			Update(cStorVolumeGot)
+		if err1 != nil {
+			return errors.Wrapf(
+				err1,
+				"failed to update cStorVolume:%v, %v; Status: %v err: %v",
+				cStorVolumeGot.Name,
+				string(cStorVolumeGot.GetUID()),
+				cStorVolumeGot.Status.Phase,
+				err,
+			)
+		}
+		return err
+	}
+	_, err = c.clientset.CstorV1().
+		CStorVolumes(cStorVolumeGot.Namespace).
+		Update(cStorVolumeGot)
+	if err != nil {
+		return errors.Wrapf(
+			err, "failed to update cStorVolume:%v, %v; Status: %v",
+			cStorVolumeGot.Name,
+			string(cStorVolumeGot.GetUID()),
+			cStorVolumeGot.Status.Phase,
+		)
+	}
+	klog.V(4).Infof("cStorVolume:%v, %v; Status: %v", cStorVolumeGot.Name,
+		string(cStorVolumeGot.GetUID()), cStorVolumeGot.Status.Phase)
+	return nil
+}
+
+//TODO: Return status of cstorvolume and patch it on caller of below function
+
+// cStorVolumeEventHandler is to handle cstor volume related events.
+func (c *CStorVolumeController) cStorVolumeEventHandler(
+	operation QueueOperation,
+	cStorVolumeGot *apis.CStorVolume,
+) (CStorVolumeStatus, error) {
+	var eventMessage string
+	var updatedCV *apis.CStorVolume
+	customCVObj := apis.NewCStorVolumeObj(cStorVolumeGot)
+	klog.V(4).Infof(
+		"%v event received for volume : %v ",
+		operation,
+		cStorVolumeGot.Name,
+	)
+	switch operation {
+	case QOpAdd:
+		// CheckValidVolume is to check if volume attributes are correct.
+		err := volume.CheckValidVolume(cStorVolumeGot)
+		if err != nil {
+			c.recorder.Event(
+				cStorVolumeGot, corev1.EventTypeWarning,
+				string(FailureCreate),
+				fmt.Sprintf("failed to create cstorvolume validation "+
+					"failed on cstorvolum error: %v", err),
+			)
+			return CVStatusInvalid, err
+		}
+		// Set TargetNamespace which will be used to volume-mgmt UDS to update
+		//replication information
+		types.TargetNamespace = cStorVolumeGot.Namespace
+
+		err = volume.CreateVolumeTarget(cStorVolumeGot)
+		if err != nil {
+			return CVStatusError, err
+		}
+		// update the status capacity of cstorvolume caller of this code
+		// will update in etcd
+		if !customCVObj.IsResizePending() {
+			cStorVolumeGot.Status.Capacity = cStorVolumeGot.Spec.Capacity
+		}
+		return CVStatusInit, nil
+
+	case QOpModify:
+		// Make changes here to run zrepl command and update the data
+		err := volume.CheckValidVolume(cStorVolumeGot)
+		if err != nil {
+			c.recorder.Event(
+				cStorVolumeGot, corev1.EventTypeWarning,
+				string(FailureCreate),
+				fmt.Sprintf("failed to update cstorvolume validation "+
+					"failed on cstorvolume errors: %v", err),
+			)
+			return CVStatusInvalid, err
+		}
+		if customCVObj.IsDRFPending() {
+			c.updateCStorVolumeDRF(cStorVolumeGot)
+		}
+		// blocking call for doing resize operation
+		if customCVObj.IsResizePending() {
+			if !customCVObj.IsConditionPresent(apis.CStorVolumeResizing) {
+				updatedCV, err = c.addResizeConditions(cStorVolumeGot)
+				if err != nil {
+					return CVStatusIgnore, nil
+				}
+				cStorVolumeGot = updatedCV
+			}
+			_, err = c.resizeCStorVolume(cStorVolumeGot)
+			if err != nil {
+				klog.Errorf(
+					"failed to resize cstorvolume %s from %s to %s error %v",
+					cStorVolumeGot.Name,
+					cStorVolumeGot.Status.Capacity.String(),
+					cStorVolumeGot.Spec.Capacity.String(),
+					err,
+				)
+				// return ignore from here so that caller does not
+				// attempt to update CV again. Since resize is handled during
+				// sync time also.
+			}
+			return CVStatusIgnore, nil
+		}
+		eventMessage = fmt.Sprintf("Ignoring changes on volume %s", cStorVolumeGot.Name)
+		c.recorder.Event(
+			cStorVolumeGot, corev1.EventTypeWarning,
+			string(FailureUpdate), eventMessage,
+		)
+
+	case QOpPeriodicSync:
+		var err error
+		lastKnownPhase := cStorVolumeGot.Status.Phase
+		if customCVObj.IsDRFPending() {
+			c.updateCStorVolumeDRF(cStorVolumeGot)
+		}
+		// blocking call for doing resize operation
+		if customCVObj.IsResizePending() {
+			if !customCVObj.IsConditionPresent(apis.CStorVolumeResizing) {
+				updatedCV, err = c.addResizeConditions(cStorVolumeGot)
+				if err != nil {
+					//NOTE: Only after updating CV with resize conditions
+					//process resize porcess
+					goto volumeStatus
+				}
+				cStorVolumeGot = updatedCV
+			}
+			// return same as previous state
+			updatedCV, err = c.resizeCStorVolume(cStorVolumeGot)
+			if err != nil {
+				klog.Errorf(
+					"failed to resize cstorvolume %s from %s to %s error %v",
+					cStorVolumeGot.Name,
+					cStorVolumeGot.Status.Capacity.String(),
+					cStorVolumeGot.Spec.Capacity.String(),
+					err,
+				)
+			} else {
+				cStorVolumeGot = updatedCV
+			}
+		}
+	volumeStatus:
+		volStatus, err := volume.GetVolumeStatus(cStorVolumeGot)
+		if err != nil {
+			klog.Errorf("Error in getting volume status: %s", err.Error())
+			return CVStatusError, nil
+		} else {
+			cStorVolumeGot.Status.Phase = apis.CStorVolumePhase(volStatus.Status)
+			// if replicas are zero set the status as init
+			if len(volStatus.ReplicaStatuses) == 0 {
+				cStorVolumeGot.Status.Phase = apis.CStorVolumePhase(
+					CVStatusInit,
+				)
+			}
+		}
+		cStorVolumeGot.Status.LastUpdateTime = metav1.Now()
+		if cStorVolumeGot.Status.Phase != lastKnownPhase {
+			cStorVolumeGot.Status.LastTransitionTime = cStorVolumeGot.Status.LastUpdateTime
+		}
+
+		cStorVolumeGot.Status.ReplicaStatuses = volStatus.ReplicaStatuses
+		updatedCstorVolume, err := c.clientset.CstorV1().
+			CStorVolumes(cStorVolumeGot.Namespace).
+			Update(cStorVolumeGot)
+		if err != nil {
+			klog.Errorf("Error updating cStorVolume object: %s", err)
+			return CVStatusIgnore, nil
+		}
+		// if there is no change in the phase of the cv only then create event
+		if lastKnownPhase != updatedCstorVolume.Status.Phase {
+			err = c.createSyncUpdateEvent(c.createEventObj(updatedCstorVolume))
+			if err != nil {
+				klog.Errorf("Error creating event : %s", err.Error())
+			}
+		}
+		// Update already made above with latest status.
+		// We return ignore from here so that caller does not
+		// re-attempt to update status with older resource version
+		return CVStatusIgnore, nil
+	case QOpDestroy:
+		return CVStatusIgnore, nil
+	}
+
+	klog.Infof(
+		"Ignoring changes for volume %s for operation %v",
+		cStorVolumeGot.Name,
+		operation,
+	)
+	return CVStatusIgnore, nil
+}
+
+// getEventType returns the event type based on the passed CStorVolumeStatus
+func getEventType(phase CStorVolumeStatus) string {
+	// It is normal event only when phase is Running or Degraded
+	if phase == CVStatusInit ||
+		phase == CVStatusHealthy ||
+		phase == CVStatusDegraded {
+		return corev1.EventTypeNormal
+	}
+	return corev1.EventTypeWarning
+}
+
+// createEventObj creates an object of corev1.Event based on the CstorVolume
+func (c *CStorVolumeController) createEventObj(
+	cstorVolume *apis.CStorVolume,
+) *corev1.Event {
+	return &corev1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cstorVolume.Name + "." + string(cstorVolume.Status.Phase),
+			Namespace: cstorVolume.Namespace,
+		},
+		InvolvedObject: corev1.ObjectReference{
+			Kind:            string(types.CStorVolumeKind),
+			APIVersion:      string(types.CStorAPIVersion),
+			Name:            cstorVolume.Name,
+			Namespace:       cstorVolume.Namespace,
+			UID:             cstorVolume.UID,
+			ResourceVersion: cstorVolume.ResourceVersion,
+		},
+		FirstTimestamp: metav1.Time{Time: time.Now()},
+		LastTimestamp:  metav1.Time{Time: time.Now()},
+		Count:          1,
+		Message:        fmt.Sprintf(EventMsgFormatter, cstorVolume.Status.Phase),
+		Reason:         string(cstorVolume.Status.Phase),
+		Type:           getEventType(CStorVolumeStatus(cstorVolume.Status.Phase)),
+		Source: corev1.EventSource{
+			Component: os.Getenv("POD_NAME"),
+			Host:      os.Getenv("NODE_NAME"),
+		},
+	}
+}
+
+// createSyncUpdateEvent tries to get the eventGot if present it updates
+// the lastTimestamp to current time and increases count by one,
+// if absent, creates the given eventGot
+func (c *CStorVolumeController) createSyncUpdateEvent(
+	eventGot *corev1.Event,
+) (err error) {
+	client := c.kubeclientset
+	event, err := client.CoreV1().
+		Events(eventGot.Namespace).
+		Get(eventGot.Name, metav1.GetOptions{})
+	// error could be due to missing object or some other reason
+	// we ignore error if it is due to missing object
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		return err
+	}
+	// checking name as sometimes we receive an empty event object instead of nil
+	if event == nil || len(event.Name) == 0 {
+		// create event
+		event, err = client.CoreV1().Events(eventGot.Namespace).Create(eventGot)
+	} else {
+		event.Count = event.Count + 1
+		event.LastTimestamp = metav1.Time{Time: time.Now()}
+		// update the event with increased count and new timestamp
+		_, err = client.CoreV1().Events(eventGot.Namespace).Update(event)
+	}
+	return
+}
+
+// enqueueCstorVolume takes a CStorVolume resource and converts it into a
+// namespace/name string which is then put onto the work queue. This method
+// should *not* be passed resources of any type other than CStorVolumes.
+func (c *CStorVolumeController) enqueueCStorVolume(
+	obj *apis.CStorVolume,
+	q QueueLoad,
+) {
+	var key string
+	var err error
+	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+		klog.Errorf(
+			"Failed to enqueue %v operation for CStorVolume resource %s",
+			q.Operation,
+			q.Key,
+		)
+		runtime.HandleError(err)
+		return
+	}
+	q.Key = key
+	c.workqueue.AddRateLimited(q)
+}
+
+// getVolumeResource returns object corresponding to the resource key
+func (c *CStorVolumeController) getVolumeResource(
+	key string,
+) (*apis.CStorVolume, error) {
+	// Convert the key(namespace/name) string into a distinct name
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		runtime.HandleError(
+			fmt.Errorf("Invalid resource key: %s, err: %v", key, err),
+		)
+		return nil, err
+	}
+
+	if len(namespace) == 0 {
+		namespace = string(DefaultNameSpace)
+	}
+
+	cStorVolumeGot, err := c.clientset.CstorV1().
+		CStorVolumes(namespace).
+		Get(name, metav1.GetOptions{})
+	if err != nil {
+		// The cStorVolume resource may no longer exist, in which case we stop
+		// processing.
+		if k8serrors.IsNotFound(err) {
+			runtime.HandleError(
+				fmt.Errorf(
+					"cStorVolumeGot '%s' in work queue no longer exists",
+					key,
+				),
+			)
+			return nil, err
+		}
+
+		return nil, err
+	}
+	return cStorVolumeGot, nil
+}
+
+// addResizeConditions will add resize condition to cstorvolume
+func (c *CStorVolumeController) addResizeConditions(
+	cvObj *apis.CStorVolume) (*apis.CStorVolume, error) {
+	resizeConditions := apis.GetResizeCondition()
+	var eventMessage string
+	cvObj.Status.Conditions = apis.
+		Conditions(cvObj.Status.Conditions).
+		AddCondition(resizeConditions)
+	updatedCVObj, err := c.clientset.
+		CstorV1().
+		CStorVolumes(cvObj.Namespace).
+		Update(cvObj)
+	if err != nil {
+		// Generate event and return
+		eventMessage = fmt.Sprintf(
+			"failed to update resize conditions error %v",
+			err,
+		)
+		c.recorder.Event(
+			cvObj,
+			corev1.EventTypeWarning,
+			string(FailureUpdate),
+			eventMessage,
+		)
+		return nil, errors.New(eventMessage)
+	}
+	c.recorder.Event(
+		cvObj,
+		corev1.EventTypeNormal,
+		string(SuccessUpdated),
+		"Updated resize conditions",
+	)
+	return updatedCVObj, nil
+}
+
+// updateCStorVolumeDRF updates volume configurations to changes made to
+// cStorVolume CR.
+// If no.of entries in cStorvolume spec.ReplicaDetails.KnownReplicas is less
+// than entries in status.ReplicaDetails.knownReplicas then the changes are
+// identified for scaledown
+// process.
+// If no.of entries in cStorVolume spec.ReplicaDetails.KnownReplicas is equal to
+// no.of entries in stauts.ReplicaDetails.KnownReplicas then the changes are
+// identified for scaleup process(Only one process should be triggered either
+// scaleup or scaledown).
+// NOTE: No.of entries in spec.KnownReplicas and status.knownReplicas will vary
+// only in the scaledown process else always it will be same
+func (c *CStorVolumeController) updateCStorVolumeDRF(
+	cStorVolume *apis.CStorVolume) {
+	// make changes to copyCV instead of cStorVolume
+	copyCV := cStorVolume.DeepCopy()
+	var err error
+	specKnownReplicaCount := len(copyCV.Spec.ReplicaDetails.KnownReplicas)
+	statusKnownReplicaCount := len(copyCV.Status.ReplicaDetails.KnownReplicas)
+	if specKnownReplicaCount < statusKnownReplicaCount {
+		copyCV, err = c.triggerScaleDownProcess(copyCV)
+	} else if specKnownReplicaCount == statusKnownReplicaCount {
+		copyCV, err = c.triggerScaleUpProcess(copyCV)
+	} else {
+		// entries in spec.ReplicaDetails.KnownReplicas can't be greater than
+		// status.ReplicaDetails.KnownReplicas(unkown changes)
+		err = errors.Errorf("unkown changes are made to cStorVolume no.of "+
+			"entries in spec.ReplicaDetails.knownReplicas are %d and no.of entries "+
+			"in status.ReplicaDetails.KnownReplicas are %d",
+			specKnownReplicaCount,
+			statusKnownReplicaCount)
+	}
+	if err != nil {
+		c.recorder.Event(cStorVolume,
+			corev1.EventTypeWarning,
+			string(FailureUpdate),
+			fmt.Sprintf("failed to update desired replication factor to %d"+
+				" Error: %v", cStorVolume.Spec.DesiredReplicationFactor, err,
+			),
+		)
+		return
+	}
+	cStorVolume = copyCV
+	c.recorder.Event(cStorVolume,
+		corev1.EventTypeNormal,
+		string(SuccessUpdated),
+		fmt.Sprintf("Successfully updated the desiredReplicationFactor to %d",
+			cStorVolume.Spec.DesiredReplicationFactor),
+	)
+}
+
+// triggerScaleUpProcess returns error in case of any error occurred during scaleup
+// process else it will return cstorvolume object
+func (c *CStorVolumeController) triggerScaleUpProcess(
+	cStorVolume *apis.CStorVolume) (*apis.CStorVolume, error) {
+	err := volume.ExecuteDesiredReplicationFactorCommand(
+		cStorVolume,
+		volume.GetScaleUpCommand,
+	)
+	if err != nil {
+		return nil, err
+	}
+	fileOperator := util.RealFileOperator{}
+	updatedConfig := fmt.Sprintf("%s %d",
+		types.DesiredReplicationFactorKey,
+		cStorVolume.Spec.DesiredReplicationFactor)
+	types.ConfFileMutex.Lock()
+	err = fileOperator.Updatefile(types.IstgtConfPath,
+		updatedConfig,
+		types.DesiredReplicationFactorKey,
+		0644,
+	)
+	types.ConfFileMutex.Unlock()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to update conf file with "+
+			"desiredReplicationFactor %d", cStorVolume.Spec.DesiredReplicationFactor)
+	}
+	return cStorVolume, nil
+}
+
+// triggerScaleDownProcess returns error in case of any error during the scaledown
+// process else it will return cstorvolume object. Following steps are executed
+// 1. Verify whether all the replicas are healthy other than removing replica.
+// 2. If step1 is passed then update the istgt.conf file with latest
+//    information.
+// 3. Update cStorVolume CR(replicationFactor, ConsistencyFactor and known
+//    replica list.
+// 4. Trigger istgtcontrol command (istgtcontrol drf <vol_name> <value>
+//    <remaining_replica_list>
+// In triggerScaleDownProcess cStorVolumeAPI is used to access fields in CV
+// object and cStorvolume is used to access methods of cStorVolume
+func (c *CStorVolumeController) triggerScaleDownProcess(
+	cStorVolumeAPI *apis.CStorVolume) (*apis.CStorVolume, error) {
+	volumeStatus, err := volume.GetVolumeStatus(cStorVolumeAPI)
+	if err != nil {
+		return nil, err
+	}
+	if CStorVolumeStatus(volumeStatus.Status) != CVStatusHealthy {
+		return nil, errors.Errorf("cStorvolume is not in healthy to trigger scaledown")
+	}
+
+	cStorVolume := apis.NewCStorVolumeObj(cStorVolumeAPI)
+	if !cStorVolume.AreSpecReplicasHealthy(volumeStatus) {
+		return nil, errors.Errorf("spec replicas are not in healthy state")
+	}
+	replicaID := cStorVolume.GetRemovingReplicaID()
+	if replicaID == "" {
+		return nil, errors.Errorf("removing replica is not present in volume status")
+	}
+	if cStorVolumeAPI.Spec.DesiredReplicationFactor < cStorVolumeAPI.Spec.ReplicationFactor {
+		configData := cStorVolume.BuildScaleDownConfigData(replicaID)
+		fileOperator := util.RealFileOperator{}
+		types.ConfFileMutex.Lock()
+		err = fileOperator.UpdateOrAppendMultipleLines(
+			types.IstgtConfPath,
+			configData,
+			0644)
+		types.ConfFileMutex.Unlock()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to update istgt conf file %v", configData)
+		}
+		cStorVolumeAPI.Spec.ReplicationFactor = cStorVolumeAPI.Spec.DesiredReplicationFactor
+		cStorVolumeAPI.Spec.ConsistencyFactor = (cStorVolumeAPI.Spec.ReplicationFactor)/2 + 1
+		cStorVolumeAPI, err = c.clientset.
+			CstorV1().
+			CStorVolumes(cStorVolumeAPI.Namespace).
+			Update(cStorVolumeAPI)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to update cstorvolume")
+		}
+	}
+	err = volume.ExecuteDesiredReplicationFactorCommand(
+		cStorVolumeAPI,
+		volume.GetScaleDownCommand,
+	)
+	if err != nil {
+		return nil, err
+	}
+	cStorVolumeAPI.Status.ReplicaDetails.KnownReplicas =
+		cStorVolumeAPI.Spec.ReplicaDetails.KnownReplicas
+	cStorVolumeAPI, err = c.clientset.
+		CstorV1().
+		CStorVolumes(cStorVolumeAPI.Namespace).
+		Update(cStorVolumeAPI)
+	if err != nil {
+		return nil, errors.Wrapf(err,
+			"failed to update cstorvolume status with scaledown replica information",
+		)
+	}
+	return cStorVolumeAPI, nil
+}
+
+// resizeCStorVolume resize the cstorvolume and if any error occurs updates the
+// resize conditions of cstorvolume either with success or failure message
+func (c *CStorVolumeController) resizeCStorVolume(
+	cStorVolume *apis.CStorVolume) (*apis.CStorVolume, error) {
+	var eventMessage string
+	var err error
+	isResizeSuccess := false
+	copyCV := cStorVolume.DeepCopy()
+
+	customCVObj := apis.NewCStorVolumeObj(copyCV)
+	// NOTE: We are processing resize process only after updating CV resize conditions
+	// so in below call there is no chance of geting new CVCondition instance
+	conditionStatus := customCVObj.GetCVCondition(apis.CStorVolumeResizing)
+	desiredCap := copyCV.Spec.Capacity.String()
+
+	err = volume.ResizeTargetVolume(copyCV)
+	if err != nil {
+		eventMessage = fmt.Sprintf(
+			"failed to resize cstorvolume from %s to %s error %v",
+			cStorVolume.Status.Capacity.String(),
+			desiredCap,
+			err,
+		)
+		c.recorder.Event(copyCV, corev1.EventTypeWarning, string(FailureUpdate), eventMessage)
+		conditionStatus.Message = eventMessage
+		copyCV.Status.Conditions = apis.
+			Conditions(copyCV.Status.Conditions).
+			UpdateCondition(conditionStatus)
+	} else {
+		// In success case remove resize condition
+		copyCV.Status.Conditions = apis.
+			Conditions(copyCV.Status.Conditions).
+			DeleteCondition(conditionStatus)
+		copyCV.Status.Capacity = copyCV.Spec.Capacity
+		isResizeSuccess = true
+	}
+
+	newCV, cvUpdateErr := c.clientset.
+		CstorV1().
+		CStorVolumes(copyCV.Namespace).
+		Update(copyCV)
+	if cvUpdateErr == nil && isResizeSuccess {
+		eventMessage = fmt.Sprintf(
+			"successfully resized volume from %s to %s",
+			cStorVolume.Status.Capacity.String(),
+			desiredCap,
+		)
+		c.recorder.Event(copyCV, corev1.EventTypeNormal, string(SuccessUpdated), eventMessage)
+	}
+	return newCV, cvUpdateErr
+}
+
+// IsValidCStorVolumeMgmt is to check if the volume request
+// is for particular pod/application.
+func IsValidCStorVolumeMgmt(cStorVolume *apis.CStorVolume) bool {
+	if os.Getenv(string(OpenEBSIOCStorVolumeID)) == string(cStorVolume.UID) {
+		klog.V(2).Infof(
+			"Right watcher for the cstor volume resource with id : %s",
+			cStorVolume.UID,
+		)
+		return true
+	}
+	klog.V(2).Infof(
+		"Wrong watcher for the cstor volume resource with id : %s",
+		cStorVolume.UID,
+	)
+	return false
+}
+
+// IsDestroyEvent is to check if the call is for cStorVolume destroy.
+func IsDestroyEvent(cStorVolume *apis.CStorVolume) bool {
+	if cStorVolume.ObjectMeta.DeletionTimestamp != nil {
+		klog.Infof(
+			"CStor volume destroy event for volume : %s",
+			cStorVolume.Name,
+		)
+		return true
+	}
+	klog.Infof("CStor volume modify event for volume : %s", cStorVolume.Name)
+	return false
+}
+
+// IsOnlyStatusChange is to check only status change of cStorVolume object.
+func IsOnlyStatusChange(oldCStorVolume, newCStorVolume *apis.CStorVolume) bool {
+	if reflect.DeepEqual(oldCStorVolume.Spec, newCStorVolume.Spec) &&
+		!reflect.DeepEqual(oldCStorVolume.Status, newCStorVolume.Status) {
+		klog.Infof(
+			"Only status changed for cstor volume : %s",
+			newCStorVolume.Name,
+		)
+		return true
+	}
+	klog.Infof("No status changed for cstor volume : %s", newCStorVolume.Name)
+	return false
+}
+
+func (c *CStorVolumeController) reconcileVersion(cv *apis.CStorVolume) (*apis.CStorVolume, error) {
+	var err error
+	// the below code uses DeepCopy() to have the state of object just before
+	// any update call is done so that on failure the last state object can be returned
+	if cv.VersionDetails.Status.Current != cv.VersionDetails.Desired {
+		if !apis.IsCurrentVersionValid(cv.VersionDetails.Status.Current) {
+			return cv, errors.Errorf("invalid current version %s", cv.VersionDetails.Status.Current)
+		}
+		if !apis.IsDesiredVersionValid(cv.VersionDetails.Desired) {
+			return cv, errors.Errorf("invalid desired version %s", cv.VersionDetails.Desired)
+		}
+		cvObject := cv.DeepCopy()
+		if cv.VersionDetails.Status.State != apis.ReconcileInProgress {
+			cvObject.VersionDetails.Status.SetInProgressStatus()
+			cvObject, err = c.clientset.CstorV1().
+				CStorVolumes(cvObject.Namespace).Update(cvObject)
+			if err != nil {
+				return cv, err
+			}
+		}
+		path := strings.Split(cvObject.VersionDetails.Status.Current, "-")[0]
+		u := &upgradeParams{
+			cv:     cvObject,
+			client: c.clientset,
+		}
+		// Get upgrade function for corresponding path, if path does not
+		// exits then no upgrade is required and funcValue will be nil.
+		funcValue := upgradeMap[path]
+		if funcValue != nil {
+			cvObject, err = funcValue(u)
+			if err != nil {
+				return cvObject, err
+			}
+		}
+		cv = cvObject.DeepCopy()
+		cvObject.VersionDetails.SetSuccessStatus()
+		cvObject, err = c.clientset.CstorV1().
+			CStorVolumes(cvObject.Namespace).Update(cvObject)
+		if err != nil {
+			return cv, err
+		}
+		return cvObject, nil
+	}
+	return cv, nil
+}
+
+// populateVersion assigns VersionDetails for old cv object
+func (c *CStorVolumeController) populateVersion(cv *apis.CStorVolume) (
+	*apis.CStorVolume, error,
+) {
+	v := cv.Labels[string(types.OpenEBSVersionLabelKey)]
+	// 1.3.0 onwards new CV will have the field populated during creation
+	if v < v130 && cv.VersionDetails.Status.Current == "" {
+		cvObj := cv.DeepCopy()
+		cvObj.VersionDetails.Status.Current = v
+		cvObj.VersionDetails.Desired = v
+		cvObj, err := c.clientset.CstorV1().CStorVolumes(cvObj.Namespace).
+			Update(cvObj)
+
+		if err != nil {
+			return cv, err
+		}
+		klog.Infof("Version %s added on cstorvolume %s", v, cvObj.Name)
+		return cvObj, nil
+	}
+	return cv, nil
+}
+
+func setDesiredRF(u *upgradeParams) (*apis.CStorVolume, error) {
+	cv := u.cv
+	// Set new field DesiredReplicationFactor as ReplicationFactor
+	cv.Spec.DesiredReplicationFactor = cv.Spec.ReplicationFactor
+	return cv, nil
+}

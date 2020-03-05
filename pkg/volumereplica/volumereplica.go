@@ -20,14 +20,15 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"github.com/openebs/maya/pkg/alertlog"
+
+	"github.com/openebs/cstor-operators/pkg/log/alertlog"
 
 	"encoding/json"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/debug"
 	"github.com/openebs/cstor-operators/pkg/hash"
-	"github.com/openebs/api/pkg/util"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -491,20 +492,20 @@ func parseCapacityUnit(capacity string) string {
 // Capacity finds the capacity of the volume.
 // The ouptut of command executed is as follows:
 /*
-root@cstor-sparse-pool-6dft-5b5c78ccc7-dls8s:/# zfs get used,logicalused cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087
-NAME                                                                                 PROPERTY     VALUE  SOURCE
-cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  used         6K     -
-cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  logicalused  6K     -
+root@cstor-sparse-pool-6dft-5b5c78ccc7-dls8s:/# zfs get used,logicalreferenced cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087
+NAME                                                                                 PROPERTY         VALUE  SOURCE
+cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  used               6K     -
+cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  logicalreferenced  6K     -
 */
-func Capacity(volName string) (*cstor.CStorVolumeCapacityAttr, error) {
-	capacityVolStr := []string{"get", "used,logicalused", volName}
+func Capacity(volName string) (*cstor.CStorVolumeCapacityDetails, error) {
+	capacityVolStr := []string{"get", "used,logicalreferenced", volName}
 	stdoutStderr, err := RunnerVar.RunCombinedOutput(VolumeReplicaOperator, capacityVolStr...)
 	if err != nil {
 		klog.Errorf("Unable to get volume capacity: %v", string(stdoutStderr))
 		return nil, err
 	}
 	poolCapacity := capacityOutputParser(string(stdoutStderr))
-	if strings.TrimSpace(poolCapacity.TotalAllocated) == "" || strings.TrimSpace(poolCapacity.Used) == "" {
+	if strings.TrimSpace(poolCapacity.Total) == "" || strings.TrimSpace(poolCapacity.Used) == "" {
 		return nil, fmt.Errorf("unable to get volume capacity from capacity parser")
 	}
 	return poolCapacity, nil
@@ -574,21 +575,21 @@ func ZfsToCvrStatusMapper(zfsstatus string, quorum int) string {
 }
 
 /*
-root@cstor-sparse-pool-6dft-5b5c78ccc7-dls8s:/# zfs get used,logicalused cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087
-NAME                                                                                 PROPERTY     VALUE  SOURCE
-cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  used         6K     -
-cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  logicalused  6K     -
+root@cstor-sparse-pool-6dft-5b5c78ccc7-dls8s:/# zfs get used,logicalreferenced cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087
+NAME                                                                                 PROPERTY          VALUE  SOURCE
+cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  used               6K     -
+cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  logicalreferenced  6K     -
 */
 // capacityOutputParser parse output of `zfs get` command to extract the capacity of the pool.
 // ToDo: Need to find some better way e.g contract for zfs command outputs.
-func capacityOutputParser(output string) *cstor.CStorVolumeCapacityAttr {
+func capacityOutputParser(output string) *cstor.CStorVolumeCapacityDetails {
 	var outputStr []string
 	// Initialize capacity object.
 	// 'TotalAllocated' value(on cvr) is filled from the value of 'used' property in 'zfs get' output.
-	// 'Used' value(on cvr) is filled from the value of 'logicalused' property in 'zfs get' output.
-	capacity := &cstor.CStorVolumeCapacityAttr{
-		TotalAllocated: "",
-		Used:           "",
+	// 'Used' value(on cvr) is filled from the value of 'logicalreferenced' property in 'zfs get' output.
+	capacity := &cstor.CStorVolumeCapacityDetails{
+		Total: "",
+		Used:  "",
 	}
 	if strings.TrimSpace(string(output)) != "" {
 		outputStr = strings.Split(string(output), "\n")
@@ -598,7 +599,7 @@ func capacityOutputParser(output string) *cstor.CStorVolumeCapacityAttr {
 			// If the array 'poolCapacityArrAlloc' and 'poolCapacityArrUsed' is having elements greater than
 			// or less than 4 it might give wrong values and throw out of bound exception.
 			if len(poolCapacityArrAlloc) == 4 && len(poolCapacityArrUsed) == 4 {
-				capacity.TotalAllocated = strings.TrimSpace(poolCapacityArrAlloc[2])
+				capacity.Total = strings.TrimSpace(poolCapacityArrAlloc[2])
 				capacity.Used = strings.TrimSpace(poolCapacityArrUsed[2])
 			}
 		}

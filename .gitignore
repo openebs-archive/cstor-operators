@@ -1,0 +1,5 @@
+# Compiled binaries and deployment files
+/bin/
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out

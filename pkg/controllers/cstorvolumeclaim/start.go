@@ -29,7 +29,7 @@ import (
 
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	informers "github.com/openebs/api/pkg/client/informers/externalversions"
-	leader "github.com/openebs/maya/pkg/kubernetes/leaderelection"
+	leader "github.com/openebs/api/pkg/kubernetes/leaderelection"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -37,14 +37,14 @@ import (
 )
 
 var (
-	masterURL  string
-	kubeconfig string
 	// lease lock resource name for lease API resource
 	leaderElectionLockName = "cvc-controller-leader"
 )
 
 // Command line flags
 var (
+	kubeconfig              = flag.String("kubeconfig", "", "Absolute path to the kubeconfig file. Required only when running out of cluster.")
+	resyncPeriod            = flag.Duration("resync-period", 60*time.Second, "Resync interval of the controller.")
 	leaderElection          = flag.Bool("leader-election", false, "Enables leader election.")
 	leaderElectionNamespace = flag.String("leader-election-namespace", "", "The namespace where the leader election resource exists. Defaults to the pod namespace if not set.")
 )
@@ -60,7 +60,7 @@ func Start() error {
 	flag.Parse()
 
 	// Get in cluster config
-	cfg, err := getClusterConfig(kubeconfig)
+	cfg, err := getClusterConfig(*kubeconfig)
 	if err != nil {
 		return errors.Wrap(err, "error building kubeconfig")
 	}
@@ -146,16 +146,9 @@ func Start() error {
 
 // GetClusterConfig return the config for k8s.
 func getClusterConfig(kubeconfig string) (*rest.Config, error) {
-	cfg, err := rest.InClusterConfig()
-	if err != nil {
-		klog.Errorf("Failed to get k8s Incluster config. %+v", err)
-		if kubeconfig == "" {
-			return nil, errors.Wrap(err, "kubeconfig is empty")
-		}
-		cfg, err = clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "error building kubeconfig")
-		}
+
+	if kubeconfig != "" {
+		return clientcmd.BuildConfigFromFlags("", kubeconfig)
 	}
-	return cfg, err
+	return rest.InClusterConfig()
 }

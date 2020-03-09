@@ -17,21 +17,22 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"github.com/openebs/api/pkg/apis/types"
 	"strings"
+
+	"github.com/openebs/api/pkg/apis/types"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	zpool "github.com/openebs/api/pkg/internalapis/apis/cstor"
+	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
-	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
-func (oc *OperationsConfig)getPathForBdevList(bdevs []cstor.CStorPoolClusterBlockDevice) (map[string][]string, error) {
+func (oc *OperationsConfig) getPathForBdevList(bdevs []cstor.CStorPoolClusterBlockDevice) (map[string][]string, error) {
 	var err error
 
 	vdev := make(map[string][]string, len(bdevs))
@@ -46,10 +47,10 @@ func (oc *OperationsConfig)getPathForBdevList(bdevs []cstor.CStorPoolClusterBloc
 	return vdev, err
 }
 
-func (oc *OperationsConfig)getPathForBDev(bdev string) ([]string, error) {
+func (oc *OperationsConfig) getPathForBDev(bdev string) ([]string, error) {
 	var path []string
-	// TODO: replace `NAMESPACE` with env variable from CSP deployment
-	bd,err :=oc.openebsclientset.
+	// TODO: replace `NAMESPACE` with env variable from CSPI deployment
+	bd, err := oc.openebsclientset.
 		OpenebsV1alpha1().
 		BlockDevices(util.GetEnv(util.Namespace)).
 		Get(bdev, metav1.GetOptions{})
@@ -73,6 +74,7 @@ func getPathForBDevFromBlockDevice(bd *openebsapis.BlockDevice) []string {
 	return paths
 }
 
+// checkIfPoolPresent returns true if pool is available for operations
 func checkIfPoolPresent(name string) bool {
 	if _, err := zfs.NewPoolGetProperty().
 		WithParsableMode(true).
@@ -139,7 +141,7 @@ func checkIfDeviceUsed(path []string, t zpool.Topology) (string, bool) {
 	return usedPath, isUsed
 }
 
-func (oc *OperationsConfig)checkIfPoolNotImported(cspi *cstor.CStorPoolInstance) (string, bool, error) {
+func (oc *OperationsConfig) checkIfPoolNotImported(cspi *cstor.CStorPoolInstance) (string, bool, error) {
 	var cmdOut []byte
 	var err error
 
@@ -151,36 +153,22 @@ func (oc *OperationsConfig)checkIfPoolNotImported(cspi *cstor.CStorPoolInstance)
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	if len(devID) != 0 {
 		cmdOut, err = zfs.NewPoolImport().WithDirectory(devID).Execute()
-		if strings.Contains(string(cmdOut), PoolName(cspi)) {
+		if strings.Contains(string(cmdOut), PoolName()) {
 			return string(cmdOut), true, nil
 		}
 	}
 	// there are some cases when import is succesful but zpool command return
 	// noisy errors, hence better to check contains before return error
 	cmdOut, err = zfs.NewPoolImport().Execute()
-	if strings.Contains(string(cmdOut), PoolName(cspi)) {
+	if strings.Contains(string(cmdOut), PoolName()) {
 		return string(cmdOut), true, nil
 	}
 	return string(cmdOut), false, err
 }
 
-// ToDo:
-//// getDeviceType will return type of device from raidGroup
-//// It can be either log/cache/stripe(/"")
-//func getDeviceType(r cstor.RaidGroup) string {
-//	if r.IsReadCache {
-//		return DeviceTypeReadCache
-//	} else if r.IsSpare {
-//		return DeviceTypeSpare
-//	} else if r.IsWriteCache {
-//		return DeviceTypeWriteCache
-//	}
-//	return DeviceTypeEmpty
-//}
-
 // getBlockDeviceClaimList returns list of block device claims based on the
 // label passed to the function
-func (oc *OperationsConfig)getBlockDeviceClaimList(key, value string) (
+func (oc *OperationsConfig) getBlockDeviceClaimList(key, value string) (
 	*openebsapis.BlockDeviceClaimList, error) {
 	namespace := util.GetEnv(util.Namespace)
 	bdcClient := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(namespace)
@@ -199,7 +187,7 @@ func (oc *OperationsConfig)getBlockDeviceClaimList(key, value string) (
 
 func executeZpoolDump(cspi *cstor.CStorPoolInstance) (zpool.Topology, error) {
 	return zfs.NewPoolDump().
-		WithPool(PoolName(cspi)).
+		WithPool(PoolName()).
 		WithStripVdevPath().
 		Execute()
 }
@@ -274,10 +262,10 @@ func getVdevFromPath(path string, topology zpool.Topology) (zpool.Vdev, bool) {
 // detached from pool
 // newObj is block device claim of current block device object which is in use
 // by pool
-func (oc *OperationsConfig)cleanUpReplacementMarks(oldObj, newObj *openebsapis.BlockDeviceClaim) error {
+func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.BlockDeviceClaim) error {
 	if oldObj != nil {
 		oldObj.RemoveFinalizer(types.CSPCFinalizer)
-		err:= oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(newObj.Namespace).Delete(oldObj.Name, &metav1.DeleteOptions{})
+		err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(newObj.Namespace).Delete(oldObj.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrapf(
 				err,

@@ -17,22 +17,25 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/pool"
-	"github.com/openebs/cstor-operators/pkg/pool-manager-utils"
+	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
-// Import will import pool for given CSP object.
+// Import will import pool for given CSPI object.
 // It will also set `cachefile` property for that pool
 // if it is mentioned in object
-// It will return -
+// It will return following thing
 // - If pool is imported or not
 // - If any error occurred during import operation
-func (oc *OperationsConfig)Import(cspi *cstor.CStorPoolInstance) (bool, error) {
-	if poolExist := checkIfPoolPresent(PoolName(cspi)); poolExist {
+func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) {
+	if poolExist := checkIfPoolPresent(PoolName()); poolExist {
 		return true, nil
 	}
 
@@ -47,15 +50,15 @@ func (oc *OperationsConfig)Import(cspi *cstor.CStorPoolInstance) (bool, error) {
 		return false, err
 	}
 
-	klog.Infof("Importing pool %s %s", string(cspi.GetUID()), PoolName(cspi))
+	klog.Infof("Importing pool %s %s", string(cspi.GetUID()), PoolName())
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
-	cacheFile:=types.CStorPoolBasePath+types.CacheFileName
+	cacheFile := types.CStorPoolBasePath + types.CacheFileName
 	if len(devID) != 0 {
 		cmdOut, err = zfs.NewPoolImport().
 			WithCachefile(cacheFile).
 			WithProperty("cachefile", cacheFile).
 			WithDirectory(devID).
-			WithPool(PoolName(cspi)).
+			WithPool(PoolName()).
 			Execute()
 		if err == nil {
 			poolImported = true
@@ -70,7 +73,7 @@ func (oc *OperationsConfig)Import(cspi *cstor.CStorPoolInstance) (bool, error) {
 		cmdOut, err = zfs.NewPoolImport().
 			WithCachefile(cacheFile).
 			WithProperty("cachefile", cacheFile).
-			WithPool(PoolName(cspi)).
+			WithPool(PoolName()).
 			Execute()
 	}
 
@@ -80,7 +83,11 @@ func (oc *OperationsConfig)Import(cspi *cstor.CStorPoolInstance) (bool, error) {
 		return false, err
 	}
 
-	klog.Infof("Pool Import successful: %v", string(PoolName(cspi)))
+	common.SyncResources.IsImported = true
+	oc.recorder.Event(cspi,
+		corev1.EventTypeNormal,
+		"Pool "+string(common.SuccessImported),
+		fmt.Sprintf("Pool Import successful: %v", PoolName()))
 	return true, nil
 }
 

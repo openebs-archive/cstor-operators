@@ -19,6 +19,10 @@ package app
 import (
 	"context"
 	"flag"
+	"os"
+	"strconv"
+	"time"
+
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	informers "github.com/openebs/api/pkg/client/informers/externalversions"
 	leader "github.com/openebs/api/pkg/kubernetes/leaderelection"
@@ -29,10 +33,13 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
+<<<<<<< HEAD
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
+=======
+>>>>>>> (WIP) fix(cspi-controller): add missing functionality with latest schema changes in CSPI
 )
 
 var (
@@ -70,7 +77,6 @@ func Start() error {
 	if err != nil {
 		return errors.Wrap(err, "error building kubernetes clientset")
 	}
-
 
 	// Building OpenEBS Clientset
 	openebsClient, err := clientset.NewForConfig(cfg)
@@ -116,7 +122,6 @@ func Start() error {
 		close(stopCh)
 	}
 
-
 	if !*leaderElection {
 		run(context.TODO())
 	} else {
@@ -129,7 +134,6 @@ func Start() error {
 		}
 	}
 	return nil
-
 }
 
 // GetClusterConfig return the config for k8s.

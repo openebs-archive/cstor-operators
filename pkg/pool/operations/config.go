@@ -19,6 +19,7 @@ package v1alpha2
 import (
 	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
 )
 
 type OperationsConfig struct {
@@ -27,12 +28,17 @@ type OperationsConfig struct {
 
 	// openebsclientset is a openebs custom resource package generated for custom API group.
 	openebsclientset openebsclientset.Interface
+
+	// recorder is an event recorder for recording Event resources to the
+	// Kubernetes API.
+	recorder record.EventRecorder
 }
 
 func NewOperationsConfig() *OperationsConfig {
 	return &OperationsConfig{}
 }
 
+// WithKubeClientSet fills the kubernetes client to perform operation on kubernetes resorces
 func (oc *OperationsConfig) WithKubeClientSet(ks kubernetes.Interface) *OperationsConfig {
 	oc.kubeclientset = ks
 	return oc
@@ -40,6 +46,12 @@ func (oc *OperationsConfig) WithKubeClientSet(ks kubernetes.Interface) *Operatio
 
 // withOpenEBSClient fills openebs client to controller object.
 func (oc *OperationsConfig) WithOpenEBSClient(ocs openebsclientset.Interface) *OperationsConfig {
-	oc.openebsclientset=ocs
+	oc.openebsclientset = ocs
+	return oc
+}
+
+// withRecorder fills recorder to generate events on CSPI
+func (oc *OperationsConfig) WithRecorder(recorder record.EventRecorder) *OperationsConfig {
+	oc.recorder = recorder
 	return oc
 }

@@ -28,11 +28,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
+	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 
-	clientset  "github.com/openebs/api/pkg/client/clientset/versioned"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	openebsScheme "github.com/openebs/api/pkg/client/clientset/versioned/scheme"
 	informers "github.com/openebs/api/pkg/client/informers/externalversions"
 )
@@ -100,7 +100,7 @@ func NewCStorPoolInstanceController(
 		recorder:                recorder,
 	}
 
-	klog.Info("Setting up event handlers for CSP")
+	klog.Info("Setting up event handlers for CSPI")
 
 	// Set up an event handler for when CstorPoolInstance resources change.
 	cStorPoolInstanceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -119,6 +119,16 @@ func NewCStorPoolInstanceController(
 				return
 			}
 			controller.enqueueCStorPoolInstance(cspi)
+		},
+		DeleteFunc: func(obj interface{}) {
+			cspi, ok := obj.(*cstor.CStorPoolInstance)
+			// Only handle if valid
+			if ok {
+				if !IsRightCStorPoolInstanceMgmt(cspi) {
+					return
+				}
+				controller.enqueueCStorPoolInstance(cspi)
+			}
 		},
 	})
 

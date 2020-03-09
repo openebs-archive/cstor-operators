@@ -18,10 +18,11 @@ package cspicontroller
 
 import (
 	"fmt"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
-	"github.com/openebs/cstor-operators/pkg/pool-manager-utils"
+	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -46,16 +47,16 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 	if IsReconcileDisabled(cspi) {
 		c.recorder.Event(cspi,
 			corev1.EventTypeWarning,
-			fmt.Sprintf("reconcile is disabled via %q annotation", string(types.OpenEBSDisableReconcileLabelKey)),
+			fmt.Sprintf("reconcile is disabled via %q annotation", types.OpenEBSDisableReconcileLabelKey),
 			"Skipping reconcile")
 		return nil
 	}
 
-	if IsDestroyed(cspi) {
+	if cspi.IsDestroyed() {
 		return c.destroy(cspi)
 	}
 
-	err = c.addPoolProtectionFinalizer(cspi)
+	cspiObj, err := c.addPoolProtectionFinalizer(cspi)
 	if err != nil {
 		c.recorder.Event(cspi,
 			corev1.EventTypeWarning,
@@ -63,13 +64,17 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 			err.Error())
 		return nil
 	}
+	cspi = cspiObj
 
 	// take a lock for common package for updating variables
 	common.SyncResources.Mux.Lock()
 
 	// Instantiate the pool operation config
 	// ToDo: NewOperationsConfig is used a other handlers e.g. destroy: fix the repeatability.
-	oc := zpool.NewOperationsConfig().WithKubeClientSet(c.kubeclientset).WithOpenEBSClient(c.clientset)
+	oc := zpool.NewOperationsConfig().
+		WithKubeClientSet(c.kubeclientset).
+		WithOpenEBSClient(c.clientset).
+		WithRecorder(c.recorder)
 
 	// try to import pool
 	isImported, err = oc.Import(cspi)
@@ -94,7 +99,7 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 		return nil
 	}
 
-	if IsEmptyStatus(cspi) || IsPendingStatus(cspi) {
+	if cspi.IsEmptyStatus() || cspi.IsPendingStatus() {
 		err = oc.Create(cspi)
 		if err != nil {
 			// We will try to create it in next event
@@ -135,7 +140,9 @@ func (c *CStorPoolInstanceController) destroy(cspi *cstor.CStorPoolInstance) err
 		return nil
 	}
 	// Instantiate the pool operation config
-	oc := zpool.NewOperationsConfig().WithKubeClientSet(c.kubeclientset).WithOpenEBSClient(c.clientset)
+	oc := zpool.NewOperationsConfig().
+		WithKubeClientSet(c.kubeclientset).
+		WithOpenEBSClient(c.clientset)
 	// DeletePool is to delete cstor zpool.
 	// It will also clear the label for relevant disk
 	err := oc.Delete(cspi)
@@ -171,7 +178,10 @@ updatestatus:
 }
 
 func (c *CStorPoolInstanceController) update(cspi *cstor.CStorPoolInstance) error {
-	oc := zpool.NewOperationsConfig().WithKubeClientSet(c.kubeclientset).WithOpenEBSClient(c.clientset)
+	oc := zpool.NewOperationsConfig().
+		WithKubeClientSet(c.kubeclientset).
+		WithOpenEBSClient(c.clientset).
+		WithRecorder(c.recorder)
 	cspi, err := oc.Update(cspi)
 	if err != nil {
 		return errors.Errorf("Failed to update pool due to %s", err.Error())
@@ -184,7 +194,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 	// might get lost.
 	var status cstor.CStorPoolInstanceStatus
 	var err error
-	pool := zpool.PoolName(cspi)
+	pool := zpool.PoolName()
 
 	state, er := zpool.GetPropertyValue(pool, "health")
 	if er != nil {
@@ -233,7 +243,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 
 // getCSPIObjFromKey returns object corresponding to the resource key
 func (c *CStorPoolInstanceController) getCSPIObjFromKey(key string) (*cstor.CStorPoolInstance, error) {
-	// Convert the key(namespace/name) string into a distinct name
+	// Convert the key(namespace/name) string into a distinct name and namespace
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
@@ -277,23 +287,22 @@ func (c *CStorPoolInstanceController) removeFinalizer(cspi *cstor.CStorPoolInsta
 }
 
 // addPoolProtectionFinalizer is to add PoolProtectionFinalizer finalizer of cstorpoolinstance resource.
-func (c *CStorPoolInstanceController) addPoolProtectionFinalizer(cspi *cstor.CStorPoolInstance) error {
+func (c *CStorPoolInstanceController) addPoolProtectionFinalizer(
+	cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
 	// if PoolProtectionFinalizer is already present return
 	if util.ContainsString(cspi.Finalizers, types.PoolProtectionFinalizer) {
-		return nil
+		return cspi, nil
 	}
 	cspi.Finalizers = append(cspi.Finalizers, types.PoolProtectionFinalizer)
-	_, err := c.clientset.
+	newCSPI, err := c.clientset.
 		CstorV1().
 		CStorPoolInstances(cspi.Namespace).
 		Update(cspi)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	klog.Infof("Added Finalizer: %v, %v",
 		cspi.Name,
 		string(cspi.GetUID()))
-	return nil
+	return newCSPI, nil
 }
-
-

@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The OpenEBS Authors
+Copyright 2020 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ import (
 	"sync"
 	"time"
 
-	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
 	cspicontroller "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller"
 	"github.com/openebs/cstor-operators/pkg/pool"
+	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	clientset  "github.com/openebs/api/pkg/client/clientset/versioned"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	informers "github.com/openebs/api/pkg/client/informers/externalversions"
 	"github.com/openebs/cstor-operators/pkg/signals"
 	kubeinformers "k8s.io/client-go/informers"
@@ -76,6 +76,7 @@ func Start() error {
 	if err != nil {
 		return errors.Wrap(err, "error building openebs clientset")
 	}
+
 	pool.CheckForZreplInitial(common.InitialZreplRetryInterval)
 
 	// NewSharedInformerFactory constructs a new instance of k8s sharedInformerFactory.

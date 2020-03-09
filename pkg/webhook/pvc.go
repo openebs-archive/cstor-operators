@@ -34,8 +34,8 @@ func (wh *webhook) validatePVC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionRe
 	} else if req.Operation == v1beta1.Delete {
 		return wh.validatePVCDeleteRequest(req)
 	}
-	klog.V(2).Info("Admission wehbook for PVC module not " +
-		"configured for operations other than DELETE and CREATE")
+	klog.V(2).Infof("Admission wehbook for PVC module not "+
+		"configured for %s operation", req.Operation)
 	return response
 }
 

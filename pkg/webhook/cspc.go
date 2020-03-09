@@ -124,7 +124,7 @@ func (wh *webhook) validateCSPCCreateRequest(req *v1beta1.AdmissionRequest) *v1b
 	var cspc cstor.CStorPoolCluster
 	err := json.Unmarshal(req.Object.Raw, &cspc)
 	if err != nil {
-		klog.Errorf("Could not unmarshal raw object: %v, %v", err, req.Object.Raw)
+		klog.Errorf("Could not unmarshal cspc %s raw object: %v, %v", req.Name, err, req.Object.Raw)
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusBadRequest).AR
 		return response
 	}
@@ -187,7 +187,7 @@ func (wh *webhook) cspcValidation(cspc *cstor.CStorPoolCluster) (bool, string) {
 		withClientset(wh.clientset)
 	for _, pool := range cspc.Spec.Pools {
 		pool := pool // pin it
-		nodeName, err := GetNodeFromLabelSelector(pool.NodeSelector, wh.kubeClient)
+		nodeName, err := GetHostNameFromLabelSelector(pool.NodeSelector, wh.kubeClient)
 		if err != nil {
 			return false, fmt.Sprintf(
 				"failed to get node from pool nodeSelector: {%v} error: {%v}",
@@ -321,7 +321,8 @@ func validateBlockDevice(bd *openebsapis.BlockDevice, nodeName string) error {
 	}
 	if bd.Spec.NodeAttributes.NodeName != nodeName {
 		return errors.Errorf(
-			"block device doesn't belongs to node %s",
+			"block device %s doesn't belongs to node %s",
+			bd.Name,
 			bd.Spec.NodeAttributes.NodeName,
 		)
 	}
@@ -349,13 +350,6 @@ func (poolValidator *PoolValidator) blockDeviceValidation(
 
 	if err != nil {
 		return false, fmt.Sprintf("%v", err)
-	}
-	if bdObj.Spec.NodeAttributes.NodeName != poolValidator.nodeName {
-		return false, fmt.Sprintf(
-			"pool validation failed: block device %s doesn't belongs to pool node %s",
-			bd.BlockDeviceName,
-			poolValidator.nodeName,
-		)
 	}
 	if bdObj.Status.ClaimState == openebsapis.BlockDeviceClaimed {
 		// TODO: Need to check how NDM
@@ -391,7 +385,7 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest) *v1b
 	var cspcNew cstor.CStorPoolCluster
 	err := json.Unmarshal(req.Object.Raw, &cspcNew)
 	if err != nil {
-		klog.Errorf("Could not unmarshal raw object: %v, %v", err, req.Object.Raw)
+		klog.Errorf("Could not unmarshal cspc %s raw object: %v, %v", req.Name, err, req.Object.Raw)
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusBadRequest).AR
 		return response
 	}

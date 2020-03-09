@@ -397,8 +397,8 @@ func GetSecret(
 // set by the downward API where admission server has been deployed
 func getOpenebsNamespace() (string, error) {
 
-	ns := util.LookupOrFalse(util.OpenEBSNamespace)
-	if ns == "false" {
+	ns, found := os.LookupEnv(util.OpenEBSNamespace)
+	if !found {
 		return "", fmt.Errorf("%s must be set", util.OpenEBSNamespace)
 	}
 	return ns, nil

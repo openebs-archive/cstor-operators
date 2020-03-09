@@ -195,6 +195,8 @@ func (wh *webhook) validate(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionRespo
 	case "CStorPoolCluster":
 		klog.V(2).Infof("Admission webhook request for type %s", req.Kind.Kind)
 		return wh.validateCSPC(ar)
+	case "CStorVolumeClaim":
+		return wh.validateCVC(ar)
 	default:
 		klog.V(2).Infof("Admission webhook not configured for type %s", req.Kind.Kind)
 		return response

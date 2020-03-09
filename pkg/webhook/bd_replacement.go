@@ -103,8 +103,8 @@ func getLabelSelectorString(selector map[string]string) string {
 	return selectorString
 }
 
-// GetNodeFromLabelSelector returns the node name selected by provided labels
-func GetNodeFromLabelSelector(labels map[string]string, kubeClient kubernetes.Interface) (string, error) {
+// GetHostNameFromLabelSelector returns the node name selected by provided labels
+func GetHostNameFromLabelSelector(labels map[string]string, kubeClient kubernetes.Interface) (string, error) {
 	nodeList, err := kubeClient.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: getLabelSelectorString(labels)})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get node list from the node selector")
@@ -123,13 +123,13 @@ func getCommonPoolSpecs(cspcNew, cspcOld *cstor.CStorPoolCluster, kubeClient kub
 		newSpec: []cstor.PoolSpec{},
 	}
 	for _, oldPool := range cspcOld.Spec.Pools {
-		oldNodeName, err := GetNodeFromLabelSelector(oldPool.NodeSelector, kubeClient)
+		oldNodeName, err := GetHostNameFromLabelSelector(oldPool.NodeSelector, kubeClient)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, newPool := range cspcNew.Spec.Pools {
-			newNodeName, err := GetNodeFromLabelSelector(newPool.NodeSelector, kubeClient)
+			newNodeName, err := GetHostNameFromLabelSelector(newPool.NodeSelector, kubeClient)
 			if err != nil {
 				return nil, err
 			}

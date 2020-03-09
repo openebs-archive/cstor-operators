@@ -49,7 +49,7 @@ func main() {
 	klog.InitFlags(nil)
 	err := flag.Set("logtostderr", "true")
 	if err != nil {
-		klog.Info(err, "failed to set logtostderr flag")
+		klog.Fatalf("Failed to set logtostderr flag: %s", err.Error())
 	}
 	flag.Parse()
 
@@ -78,7 +78,7 @@ func main() {
 	// Fetch a reference to the admission server deployment object
 	ownerReference, err := webhook.GetAdmissionReference(kubeClient)
 	if err != nil {
-		klog.Fatal(err, "failed to get a reference to the admission deployment object")
+		klog.Fatal(err, "failed to get a reference of the admission deployment object")
 	}
 	validatorErr := webhook.InitValidationServer(*ownerReference, kubeClient)
 	if validatorErr != nil {

@@ -348,9 +348,9 @@ func CheckValidVolume(cStorVolume *apis.CStorVolume) error {
 	if len(string(cStorVolume.ObjectMeta.UID)) == 0 {
 		return fmt.Errorf("Invalid volume resource")
 	}
-	//	if len(string(cStorVolume.Spec.TargetIP)) == 0 {
-	//	return fmt.Errorf("targetIP cannot be empty")
-	//}
+	if len(string(cStorVolume.Spec.TargetIP)) == 0 {
+		return fmt.Errorf("targetIP cannot be empty")
+	}
 	if len(string(cStorVolume.Name)) == 0 {
 		return fmt.Errorf("volumeName cannot be empty")
 	}

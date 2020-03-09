@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ package pool
 //	"testing"
 //	"time"
 //
-//	"github.com/openebs/maya/pkg/util"
+//	"github.com/openebs/api/pkg/util"
 //	"k8s.io/klog"
 //)
 //

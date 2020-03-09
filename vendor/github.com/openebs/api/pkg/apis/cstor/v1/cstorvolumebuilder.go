@@ -23,7 +23,6 @@ import (
 
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
-
 	"github.com/openebs/maya/pkg/version"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

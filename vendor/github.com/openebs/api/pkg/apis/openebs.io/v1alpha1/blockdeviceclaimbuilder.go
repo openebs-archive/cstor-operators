@@ -162,4 +162,3 @@ func (bdcl *BlockDeviceClaimList) GetBlockDeviceClaimFromBDName(
 	}
 	return nil, errors.Errorf("claim doesn't exist for blockdevice %s", bdName)
 }
-

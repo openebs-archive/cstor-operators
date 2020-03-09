@@ -457,7 +457,7 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 						Pools: []cstor.PoolSpec{
 							{
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-1"},
-								RaidGroups: []cstor.RaidGroup{
+								DataRaidGroups: []cstor.RaidGroup{
 									{
 										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
 											{BlockDeviceName: "bd-1"},
@@ -507,7 +507,7 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 						Pools: []cstor.PoolSpec{
 							{
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-1"},
-								RaidGroups: []cstor.RaidGroup{
+								DataRaidGroups: []cstor.RaidGroup{
 									{
 										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
 											{BlockDeviceName: "bd-1"},
@@ -526,7 +526,7 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 
 							{
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-2"},
-								RaidGroups: []cstor.RaidGroup{
+								DataRaidGroups: []cstor.RaidGroup{
 									{
 										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
 											{BlockDeviceName: "bd-5"},
@@ -576,7 +576,7 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 						Pools: []cstor.PoolSpec{
 							{
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-1"},
-								RaidGroups: []cstor.RaidGroup{
+								DataRaidGroups: []cstor.RaidGroup{
 									{
 										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
 											{BlockDeviceName: "bd-1"},
@@ -626,7 +626,7 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 						Pools: []cstor.PoolSpec{
 							{
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-1"},
-								RaidGroups: []cstor.RaidGroup{
+								DataRaidGroups: []cstor.RaidGroup{
 									{
 										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
 											{BlockDeviceName: "bd-1"},
@@ -645,7 +645,7 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 
 							{
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-2"},
-								RaidGroups: []cstor.RaidGroup{
+								DataRaidGroups: []cstor.RaidGroup{
 									{
 										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
 											{BlockDeviceName: "bd-5"},
@@ -692,77 +692,6 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 			}
 			if got := bdr.IsNewBDPresentOnCurrentCSPC(&tt.args.newRG, &tt.args.oldRG); got != tt.want {
 				t.Errorf("BlockDeviceReplacement.IsNewBDPresentOnCurrentCSPC() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestValidateRaidGroupChanges(t *testing.T) {
-	tests := map[string]struct {
-		oldRG         *cstor.RaidGroup
-		newRG         *cstor.RaidGroup
-		expectedError bool
-	}{
-		"removing block devices": {
-			oldRG: &cstor.RaidGroup{
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
-					{BlockDeviceName: "bd-1"},
-					{BlockDeviceName: "bd-2"},
-				},
-			},
-			newRG: &cstor.RaidGroup{
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
-					{BlockDeviceName: "bd-1"},
-				},
-			},
-			expectedError: true,
-		},
-		"adding block devices for raid groups": {
-			oldRG: &cstor.RaidGroup{
-				Type: "raidz",
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
-					{BlockDeviceName: "bd-1"},
-					{BlockDeviceName: "bd-2"},
-				},
-			},
-			newRG: &cstor.RaidGroup{
-				Type: "raidz",
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
-					{BlockDeviceName: "bd-1"},
-					{BlockDeviceName: "bd-2"},
-					{BlockDeviceName: "bd-3"},
-				},
-			},
-			expectedError: true,
-		},
-		"adding block devices for stripe raid groups": {
-			oldRG: &cstor.RaidGroup{
-				Type: "stripe",
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
-					{BlockDeviceName: "bd-1"},
-					{BlockDeviceName: "bd-2"},
-				},
-			},
-			newRG: &cstor.RaidGroup{
-				Type: "stripe",
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
-					{BlockDeviceName: "bd-1"},
-					{BlockDeviceName: "bd-2"},
-					{BlockDeviceName: "bd-3"},
-				},
-			},
-			expectedError: false,
-		},
-	}
-	for name, test := range tests {
-		name, test := name, test
-		t.Run(name, func(t *testing.T) {
-			err := validateRaidGroupChanges(test.oldRG, test.newRG)
-			if test.expectedError && err == nil {
-				t.Errorf("test %s failed expectedError to be error but got nil", name)
-			}
-			if !test.expectedError && err != nil {
-				t.Errorf("test %s failed expectedError not to be error but got error %v", name, err)
 			}
 		})
 	}

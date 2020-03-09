@@ -46,7 +46,7 @@ func TestCreateVolumeTarget(t *testing.T) {
 					UID:  types.UID("abc"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//	TargetIP:          "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("5G"),
 					//Status:            "init",
 					ReplicationFactor: 3,
@@ -121,7 +121,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID(""),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//	TargetIP:          "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("5G"),
 					//	Status:            "init",
 					ReplicationFactor: 3,
@@ -138,7 +138,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//TargetIP:          "",
+					TargetIP: "",
 					Capacity: fakeStrToQuantity("5G"),
 					//Status:            "init",
 					ReplicationFactor: 3,
@@ -156,7 +156,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//	TargetIP:          "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("5G"),
 					//Status:            "init",
 					ReplicationFactor: 3,
@@ -173,7 +173,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//TargetIP:          "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity(""),
 					//Status:            "init",
 					ReplicationFactor: 3,
@@ -190,7 +190,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//	TargetIP:          "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("1B"),
 					//Status:            "init",
 					ReplicationFactor: 3,
@@ -207,7 +207,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//TargetIP:          "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("2G"),
 					//Status:            "init",
 					ReplicationFactor: 0,
@@ -224,7 +224,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//TargetIP:          "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("2G"),
 					//	Status:            "init",
 					ReplicationFactor: 3,
@@ -241,7 +241,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//TargetIP:          "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("2G"),
 					//Status:            "init",
 					ReplicationFactor: 2,
@@ -257,7 +257,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123456"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//TargetIP:                 "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("5G"),
 					//	Status:                   "init",
 					ReplicationFactor:        3,
@@ -279,7 +279,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123456"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//	TargetIP:                 "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("5G"),
 					//Status:                   "init",
 					ReplicationFactor:        3,
@@ -301,7 +301,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123456"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//TargetIP:                 "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("5G"),
 					//Status:                   "init",
 					ReplicationFactor:        4,
@@ -323,7 +323,7 @@ func TestCheckValidVolume(t *testing.T) {
 					UID:  types.UID("123456"),
 				},
 				Spec: apis.CStorVolumeSpec{
-					//TargetIP:                 "0.0.0.0",
+					TargetIP: "0.0.0.0",
 					Capacity: fakeStrToQuantity("5G"),
 					//Status:                   "init",
 					ReplicationFactor:        3,

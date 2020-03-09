@@ -1,0 +1,632 @@
+/*
+Copyright 2020 The OpenEBS Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package webhook
+
+import (
+	"testing"
+
+	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
+	"github.com/pkg/errors"
+	"k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
+type fixture struct {
+	wh             *webhook
+	openebsObjects []runtime.Object
+}
+
+func newFixture() *fixture {
+	return &fixture{
+		wh: &webhook{},
+	}
+}
+
+func (f *fixture) withOpenebsObjects(objects ...runtime.Object) *fixture {
+	f.openebsObjects = objects
+	f.wh.clientset = openebsFakeClientset.NewSimpleClientset(objects...)
+	return f
+}
+
+func fakeGetCVCError(name, namespace string, clientset clientset.Interface) (*cstor.CStorVolumeClaim, error) {
+	return nil, errors.Errorf("fake error")
+}
+
+func TestValidateCVCUpdateRequest(t *testing.T) {
+	f := newFixture().withOpenebsObjects()
+	tests := map[string]struct {
+		// existingObj is object existing in etcd via fake client
+		existingObj  *cstor.CStorVolumeClaim
+		requestedObj *cstor.CStorVolumeClaim
+		expectedRsp  bool
+		getCVCObj    getCVC
+	}{
+		"When Failed to Get Object From etcd": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc1",
+					Namespace: "openebs",
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc1",
+					Namespace: "openebs",
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					Phase: cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   fakeGetCVCError,
+		},
+		"When ReplicaCount Updated": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc2",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					Phase: cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc2",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 4,
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					Phase: cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When Volume Boud Status Updated With Pool Info": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc3",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc3",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+					PoolInfo: []string{"pool1", "pool2", "pool3"},
+				},
+			},
+			expectedRsp: true,
+			getCVCObj:   getCVCObject,
+		},
+		"When Volume Replcias were Scaled by modifying exisitng pool names": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc4",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2", "pool3"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc4",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool5"},
+							cstor.ReplicaPoolInfo{PoolName: "pool4"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2", "pool3"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When Volume Replcias were migrated": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc5",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2", "pool3"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc5",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool0"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool5"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2", "pool3"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When CVC Scaling Up InProgress Performing Scaling Again": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc6",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc6",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+							cstor.ReplicaPoolInfo{PoolName: "pool4"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When More Than One Replica Were Scale Down": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc7",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2", "pool3"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc7",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2", "pool3"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When ScaleUp was Performed Before CVC In Bound State": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc8",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc8",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 3,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When Scale Up Alone Performed": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc10",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc10",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: true,
+			getCVCObj:   getCVCObject,
+		},
+		"When Scale Down Alone Performed": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc11",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc11",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: true,
+			getCVCObj:   getCVCObject,
+		},
+		"When Scale Up Status Was Updated Success": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc12",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc12",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: true,
+			getCVCObj:   getCVCObject,
+		},
+		"When Scale Down Status Was Updated Success": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc13",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc13",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: true,
+			getCVCObj:   getCVCObject,
+		},
+		"When CVC Spec Pool Names Were Repeated": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc14",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc14",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When CVC Status Pool Names Were Repeated": {
+			existingObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc15",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc15",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeClaimSpec{
+					ReplicaCount: 1,
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+							cstor.ReplicaPoolInfo{PoolName: "pool2"},
+							cstor.ReplicaPoolInfo{PoolName: "pool3"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeClaimStatus{
+					PoolInfo: []string{"pool1", "pool2", "pool2"},
+					Phase:    cstor.CStorVolumeClaimPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+	}
+	for name, test := range tests {
+		name, test := name, test
+		t.Run(name, func(t *testing.T) {
+			ar := &v1beta1.AdmissionRequest{
+				Operation: v1beta1.Create,
+				Object: runtime.RawExtension{
+					Raw: serialize(test.requestedObj),
+				},
+			}
+			// Create fake object in etcd
+			_, err := f.wh.clientset.CstorV1().
+				CStorVolumeClaims(test.existingObj.Namespace).
+				Create(test.existingObj)
+			if err != nil {
+				t.Fatalf(
+					"failed to create fake CVC %s Object in Namespace %s error: %v",
+					test.existingObj.Name,
+					test.existingObj.Namespace,
+					err,
+				)
+			}
+			resp := f.wh.validateCVCUpdateRequest(ar, test.getCVCObj)
+			if resp.Allowed != test.expectedRsp {
+				t.Errorf(
+					"%s test case failed expected response: %t but got %t error: %s",
+					name,
+					test.expectedRsp,
+					resp.Allowed,
+					resp.Result.Message,
+				)
+			}
+		})
+	}
+}

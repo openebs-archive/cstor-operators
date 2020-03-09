@@ -40,7 +40,7 @@ fi
 
 # Get the version details
 VERSION="$(cat $GOPATH/src/github.com/openebs/maya/VERSION)"
-VERSION_META="$(cat $GOPATH/src/github.com/openebs/maya/BUILDMETA)"
+#VERSION=$(git describe --tags --always --dirty)
 
 # Determine the arch/os combos we're building for
 UNAME=$(uname)
@@ -102,12 +102,11 @@ if [ $GOOS = "windows" ]; then
     output_name+='.exe'
 fi
 
-env GOOS=$GOOS GOARCH=$GOARCH go build ${BUILD_TAG} -ldflags \
+env GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0  go build ${BUILD_TAG} -ldflags \
     "-X github.com/openebs/maya/pkg/version.GitCommit=${GIT_COMMIT} \
     -X main.CtlName='${CTLNAME}' \
-    -X github.com/openebs/maya/pkg/version.Version=${VERSION} \
-    -X github.com/openebs/maya/pkg/version.VersionMeta=${VERSION_META}"\
-    -o $output_name\
+    -X github.com/openebs/maya/pkg/version.Version=${VERSION}"\
+    -o $output_name \
     ./cmd/${CTLNAME}
 
 echo ""

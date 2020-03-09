@@ -35,11 +35,11 @@ export CSTOR_BASE_IMAGE
 
 # Specify the name of the docker repo for amd64
 CVC_OPERATOR?=cvc-operator
-# Specify the name of the docker repo for amd64
-CVC_OPERATOR_REPO_NAME?=cvc-operator
-
+CSPC_OPERATOR=cspc-operator
+POOL_MANAGER=pool-manager
+VOLUME_MANAGER=volume-manager
 # Specify the name of the docker repo for arm64
-CVC_OPERATOR_REPO_NAME_ARM64?=cvc-operator-arm64
+CVC_OPERATOR_ARM64?=cvc-operator-arm64
 
 
 # deps ensures fresh go.mod and go.sum.
@@ -64,21 +64,46 @@ cvc-operator-image:
 	@echo "----------------------------"
 	@PNAME=${CVC_OPERATOR} CTLNAME=${CVC_OPERATOR} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${CVC_OPERATOR}/${CVC_OPERATOR} build/cvc-operator/
-	@cd build/${CVC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${CVC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CVC_OPERATOR}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${CVC_OPERATOR}/${CVC_OPERATOR}
 
 .PHONY: cvc-operator-image.arm64
 cvc-operator-image.arm64:
 	@echo "----------------------------"
-	@echo -n "--> arm64 based cstor-volume-mgmt image "
+	@echo -n "--> arm64 based cvc-operator image "
 	@echo "${HUB_USER}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG}"
 	@echo "----------------------------"
 	@PNAME=${CVC_OPERATOR} CTLNAME=${CVC_OPERATOR} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${CVC_OPERATOR}/${CVC_OPERATOR} build/cvc-operator/
-	@cd build/${CVC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CSTOR_VOLUME_MGMT_REPO_NAME_ARM64}:${IMAGE_TAG} -f Dockerfile.arm64 --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${CVC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CVC_OPERATOR_ARM64}:${IMAGE_TAG} -f Dockerfile.arm64 --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${CVC_OPERATOR}/${CVC_OPERATOR}
 
+.PHONY: volume-manager-image
+volume-manager-image:
+	@echo -n "--> volume manager image <--"
+	@echo "${HUB_USER}/${VOLUME_MANAGER}:${IMAGE_TAG}"
+	@echo "----------------------------"
+	@PNAME=${VOLUME_MANAGER} CTLNAME=${VOLUME_MANAGER} sh -c "'$(PWD)/build/build.sh'"
+	@cp bin/${VOLUME_MANAGER}/${VOLUME_MANAGER} build/volume-manager/
+	@cd build/${VOLUME_MANAGER} && sudo docker build -t ${HUB_USER}/${VOLUME_MANAGER}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@rm build/${VOLUME_MANAGER}/${VOLUME_MANAGER}
 
-build-cvc:
-	@echo "=============Building============="
-	CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o bin/$(CVC_OPERATOR) ./cmd/cvc-operator
+.PHONY: cspc-operator-image
+cspc-operator-image:
+	@echo -n "--> cspc-operator image <--"
+	@echo "${HUB_USER}/${CSPC_OPERATOR}:${IMAGE_TAG}"
+	@echo "----------------------------"
+	@PNAME=${CSPC_OPERATOR} CTLNAME=${CSPC_OPERATOR} sh -c "'$(PWD)/build/build.sh'"
+	@cp bin/${CSPC_OPERATOR}/${CSPC_OPERATOR} build/cspc-operator/
+	@cd build/${CSPC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CSPC_OPERATOR}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@rm build/${CSPC_OPERATOR}/${CSPC_OPERATOR}
+
+.PHONY: pool-manager-image
+pool-manager-image:
+	@echo -n "--> pool manager image <--"
+	@echo "${HUB_USER}/${POOL_MANAGER}:${IMAGE_TAG}"
+	@echo "----------------------------"
+	@PNAME=${POOL_MANAGER} CTLNAME=${POOL_MANAGER} sh -c "'$(PWD)/build/build.sh'"
+	@cp bin/${POOL_MANAGER}/${POOL_MANAGER} build/pool-manager/
+	@cd build/${POOL_MANAGER} && sudo docker build -t ${HUB_USER}/${POOL_MANAGER}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@rm build/${POOL_MANAGER}/${POOL_MANAGER}

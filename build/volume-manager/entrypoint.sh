@@ -2,4 +2,4 @@
 
 set -ex
 
-/usr/local/bin/cstor-volume-mgmt start
+/usr/local/bin/volume-manager start

@@ -29,17 +29,12 @@ import (
 // addRaidGroup add given raidGroup to pool
 func (oc *OperationsConfig) addRaidGroup(r cstor.RaidGroup, dType, pType string) error {
 	var vdevlist []string
-	var deviceType string
+
+	deviceType := getZFSDeviceType(dType)
 
 	if len(pType) == 0 {
 		// type is not mentioned, return with error
 		return errors.Errorf("type for %s raid group not found", deviceType)
-	}
-
-	if dType == DeviceTypeData {
-		deviceType = ""
-	} else {
-		deviceType = dType
 	}
 
 	disklist, err := oc.getPathForBdevList(r.BlockDevices)
@@ -100,16 +95,15 @@ func (oc *OperationsConfig) addNewVdevFromCSP(cspi *cstor.CStorPoolInstance) err
 				} else {
 					isPoolExpanded = true
 					message = fmt.Sprintf(
-						"Pool Expanded Successfully By Adding RaidGroup With BlockDevices %v, device type %s pool type %s",
+						"Pool Expanded Successfully By Adding RaidGroup With BlockDevices: %v device type: %s pool type: %s",
 						raidGroup.GetBlockDevices(),
 						deviceType,
 						raidGroupConfig.RaidGroupType,
 					)
 				}
 			} else if len(devlist) != 0 && raidGroupConfig.RaidGroupType == string(cstor.PoolStriped) {
-				// ToDo: WriteCacheRaidGroups
 				if _, er := zfs.NewPoolExpansion().
-					//WithDeviceType(getDeviceType(raidGroup)).
+					WithDeviceType(getZFSDeviceType(deviceType)).
 					WithVdevList(devlist).
 					WithPool(PoolName()).
 					Execute(); er != nil {

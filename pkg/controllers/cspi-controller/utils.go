@@ -36,7 +36,7 @@ const (
 
 // IsRightCStorPoolInstanceMgmt is to check if the pool request is for this pod.
 func IsRightCStorPoolInstanceMgmt(cspi *cstor.CStorPoolInstance) bool {
-	return os.Getenv(string(OpenEBSIOCSPIID)) == string(cspi.GetUID())
+	return os.Getenv(OpenEBSIOCSPIID) == string(cspi.GetUID())
 }
 
 // IsStatusChange is to check only status change of cStorPoolInstance object.

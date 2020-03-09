@@ -76,10 +76,10 @@ func (oc *OperationsConfig) Create(cspi *cstor.CStorPoolInstance) error {
 	return err
 }
 
-func (oc *OperationsConfig) createPool(csp *cstor.CStorPoolInstance, r cstor.RaidGroup) error {
+func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.RaidGroup) error {
 	var vdevlist []string
 
-	ptype := csp.Spec.PoolConfig.DataRaidGroupType
+	ptype := cspi.Spec.PoolConfig.DataRaidGroupType
 	if len(ptype) == 0 {
 		// type is not mentioned, return with error
 		return errors.New("type for data raid group not found")

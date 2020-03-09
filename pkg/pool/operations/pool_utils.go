@@ -60,6 +60,13 @@ func (oc *OperationsConfig) getPathForBDev(bdev string) ([]string, error) {
 	return getPathForBDevFromBlockDevice(bd), nil
 }
 
+func getZFSDeviceType(dType string) string {
+	if dType == DeviceTypeData {
+		return ""
+	}
+	return dType
+}
+
 func getPathForBDevFromBlockDevice(bd *openebsapis.BlockDevice) []string {
 	var paths []string
 	if len(bd.Spec.DevLinks) != 0 {

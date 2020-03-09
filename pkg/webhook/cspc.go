@@ -43,6 +43,7 @@ type PoolValidator struct {
 	namespace string
 	nodeName  string
 	cspcName  string
+	clientset clientset.Interface
 }
 
 // Builder is the builder object for Builder
@@ -75,6 +76,13 @@ func (b *Builder) withPoolSpec(poolSpec cstor.PoolSpec) *Builder {
 // values
 func (b *Builder) withPoolNamespace() *Builder {
 	b.object.namespace = os.Getenv(util.OpenEBSNamespace)
+	return b
+}
+
+// withClientset sets the clientset field of poolValidator with provided
+// values
+func (b *Builder) withClientset(c clientset.Interface) *Builder {
+	b.object.clientset = c
 	return b
 }
 
@@ -175,7 +183,8 @@ func (wh *webhook) cspcValidation(cspc *cstor.CStorPoolCluster) (bool, string) {
 
 	buildPoolValidator := NewBuilder().
 		withPoolNamespace().
-		withCSPCName(cspc.Name)
+		withCSPCName(cspc.Name).
+		withClientset(wh.clientset)
 	for _, pool := range cspc.Spec.Pools {
 		pool := pool // pin it
 		nodeName, err := GetNodeFromLabelSelector(pool.NodeSelector, wh.kubeClient)
@@ -233,50 +242,71 @@ func (poolValidator *PoolValidator) poolSpecValidation() (bool, string) {
 	}
 	// TODO : Add validation for pool config
 	// Pool config will require mutating webhooks also.
-	// for _, raidGroup := range poolValidator.poolSpec.DataRaidGroups {
-	// 	raidGroup := raidGroup // pin it
-	// 	ok, msg := poolValidator.raidGroupValidation(&raidGroup)
-	// 	if !ok {
-	// 		return false, msg
-	// 	}
-	// }
+	ok, msg := poolValidator.poolConfigValidation(poolValidator.poolSpec.PoolConfig)
+	if !ok {
+		return false, msg
+	}
+	for _, raidGroup := range poolValidator.poolSpec.DataRaidGroups {
+		raidGroup := raidGroup // pin it
+		ok, msg := poolValidator.raidGroupValidation(&raidGroup, poolValidator.poolSpec.PoolConfig.DataRaidGroupType)
+		if !ok {
+			return false, msg
+		}
+	}
 
 	return true, ""
 }
 
-// func (poolValidator *PoolValidator) raidGroupValidation(
-// 	raidGroup *cstor.RaidGroup) (bool, string) {
-// 	if raidGroup.Type == "" &&
-// 		poolValidator.poolSpec.PoolConfig.DefaultRaidGroupType == "" {
-// 		return false, fmt.Sprintf("any one type at raid group or default raid group type be specified ")
-// 	}
-// 	if _, ok := cstor.SupportedPRaidType[cstor.PoolType(raidGroup.Type)]; !ok {
-// 		return false, fmt.Sprintf("unsupported raid type '%s' specified", cstor.PoolType(raidGroup.Type))
-// 	}
+var (
+	// SupportedPRaidType is a map holding the supported raid configurations
+	// Value of the keys --
+	// 1. In case of striped this is the minimum number of disk required.
+	// 2. In all other cases this is the exact number of disks required.
+	SupportedPRaidType = map[cstor.PoolType]int{
+		cstor.PoolStriped:  1,
+		cstor.PoolMirrored: 2,
+		cstor.PoolRaidz:    3,
+		cstor.PoolRaidz2:   6,
+	}
+)
 
-// 	if len(raidGroup.BlockDevices) == 0 {
-// 		return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
-// 	}
+func (poolValidator *PoolValidator) poolConfigValidation(
+	poolConfig cstor.PoolConfig) (bool, string) {
+	if poolConfig.DataRaidGroupType == "" {
+		return false, fmt.Sprintf("missing dataRaidGroupType")
+	}
+	if _, ok := SupportedPRaidType[cstor.PoolType(poolConfig.DataRaidGroupType)]; !ok {
+		return false, fmt.Sprintf("unsupported raid type '%s' specified", poolConfig.DataRaidGroupType)
+	}
+	return true, ""
+}
 
-// 	if raidGroup.Type != string(cstor.PoolStriped) {
-// 		if len(raidGroup.BlockDevices) != cstor.SupportedPRaidType[cstor.PoolType(raidGroup.Type)] {
-// 			return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
-// 		}
-// 	} else {
-// 		if len(raidGroup.BlockDevices) < cstor.SupportedPRaidType[cstor.PoolType(raidGroup.Type)] {
-// 			return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
-// 		}
-// 	}
+func (poolValidator *PoolValidator) raidGroupValidation(
+	raidGroup *cstor.RaidGroup, rgType string) (bool, string) {
 
-// 	for _, bd := range raidGroup.BlockDevices {
-// 		bd := bd
-// 		ok, msg := poolValidator.blockDeviceValidation(&bd)
-// 		if !ok {
-// 			return false, msg
-// 		}
-// 	}
-// 	return true, ""
-// }
+	if len(raidGroup.BlockDevices) == 0 {
+		return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
+	}
+
+	if rgType != string(cstor.PoolStriped) {
+		if len(raidGroup.BlockDevices) != SupportedPRaidType[cstor.PoolType(rgType)] {
+			return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
+		}
+	} else {
+		if len(raidGroup.BlockDevices) < SupportedPRaidType[cstor.PoolType(rgType)] {
+			return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
+		}
+	}
+
+	for _, bd := range raidGroup.BlockDevices {
+		bd := bd
+		ok, msg := poolValidator.blockDeviceValidation(&bd)
+		if !ok {
+			return false, msg
+		}
+	}
+	return true, ""
+}
 
 func validateBlockDevice(bd *openebsapis.BlockDevice, nodeName string) error {
 	if bd.Status.State != "Active" {
@@ -302,11 +332,11 @@ func validateBlockDevice(bd *openebsapis.BlockDevice, nodeName string) error {
 // 1. block device name shouldn't be empty.
 // 2. If block device has claim it verifies whether claim is created by this CSPC
 func (poolValidator *PoolValidator) blockDeviceValidation(
-	bd *cstor.CStorPoolClusterBlockDevice, clientset clientset.Interface) (bool, string) {
+	bd *cstor.CStorPoolClusterBlockDevice) (bool, string) {
 	if bd.BlockDeviceName == "" {
 		return false, fmt.Sprint("block device name cannot be empty")
 	}
-	bdObj, err := clientset.OpenebsV1alpha1().BlockDevices(poolValidator.namespace).
+	bdObj, err := poolValidator.clientset.OpenebsV1alpha1().BlockDevices(poolValidator.namespace).
 		Get(bd.BlockDeviceName, metav1.GetOptions{})
 	if err != nil {
 		return false, fmt.Sprintf(
@@ -331,7 +361,7 @@ func (poolValidator *PoolValidator) blockDeviceValidation(
 		// TODO: Need to check how NDM
 		if bdObj.Spec.ClaimRef != nil {
 			bdcName := bdObj.Spec.ClaimRef.Name
-			if err := poolValidator.blockDeviceClaimValidation(bdcName, bdObj.Name, clientset); err != nil {
+			if err := poolValidator.blockDeviceClaimValidation(bdcName, bdObj.Name); err != nil {
 				return false, fmt.Sprintf("error: %v", err)
 			}
 		}
@@ -339,8 +369,8 @@ func (poolValidator *PoolValidator) blockDeviceValidation(
 	return true, ""
 }
 
-func (poolValidator *PoolValidator) blockDeviceClaimValidation(bdcName, bdName string, clientset clientset.Interface) error {
-	bdcObject, err := clientset.OpenebsV1alpha1().BlockDeviceClaims(poolValidator.namespace).
+func (poolValidator *PoolValidator) blockDeviceClaimValidation(bdcName, bdName string) error {
+	bdcObject, err := poolValidator.clientset.OpenebsV1alpha1().BlockDeviceClaims(poolValidator.namespace).
 		Get(bdcName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err,

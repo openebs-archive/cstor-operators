@@ -146,20 +146,20 @@ func getCommonPoolSpecs(cspcNew, cspcOld *cstor.CStorPoolCluster, kubeClient kub
 // validateRaidGroupChanges returns error when user removes or add block
 // devices(for other than strip type) to existing raid group or else it will
 // return nil
-func validateRaidGroupChanges(oldRg, newRg *cstor.RaidGroup) error {
-	// // return error when block devices are removed from new raid group
-	// if len(newRg.BlockDevices) < len(oldRg.BlockDevices) {
-	// 	return errors.Errorf("removing block device from %s raid group is not valid operation",
-	// 		oldRg.Type)
-	// }
-	// // return error when block device are added to new raid group other than
-	// // stripe
-	// if cstor.PoolType(oldRg.Type) != cstor.PoolStriped &&
-	// 	len(newRg.BlockDevices) > len(oldRg.BlockDevices) {
-	// 	return errors.Errorf("adding block devices to existing %s raid group is "+
-	// 		"not valid operation",
-	// 		oldRg.Type)
-	// }
+func validateRaidGroupChanges(oldRg, newRg *cstor.RaidGroup, oldRgType string) error {
+	// return error when block devices are removed from new raid group
+	if len(newRg.BlockDevices) < len(oldRg.BlockDevices) {
+		return errors.Errorf("removing block device from %s raid group is not valid operation",
+			oldRgType)
+	}
+	// return error when block device are added to new raid group other than
+	// stripe
+	if cstor.PoolType(oldRgType) != cstor.PoolStriped &&
+		len(newRg.BlockDevices) > len(oldRg.BlockDevices) {
+		return errors.Errorf("adding block devices to existing %s raid group is "+
+			"not valid operation",
+			oldRgType)
+	}
 	return nil
 }
 
@@ -170,18 +170,16 @@ func (bdr *BlockDeviceReplacement) IsPoolSpecChangeValid(oldPoolSpec, newPoolSpe
 	for _, oldRg := range oldPoolSpec.DataRaidGroups {
 		oldRg := oldRg // pin it
 		isRaidGroupExist := false
-		// if oldRg.Type == "" {
-		// 	oldRg.Type = oldPoolSpec.PoolConfig.DefaultRaidGroupType
-		// }
+		oldRgType := oldPoolSpec.PoolConfig.DataRaidGroupType
 		for _, newRg := range newPoolSpec.DataRaidGroups {
 			newRg := newRg // pin it
 			if IsRaidGroupCommon(oldRg, newRg) {
 				isRaidGroupExist = true
-				if err := validateRaidGroupChanges(&oldRg, &newRg); err != nil {
+				if err := validateRaidGroupChanges(&oldRg, &newRg, oldRgType); err != nil {
 					return false, fmt.Sprintf("raid group validation failed: %v", err)
 				}
 				if IsBlockDeviceReplacementCase(&oldRg, &newRg) {
-					if ok, msg := bdr.IsBDReplacementValid(&newRg, &oldRg); !ok {
+					if ok, msg := bdr.IsBDReplacementValid(&newRg, &oldRg, oldRgType); !ok {
 						return false, msg
 					}
 					newBD := GetNewBDFromRaidGroups(&newRg, &oldRg)
@@ -245,11 +243,11 @@ func GetNumberOfDiskReplaced(newRG, oldRG *cstor.RaidGroup) int {
 }
 
 // IsBDReplacementValid validates for BD replacement.
-func (bdr *BlockDeviceReplacement) IsBDReplacementValid(newRG, oldRG *cstor.RaidGroup) (bool, string) {
+func (bdr *BlockDeviceReplacement) IsBDReplacementValid(newRG, oldRG *cstor.RaidGroup, oldRgType string) (bool, string) {
 
-	// if oldRG.Type == string(cstor.PoolStriped) {
-	// 	return false, "cannot replace  blockdevice in stripe raid group"
-	// }
+	if oldRgType == string(cstor.PoolStriped) {
+		return false, "cannot replace  blockdevice in stripe raid group"
+	}
 
 	// Not more than 1 bd should be replaced in a raid group.
 	if IsMoreThanOneDiskReplaced(newRG, oldRG) {

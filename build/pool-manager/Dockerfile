@@ -9,7 +9,7 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
-COPY cspi-mgmt /usr/local/bin/
+COPY pool-manager /usr/local/bin/
 COPY entrypoint.sh /usr/local/bin/
 
 RUN echo '#!/bin/bash\nif [ $# -lt 1 ]; then\n\techo "argument missing"\n\texit 1\nfi\neval "$*"\n' >> /usr/local/bin/execute.sh
@@ -19,7 +19,7 @@ RUN apt install netcat -y
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ARG BUILD_DATE
-LABEL org.label-schema.name="cspi-mgmt"
+LABEL org.label-schema.name="cstor-pool-manager"
 LABEL org.label-schema.description="OpenEBS"
 LABEL org.label-schema.url="http://www.openebs.io/"
 LABEL org.label-schema.vcs-url="https://github.com/openebs/maya"

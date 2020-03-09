@@ -9,13 +9,13 @@ RUN apt-get -y install rsyslog
 
 RUN mkdir -p /usr/local/etc/istgt
 
-COPY cstor-volume-mgmt /usr/local/bin/
+COPY volume-manager /usr/local/bin/
 COPY entrypoint.sh /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ARG BUILD_DATE
-LABEL org.label-schema.name="cstor-volume-mgmt"
+LABEL org.label-schema.name="cstor-volume-manager"
 LABEL org.label-schema.description="OpenEBS"
 LABEL org.label-schema.url="http://www.openebs.io/"
 LABEL org.label-schema.vcs-url="https://github.com/openebs/maya"

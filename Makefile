@@ -32,6 +32,16 @@ endif
 CSTOR_BASE_IMAGE= openebs/cstor-base:${BASE_TAG}
 export CSTOR_BASE_IMAGE
 
+ifeq (${CSTOR_BASE_IMAGE_ARM64}, )
+  CSTOR_BASE_IMAGE_ARM64= openebs/cstor-base-arm64:${BASE_TAG}
+  export CSTOR_BASE_IMAGE_ARM64
+endif
+
+# Specify the name of base image for ARM64
+ifeq (${BASE_DOCKER_IMAGE_ARM64}, )
+  BASE_DOCKER_IMAGE_ARM64 = "arm64v8/ubuntu:18.04"
+  export BASE_DOCKER_IMAGE_ARM64
+endif
 
 # Specify the name of the docker repo for amd64
 CVC_OPERATOR?=cvc-operator
@@ -105,5 +115,5 @@ pool-manager-image:
 	@echo "----------------------------"
 	@PNAME=${POOL_MANAGER} CTLNAME=${POOL_MANAGER} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${POOL_MANAGER}/${POOL_MANAGER} build/pool-manager/
-	@cd build/${POOL_MANAGER} && sudo docker build -t ${HUB_USER}/${POOL_MANAGER}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${POOL_MANAGER} && sudo docker build -t ${HUB_USER}/${POOL_MANAGER}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} --build-arg BUILD_DATE=${BUILD_DATE} . --no-cache
 	@rm build/${POOL_MANAGER}/${POOL_MANAGER}

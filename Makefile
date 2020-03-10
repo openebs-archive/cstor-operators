@@ -48,6 +48,8 @@ CVC_OPERATOR?=cvc-operator
 CSPC_OPERATOR=cspc-operator
 POOL_MANAGER=pool-manager
 VOLUME_MANAGER=volume-manager
+CSTOR_WEBHOOK=cstor-webhook
+WEBHOOK_REPO=webhook
 # Specify the name of the docker repo for arm64
 CVC_OPERATOR_ARM64?=cvc-operator-arm64
 
@@ -117,3 +119,14 @@ pool-manager-image:
 	@cp bin/${POOL_MANAGER}/${POOL_MANAGER} build/pool-manager/
 	@cd build/${POOL_MANAGER} && sudo docker build -t ${HUB_USER}/${POOL_MANAGER}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} --build-arg BUILD_DATE=${BUILD_DATE} . --no-cache
 	@rm build/${POOL_MANAGER}/${POOL_MANAGER}
+
+.PHONY: cstor-webhook-image
+cstor-webhook-image:
+	@echo "----------------------------"
+	@echo -n "--> cstor-webhook image "
+	@echo "${HUB_USER}/${CSTOR_WEBHOOK}:${IMAGE_TAG}"
+	@echo "----------------------------"
+	@PNAME=${CSTOR_WEBHOOK} CTLNAME=${WEBHOOK_REPO} sh -c "'$(PWD)/build/build.sh'"
+	@cp bin/${CSTOR_WEBHOOK}/${WEBHOOK_REPO} build/cstor-webhook/
+	@cd build/${CSTOR_WEBHOOK} && sudo docker build -t ${HUB_USER}/${CSTOR_WEBHOOK}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@rm build/${CSTOR_WEBHOOK}/${WEBHOOK_REPO}

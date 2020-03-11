@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package v1alpha2
 import (
 	"os"
 
-	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
+	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/pkg/errors"
 )
 

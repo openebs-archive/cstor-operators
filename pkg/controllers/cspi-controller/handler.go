@@ -22,7 +22,7 @@ import (
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
-	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
+	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"

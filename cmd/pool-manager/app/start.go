@@ -23,9 +23,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	cspicontroller "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller"
+	replicacontroller "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/volumereplica"
 	"github.com/openebs/cstor-operators/pkg/pool"
-	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -89,6 +90,9 @@ func Start() error {
 	cStorPoolInstanceController := cspicontroller.NewCStorPoolInstanceController(kubeClient, openebsClient, kubeInformerFactory,
 		openebsInformerFactory)
 
+	volumeReplicaController := replicacontroller.NewCStorVolumeReplicaController(kubeClient, openebsClient, kubeInformerFactory,
+		openebsInformerFactory)
+
 	go kubeInformerFactory.Start(stopCh)
 	go openebsInformerFactory.Start(stopCh)
 	// Blocking call for checking status of zrepl running in cstor-pool container.
@@ -111,14 +115,14 @@ func Start() error {
 	// volumereplica can be created only if pool is present.
 	common.CheckForCStorPool()
 
-	// wg.Add(NumRoutinesThatFollow)
-	//// Run controller for cStorVolumeReplica.
-	//go func() {
-	//	if err = volumeReplicaController.Run(NumThreads, stopCh); err != nil {
-	//		klog.Fatalf("Error running CStorVolumeReplica controller: %s", err.Error())
-	//	}
-	//	wg.Done()
-	//}()
+	wg.Add(NumRoutinesThatFollow)
+	// Run controller for cStorVolumeReplica.
+	go func() {
+		if err = volumeReplicaController.Run(NumThreads, stopCh); err != nil {
+			klog.Fatalf("Error running CStorVolumeReplica controller: %s", err.Error())
+		}
+		wg.Done()
+	}()
 
 	wg.Wait()
 	return nil

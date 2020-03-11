@@ -24,7 +24,6 @@ require (
 )
 
 replace (
-	//github.com/openebs/api => /home/prateek/gocode/src/github.com/openebs/api
 	k8s.io/api => k8s.io/api v0.17.3
 
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.3

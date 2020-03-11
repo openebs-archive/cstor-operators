@@ -21,11 +21,7 @@ import (
 	"os"
 	"strings"
 
-<<<<<<< HEAD
 	"github.com/openebs/cstor-operators/pkg/log/alertlog"
-=======
-	"github.com/openebs/maya/pkg/alertlog"
->>>>>>> (WIP) fix(cspi-controller): add missing functionality with latest schema changes in CSPI
 
 	"encoding/json"
 
@@ -501,21 +497,7 @@ NAME                                                                            
 cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  used               6K     -
 cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  logicalreferenced  6K     -
 */
-<<<<<<< HEAD
-func Capacity(volName string) (*cstor.CStorVolumeCapacityDetails, error) {
-	capacityVolStr := []string{"get", "used,logicalreferenced", volName}
-	stdoutStderr, err := RunnerVar.RunCombinedOutput(VolumeReplicaOperator, capacityVolStr...)
-	if err != nil {
-		klog.Errorf("Unable to get volume capacity: %v", string(stdoutStderr))
-		return nil, err
-	}
-	poolCapacity := capacityOutputParser(string(stdoutStderr))
-	if strings.TrimSpace(poolCapacity.Total) == "" || strings.TrimSpace(poolCapacity.Used) == "" {
-		return nil, fmt.Errorf("unable to get volume capacity from capacity parser")
-	}
-	return poolCapacity, nil
-}
-=======
+//TODO: Needs to be fixed during CVR changes
 //func Capacity(volName string) (*cstor.CStorVolumeCapacityAttr, error) {
 //	capacityVolStr := []string{"get", "used,logicalused", volName}
 //	stdoutStderr, err := RunnerVar.RunCombinedOutput(VolumeReplicaOperator, capacityVolStr...)
@@ -529,7 +511,6 @@ func Capacity(volName string) (*cstor.CStorVolumeCapacityDetails, error) {
 //	}
 //	return poolCapacity, nil
 //}
->>>>>>> (WIP) fix(cspi-controller): add missing functionality with latest schema changes in CSPI
 
 // Status function gives the status of cvr which extracted and mapped to a set of cvr statuses
 // after getting the zfs volume status
@@ -626,7 +607,6 @@ cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800
 //	}
 //	return capacity
 //}
->>>>>>> (WIP) fix(cspi-controller): add missing functionality with latest schema changes in CSPI
 
 // GenerateReplicaID generate new replicaID for given CVR
 func GenerateReplicaID(cvr *cstor.CStorVolumeReplica) error {

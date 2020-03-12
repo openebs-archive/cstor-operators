@@ -25,7 +25,7 @@ import (
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/maya/pkg/version"
 	"github.com/pkg/errors"
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	v1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -59,7 +59,7 @@ type client struct {
 
 type transformSvcFunc func(*corev1.Service)
 type transformSecretFunc func(*corev1.Secret)
-type transformConfigFunc func(*admissionregistrationv1.ValidatingWebhookConfiguration)
+type transformConfigFunc func(*v1beta1.ValidatingWebhookConfiguration)
 
 var (
 	// TimeoutSeconds specifies the timeout for this webhook. After the timeout passes,
@@ -68,7 +68,7 @@ var (
 	// The timeout value must be between 1 and 30 seconds.
 	five = int32(5)
 	// Ignore means that an error calling the webhook is ignored.
-	Ignore = admissionregistrationv1.Ignore
+	Ignore = v1beta1.Ignore
 	// transformation function lists to upgrade webhook resources
 	transformSecret = []transformSecretFunc{}
 	transformSvc    = []transformSvcFunc{}
@@ -157,51 +157,51 @@ func (c *client) createAdmissionService(
 		)
 	}
 
-	sideEffectClass := admissionregistrationv1.SideEffectClassNone
+	// sideEffectClass := v1beta1.SideEffectClassNoneOnDryRun
 
-	webhookHandler := admissionregistrationv1.ValidatingWebhook{
+	webhookHandler := v1beta1.ValidatingWebhook{
 		Name: webhookHandlerName,
-		Rules: []admissionregistrationv1.RuleWithOperations{{
-			Operations: []admissionregistrationv1.OperationType{
-				admissionregistrationv1.Create,
-				admissionregistrationv1.Delete,
+		Rules: []v1beta1.RuleWithOperations{{
+			Operations: []v1beta1.OperationType{
+				v1beta1.Create,
+				v1beta1.Delete,
 			},
-			Rule: admissionregistrationv1.Rule{
+			Rule: v1beta1.Rule{
 				APIGroups:   []string{"*"},
 				APIVersions: []string{"*"},
 				Resources:   []string{"persistentvolumeclaims"},
 			},
 		},
 			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Create,
-					admissionregistrationv1.Update,
-					admissionregistrationv1.Delete,
+				Operations: []v1beta1.OperationType{
+					v1beta1.Create,
+					v1beta1.Update,
+					v1beta1.Delete,
 				},
-				Rule: admissionregistrationv1.Rule{
+				Rule: v1beta1.Rule{
 					APIGroups:   []string{"*"},
 					APIVersions: []string{"*"},
 					Resources:   []string{"cstorpoolclusters"},
 				},
 			}},
-		ClientConfig: admissionregistrationv1.WebhookClientConfig{
-			Service: &admissionregistrationv1.ServiceReference{
+		ClientConfig: v1beta1.WebhookClientConfig{
+			Service: &v1beta1.ServiceReference{
 				Namespace: namespace,
 				Name:      serviceName,
 				Path:      StrPtr(validationPath),
 			},
 			CABundle: signingCert,
 		},
-		SideEffects:             &sideEffectClass,
-		AdmissionReviewVersions: []string{"v1", "v1beta1"},
-		TimeoutSeconds:          &five,
-		FailurePolicy:           &Ignore,
+		// SideEffects:             &sideEffectClass,
+		// AdmissionReviewVersions: []string{"v1"},
+		TimeoutSeconds: &five,
+		FailurePolicy:  &Ignore,
 	}
 
-	validator := &admissionregistrationv1.ValidatingWebhookConfiguration{
+	validator := &v1beta1.ValidatingWebhookConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "validatingWebhookConfiguration",
-			APIVersion: "admissionregistration.k8s.io/v1",
+			APIVersion: "admissionregistration.k8s.io/v1beta1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: validatorWebhook,
@@ -212,10 +212,10 @@ func (c *client) createAdmissionService(
 			},
 			OwnerReferences: []metav1.OwnerReference{ownerReference},
 		},
-		Webhooks: []admissionregistrationv1.ValidatingWebhook{webhookHandler},
+		Webhooks: []v1beta1.ValidatingWebhook{webhookHandler},
 	}
 
-	_, err = c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().
+	_, err = c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
 		Create(validator)
 
 	return err
@@ -282,9 +282,9 @@ func (c *client) createCertsSecret(
 // Openebs namespace.
 func GetValidatorWebhook(
 	validator string, kubeClient kubernetes.Interface,
-) (*admissionregistrationv1.ValidatingWebhookConfiguration, error) {
+) (*v1beta1.ValidatingWebhookConfiguration, error) {
 
-	return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(validator, metav1.GetOptions{})
+	return kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(validator, metav1.GetOptions{})
 }
 
 // StrPtr convert a string to a pointer
@@ -486,7 +486,7 @@ func (c *client) preUpgrade(openebsNamespace string) error {
 			}
 		}
 	}
-	webhookConfigList, err := c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().
+	webhookConfigList, err := c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
 		List(metav1.ListOptions{LabelSelector: webhookLabel})
 	if err != nil {
 		return fmt.Errorf("failed to list older webhook config: %s", err.Error())
@@ -499,7 +499,7 @@ func (c *client) preUpgrade(openebsNamespace string) error {
 				t(&newConfig)
 			}
 			newConfig.Labels[types.OpenEBSVersionLabelKey] = version.Current()
-			_, err = c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().
+			_, err = c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
 				Update(&newConfig)
 			if err != nil {
 				return fmt.Errorf("failed to update older webhook config %s: %s", config.Name, err.Error())

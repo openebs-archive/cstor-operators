@@ -21,11 +21,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openebs/cstor-operators/pkg/pool"
-	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/api/pkg/util"
+	"github.com/openebs/cstor-operators/pkg/pool"
+	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )

@@ -17,34 +17,25 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
-const (
-	// DeviceTypeSpare .. spare device type
-	DeviceTypeSpare = "spare"
-	// DeviceTypeReadCache .. read cache device type
-	DeviceTypeReadCache = "cache"
-	// DeviceTypeWriteCache .. write cache device type
-	DeviceTypeWriteCache = "log"
-	// DeviceTypeEmpty .. empty device type.. data disk
-	DeviceTypeEmpty = ""
-)
-
 // addRaidGroup add given raidGroup to pool
-func (oc *OperationsConfig)addRaidGroup(csp *cstor.CStorPoolInstance, r cstor.RaidGroup) error {
+func (oc *OperationsConfig) addRaidGroup(r cstor.RaidGroup, dType, pType string) error {
 	var vdevlist []string
 
-	ptype := csp.Spec.PoolConfig.DataRaidGroupType
-	if len(ptype) == 0 {
+	deviceType := getZFSDeviceType(dType)
+
+	if len(pType) == 0 {
 		// type is not mentioned, return with error
-		return errors.New("type for data raid group not found")
+		return errors.Errorf("type for %s raid group not found", deviceType)
 	}
-    // ToDo: WriteChacheDataRaidGroupd ??
-	// deviceType := getDeviceType(r)
 
 	disklist, err := oc.getPathForBdevList(r.BlockDevices)
 	if err != nil {
@@ -57,54 +48,74 @@ func (oc *OperationsConfig)addRaidGroup(csp *cstor.CStorPoolInstance, r cstor.Ra
 	}
 
 	_, err = zfs.NewPoolExpansion().
-		//WithDeviceType(deviceType).
-		WithType(ptype).
-		WithPool(PoolName(csp)).
+		WithDeviceType(deviceType).
+		WithType(pType).
+		WithPool(PoolName()).
 		WithVdevList(vdevlist).
 		Execute()
 	return err
 }
 
-// addNewVdevFromCSP will add new disk, which is not being used in pool, from csp to given pool
-func (oc *OperationsConfig)addNewVdevFromCSP(csp *cstor.CStorPoolInstance) error {
+// addNewVdevFromCSP will add new disk, which is not being used in pool, from cspi to given pool
+func (oc *OperationsConfig) addNewVdevFromCSP(cspi *cstor.CStorPoolInstance) error {
 	var err error
 
 	poolTopology, err := zfs.NewPoolDump().
-		WithPool(PoolName(csp)).
+		WithPool(PoolName()).
 		WithStripVdevPath().
 		Execute()
 	if err != nil {
 		return errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
 	}
 
-	for _, raidGroup := range csp.Spec.DataRaidGroups {
-		wholeGroup := true
-		var devlist []string
+	raidGroupConfigMap := getRaidGroupsConfigMap(cspi)
 
-		for _, bdev := range raidGroup.BlockDevices {
-			newPath, er := oc.getPathForBDev(bdev.BlockDeviceName)
-			if er != nil {
-				return errors.Errorf("Failed get bdev {%s} path err {%s}", bdev.BlockDeviceName, er.Error())
+	for deviceType, raidGroupConfig := range raidGroupConfigMap {
+		for _, raidGroup := range raidGroupConfig.RaidGroups {
+			isPoolExpanded := false
+			wholeGroup := true
+			var message string
+			var devlist []string
+
+			for _, bdev := range raidGroup.BlockDevices {
+				newPath, er := oc.getPathForBDev(bdev.BlockDeviceName)
+				if er != nil {
+					return errors.Errorf("Failed get bdev {%s} path err {%s}", bdev.BlockDeviceName, er.Error())
+				}
+				if _, isUsed := checkIfDeviceUsed(newPath, poolTopology); !isUsed {
+					devlist = append(devlist, newPath[0])
+				} else {
+					wholeGroup = false
+				}
 			}
-			if _, isUsed := checkIfDeviceUsed(newPath, poolTopology); !isUsed {
-				devlist = append(devlist, newPath[0])
-			} else {
-				wholeGroup = false
+			/* Perform vertical Pool expansion only if entier raid group is added */
+			if wholeGroup {
+				if er := oc.addRaidGroup(raidGroup, deviceType, raidGroupConfig.RaidGroupType); er != nil {
+					err = ErrorWrapf(err, "Failed to add raidGroup{%#v}.. %s", raidGroup, er.Error())
+				} else {
+					isPoolExpanded = true
+					message = fmt.Sprintf(
+						"Pool Expanded Successfully By Adding RaidGroup With BlockDevices: %v device type: %s pool type: %s",
+						raidGroup.GetBlockDevices(),
+						deviceType,
+						raidGroupConfig.RaidGroupType,
+					)
+				}
+			} else if len(devlist) != 0 && raidGroupConfig.RaidGroupType == string(cstor.PoolStriped) {
+				if _, er := zfs.NewPoolExpansion().
+					WithDeviceType(getZFSDeviceType(deviceType)).
+					WithVdevList(devlist).
+					WithPool(PoolName()).
+					Execute(); er != nil {
+					err = ErrorWrapf(err, "Failed to add devlist %v.. err {%s}", devlist, er.Error())
+				} else {
+					isPoolExpanded = true
+					message = fmt.Sprintf(
+						"Pool Expanded Successfully By Adding BlockDevice Under Raid Group")
+				}
 			}
-		}
-		/* Perform vertical Pool expansion only if entier raid group is added */
-		if wholeGroup {
-			if er := oc.addRaidGroup(csp, raidGroup); er != nil {
-				err = ErrorWrapf(err, "Failed to add raidGroup{%#v}.. %s", raidGroup, er.Error())
-			}
-		} else if len(devlist) != 0 && csp.Spec.PoolConfig.DataRaidGroupType == string(cstor.PoolStriped) {
-			// ToDo: WriteCacheRaidGroups
-			if _, er := zfs.NewPoolExpansion().
-				//WithDeviceType(getDeviceType(raidGroup)).
-				WithVdevList(devlist).
-				WithPool(PoolName(csp)).
-				Execute(); er != nil {
-				err = ErrorWrapf(err, "Failed to add devlist %v.. err {%s}", devlist, er.Error())
+			if isPoolExpanded {
+				oc.recorder.Event(cspi, corev1.EventTypeNormal, "Pool Expansion", message)
 			}
 		}
 	}
@@ -151,7 +162,7 @@ func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (s
 	poolTopology, err := zfs.
 		NewPoolDump().
 		WithStripVdevPath().
-		WithPool(PoolName(cspi)).
+		WithPool(PoolName()).
 		Execute()
 	if err != nil {
 		return "", errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
@@ -162,6 +173,7 @@ func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (s
 	}
 
 	if len(oldPaths) == 0 {
+		// Might be pool expansion case i.e added new vdev
 		return "", nil
 	}
 
@@ -176,7 +188,14 @@ func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (s
 	_, err = zfs.NewPoolDiskReplace().
 		WithOldVdev(usedPath).
 		WithNewVdev(npath[0]).
-		WithPool(PoolName(cspi)).
+		WithPool(PoolName()).
 		Execute()
+	if err == nil {
+		klog.Infof("Triggered replacement of %s with %s on pool %s",
+			usedPath,
+			npath[0],
+			PoolName(),
+		)
+	}
 	return npath[0], err
 }

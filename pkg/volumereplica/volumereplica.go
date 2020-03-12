@@ -497,19 +497,20 @@ NAME                                                                            
 cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  used               6K     -
 cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  logicalreferenced  6K     -
 */
-func Capacity(volName string) (*cstor.CStorVolumeCapacityDetails, error) {
-	capacityVolStr := []string{"get", "used,logicalreferenced", volName}
-	stdoutStderr, err := RunnerVar.RunCombinedOutput(VolumeReplicaOperator, capacityVolStr...)
-	if err != nil {
-		klog.Errorf("Unable to get volume capacity: %v", string(stdoutStderr))
-		return nil, err
-	}
-	poolCapacity := capacityOutputParser(string(stdoutStderr))
-	if strings.TrimSpace(poolCapacity.Total) == "" || strings.TrimSpace(poolCapacity.Used) == "" {
-		return nil, fmt.Errorf("unable to get volume capacity from capacity parser")
-	}
-	return poolCapacity, nil
-}
+//TODO: Needs to be fixed during CVR changes
+//func Capacity(volName string) (*cstor.CStorVolumeCapacityAttr, error) {
+//	capacityVolStr := []string{"get", "used,logicalused", volName}
+//	stdoutStderr, err := RunnerVar.RunCombinedOutput(VolumeReplicaOperator, capacityVolStr...)
+//	if err != nil {
+//		klog.Errorf("Unable to get volume capacity: %v", string(stdoutStderr))
+//		return nil, err
+//	}
+//	poolCapacity := capacityOutputParser(string(stdoutStderr))
+//	if strings.TrimSpace(poolCapacity.TotalAllocated) == "" || strings.TrimSpace(poolCapacity.Used) == "" {
+//		return nil, fmt.Errorf("unable to get volume capacity from capacity parser")
+//	}
+//	return poolCapacity, nil
+//}
 
 // Status function gives the status of cvr which extracted and mapped to a set of cvr statuses
 // after getting the zfs volume status
@@ -582,30 +583,30 @@ cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800
 */
 // capacityOutputParser parse output of `zfs get` command to extract the capacity of the pool.
 // ToDo: Need to find some better way e.g contract for zfs command outputs.
-func capacityOutputParser(output string) *cstor.CStorVolumeCapacityDetails {
-	var outputStr []string
-	// Initialize capacity object.
-	// 'TotalAllocated' value(on cvr) is filled from the value of 'used' property in 'zfs get' output.
-	// 'Used' value(on cvr) is filled from the value of 'logicalreferenced' property in 'zfs get' output.
-	capacity := &cstor.CStorVolumeCapacityDetails{
-		Total: "",
-		Used:  "",
-	}
-	if strings.TrimSpace(string(output)) != "" {
-		outputStr = strings.Split(string(output), "\n")
-		if !(len(outputStr) < 3) {
-			poolCapacityArrAlloc := strings.Fields(outputStr[1])
-			poolCapacityArrUsed := strings.Fields(outputStr[2])
-			// If the array 'poolCapacityArrAlloc' and 'poolCapacityArrUsed' is having elements greater than
-			// or less than 4 it might give wrong values and throw out of bound exception.
-			if len(poolCapacityArrAlloc) == 4 && len(poolCapacityArrUsed) == 4 {
-				capacity.Total = strings.TrimSpace(poolCapacityArrAlloc[2])
-				capacity.Used = strings.TrimSpace(poolCapacityArrUsed[2])
-			}
-		}
-	}
-	return capacity
-}
+//func capacityOutputParser(output string) *cstor.CStorVolumeCapacityAttr {
+//	var outputStr []string
+//	// Initialize capacity object.
+//	// 'TotalAllocated' value(on cvr) is filled from the value of 'used' property in 'zfs get' output.
+//	// 'Used' value(on cvr) is filled from the value of 'logicalused' property in 'zfs get' output.
+//	capacity := &cstor.CStorVolumeCapacityAttr{
+//		TotalAllocated: "",
+//		Used:           "",
+//	}
+//	if strings.TrimSpace(string(output)) != "" {
+//		outputStr = strings.Split(string(output), "\n")
+//		if !(len(outputStr) < 3) {
+//			poolCapacityArrAlloc := strings.Fields(outputStr[1])
+//			poolCapacityArrUsed := strings.Fields(outputStr[2])
+//			// If the array 'poolCapacityArrAlloc' and 'poolCapacityArrUsed' is having elements greater than
+//			// or less than 4 it might give wrong values and throw out of bound exception.
+//			if len(poolCapacityArrAlloc) == 4 && len(poolCapacityArrUsed) == 4 {
+//				capacity.TotalAllocated = strings.TrimSpace(poolCapacityArrAlloc[2])
+//				capacity.Used = strings.TrimSpace(poolCapacityArrUsed[2])
+//			}
+//		}
+//	}
+//	return capacity
+//}
 
 // GenerateReplicaID generate new replicaID for given CVR
 func GenerateReplicaID(cvr *cstor.CStorVolumeReplica) error {

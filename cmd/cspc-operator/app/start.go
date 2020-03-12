@@ -19,20 +19,21 @@ package app
 import (
 	"context"
 	"flag"
+	"os"
+	"os/signal"
+	"strconv"
+	"time"
+
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	informers "github.com/openebs/api/pkg/client/informers/externalversions"
 	leader "github.com/openebs/api/pkg/kubernetes/leaderelection"
-	"github.com/openebs/cstor-operators/pkg/controllers/cspc-controller"
+	cspccontroller "github.com/openebs/cstor-operators/pkg/controllers/cspc-controller"
 	"github.com/pkg/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
-	"os"
-	"os/signal"
-	"strconv"
-	"time"
 )
 
 var (
@@ -46,6 +47,7 @@ var (
 	leaderElection          = flag.Bool("leader-election", false, "Enables leader election.")
 	leaderElectionNamespace = flag.String("leader-election-namespace", "", "The namespace where the leader election resource exists. Defaults to the pod namespace if not set.")
 )
+
 const (
 	// ResyncInterval is sync interval of the watcher
 	ResyncInterval = 30 * time.Second
@@ -70,7 +72,6 @@ func Start() error {
 	if err != nil {
 		return errors.Wrap(err, "error building kubernetes clientset")
 	}
-
 
 	// Building OpenEBS Clientset
 	openebsClient, err := clientset.NewForConfig(cfg)
@@ -107,7 +108,7 @@ func Start() error {
 		stopCh := make(chan struct{})
 		kubeInformerFactory.Start(stopCh)
 		cspcInformerFactory.Start(stopCh)
-		go controller.Run(2,stopCh)
+		go controller.Run(2, stopCh)
 
 		// ...until SIGINT
 		c := make(chan os.Signal, 1)
@@ -115,7 +116,6 @@ func Start() error {
 		<-c
 		close(stopCh)
 	}
-
 
 	if !*leaderElection {
 		run(context.TODO())
@@ -129,7 +129,6 @@ func Start() error {
 		}
 	}
 	return nil
-
 }
 
 // GetClusterConfig return the config for k8s.

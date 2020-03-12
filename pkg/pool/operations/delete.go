@@ -24,18 +24,19 @@ import (
 
 // Delete will destroy the pool for given cspi.
 // It will also perform labelclear for pool disk.
-func (oc *OperationsConfig)Delete(cspi *cstor.CStorPoolInstance) error {
-	klog.Infof("Destroying a pool {%s}", PoolName(cspi))
+func (oc *OperationsConfig) Delete(cspi *cstor.CStorPoolInstance) error {
+	zpoolName := PoolName()
+	klog.Infof("Destroying a pool {%s}", zpoolName)
 
 	// Let's check if pool exists or not
-	if poolExist := checkIfPoolPresent(PoolName(cspi)); !poolExist {
-		klog.Infof("Pool %s not imported.. so, can't destroy", PoolName(cspi))
+	if poolExist := checkIfPoolPresent(zpoolName); !poolExist {
+		klog.Infof("Pool %s not imported.. so, can't destroy", zpoolName)
 		return nil
 	}
 
 	// First delete a pool
 	ret, err := zfs.NewPoolDestroy().
-		WithPool(PoolName(cspi)).
+		WithPool(zpoolName).
 		Execute()
 	if err != nil {
 		klog.Errorf("Failed to destroy a pool {%s}.. %s", ret, err.Error())
@@ -44,7 +45,14 @@ func (oc *OperationsConfig)Delete(cspi *cstor.CStorPoolInstance) error {
 
 	// We successfully deleted the pool.
 	// We also need to clear the label for attached disk
-	for _, r := range cspi.Spec.DataRaidGroups {
+	oc.ClearPoolLabel(cspi.GetAllRaidGroups()...)
+
+	return nil
+}
+
+// ClearPoolLabel clears the pool labels on disks
+func (oc *OperationsConfig) ClearPoolLabel(raidGroups ...cstor.RaidGroup) {
+	for _, r := range raidGroups {
 		disklist, err := oc.getPathForBdevList(r.BlockDevices)
 		if err != nil {
 			klog.Errorf("Failed to fetch vdev path, skipping labelclear.. %s", err.Error())
@@ -57,6 +65,4 @@ func (oc *OperationsConfig)Delete(cspi *cstor.CStorPoolInstance) error {
 			}
 		}
 	}
-
-	return nil
 }

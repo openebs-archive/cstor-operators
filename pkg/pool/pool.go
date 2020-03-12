@@ -23,6 +23,7 @@ import (
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	zpool "github.com/openebs/api/pkg/internalapis/apis/cstor"
 	"github.com/openebs/api/pkg/util"
+	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"k8s.io/klog"
 )
 
@@ -113,14 +114,16 @@ func GetPoolName() ([]string, error) {
 
 // CheckForZreplInitial is blocking call for checking status of zrepl in cstor-pool container.
 func CheckForZreplInitial(ZreplRetryInterval time.Duration) {
+	zStatusCmd := zfs.NewPoolStatus()
 	for {
-		_, err := RunnerVar.RunCombinedOutput(zpool.PoolOperator, "status")
+		_, err := zStatusCmd.Execute()
 		if err != nil {
 			time.Sleep(ZreplRetryInterval)
 			klog.Errorf("zpool status returned error in zrepl startup : %v", err)
-			klog.Infof("Waiting for zpool replication container to start...")
+			klog.Infof("Waiting for pool container to start...")
 			continue
 		}
+		klog.V(4).Infof("Zrepl process inside pool Container started")
 		break
 	}
 }

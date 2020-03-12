@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/openebs/api v0.0.0-20200304155919-9ac1d4814a3f
+	github.com/openebs/api v0.0.0-20200311104100-f6a5bd72fae3
 	github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5
@@ -24,7 +24,6 @@ require (
 )
 
 replace (
-	//github.com/openebs/api => /home/prateek/gocode/src/github.com/openebs/api
 	k8s.io/api => k8s.io/api v0.17.3
 
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.3

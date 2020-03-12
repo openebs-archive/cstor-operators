@@ -20,7 +20,6 @@ import (
 	"os"
 
 	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/pkg/errors"
 )
 
@@ -39,8 +38,8 @@ func ErrorWrapf(err error, format string, args ...interface{}) error {
 	return errors.Wrapf(err, format, args...)
 }
 
-// PoolName return pool name for given CSP object
-func PoolName(csp *cstor.CStorPoolInstance) string {
+// PoolName return pool name for given CSPI object
+func PoolName() string {
 	return PoolPrefix + os.Getenv(string(common.OpenEBSIOPoolName))
 }
 

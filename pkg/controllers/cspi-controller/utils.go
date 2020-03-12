@@ -19,6 +19,7 @@ package cspicontroller
 import (
 	"os"
 	"reflect"
+
 	types "github.com/openebs/api/pkg/apis/types"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
@@ -35,21 +36,7 @@ const (
 
 // IsRightCStorPoolInstanceMgmt is to check if the pool request is for this pod.
 func IsRightCStorPoolInstanceMgmt(cspi *cstor.CStorPoolInstance) bool {
-	return os.Getenv(string(OpenEBSIOCSPIID)) == string(cspi.GetUID())
-}
-
-// IsDestroyed is to check if the call is for cStorPoolInstance destroy.
-func IsDestroyed(cspi *cstor.CStorPoolInstance) bool {
-	return cspi.ObjectMeta.DeletionTimestamp != nil
-}
-
-// IsOnlyStatusChange is to check only status change of cStorPoolInstance object.
-func IsOnlyStatusChange(ocspi, ncspi *cstor.CStorPoolInstance) bool {
-	if reflect.DeepEqual(ocspi.Spec, ncspi.Spec) &&
-		!reflect.DeepEqual(ocspi.Status, ncspi.Status) {
-		return true
-	}
-	return false
+	return os.Getenv(OpenEBSIOCSPIID) == string(cspi.GetUID())
 }
 
 // IsStatusChange is to check only status change of cStorPoolInstance object.
@@ -57,45 +44,9 @@ func IsStatusChange(oldStatus, newStatus cstor.CStorPoolInstanceStatus) bool {
 	return !reflect.DeepEqual(oldStatus, newStatus)
 }
 
-// IsSyncEvent is to check if ResourceVersion of cStorPoolInstance object is not modifed.
-func IsSyncEvent(ocspi, ncspi *cstor.CStorPoolInstance) bool {
-	return ncspi.ResourceVersion == ocspi.ResourceVersion
-}
-
-// IsEmptyStatus is to check if the status of cStorPoolInstance object is empty.
-func IsEmptyStatus(cspi *cstor.CStorPoolInstance) bool {
-	return cspi.Status.Phase == cstor.CStorPoolStatusEmpty
-}
-
-// IsPendingStatus is to check if the status of cStorPoolInstance object is pending.
-func IsPendingStatus(cspi *cstor.CStorPoolInstance) bool {
-	return cspi.Status.Phase == cstor.CStorPoolStatusPending
-}
-
-// IsErrorDuplicate is to check if the status of cStorPoolInstance object is error-duplicate.
-func IsErrorDuplicate(cspi *cstor.CStorPoolInstance) bool {
-	return cspi.Status.Phase == cstor.CStorPoolStatusErrorDuplicate
-}
-
-// IsDeletionFailedBefore is to make sure no other operation should happen if the
-// status of cStorPoolInstance is deletion-failed.
-func IsDeletionFailedBefore(cspi *cstor.CStorPoolInstance) bool {
-	return cspi.Status.Phase == cstor.CStorPoolStatusDeletionFailed
-}
-
-// IsUIDSet check if UID is set or not
-func IsUIDSet(cspi *cstor.CStorPoolInstance) bool {
-	return len(cspi.ObjectMeta.UID) != 0
-}
-
 // IsReconcileDisabled check if reconciliation is disabled for given object or not
 func IsReconcileDisabled(cspi *cstor.CStorPoolInstance) bool {
-	return cspi.Annotations[string(types.OpenEBSDisableReconcileLabelKey)] == "true"
-}
-
-// IsHostNameChanged check if hostname for CSPI object is changed
-func IsHostNameChanged(ocspi, ncspi *cstor.CStorPoolInstance) bool {
-	return ncspi.Spec.HostName != ocspi.Spec.HostName
+	return cspi.HasAnnotation(types.OpenEBSDisableReconcileLabelKey, "true")
 }
 
 // IsEmpty check if string is empty or not
@@ -111,9 +62,4 @@ func ErrorWrapf(err error, format string, args ...interface{}) error {
 	}
 
 	return errors.Wrapf(err, format, args...)
-}
-
-// PoolName return pool name for given CSPI object
-func PoolName(cspi *cstor.CStorPoolInstance) string {
-	return PoolPrefix + string(cspi.ObjectMeta.UID)
 }

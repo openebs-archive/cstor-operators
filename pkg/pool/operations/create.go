@@ -25,20 +25,20 @@ import (
 )
 
 // Create will create the pool for given csp object
-func (oc *OperationsConfig)Create(csp *cstor.CStorPoolInstance) error {
+func (oc *OperationsConfig) Create(cspi *cstor.CStorPoolInstance) error {
 	var err error
 
 	// Let's check if there is any disk having the pool config
 	// If so then we will not create the pool
-	ret, notImported, err := oc.checkIfPoolNotImported(csp)
+	ret, notImported, err := oc.checkIfPoolNotImported(cspi)
 	if err != nil {
 		return errors.Errorf("Failed to check not imported pool %s", err.Error())
 	}
 	if notImported {
-		return errors.Errorf("Pool {%s} is in faulty state.. %s", PoolName(csp), ret)
+		return errors.Errorf("Pool {%s} is in faulty state.. %s", PoolName(), ret)
 	}
 
-	klog.Infof("Creating a pool for %s %s", csp.Name, PoolName(csp))
+	klog.Infof("Creating a pool for %s %s", cspi.Name, PoolName())
 
 	// First create a pool
 	// TODO, IsWriteCache, IsSpare, IsReadCache should be disable for actual pool?
@@ -49,35 +49,37 @@ func (oc *OperationsConfig)Create(csp *cstor.CStorPoolInstance) error {
 	// 1. zpool create newpool mirror v0 v1
 	// 2. zpool add newpool log mirror v4 v5
 	// 3. zpool add newpool mirror v2 v3
-	spec := csp.Spec.DeepCopy()
-	raidGroups := spec.DataRaidGroups
-	for i, r := range raidGroups {
-			// we found the main raidgroup. let's create the pool
-			err = oc.createPool(csp, r)
-			if err != nil {
-				return errors.Errorf("Failed to create pool {%s} : %s",
-					PoolName(csp), err.Error())
-			}
-			// Remove this raidGroup
-			raidGroups = append(raidGroups[:i], raidGroups[i+1:]...)
-			break
+	cspiCopy := cspi.DeepCopy()
+	for i, r := range cspiCopy.Spec.DataRaidGroups {
+		// we found the main raidgroup. let's create the pool
+		err = oc.createPool(cspiCopy, r)
+		if err != nil {
+			return errors.Errorf("Failed to create pool {%s} : %s",
+				PoolName(), err.Error())
+		}
+		// Remove this raidGroup
+		cspiCopy.Spec.DataRaidGroups = append(cspiCopy.Spec.DataRaidGroups[:i], cspiCopy.Spec.DataRaidGroups[i+1:]...)
+		break
 	}
 
 	// We created the pool
 	// Lets update it with extra config, if provided
-	for _, r := range raidGroups {
-		if e := oc.addRaidGroup(csp, r); e != nil {
-			err = ErrorWrapf(err, "Failed to add raidGroup{%#v}.. %s", r, e.Error())
+	raidGroupConfigMap := getRaidGroupsConfigMap(cspiCopy)
+	for deviceType, raidGroupConfig := range raidGroupConfigMap {
+		for _, r := range raidGroupConfig.RaidGroups {
+			if e := oc.addRaidGroup(r, deviceType, raidGroupConfig.RaidGroupType); e != nil {
+				err = ErrorWrapf(err, "Failed to add raidGroup{%#v}.. %s", r, e.Error())
+			}
 		}
 	}
 
 	return err
 }
 
-func (oc *OperationsConfig)createPool(csp *cstor.CStorPoolInstance, r cstor.RaidGroup) error {
+func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.RaidGroup) error {
 	var vdevlist []string
 
-	ptype := csp.Spec.PoolConfig.DataRaidGroupType
+	ptype := cspi.Spec.PoolConfig.DataRaidGroupType
 	if len(ptype) == 0 {
 		// type is not mentioned, return with error
 		return errors.New("type for data raid group not found")
@@ -95,7 +97,7 @@ func (oc *OperationsConfig)createPool(csp *cstor.CStorPoolInstance, r cstor.Raid
 	ret, err := zfs.NewPoolCreate().
 		WithType(ptype).
 		WithProperty("cachefile", types.CStorPoolBasePath+types.CacheFileName).
-		WithPool(PoolName(csp)).
+		WithPool(PoolName()).
 		WithVdevList(vdevlist).
 		Execute()
 	if err != nil {

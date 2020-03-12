@@ -19,7 +19,6 @@ package webhook
 import (
 	"testing"
 
-	// apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

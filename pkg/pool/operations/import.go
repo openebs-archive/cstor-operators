@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@ import (
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/pool"
-	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
+	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
@@ -95,26 +96,26 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 // for new imported pool's volumes
 func CheckImportedPoolVolume() {
 	// ToDo: Fix this once cvr controller make in
-	//var err error
-	//
-	//if common.SyncResources.IsImported {
-	//	return
-	//}
-	//
-	//// GetVolumes is called because, while importing a pool, volumes corresponding
-	//// to the pool are also imported. This needs to be handled and made visible
-	//// to cvr controller.
-	//common.InitialImportedPoolVol, err = volumereplica.GetVolumes()
-	//if err != nil {
-	//	common.SyncResources.IsImported = false
-	//	return
-	//}
-	//
-	//// make a check if initialImportedPoolVol is not empty, then notify cvr controller
-	//// through channel.
-	//if len(common.InitialImportedPoolVol) != 0 {
-	//	common.SyncResources.IsImported = true
-	//} else {
-	//	common.SyncResources.IsImported = false
-	//}
+	var err error
+
+	if common.SyncResources.IsImported {
+		return
+	}
+
+	// GetVolumes is called because, while importing a pool, volumes corresponding
+	// to the pool are also imported. This needs to be handled and made visible
+	// to cvr controller.
+	common.InitialImportedPoolVol, err = volumereplica.GetVolumes()
+	if err != nil {
+		common.SyncResources.IsImported = false
+		return
+	}
+
+	// make a check if initialImportedPoolVol is not empty, then notify cvr controller
+	// through channel.
+	if len(common.InitialImportedPoolVol) != 0 {
+		common.SyncResources.IsImported = true
+	} else {
+		common.SyncResources.IsImported = false
+	}
 }

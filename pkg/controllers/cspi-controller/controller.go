@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import (
 	"k8s.io/klog"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	common "github.com/openebs/cstor-operators/pkg/pool-manager-utils"
+	common "github.com/openebs/cstor-operators/pkg/controllers/common"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
 
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"

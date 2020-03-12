@@ -583,36 +583,35 @@ func TestVolumeStatus(t *testing.T) {
 	}
 }
 
-//TODO: Needs to be fixed with CVR changes
 // TestVolumeCapacity tests Capacity function.
-//func TestVolumeCapacity(t *testing.T) {
-//	testVolumeResource := map[string]struct {
-//		// volumeName holds the name of zfs volume. This name is the actual zfs volume name but not the cvr name.
-//		// However, volume name is trivial here as the the ouptut of 'zfs get' is being mocked and
-//		// changing the volume name to any value won't effect but the volume name is required by function
-//		// which is under test.
-//		volumeName string
-//		// expectedCapacity is the capacity that is expected for the test case.
-//		expectedCapacity *cstor.CStorVolumeCapacityDetails
-//	}{
-//		"#1 VolumeCapacity": {
-//			volumeName: "cstor-530c9c4f-e0df-11e8-94a8-42010a80013b",
-//			expectedCapacity: &cstor.CStorVolumeCapacityDetails{
-//				Total: "10K",
-//				Used:  "6K",
-//			},
-//		},
-//	}
-//	for name, test := range testVolumeResource {
-//		t.Run(name, func(t *testing.T) {
-//			RunnerVar = TestRunner{}
-//			gotCapacity, err := Capacity(test.volumeName)
-//			if err != nil {
-//				t.Fatal("Some error occured in getting volume capacity:", err)
-//			}
-//			if !(reflect.DeepEqual(test.expectedCapacity, gotCapacity)) {
-//				t.Errorf("Test case failed as expected object: %v but got object:%v", test.expectedCapacity, gotCapacity)
-//			}
-//		})
-//	}
-//}
+func TestVolumeCapacity(t *testing.T) {
+	testVolumeResource := map[string]struct {
+		// volumeName holds the name of zfs volume. This name is the actual zfs volume name but not the cvr name.
+		// However, volume name is trivial here as the the ouptut of 'zfs get' is being mocked and
+		// changing the volume name to any value won't effect but the volume name is required by function
+		// which is under test.
+		volumeName string
+		// expectedCapacity is the capacity that is expected for the test case.
+		expectedCapacity *cstor.CStorVolumeCapacityDetails
+	}{
+		"#1 VolumeCapacity": {
+			volumeName: "cstor-530c9c4f-e0df-11e8-94a8-42010a80013b",
+			expectedCapacity: &cstor.CStorVolumeCapacityDetails{
+				Total: "10K",
+				Used:  "6K",
+			},
+		},
+	}
+	for name, test := range testVolumeResource {
+		t.Run(name, func(t *testing.T) {
+			RunnerVar = TestRunner{}
+			gotCapacity, err := Capacity(test.volumeName)
+			if err != nil {
+				t.Fatal("Some error occured in getting volume capacity:", err)
+			}
+			if !(reflect.DeepEqual(test.expectedCapacity, gotCapacity)) {
+				t.Errorf("Test case failed as expected object: %v but got object:%v", test.expectedCapacity, gotCapacity)
+			}
+		})
+	}
+}

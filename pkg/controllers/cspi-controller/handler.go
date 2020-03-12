@@ -195,40 +195,26 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 	var status cstor.CStorPoolInstanceStatus
 	var err error
 	pool := zpool.PoolName()
+	propertyList := []string{"health", "io.openebs:readonly"}
 
-	state, er := zpool.GetPropertyValue(pool, "health")
-	if er != nil {
-		err = zpool.ErrorWrapf(err, "Failed to fetch health")
+	valueList, er := zpool.GetListOfPropertyValues(pool, propertyList)
+	if er != nil || len(valueList) != len(propertyList) {
+		return errors.Wrapf(err, "Failed to fetch %v output: %v", propertyList, valueList)
 	} else {
-		status.Phase = cstor.CStorPoolInstancePhase(state)
+		status.Phase = cstor.CStorPoolInstancePhase(valueList[0])
+		if valueList[1] == "on" {
+			status.ReadOnly = true
+		}
 	}
 
-	freeSize, er := zpool.GetPoolCapacity(pool, "free")
-	if er != nil {
-		err = zpool.ErrorWrapf(err, "Failed to fetch free size")
-	} else {
-		status.Capacity.Free = freeSize
-	}
-
-	usedSize, er := zpool.GetPoolCapacity(pool, "allocated")
-	if er != nil {
-		err = zpool.ErrorWrapf(err, "Failed to fetch used size")
-	} else {
-		status.Capacity.Used = usedSize
-	}
-
-	totalSize, er := zpool.GetPoolCapacity(pool, "size")
-	if er != nil {
-		err = zpool.ErrorWrapf(err, "Failed to fetch total size")
-	} else {
-		status.Capacity.Total = totalSize
-	}
-
+	status.Capacity, err = zpool.GetCSPICapacity(pool)
 	if err != nil {
 		return errors.Errorf("Failed to sync due to %s", err.Error())
 	}
+	c.updateROMode(&status, *cspi)
 
 	if IsStatusChange(cspi.Status, status) {
+		klog.Infof("Status %v", status)
 		cspi.Status = status
 		_, err = zpool.OpenEBSClient.
 			CstorV1().
@@ -239,6 +225,51 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 		}
 	}
 	return nil
+}
+
+// updateROMode sets/unsets the pool readonly mode property. It does the following changes
+// 1. If pool used space reached to roThresholdLimit then pool will be set to readonly mode
+// 2. If pool was in readonly mode if roThresholdLimit/pool expansion was happened then it
+//    unsets the ReadOnly Mode.
+// NOTE: This function must be invoked after having the updated cspiStatus information
+func (c *CStorPoolInstanceController) updateROMode(
+	cspiStatus *cstor.CStorPoolInstanceStatus, cspi cstor.CStorPoolInstance) {
+	roThresholdLimit := cspi.Spec.PoolConfig.ROThresholdLimit
+	totalInBytes := cspiStatus.Capacity.Total.Value()
+	usedInBytes := cspiStatus.Capacity.Used.Value()
+	pool := zpool.PoolName()
+
+	usedPercentage := (usedInBytes * 100) / totalInBytes
+	if (int(usedPercentage) >= roThresholdLimit) &&
+		(roThresholdLimit != 0 && roThresholdLimit != 100) {
+		if !cspiStatus.ReadOnly {
+			if err := zpool.SetPoolRDMode(pool, true); err != nil {
+				// Here, we are just logging in next reconciliation it will be retried
+				klog.Errorf("failed to set pool ReadOnly Mode to %t error: %s", true, err.Error())
+			} else {
+				cspiStatus.ReadOnly = true
+				c.recorder.Event(&cspi,
+					corev1.EventTypeWarning,
+					"PoolReadOnlyThreshold",
+					"Pool storage limit reached to thresholdLimit. Pool expansion is required to make it's volume replicas RW",
+				)
+			}
+		}
+	} else {
+		if cspiStatus.ReadOnly {
+			if err := zpool.SetPoolRDMode(pool, false); err != nil {
+				klog.Errorf("Failed to unset pool readOnly mode : %v", err)
+			} else {
+				cspiStatus.ReadOnly = false
+				c.recorder.Event(&cspi,
+					corev1.EventTypeNormal,
+					"PoolReadOnlyThreshold",
+					"Pool roThresholdLimit or pool got expanded due to that pool readOnly mode is unset",
+				)
+			}
+
+		}
+	}
 }
 
 // getCSPIObjFromKey returns object corresponding to the resource key

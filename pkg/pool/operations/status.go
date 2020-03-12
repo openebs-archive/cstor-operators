@@ -17,11 +17,12 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"strings"
 
+	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
+	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // GetPropertyValue will return value of given property for given pool
@@ -39,18 +40,66 @@ func GetPropertyValue(poolName, property string) (string, error) {
 	return outStr[0], nil
 }
 
-func GetPoolCapacity(poolName, capacityProperty string) (resource.Quantity, error) {
-	size, err := GetPropertyValue(poolName, capacityProperty)
+// GetListOfPropertyValues will return value list for given property list
+func GetListOfPropertyValues(poolName string, propertyList []string) ([]string, error) {
+	ret, err := zfs.NewPoolGetProperty().
+		WithScriptedMode(true).
+		WithField("value").
+		WithPropertyList(propertyList).
+		WithPool(poolName).
+		Execute()
 	if err != nil {
-		return resource.Quantity{}, errors.Wrapf(err, "failed to get pool %s size for pool %s", capacityProperty,poolName)
+		return []string{}, err
 	}
-	sizeInBinarySI := GetCapacityInBinarySi(size)
+	outStr := strings.Split(strings.TrimSpace(string(ret)), "\n")
+	return outStr, nil
 
-	poolSize, err := GetCapacityFromString(sizeInBinarySI)
-	if err != nil {
-		return resource.Quantity{}, errors.Wrapf(err, "failed to get parse pool free size for pool %s", poolName)
+}
+
+// GetCSPICapacity returns the free, allocated and total capacities of pool in
+// a structure
+func GetCSPICapacity(poolName string) (cstor.CStorPoolInstanceCapacity, error) {
+	propertyList := []string{"free", "allocated", "size"}
+	cspiCapacity := cstor.CStorPoolInstanceCapacity{}
+	valueList, err := GetListOfPropertyValues(poolName, propertyList)
+	if err != nil || len(valueList) != len(propertyList) {
+		return cspiCapacity, errors.Errorf(
+			"failed to get pool %v properties for pool %s cmd out: %v error: %v",
+			propertyList,
+			poolName,
+			valueList,
+			err,
+		)
 	}
-	return poolSize, nil
+	freeSizeInBinarySI := GetCapacityInBinarySi(valueList[0])
+	allocatedSizeInBinarySI := GetCapacityInBinarySi(valueList[1])
+	totalSizeInBinarySI := GetCapacityInBinarySi(valueList[2])
+
+	cspiCapacity.Free, err = GetCapacityFromString(freeSizeInBinarySI)
+	if err != nil {
+		return cspiCapacity, errors.Wrapf(err,
+			"failed to parse pool free size %s of pool %s",
+			freeSizeInBinarySI,
+			poolName,
+		)
+	}
+	cspiCapacity.Used, err = GetCapacityFromString(allocatedSizeInBinarySI)
+	if err != nil {
+		return cspiCapacity, errors.Wrapf(err,
+			"failed to parse pool used size %s of pool %s",
+			allocatedSizeInBinarySI,
+			poolName,
+		)
+	}
+	cspiCapacity.Total, err = GetCapacityFromString(totalSizeInBinarySI)
+	if err != nil {
+		return cspiCapacity, errors.Wrapf(err,
+			"failed to parse pool total size %s of pool %s",
+			totalSizeInBinarySI,
+			poolName,
+		)
+	}
+	return cspiCapacity, nil
 }
 
 // GetCapacityFromString will return value of given capacity in resource.Quantity form.
@@ -65,8 +114,27 @@ func GetCapacityFromString(capacity string) (resource.Quantity, error) {
 // ToDO: This function currently only converts "K" --> "k" ( Ideally it should be "K" --> "Ki" and similarly
 // ToDo: for other units. Revisit this.
 func GetCapacityInBinarySi(capacity string) string {
-	if strings.Contains(capacity,"K"){
+	if strings.Contains(capacity, "K") {
 		return strings.Replace(capacity, "K", "k", strings.Index(capacity, "K"))
 	}
 	return capacity
+}
+
+// SetPoolRDMode set the pool ReadOnly property based on the arrgument
+func SetPoolRDMode(poolName string, isROMode bool) error {
+	mode := "off"
+	if isROMode {
+		mode = "on"
+	}
+	ret, err := zfs.NewPoolSetProperty().
+		WithProperty("io.openebs:readonly", mode).
+		WithPool(poolName).
+		Execute()
+	if err != nil {
+		return errors.Errorf(
+			"Failed to update readOnly mode to %s out:%v err:%v",
+			mode, string(ret), err)
+	}
+	return nil
+
 }

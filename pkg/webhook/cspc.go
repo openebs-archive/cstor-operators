@@ -247,16 +247,9 @@ func (poolValidator *PoolValidator) poolSpecValidation() (bool, string) {
 	if len(poolValidator.poolSpec.DataRaidGroups) == 0 {
 		return false, "at least one raid group should be present on dataRaidGroups"
 	}
-	if len(poolValidator.poolSpec.WriteCacheRaidGroups) == 0 {
-		return false, "at least one raid group should be present on writeCacheRaidGroups"
-	}
 	if poolValidator.poolSpec.PoolConfig.DataRaidGroupType == string(cstor.PoolStriped) &&
 		len(poolValidator.poolSpec.DataRaidGroups) != 1 {
 		return false, "stripe dataRaidGroups should have exactly one raidGroup"
-	}
-	if poolValidator.poolSpec.PoolConfig.WriteCacheGroupType == string(cstor.PoolStriped) &&
-		len(poolValidator.poolSpec.WriteCacheRaidGroups) != 1 {
-		return false, "stripe writeCacheRaidGroups should have exactly one raidGroup"
 	}
 	for _, raidGroup := range poolValidator.poolSpec.DataRaidGroups {
 		raidGroup := raidGroup // pin it
@@ -265,13 +258,21 @@ func (poolValidator *PoolValidator) poolSpecValidation() (bool, string) {
 			return false, msg
 		}
 	}
-	for _, raidGroup := range poolValidator.poolSpec.WriteCacheRaidGroups {
-		raidGroup := raidGroup // pin it
-		ok, msg := poolValidator.raidGroupValidation(&raidGroup, poolValidator.poolSpec.PoolConfig.WriteCacheGroupType)
-		if !ok {
-			return false, msg
+	// if raid groups are mentioned for writecache then validate
+	if len(poolValidator.poolSpec.WriteCacheRaidGroups) != 0 {
+		if poolValidator.poolSpec.PoolConfig.WriteCacheGroupType == string(cstor.PoolStriped) &&
+			len(poolValidator.poolSpec.WriteCacheRaidGroups) != 1 {
+			return false, "stripe writeCacheRaidGroups should have exactly one raidGroup"
+		}
+		for _, raidGroup := range poolValidator.poolSpec.WriteCacheRaidGroups {
+			raidGroup := raidGroup // pin it
+			ok, msg := poolValidator.raidGroupValidation(&raidGroup, poolValidator.poolSpec.PoolConfig.WriteCacheGroupType)
+			if !ok {
+				return false, msg
+			}
 		}
 	}
+
 	return true, ""
 }
 
@@ -325,6 +326,8 @@ var (
 		cstor.PoolRaidz2:   isRaidz2BDCountValid,
 	}
 	// SupportedCompression is a map holding the supported compressions
+	// TODO: confirm all the compression types supported by control plane
+	// and update the map accordingly
 	SupportedCompression = map[string]bool{
 		"":    true,
 		"off": true,
@@ -340,14 +343,17 @@ func (poolValidator *PoolValidator) poolConfigValidation(
 	if _, ok := SupportedPRaidType[cstor.PoolType(poolConfig.DataRaidGroupType)]; !ok {
 		return false, fmt.Sprintf("unsupported dataRaidGroupType '%s' specified", poolConfig.DataRaidGroupType)
 	}
-	if poolConfig.WriteCacheGroupType == "" {
-		return false, fmt.Sprintf("missing writeCacheGroupType")
-	}
-	if _, ok := SupportedPRaidType[cstor.PoolType(poolConfig.WriteCacheGroupType)]; !ok {
-		return false, fmt.Sprintf("unsupported writeCacheGroupType '%s' specified", poolConfig.WriteCacheGroupType)
-	}
 	if _, ok := SupportedCompression[poolConfig.Compression]; !ok {
 		return false, fmt.Sprintf("unsupported compression '%s' specified", poolConfig.Compression)
+	}
+	// if raid groups are mentioned for writecache then validate
+	if len(poolValidator.poolSpec.WriteCacheRaidGroups) != 0 {
+		if poolConfig.WriteCacheGroupType == "" {
+			return false, fmt.Sprintf("missing writeCacheGroupType")
+		}
+		if _, ok := SupportedPRaidType[cstor.PoolType(poolConfig.WriteCacheGroupType)]; !ok {
+			return false, fmt.Sprintf("unsupported writeCacheGroupType '%s' specified", poolConfig.WriteCacheGroupType)
+		}
 	}
 	return true, ""
 }

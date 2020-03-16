@@ -11,4 +11,4 @@ spec:
       - blockDevices:
           - blockDeviceName: "sparse-1e3a8da94af49e16d937d867777699b0"
       poolConfig:
-        defaultRaidGroupType: "stripe"
+        dataRaidGroupType: "stripe"

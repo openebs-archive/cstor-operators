@@ -58,6 +58,10 @@ func (ac *Config) GetCSPISpec() (*cstor.CStorPoolInstance, error) {
 		poolSpec.PoolConfig.PriorityClassName = ac.CSPC.Spec.DefaultPriorityClassName
 	}
 
+	if poolSpec.PoolConfig.ROThresholdLimit == 0 {
+		poolSpec.PoolConfig.ROThresholdLimit = 85
+	}
+
 	cspiLabels := ac.buildLabelsForCSPI(nodeName)
 	cspiObj := cstor.NewCStorPoolInstance().
 		WithName(ac.CSPC.Name + "-" + rand.String(4)).

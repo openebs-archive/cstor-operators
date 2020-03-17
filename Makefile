@@ -97,7 +97,7 @@ volume-manager-image:
 	@echo "----------------------------"
 	@PNAME=${VOLUME_MANAGER} CTLNAME=${VOLUME_MANAGER} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${VOLUME_MANAGER}/${VOLUME_MANAGER} build/volume-manager/
-	@cd build/${VOLUME_MANAGER} && sudo docker build -t ${HUB_USER}/${VOLUME_MANAGER}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${VOLUME_MANAGER} && sudo docker build -t ${HUB_USER}/cstor-${VOLUME_MANAGER}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${VOLUME_MANAGER}/${VOLUME_MANAGER}
 
 .PHONY: cspc-operator-image
@@ -117,7 +117,7 @@ pool-manager-image:
 	@echo "----------------------------"
 	@PNAME=${POOL_MANAGER} CTLNAME=${POOL_MANAGER} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${POOL_MANAGER}/${POOL_MANAGER} build/pool-manager/
-	@cd build/${POOL_MANAGER} && sudo docker build -t ${HUB_USER}/${POOL_MANAGER}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} --build-arg BUILD_DATE=${BUILD_DATE} . --no-cache
+	@cd build/${POOL_MANAGER} && sudo docker build -t ${HUB_USER}/cstor-${POOL_MANAGER}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} --build-arg BUILD_DATE=${BUILD_DATE} . --no-cache
 	@rm build/${POOL_MANAGER}/${POOL_MANAGER}
 
 .PHONY: cstor-webhook-image

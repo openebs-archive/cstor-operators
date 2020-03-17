@@ -229,6 +229,14 @@ func getDeployTemplateEnvs(cstorid string) []corev1.EnvVar {
 				},
 			},
 		},
+		corev1.EnvVar{
+			Name: "OPENEBS_NAMESPACE",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.namespace",
+				},
+			},
+		},
 	}
 }
 
@@ -260,7 +268,7 @@ func getVolumeMonitorImage() string {
 func getVolumeMgmtImage() string {
 	image, present := os.LookupEnv("OPENEBS_IO_CSTOR_VOLUME_MGMT_IMAGE")
 	if !present {
-		image = "openebs/cstor-volume-mgmt:ci"
+		image = "openebs/cstor-volume-manager:ci"
 	}
 	return image
 }
@@ -385,12 +393,7 @@ func (c *CVCController) getOrCreateCStorTargetDeployment(
 			).
 			Build()
 
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to build deployment object")
-		}
-
 		deployObj, err = c.kubeclientset.AppsV1().Deployments(openebsNamespace).Create(deployObj)
-
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create deployment object")
 		}

@@ -17,6 +17,8 @@ limitations under the License.
 package algorithm
 
 import (
+	"os"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	deployapi "github.com/openebs/api/pkg/kubernetes/apps"
@@ -26,7 +28,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 )
 
 // OpenEBSServiceAccount name of the openebs service accout with required
@@ -77,7 +78,7 @@ var (
 )
 
 // GetPoolDeploySpec returns the pool deployment spec.
-func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deployment) {
+func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) *appsv1.Deployment {
 	deployObj := deployapi.NewDeployment().
 		WithName(cspi.Name).
 		WithNamespace(cspi.Namespace).
@@ -99,7 +100,7 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deplo
 					coreapi.NewContainer().
 						WithImage(getPoolMgmtImage()).
 						WithName(PoolMgmtContainerName).
-						WithImagePullPolicy(corev1.PullAlways).
+						WithImagePullPolicy(corev1.PullIfNotPresent).
 						WithPrivilegedSecurityContext(&privileged).
 						WithEnvsNew(getPoolMgmtEnv(cspi)).
 						WithEnvs(getPoolUIDAsEnv(c.CSPC)).
@@ -109,7 +110,7 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deplo
 						WithImage(getPoolImage()).
 						WithName(PoolContainerName).
 						WithResources(getResourceRequirementForCStorPool(cspi)).
-						WithImagePullPolicy(corev1.PullAlways).
+						WithImagePullPolicy(corev1.PullIfNotPresent).
 						WithPrivilegedSecurityContext(&privileged).
 						WithPortsNew(getContainerPort(12000, 3232, 3233)).
 						WithLivenessProbe(getPoolLivenessProbe()).
@@ -121,7 +122,7 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) (*appsv1.Deplo
 						WithImage(getMayaExporterImage()).
 						WithName(PoolExporterContainerName).
 						// TODO: add default values for resources
-						WithImagePullPolicy(corev1.PullAlways).
+						WithImagePullPolicy(corev1.PullIfNotPresent).
 						WithPrivilegedSecurityContext(&privileged).
 						WithPortsNew(getContainerPort(9500)).
 						WithCommandNew([]string{"maya-exporter"}).

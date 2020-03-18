@@ -19,6 +19,7 @@ package webhook
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"reflect"
@@ -237,14 +238,18 @@ func getDuplicateBlockDeviceList(cspc *cstor.CStorPoolCluster) []string {
 }
 
 func (poolValidator *PoolValidator) poolSpecValidation() (bool, string) {
-	if len(poolValidator.poolSpec.DataRaidGroups) == 0 {
-		return false, "at least one raid group should be present on pool spec"
-	}
 	// TODO : Add validation for pool config
 	// Pool config will require mutating webhooks also.
 	ok, msg := poolValidator.poolConfigValidation(poolValidator.poolSpec.PoolConfig)
 	if !ok {
 		return false, msg
+	}
+	if len(poolValidator.poolSpec.DataRaidGroups) == 0 {
+		return false, "at least one raid group should be present on dataRaidGroups"
+	}
+	if poolValidator.poolSpec.PoolConfig.DataRaidGroupType == string(cstor.PoolStriped) &&
+		len(poolValidator.poolSpec.DataRaidGroups) != 1 {
+		return false, "stripe dataRaidGroups should have exactly one raidGroup"
 	}
 	for _, raidGroup := range poolValidator.poolSpec.DataRaidGroups {
 		raidGroup := raidGroup // pin it
@@ -253,7 +258,59 @@ func (poolValidator *PoolValidator) poolSpecValidation() (bool, string) {
 			return false, msg
 		}
 	}
+	// if raid groups are mentioned for writecache then validate
+	if len(poolValidator.poolSpec.WriteCacheRaidGroups) != 0 {
+		if poolValidator.poolSpec.PoolConfig.WriteCacheGroupType == string(cstor.PoolStriped) &&
+			len(poolValidator.poolSpec.WriteCacheRaidGroups) != 1 {
+			return false, "stripe writeCacheRaidGroups should have exactly one raidGroup"
+		}
+		for _, raidGroup := range poolValidator.poolSpec.WriteCacheRaidGroups {
+			raidGroup := raidGroup // pin it
+			ok, msg := poolValidator.raidGroupValidation(&raidGroup, poolValidator.poolSpec.PoolConfig.WriteCacheGroupType)
+			if !ok {
+				return false, msg
+			}
+		}
+	}
 
+	return true, ""
+}
+
+type validateRaidBDCount func(int) (bool, string)
+
+func isStripedBDCountValid(count int) (bool, string) {
+	if count < 1 {
+		return false, fmt.Sprint("stripe raid group should have atleast one disk")
+	}
+	return true, ""
+}
+
+func isMirroredBDCountValid(count int) (bool, string) {
+	if count%2 != 0 {
+		return false, fmt.Sprint("mirror raid group should have disks in multiple of 2")
+	}
+	return true, ""
+}
+
+func isRaidzBDCountValid(count int) (bool, string) {
+	// the number of disk should be 2^n+1 where n >= 1
+	n := count - 1
+	x := math.Ceil(math.Log2(float64(n)))
+	y := math.Floor(math.Log2(float64(n)))
+	if x != y || x < 1 {
+		return false, fmt.Sprint("raidz raid group should have disks of the order 2^n+1, where n>0")
+	}
+	return true, ""
+}
+
+func isRaidz2BDCountValid(count int) (bool, string) {
+	// the number of disk should be 2^n+2 where n >= 2
+	n := count - 2
+	x := math.Ceil(math.Log2(float64(n)))
+	y := math.Floor(math.Log2(float64(n)))
+	if x != y || x < 2 {
+		return false, fmt.Sprint("raidz raid group should have disks of the order 2^n+2, where n>1")
+	}
 	return true, ""
 }
 
@@ -262,11 +319,19 @@ var (
 	// Value of the keys --
 	// 1. In case of striped this is the minimum number of disk required.
 	// 2. In all other cases this is the exact number of disks required.
-	SupportedPRaidType = map[cstor.PoolType]int{
-		cstor.PoolStriped:  1,
-		cstor.PoolMirrored: 2,
-		cstor.PoolRaidz:    3,
-		cstor.PoolRaidz2:   6,
+	SupportedPRaidType = map[cstor.PoolType]validateRaidBDCount{
+		cstor.PoolStriped:  isStripedBDCountValid,
+		cstor.PoolMirrored: isMirroredBDCountValid,
+		cstor.PoolRaidz:    isRaidzBDCountValid,
+		cstor.PoolRaidz2:   isRaidz2BDCountValid,
+	}
+	// SupportedCompression is a map holding the supported compressions
+	// TODO: confirm all the compression types supported by control plane
+	// and update the map accordingly
+	SupportedCompression = map[string]bool{
+		"":    true,
+		"off": true,
+		"lz":  true,
 	}
 )
 
@@ -276,7 +341,19 @@ func (poolValidator *PoolValidator) poolConfigValidation(
 		return false, fmt.Sprintf("missing dataRaidGroupType")
 	}
 	if _, ok := SupportedPRaidType[cstor.PoolType(poolConfig.DataRaidGroupType)]; !ok {
-		return false, fmt.Sprintf("unsupported raid type '%s' specified", poolConfig.DataRaidGroupType)
+		return false, fmt.Sprintf("unsupported dataRaidGroupType '%s' specified", poolConfig.DataRaidGroupType)
+	}
+	if _, ok := SupportedCompression[poolConfig.Compression]; !ok {
+		return false, fmt.Sprintf("unsupported compression '%s' specified", poolConfig.Compression)
+	}
+	// if raid groups are mentioned for writecache then validate
+	if len(poolValidator.poolSpec.WriteCacheRaidGroups) != 0 {
+		if poolConfig.WriteCacheGroupType == "" {
+			return false, fmt.Sprintf("missing writeCacheGroupType")
+		}
+		if _, ok := SupportedPRaidType[cstor.PoolType(poolConfig.WriteCacheGroupType)]; !ok {
+			return false, fmt.Sprintf("unsupported writeCacheGroupType '%s' specified", poolConfig.WriteCacheGroupType)
+		}
 	}
 	return true, ""
 }
@@ -285,17 +362,11 @@ func (poolValidator *PoolValidator) raidGroupValidation(
 	raidGroup *cstor.RaidGroup, rgType string) (bool, string) {
 
 	if len(raidGroup.BlockDevices) == 0 {
-		return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
+		return false, fmt.Sprintf("empty raid group: number of block devices honouring raid type should be specified")
 	}
 
-	if rgType != string(cstor.PoolStriped) {
-		if len(raidGroup.BlockDevices) != SupportedPRaidType[cstor.PoolType(rgType)] {
-			return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
-		}
-	} else {
-		if len(raidGroup.BlockDevices) < SupportedPRaidType[cstor.PoolType(rgType)] {
-			return false, fmt.Sprintf("number of block devices honouring raid type should be specified")
-		}
+	if ok, msg := SupportedPRaidType[cstor.PoolType(rgType)](len(raidGroup.BlockDevices)); !ok {
+		return false, msg
 	}
 
 	for _, bd := range raidGroup.BlockDevices {

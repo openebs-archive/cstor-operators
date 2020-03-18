@@ -27,6 +27,7 @@ import (
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
+	"reflect"
 )
 
 func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoolInstanceList) error {
@@ -105,6 +106,9 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 	if len(cspisWithoutDeployment) > 0 {
 		pc.createDeployForCSPList(cspc, cspisWithoutDeployment)
 	}
+
+	// sync changes to cspi from cspc e.g. tunables like toleration, resource requirements etc
+	pc.syncCSPI(cspc)
 
 	pc.handleOperations()
 	return nil
@@ -260,4 +264,61 @@ func (c *Controller) GetCSPIWithoutDeployment(cspc *cstor.CStorPoolCluster) ([]c
 		}
 	}
 	return cspiList, nil
+}
+
+// syncCSPI propagates all the required changes from cspc to respective cspi.
+func (pc *PoolConfig) syncCSPI(cspc *cstor.CStorPoolCluster) {
+	cspiList, err := pc.Controller.GetCSPIListForCSPC(cspc)
+	if err != nil {
+		klog.Errorf("failed to sync cspi(s) from its parent cspc %s", cspc.Name)
+	}
+	if len(cspiList.Items) == 0 {
+		klog.Errorf("No cspi(s) found while trying to sync cspi(s) from its parent cspc %s", cspc.Name)
+	}
+
+	for _, cspi := range cspiList.Items {
+		cspi := cspi
+		err := pc.syncCSPIWithCSPC(cspc, &cspi)
+		if err != nil {
+			klog.Errorf("failed to sync cspi %s from its parent cspc %s", cspi.Name, cspc.Name)
+		}
+	}
+}
+
+func (pc *PoolConfig) syncCSPIWithCSPC(cspc *cstor.CStorPoolCluster, cspi *cstor.CStorPoolInstance) error {
+	cspiCopy := cspi.DeepCopy()
+	klog.V(2).Infof("Syncing cspi %s from parent cspc %s", cspiCopy.Name, cspc.Name)
+	for _, poolSpec := range cspc.Spec.Pools {
+		poolSpec := poolSpec
+		cspiCopy.Spec.PoolConfig = poolSpec.PoolConfig
+		defaultPoolConfig(cspiCopy, cspc)
+	}
+
+	if reflect.DeepEqual(cspiCopy, cspi) {
+		gotCSPI, err := pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspiCopy.Namespace).Update(cspiCopy)
+		if err != nil {
+			return errors.Errorf("Failed to sync cspi %s from parent cspc %s", cspiCopy.Name, cspc.Name)
+		}
+		_, err = pc.Controller.kubeclientset.AppsV1().Deployments(gotCSPI.Namespace).Update(pc.AlgorithmConfig.GetPoolDeploySpec(gotCSPI))
+		if err != nil {
+			return errors.Errorf("Failed to sync cspi %s from parent cspc %s", cspiCopy.Name, cspc.Name)
+		}
+	}
+	return nil
+}
+
+func defaultPoolConfig(cspi *cstor.CStorPoolInstance, cspc *cstor.CStorPoolCluster) {
+	if cspi.Spec.PoolConfig.Resources == nil {
+		cspi.Spec.PoolConfig.Resources = cspc.Spec.DefaultResources
+	}
+	if cspi.Spec.PoolConfig.AuxResources == nil {
+		cspi.Spec.PoolConfig.AuxResources = cspc.Spec.DefaultAuxResources
+	}
+	if cspi.Spec.PoolConfig.Tolerations == nil {
+		cspi.Spec.PoolConfig.Tolerations = cspc.Spec.Tolerations
+	}
+
+	if cspi.Spec.PoolConfig.PriorityClassName == "" {
+		cspi.Spec.PoolConfig.PriorityClassName = cspc.Spec.DefaultPriorityClassName
+	}
 }

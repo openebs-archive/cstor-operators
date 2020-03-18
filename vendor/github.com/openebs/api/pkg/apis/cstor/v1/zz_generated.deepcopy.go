@@ -959,6 +959,11 @@ func (in *PoolConfig) DeepCopyInto(out *PoolConfig) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.PriorityClassName != nil {
+		in, out := &in.PriorityClassName, &out.PriorityClassName
+		*out = new(string)
+		**out = **in
+	}
 	if in.ROThresholdLimit != nil {
 		in, out := &in.ROThresholdLimit, &out.ROThresholdLimit
 		*out = new(int)

@@ -119,7 +119,7 @@ type PoolConfig struct {
 	// If left empty, DefaultPriorityClassName is applied.
 	// (See CStorPoolClusterSpec.DefaultPriorityClassName)
 	// If both are empty, not priority class is applied.
-	PriorityClassName string `json:"priorityClassName"`
+	PriorityClassName *string `json:"priorityClassName"`
 
 	// ROThresholdLimit is threshold(percentage base) limit
 	// for pool read only mode. If ROThresholdLimit(%) amount

@@ -267,13 +267,13 @@ func (c *Controller) GetCSPIWithoutDeployment(cspc *cstor.CStorPoolCluster) ([]c
 }
 
 // syncCSPI propagates all the required changes from cspc to respective cspi.
-func (pc *PoolConfig) syncCSPI(cspc *cstor.CStorPoolCluster) {
+func (pc *PoolConfig) syncCSPI(cspc *cstor.CStorPoolCluster) error {
 	cspiList, err := pc.Controller.GetCSPIListForCSPC(cspc)
 	if err != nil {
-		klog.Errorf("failed to sync cspi(s) from its parent cspc %s", cspc.Name)
+		return errors.Wrapf(err, "failed to sync cspi(s) from its parent cspc %s", cspc.Name)
 	}
 	if len(cspiList.Items) == 0 {
-		klog.Errorf("No cspi(s) found while trying to sync cspi(s) from its parent cspc %s", cspc.Name)
+		return errors.Wrapf(err, "No cspi(s) found while trying to sync cspi(s) from its parent cspc %s", cspc.Name)
 	}
 
 	for _, cspi := range cspiList.Items {
@@ -294,7 +294,7 @@ func (pc *PoolConfig) syncCSPIWithCSPC(cspc *cstor.CStorPoolCluster, cspi *cstor
 		defaultPoolConfig(cspiCopy, cspc)
 	}
 
-	if reflect.DeepEqual(cspiCopy, cspi) {
+	if !reflect.DeepEqual(cspiCopy, cspi) {
 		gotCSPI, err := pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspiCopy.Namespace).Update(cspiCopy)
 		if err != nil {
 			return errors.Errorf("Failed to sync cspi %s from parent cspc %s", cspiCopy.Name, cspc.Name)

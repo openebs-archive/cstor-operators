@@ -373,7 +373,6 @@ func getResourceRequirementForCStorPool(cspi *cstor.CStorPoolInstance) corev1.Re
 	} else {
 		resourceRequirements = *cspi.Spec.PoolConfig.Resources
 	}
-	// TODO: add default values for resources if both are nil
 	return resourceRequirements
 }
 
@@ -385,7 +384,6 @@ func getAuxResourceRequirement(cspi *cstor.CStorPoolInstance) corev1.ResourceReq
 	} else {
 		auxResourceRequirements = *cspi.Spec.PoolConfig.AuxResources
 	}
-	// TODO: add default values for resources if both are nil
 	return auxResourceRequirements
 }
 
@@ -401,5 +399,8 @@ func getPoolPodToleration(cspi *cstor.CStorPoolInstance) []corev1.Toleration {
 }
 
 func getPriorityClass(cspi *cstor.CStorPoolInstance) string {
-	return cspi.Spec.PoolConfig.PriorityClassName
+	if cspi.Spec.PoolConfig.PriorityClassName==nil{
+		return ""
+	}
+	return *cspi.Spec.PoolConfig.PriorityClassName
 }

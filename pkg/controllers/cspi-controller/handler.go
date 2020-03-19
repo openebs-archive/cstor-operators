@@ -197,10 +197,14 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 	pool := zpool.PoolName()
 	propertyList := []string{"health", "io.openebs:readonly"}
 
+	// Since we quarried in following order health and io.openebs:readonly output also
+	// will be in same order
 	valueList, er := zpool.GetListOfPropertyValues(pool, propertyList)
 	if er != nil || len(valueList) != len(propertyList) {
 		return errors.Wrapf(err, "Failed to fetch %v output: %v", propertyList, valueList)
 	} else {
+		// valueList[0] will hold the value of health of cStor pool
+		// valueList[1] will hold the value of io.openebs:readonly of cStor pool
 		status.Phase = cstor.CStorPoolInstancePhase(valueList[0])
 		if valueList[1] == "on" {
 			status.ReadOnly = true
@@ -231,17 +235,23 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 // 1. If pool used space reached to roThresholdLimit then pool will be set to readonly mode
 // 2. If pool was in readonly mode if roThresholdLimit/pool expansion was happened then it
 //    unsets the ReadOnly Mode.
-// NOTE: This function must be invoked after having the updated cspiStatus information
+// NOTE: This function must be invoked after having the updated
+//       cspiStatus information from zfs/zpool
 func (c *CStorPoolInstanceController) updateROMode(
 	cspiStatus *cstor.CStorPoolInstanceStatus, cspi cstor.CStorPoolInstance) {
-	roThresholdLimit := cspi.Spec.PoolConfig.ROThresholdLimit
+	if cspi.Spec.PoolConfig.ROThresholdLimit == nil {
+		return
+	}
+	roThresholdLimit := *cspi.Spec.PoolConfig.ROThresholdLimit
 	totalInBytes := cspiStatus.Capacity.Total.Value()
 	usedInBytes := cspiStatus.Capacity.Used.Value()
 	pool := zpool.PoolName()
 
 	usedPercentage := (usedInBytes * 100) / totalInBytes
-	if (int(usedPercentage) >= roThresholdLimit) &&
-		(roThresholdLimit != 0 && roThresholdLimit != 100) {
+	// If roThresholdLimit sets 100% and pool used storage reached to 100%
+	// then there might be chances that operations will hung so it is not
+	// recommended to perform operations
+	if (int(usedPercentage) >= roThresholdLimit) && roThresholdLimit != 100 {
 		if !cspiStatus.ReadOnly {
 			if err := zpool.SetPoolRDMode(pool, true); err != nil {
 				// Here, we are just logging in next reconciliation it will be retried
@@ -251,7 +261,8 @@ func (c *CStorPoolInstanceController) updateROMode(
 				c.recorder.Event(&cspi,
 					corev1.EventTypeWarning,
 					"PoolReadOnlyThreshold",
-					"Pool storage limit reached to thresholdLimit. Pool expansion is required to make it's volume replicas RW",
+					"Pool storage limit reached to read only threshold limit. "+
+						"Pool expansion is required to make its volume replicas RW",
 				)
 			}
 		}

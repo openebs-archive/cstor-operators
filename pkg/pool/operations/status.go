@@ -41,6 +41,7 @@ func GetPropertyValue(poolName, property string) (string, error) {
 }
 
 // GetListOfPropertyValues will return value list for given property list
+// NOTE: It will return the property values in the same order as property list
 func GetListOfPropertyValues(poolName string, propertyList []string) ([]string, error) {
 	ret, err := zfs.NewPoolGetProperty().
 		WithScriptedMode(true).
@@ -71,6 +72,11 @@ func GetCSPICapacity(poolName string) (cstor.CStorPoolInstanceCapacity, error) {
 			err,
 		)
 	}
+	// Since it was quarried in free, allocated and size output also
+	// will be in same order.
+	// valueList[0] contains value of free capacity in cStor pool
+	// valueList[1] contains value of allocated capacity in cStor pool
+	// valueList[2] contains total capacity of cStor pool
 	freeSizeInBinarySI := GetCapacityInBinarySi(valueList[0])
 	allocatedSizeInBinarySI := GetCapacityInBinarySi(valueList[1])
 	totalSizeInBinarySI := GetCapacityInBinarySi(valueList[2])

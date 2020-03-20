@@ -46,7 +46,7 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	common.SyncResources.IsImported = false
 	var poolImported bool
 
-	bdPath, err := oc.getPathForBDev(cspi.Spec.DataRaidGroups[0].BlockDevices[0].BlockDeviceName)
+	bdPath, err := oc.getPathForBDev(cspi.Spec.DataRaidGroups[0].CStorPoolInstanceBlockDevices[0].BlockDeviceName)
 	if err != nil {
 		return false, err
 	}

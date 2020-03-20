@@ -72,8 +72,8 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 			isRaidGroupChanged = false
 			raidGroup := raidGroupsConfig.RaidGroups[raidIndex]
 
-			for bdevIndex := 0; bdevIndex < len(raidGroup.BlockDevices); bdevIndex++ {
-				bdev := raidGroup.BlockDevices[bdevIndex]
+			for bdevIndex := 0; bdevIndex < len(raidGroup.CStorPoolInstanceBlockDevices); bdevIndex++ {
+				bdev := raidGroup.CStorPoolInstanceBlockDevices[bdevIndex]
 
 				bdClaim, er := bdClaimList.GetBlockDeviceClaimFromBDName(
 					bdev.BlockDeviceName)
@@ -115,7 +115,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 						if !IsEmpty(diskPath) && diskPath != bdev.DevLink {
 							// Here We are updating in underlying slice so no problem
 							// Let's update devLink with new path for this bdev
-							raidGroup.BlockDevices[bdevIndex].DevLink = diskPath
+							raidGroup.CStorPoolInstanceBlockDevices[bdevIndex].DevLink = diskPath
 							isRaidGroupChanged = true
 						}
 					}
@@ -162,7 +162,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 			// and set isObjChanged
 			if isRaidGroupChanged {
 				//NOTE: Remove below code since we are not supporting removal of raid group/block device alone
-				if len(raidGroup.BlockDevices) == 0 {
+				if len(raidGroup.CStorPoolInstanceBlockDevices) == 0 {
 					cspi.Spec.DataRaidGroups = append(cspi.Spec.DataRaidGroups[:raidIndex], cspi.Spec.DataRaidGroups[raidIndex+1:]...)
 					// We removed the raidIndex entry cspi.Spec.raidGroup
 					raidIndex--

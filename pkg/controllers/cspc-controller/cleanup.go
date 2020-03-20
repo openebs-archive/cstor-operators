@@ -19,6 +19,7 @@ package cspccontroller
 import (
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
+
 	// ToDo: Move this util package to cstor-operatrs from api repo
 	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
@@ -116,7 +117,7 @@ func (c *Controller) cleanupBDC(cspiObj apis.CStorPoolInstance) error {
 	}
 	cspiBDMap := map[string]bool{}
 	for _, raidGroup := range cspiObj.Spec.DataRaidGroups {
-		for _, bdcObj := range raidGroup.BlockDevices {
+		for _, bdcObj := range raidGroup.CStorPoolInstanceBlockDevices {
 			cspiBDMap[bdcObj.BlockDeviceName] = true
 		}
 	}

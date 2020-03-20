@@ -32,7 +32,7 @@ import (
 	"k8s.io/klog"
 )
 
-func (oc *OperationsConfig) getPathForBdevList(bdevs []cstor.CStorPoolClusterBlockDevice) (map[string][]string, error) {
+func (oc *OperationsConfig) getPathForBdevList(bdevs []cstor.CStorPoolInstanceBlockDevice) (map[string][]string, error) {
 	var err error
 
 	vdev := make(map[string][]string, len(bdevs))
@@ -152,7 +152,7 @@ func (oc *OperationsConfig) checkIfPoolNotImported(cspi *cstor.CStorPoolInstance
 	var cmdOut []byte
 	var err error
 
-	bdPath, err := oc.getPathForBDev(cspi.Spec.DataRaidGroups[0].BlockDevices[0].BlockDeviceName)
+	bdPath, err := oc.getPathForBDev(cspi.Spec.DataRaidGroups[0].CStorPoolInstanceBlockDevices[0].BlockDeviceName)
 	if err != nil {
 		return "", false, err
 	}

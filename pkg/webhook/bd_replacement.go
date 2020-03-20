@@ -148,14 +148,14 @@ func getCommonPoolSpecs(cspcNew, cspcOld *cstor.CStorPoolCluster, kubeClient kub
 // return nil
 func validateRaidGroupChanges(oldRg, newRg *cstor.RaidGroup, oldRgType string) error {
 	// return error when block devices are removed from new raid group
-	if len(newRg.BlockDevices) < len(oldRg.BlockDevices) {
+	if len(newRg.CStorPoolInstanceBlockDevices) < len(oldRg.CStorPoolInstanceBlockDevices) {
 		return errors.Errorf("removing block device from %s raid group is not valid operation",
 			oldRgType)
 	}
 	// return error when block device are added to new raid group other than
 	// stripe
 	if cstor.PoolType(oldRgType) != cstor.PoolStriped &&
-		len(newRg.BlockDevices) > len(oldRg.BlockDevices) {
+		len(newRg.CStorPoolInstanceBlockDevices) > len(oldRg.CStorPoolInstanceBlockDevices) {
 		return errors.Errorf("adding block devices to existing %s raid group is "+
 			"not valid operation",
 			oldRgType)
@@ -208,11 +208,11 @@ func (bdr *BlockDeviceReplacement) IsPoolSpecChangeValid(oldPoolSpec, newPoolSpe
 // IsRaidGroupCommon returns true if the provided raid groups are the same raid groups.
 func IsRaidGroupCommon(rgOld, rgNew cstor.RaidGroup) bool {
 	oldBdMap := make(map[string]bool)
-	for _, oldBD := range rgOld.BlockDevices {
+	for _, oldBD := range rgOld.CStorPoolInstanceBlockDevices {
 		oldBdMap[oldBD.BlockDeviceName] = true
 	}
 
-	for _, newBD := range rgNew.BlockDevices {
+	for _, newBD := range rgNew.CStorPoolInstanceBlockDevices {
 		if oldBdMap[newBD.BlockDeviceName] {
 			return true
 		}
@@ -231,10 +231,10 @@ func IsBlockDeviceReplacementCase(newRaidGroup, oldRaidGroup *cstor.RaidGroup) b
 func GetNumberOfDiskReplaced(newRG, oldRG *cstor.RaidGroup) int {
 	var count int
 	oldBlockDevicesMap := make(map[string]bool)
-	for _, bdOld := range oldRG.BlockDevices {
+	for _, bdOld := range oldRG.CStorPoolInstanceBlockDevices {
 		oldBlockDevicesMap[bdOld.BlockDeviceName] = true
 	}
-	for _, newBD := range newRG.BlockDevices {
+	for _, newBD := range newRG.CStorPoolInstanceBlockDevices {
 		if !oldBlockDevicesMap[newBD.BlockDeviceName] {
 			count++
 		}
@@ -316,7 +316,7 @@ func (bdr *BlockDeviceReplacement) IsNewBDPresentOnCurrentCSPC(newRG, oldRG *cst
 	newBDs := GetNewBDFromRaidGroups(newRG, oldRG)
 	for _, pool := range bdr.OldCSPC.Spec.Pools {
 		for _, rg := range pool.DataRaidGroups {
-			for _, bd := range rg.BlockDevices {
+			for _, bd := range rg.CStorPoolInstanceBlockDevices {
 				if _, ok := newBDs[bd.BlockDeviceName]; ok {
 					return true
 				}
@@ -328,7 +328,7 @@ func (bdr *BlockDeviceReplacement) IsNewBDPresentOnCurrentCSPC(newRG, oldRG *cst
 
 // IsExistingReplacmentInProgress returns true if a block device in raid group is under active replacement.
 func (bdr *BlockDeviceReplacement) IsExistingReplacmentInProgress(oldRG *cstor.RaidGroup) (bool, error) {
-	for _, v := range oldRG.BlockDevices {
+	for _, v := range oldRG.CStorPoolInstanceBlockDevices {
 		bdcObject, err := bdr.GetBDCOfBD(v.BlockDeviceName)
 		if err != nil {
 			return true, errors.Errorf("failed to query for any existing replacement in the raid group : %s", err.Error())
@@ -384,7 +384,7 @@ func (bdr *BlockDeviceReplacement) GetPredecessorBDIfAny(cspcOld *cstor.CStorPoo
 	predecessorBDMap := make(map[string]bool)
 	for _, pool := range cspcOld.Spec.Pools {
 		for _, rg := range pool.DataRaidGroups {
-			for _, bd := range rg.BlockDevices {
+			for _, bd := range rg.CStorPoolInstanceBlockDevices {
 				bdc, err := bdr.GetBDCOfBD(bd.BlockDeviceName)
 				if err != nil {
 					return nil, err
@@ -484,23 +484,23 @@ func GetNewBDFromRaidGroups(newRG, oldRG *cstor.RaidGroup) map[string]string {
 	oldBlockDevicesMap := make(map[string]bool)
 	newBlockDevicesMap := make(map[string]bool)
 
-	for _, bdOld := range oldRG.BlockDevices {
+	for _, bdOld := range oldRG.CStorPoolInstanceBlockDevices {
 		oldBlockDevicesMap[bdOld.BlockDeviceName] = true
 	}
 
-	for _, bdNew := range newRG.BlockDevices {
+	for _, bdNew := range newRG.CStorPoolInstanceBlockDevices {
 		newBlockDevicesMap[bdNew.BlockDeviceName] = true
 	}
 	var newBD, oldBD string
 
-	for _, newRG := range newRG.BlockDevices {
+	for _, newRG := range newRG.CStorPoolInstanceBlockDevices {
 		if !oldBlockDevicesMap[newRG.BlockDeviceName] {
 			newBD = newRG.BlockDeviceName
 			break
 		}
 	}
 
-	for _, oldRG := range oldRG.BlockDevices {
+	for _, oldRG := range oldRG.CStorPoolInstanceBlockDevices {
 		if !newBlockDevicesMap[oldRG.BlockDeviceName] {
 			oldBD = oldRG.BlockDeviceName
 			break

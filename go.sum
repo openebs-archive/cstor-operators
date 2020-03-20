@@ -401,6 +401,8 @@ github.com/openebs/api v0.0.0-20200304155919-9ac1d4814a3f h1:EY8TgLsbAGhq4qhnoDb
 github.com/openebs/api v0.0.0-20200304155919-9ac1d4814a3f/go.mod h1:Mj6izkLZT0jNKLs9u1CnbgNoP9BEgY/mgVI7Mc3/Hwc=
 github.com/openebs/api v0.0.0-20200311104100-f6a5bd72fae3 h1:30wuJe3AEcwYsq3w6t0k0SHhjreXN2EnqUvuP6Lwa0I=
 github.com/openebs/api v0.0.0-20200311104100-f6a5bd72fae3/go.mod h1:Mj6izkLZT0jNKLs9u1CnbgNoP9BEgY/mgVI7Mc3/Hwc=
+github.com/openebs/api v0.0.0-20200319173602-da787ed9fcbf h1:QGAdLxow+WVfxTOxeli3RdzWp9SPRJl1GzNS/M8mOow=
+github.com/openebs/api v0.0.0-20200319173602-da787ed9fcbf/go.mod h1:Mj6izkLZT0jNKLs9u1CnbgNoP9BEgY/mgVI7Mc3/Hwc=
 github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8 h1:ud86nr1TRU9fB3IeBzymBqYjaha/GjgjHCTeFTKeT8A=
 github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8/go.mod h1:QQY9cOHKQwZ73qbv6O//UYUBLNV2S0MRDIfG7t5KOCk=
 github.com/openebs/maya v0.0.0-20200305100821-7118ad163bb4 h1:beXxZA3gQlP+r1mtNKfmdVjhs6NA5O3IXpNMoMoQXSY=

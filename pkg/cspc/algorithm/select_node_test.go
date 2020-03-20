@@ -17,18 +17,19 @@ limitations under the License.
 package algorithm
 
 import (
+	"reflect"
+	"strconv"
+	"testing"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
 	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	core "k8s.io/client-go/testing"
-	"reflect"
-	"strconv"
-	"testing"
 )
 
 type fixture struct {
@@ -288,8 +289,8 @@ func TestGetBDListForNode(t *testing.T) {
 			args: args{
 				pool: cstor.PoolSpec{
 					DataRaidGroups: []cstor.RaidGroup{
-						{BlockDevices: []cstor.CStorPoolClusterBlockDevice{{BlockDeviceName: "bd-1"}, {BlockDeviceName: "bd-2"},}},
-						{BlockDevices: []cstor.CStorPoolClusterBlockDevice{{BlockDeviceName: "bd-3"}, {BlockDeviceName: "bd-4"},}},
+						{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{{BlockDeviceName: "bd-1"}, {BlockDeviceName: "bd-2"}}},
+						{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{{BlockDeviceName: "bd-3"}, {BlockDeviceName: "bd-4"}}},
 					},
 				},
 			},
@@ -356,7 +357,7 @@ func TestConfig_ClaimBD(t *testing.T) {
 				clientset:     fixture.openebsClient,
 				kubeclientset: fixture.kubeclient,
 			}
-			err := ac.ClaimBD(tt.args.bdObj);
+			err := ac.ClaimBD(tt.args.bdObj)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Config.ClaimBD() error = %v, wantErr %v", err, tt.wantErr)
 				return

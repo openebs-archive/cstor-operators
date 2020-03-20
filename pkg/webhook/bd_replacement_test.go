@@ -37,14 +37,14 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 			name: "case#1:Not a blockdevice replacement case",
 			args: args{
 				newRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
@@ -57,7 +57,7 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 			name: "case#2:Not a blockdevice replacement case",
 			args: args{
 				newRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-3"},
@@ -66,7 +66,7 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 				},
 
 				oldRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-3"},
@@ -81,7 +81,7 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 			name: "case#3:A blockdevice replacement case",
 			args: args{
 				newRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-3"},
@@ -90,7 +90,7 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 				},
 
 				oldRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-3"},
@@ -105,14 +105,14 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 			name: "case#4:A blockdevice replacement case",
 			args: args{
 				newRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-3"},
 					},
@@ -127,14 +127,14 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 			name: "case#5:Not a blockdevice replacement case: SHOULD BE REJECTED",
 			args: args{
 				newRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-1"},
 					},
@@ -149,7 +149,7 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 			name: "case#6:A blockdevice replacement case: Althoguh INVALID, should be REJECTED",
 			args: args{
 				newRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-3"},
@@ -158,7 +158,7 @@ func TestIsBlockDeviceReplacementCase(t *testing.T) {
 				},
 
 				oldRaidGroup: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-6"},
@@ -193,14 +193,14 @@ func TestGetNumberOfDiskReplaced(t *testing.T) {
 			name: "case#1:No block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
@@ -213,14 +213,14 @@ func TestGetNumberOfDiskReplaced(t *testing.T) {
 			name: "case#2:No block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-1"},
 					},
@@ -233,14 +233,14 @@ func TestGetNumberOfDiskReplaced(t *testing.T) {
 			name: "case#3:1 block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-3"},
 					},
@@ -253,7 +253,7 @@ func TestGetNumberOfDiskReplaced(t *testing.T) {
 			name: "case#4:1 block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-3"},
@@ -262,7 +262,7 @@ func TestGetNumberOfDiskReplaced(t *testing.T) {
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-5"},
 						{BlockDeviceName: "bd-3"},
@@ -278,14 +278,14 @@ func TestGetNumberOfDiskReplaced(t *testing.T) {
 			name: "case#5:2 block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-4"},
 						{BlockDeviceName: "bd-3"},
 					},
@@ -318,14 +318,14 @@ func TestIsMoreThanOneDiskReplaced(t *testing.T) {
 			name: "case#1:No block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
@@ -338,14 +338,14 @@ func TestIsMoreThanOneDiskReplaced(t *testing.T) {
 			name: "case#2:No block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-1"},
 					},
@@ -358,14 +358,14 @@ func TestIsMoreThanOneDiskReplaced(t *testing.T) {
 			name: "case#3:1 block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-3"},
 					},
@@ -378,7 +378,7 @@ func TestIsMoreThanOneDiskReplaced(t *testing.T) {
 			name: "case#4:1 block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 						{BlockDeviceName: "bd-3"},
@@ -387,7 +387,7 @@ func TestIsMoreThanOneDiskReplaced(t *testing.T) {
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-5"},
 						{BlockDeviceName: "bd-3"},
@@ -403,14 +403,14 @@ func TestIsMoreThanOneDiskReplaced(t *testing.T) {
 			name: "case#5:2 block device replaced",
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-4"},
 						{BlockDeviceName: "bd-3"},
 					},
@@ -458,14 +458,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-1"},
 								DataRaidGroups: []cstor.RaidGroup{
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-1"},
 											{BlockDeviceName: "bd-2"},
 										},
 									},
 
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-3"},
 											{BlockDeviceName: "bd-4"},
 										},
@@ -478,14 +478,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 			},
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-3"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
@@ -508,14 +508,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-1"},
 								DataRaidGroups: []cstor.RaidGroup{
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-1"},
 											{BlockDeviceName: "bd-2"},
 										},
 									},
 
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-3"},
 											{BlockDeviceName: "bd-4"},
 										},
@@ -527,14 +527,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-2"},
 								DataRaidGroups: []cstor.RaidGroup{
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-5"},
 											{BlockDeviceName: "bd-6"},
 										},
 									},
 
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-7"},
 											{BlockDeviceName: "bd-8"},
 										},
@@ -547,14 +547,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 			},
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-7"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
@@ -577,14 +577,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-1"},
 								DataRaidGroups: []cstor.RaidGroup{
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-1"},
 											{BlockDeviceName: "bd-2"},
 										},
 									},
 
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-3"},
 											{BlockDeviceName: "bd-4"},
 										},
@@ -597,14 +597,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 			},
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-8"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
@@ -627,14 +627,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-1"},
 								DataRaidGroups: []cstor.RaidGroup{
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-1"},
 											{BlockDeviceName: "bd-2"},
 										},
 									},
 
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-3"},
 											{BlockDeviceName: "bd-4"},
 										},
@@ -646,14 +646,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 								NodeSelector: map[string]string{"kubernetes.io/hostname": "node-2"},
 								DataRaidGroups: []cstor.RaidGroup{
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-5"},
 											{BlockDeviceName: "bd-6"},
 										},
 									},
 
 									{
-										BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+										CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 											{BlockDeviceName: "bd-7"},
 											{BlockDeviceName: "bd-8"},
 										},
@@ -666,14 +666,14 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 			},
 			args: args{
 				newRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-9"},
 					},
 				},
 
 				oldRG: cstor.RaidGroup{
-					BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 						{BlockDeviceName: "bd-1"},
 						{BlockDeviceName: "bd-2"},
 					},
@@ -705,13 +705,13 @@ func TestValidateRaidGroupChanges(t *testing.T) {
 	}{
 		"removing block devices": {
 			oldRG: &cstor.RaidGroup{
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+				CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 					{BlockDeviceName: "bd-1"},
 					{BlockDeviceName: "bd-2"},
 				},
 			},
 			newRG: &cstor.RaidGroup{
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+				CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 					{BlockDeviceName: "bd-1"},
 				},
 			},
@@ -719,13 +719,13 @@ func TestValidateRaidGroupChanges(t *testing.T) {
 		},
 		"adding block devices for raid groups": {
 			oldRG: &cstor.RaidGroup{
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+				CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 					{BlockDeviceName: "bd-1"},
 					{BlockDeviceName: "bd-2"},
 				},
 			},
 			newRG: &cstor.RaidGroup{
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+				CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 					{BlockDeviceName: "bd-1"},
 					{BlockDeviceName: "bd-2"},
 					{BlockDeviceName: "bd-3"},
@@ -736,13 +736,13 @@ func TestValidateRaidGroupChanges(t *testing.T) {
 		},
 		"adding block devices for stripe raid groups": {
 			oldRG: &cstor.RaidGroup{
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+				CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 					{BlockDeviceName: "bd-1"},
 					{BlockDeviceName: "bd-2"},
 				},
 			},
 			newRG: &cstor.RaidGroup{
-				BlockDevices: []cstor.CStorPoolClusterBlockDevice{
+				CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 					{BlockDeviceName: "bd-1"},
 					{BlockDeviceName: "bd-2"},
 					{BlockDeviceName: "bd-3"},

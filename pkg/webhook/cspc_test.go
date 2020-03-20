@@ -34,11 +34,11 @@ func TestValidateSpecChanges(t *testing.T) {
 					cstor.PoolSpec{
 						DataRaidGroups: []cstor.RaidGroup{
 							cstor.RaidGroup{
-								BlockDevices: []cstor.CStorPoolClusterBlockDevice{
-									cstor.CStorPoolClusterBlockDevice{
+								CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+									cstor.CStorPoolInstanceBlockDevice{
 										BlockDeviceName: "bd1",
 									},
-									cstor.CStorPoolClusterBlockDevice{
+									cstor.CStorPoolInstanceBlockDevice{
 										BlockDeviceName: "bd2",
 									},
 								},
@@ -53,11 +53,11 @@ func TestValidateSpecChanges(t *testing.T) {
 					cstor.PoolSpec{
 						DataRaidGroups: []cstor.RaidGroup{
 							cstor.RaidGroup{
-								BlockDevices: []cstor.CStorPoolClusterBlockDevice{
-									cstor.CStorPoolClusterBlockDevice{
+								CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+									cstor.CStorPoolInstanceBlockDevice{
 										BlockDeviceName: "bd1",
 									},
-									cstor.CStorPoolClusterBlockDevice{
+									cstor.CStorPoolInstanceBlockDevice{
 										BlockDeviceName: "bd2",
 									},
 								},

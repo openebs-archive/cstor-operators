@@ -18,6 +18,7 @@ package algorithm
 
 import (
 	"fmt"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
@@ -61,7 +62,7 @@ func (ac *Config) SelectNode() (*cstor.PoolSpec, string, error) {
 }
 
 // GetNodeFromLabelSelector returns the node name selected by provided labels
-func (ac *Config)GetNodeFromLabelSelector(labels map[string]string) (string, error) {
+func (ac *Config) GetNodeFromLabelSelector(labels map[string]string) (string, error) {
 	nodeList, err := ac.kubeclientset.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: getLabelSelectorString(labels)})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get node list from the node selector")
@@ -91,8 +92,8 @@ func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 		CstorV1().
 		CStorPoolInstances(ac.Namespace).
 		List(
-		metav1.
-		ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name},
+			metav1.
+				ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name},
 		)
 
 	if err != nil {
@@ -108,7 +109,7 @@ func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 func GetBDListForNode(pool cstor.PoolSpec) []string {
 	var BDList []string
 	for _, group := range pool.DataRaidGroups {
-		for _, bd := range group.BlockDevices {
+		for _, bd := range group.CStorPoolInstanceBlockDevices {
 			BDList = append(BDList, bd.BlockDeviceName)
 		}
 	}
@@ -153,12 +154,12 @@ func (ac *Config) ClaimBDsForNode(BD []string) error {
 
 // ClaimBD claims a given BlockDevice
 func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
-	resourceList,err:=GetCapacity(ByteCount(bdObj.Spec.Capacity.Storage))
-	if err!=nil{
+	resourceList, err := GetCapacity(ByteCount(bdObj.Spec.Capacity.Storage))
+	if err != nil {
 		return err
 	}
 
-	newBDCObj:=openebsio.NewBlockDeviceClaim().
+	newBDCObj := openebsio.NewBlockDeviceClaim().
 		WithName("bdc-cstor-" + string(bdObj.UID)).
 		WithNamespace(ac.Namespace).
 		WithLabels(map[string]string{types.CStorPoolClusterLabelKey: ac.CSPC.Name}).
@@ -171,8 +172,8 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 		return errors.Wrapf(err, "failed to build block device claim for bd {%s}", bdObj.Name)
 	}
 
-	if err!=nil{
-		return errors.Errorf("Failed to convert internal bdc type to external v1alpha1:{%s}",err.Error())
+	if err != nil {
+		return errors.Errorf("Failed to convert internal bdc type to external v1alpha1:{%s}", err.Error())
 	}
 	_, err = ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Create(newBDCObj)
 	if k8serror.IsAlreadyExists(err) {
@@ -194,7 +195,7 @@ func (ac *Config) IsClaimedBDUsable(bd openebsio.BlockDevice) (bool, error) {
 		if err != nil {
 			return false, errors.Wrapf(err, "could not get block device claim for block device {%s}", bd.Name)
 		}
-		if BDCHasLabel(types.CStorPoolClusterLabelKey, ac.CSPC.Name,*bdcAPIObject) {
+		if BDCHasLabel(types.CStorPoolClusterLabelKey, ac.CSPC.Name, *bdcAPIObject) {
 			return true, nil
 		}
 	} else {
@@ -204,12 +205,12 @@ func (ac *Config) IsClaimedBDUsable(bd openebsio.BlockDevice) (bool, error) {
 }
 
 // IsBlockDeviceClaimed returns true if the provided block devie is claimed.
-func IsBlockDeviceClaimed(bd openebsio.BlockDevice)bool  {
+func IsBlockDeviceClaimed(bd openebsio.BlockDevice) bool {
 	return bd.Status.ClaimState == openebsio.BlockDeviceClaimed
 }
 
 // BDCHasLabel returns true if the provided key,value exists as label on block device claim.
-func BDCHasLabel(labelKey,labelValue string, bdc openebsio.BlockDeviceClaim)bool  {
+func BDCHasLabel(labelKey, labelValue string, bdc openebsio.BlockDeviceClaim) bool {
 	val, ok := bdc.GetLabels()[labelKey]
 	if ok {
 		return val == labelValue
@@ -217,12 +218,12 @@ func BDCHasLabel(labelKey,labelValue string, bdc openebsio.BlockDeviceClaim)bool
 	return false
 }
 
-func GetCapacity(capacity string) (resource.Quantity,error) {
+func GetCapacity(capacity string) (resource.Quantity, error) {
 	resCapacity, err := resource.ParseQuantity(capacity)
 	if err != nil {
-		return resource.Quantity{}, errors.Errorf("Failed to parse capacity:{%s}",err.Error())
+		return resource.Quantity{}, errors.Errorf("Failed to parse capacity:{%s}", err.Error())
 	}
-	return resCapacity,nil
+	return resCapacity, nil
 }
 
 // ByteCount converts bytes into corresponding unit

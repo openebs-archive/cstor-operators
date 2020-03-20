@@ -37,7 +37,7 @@ func (oc *OperationsConfig) addRaidGroup(r cstor.RaidGroup, dType, pType string)
 		return errors.Errorf("type for %s raid group not found", deviceType)
 	}
 
-	disklist, err := oc.getPathForBdevList(r.BlockDevices)
+	disklist, err := oc.getPathForBdevList(r.CStorPoolInstanceBlockDevices)
 	if err != nil {
 		klog.Errorf("Failed to get list of disk-path : %s", err.Error())
 		return err
@@ -77,7 +77,7 @@ func (oc *OperationsConfig) addNewVdevFromCSP(cspi *cstor.CStorPoolInstance) err
 			var message string
 			var devlist []string
 
-			for _, bdev := range raidGroup.BlockDevices {
+			for _, bdev := range raidGroup.CStorPoolInstanceBlockDevices {
 				newPath, er := oc.getPathForBDev(bdev.BlockDeviceName)
 				if er != nil {
 					return errors.Errorf("Failed get bdev {%s} path err {%s}", bdev.BlockDeviceName, er.Error())

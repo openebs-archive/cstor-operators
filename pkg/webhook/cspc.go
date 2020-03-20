@@ -218,7 +218,7 @@ func getDuplicateBlockDeviceList(cspc *cstor.CStorPoolCluster) []string {
 	addedBlockDevices := map[string]bool{}
 	for _, poolSpec := range cspc.Spec.Pools {
 		for _, raidGroup := range poolSpec.DataRaidGroups {
-			for _, bd := range raidGroup.BlockDevices {
+			for _, bd := range raidGroup.CStorPoolInstanceBlockDevices {
 				// update duplicateBlockDeviceList only if block device is
 				// repeated in CSPC and doesn't exist in duplicate block device
 				// list.
@@ -361,15 +361,15 @@ func (poolValidator *PoolValidator) poolConfigValidation(
 func (poolValidator *PoolValidator) raidGroupValidation(
 	raidGroup *cstor.RaidGroup, rgType string) (bool, string) {
 
-	if len(raidGroup.BlockDevices) == 0 {
+	if len(raidGroup.CStorPoolInstanceBlockDevices) == 0 {
 		return false, fmt.Sprintf("empty raid group: number of block devices honouring raid type should be specified")
 	}
 
-	if ok, msg := SupportedPRaidType[cstor.PoolType(rgType)](len(raidGroup.BlockDevices)); !ok {
+	if ok, msg := SupportedPRaidType[cstor.PoolType(rgType)](len(raidGroup.CStorPoolInstanceBlockDevices)); !ok {
 		return false, msg
 	}
 
-	for _, bd := range raidGroup.BlockDevices {
+	for _, bd := range raidGroup.CStorPoolInstanceBlockDevices {
 		bd := bd
 		ok, msg := poolValidator.blockDeviceValidation(&bd)
 		if !ok {
@@ -404,7 +404,7 @@ func validateBlockDevice(bd *openebsapis.BlockDevice, nodeName string) error {
 // 1. block device name shouldn't be empty.
 // 2. If block device has claim it verifies whether claim is created by this CSPC
 func (poolValidator *PoolValidator) blockDeviceValidation(
-	bd *cstor.CStorPoolClusterBlockDevice) (bool, string) {
+	bd *cstor.CStorPoolInstanceBlockDevice) (bool, string) {
 	if bd.BlockDeviceName == "" {
 		return false, fmt.Sprint("block device name cannot be empty")
 	}

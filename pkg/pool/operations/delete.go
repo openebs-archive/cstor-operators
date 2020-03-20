@@ -53,7 +53,7 @@ func (oc *OperationsConfig) Delete(cspi *cstor.CStorPoolInstance) error {
 // ClearPoolLabel clears the pool labels on disks
 func (oc *OperationsConfig) ClearPoolLabel(raidGroups ...cstor.RaidGroup) {
 	for _, r := range raidGroups {
-		disklist, err := oc.getPathForBdevList(r.BlockDevices)
+		disklist, err := oc.getPathForBdevList(r.CStorPoolInstanceBlockDevices)
 		if err != nil {
 			klog.Errorf("Failed to fetch vdev path, skipping labelclear.. %s", err.Error())
 		}

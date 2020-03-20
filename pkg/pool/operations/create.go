@@ -85,7 +85,7 @@ func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.Ra
 		return errors.New("type for data raid group not found")
 	}
 
-	disklist, err := oc.getPathForBdevList(r.BlockDevices)
+	disklist, err := oc.getPathForBdevList(r.CStorPoolInstanceBlockDevices)
 	if err != nil {
 		return errors.Errorf("Failed to get list of disk-path : %s", err.Error())
 	}

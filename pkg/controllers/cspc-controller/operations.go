@@ -103,13 +103,13 @@ func (pc *PoolConfig) addGroupToPool(cspcPoolSpec *cstor.PoolSpec, cspi *cstor.C
 			//	cspcRaidGroup.Type = cspcPoolSpec.PoolConfig.DefaultRaidGroupType
 			//}
 
-			for _, bd := range cspcRaidGroup.BlockDevices {
+			for _, bd := range cspcRaidGroup.CStorPoolInstanceBlockDevices {
 				err := pc.ClaimBD(bd.BlockDeviceName)
 				if err != nil {
 					klog.Errorf("failed to created bdc for bd %s:%s", bd.BlockDeviceName, err.Error())
 				}
 			}
-			for _, bd := range cspcRaidGroup.BlockDevices {
+			for _, bd := range cspcRaidGroup.CStorPoolInstanceBlockDevices {
 				err := pc.isBDUsable(bd.BlockDeviceName)
 				if err != nil {
 					klog.Errorf("could not use bd %s for expanding pool "+
@@ -165,7 +165,7 @@ func (pc *PoolConfig) addBlockDeviceToGroup(group *cstor.RaidGroup, cspi *cstor.
 	for i, groupOnCSPI := range cspi.Spec.DataRaidGroups {
 		groupOnCSPI := groupOnCSPI
 		if isRaidGroupPresentOnCSPI(group, cspi) {
-			if len(group.BlockDevices) > len(groupOnCSPI.BlockDevices) {
+			if len(group.CStorPoolInstanceBlockDevices) > len(groupOnCSPI.CStorPoolInstanceBlockDevices) {
 				newBDs := getAddedBlockDevicesInGroup(group, &groupOnCSPI)
 				if len(newBDs) == 0 {
 					klog.V(2).Infof("No new block devices "+
@@ -179,9 +179,9 @@ func (pc *PoolConfig) addBlockDeviceToGroup(group *cstor.RaidGroup, cspi *cstor.
 							"expanding pool %s:%s", bdName, cspi.Name, err.Error())
 						break
 					}
-					cspi.Spec.DataRaidGroups[i].BlockDevices =
-						append(cspi.Spec.DataRaidGroups[i].BlockDevices,
-							cstor.CStorPoolClusterBlockDevice{BlockDeviceName: bdName})
+					cspi.Spec.DataRaidGroups[i].CStorPoolInstanceBlockDevices =
+						append(cspi.Spec.DataRaidGroups[i].CStorPoolInstanceBlockDevices,
+							cstor.CStorPoolInstanceBlockDevice{BlockDeviceName: bdName})
 				}
 			}
 		}
@@ -196,11 +196,11 @@ func (pc *PoolConfig) addBlockDeviceToGroup(group *cstor.RaidGroup, cspi *cstor.
 // removed.
 func isRaidGroupPresentOnCSPI(group *cstor.RaidGroup, cspi *cstor.CStorPoolInstance) bool {
 	blockDeviceMap := make(map[string]bool)
-	for _, bd := range group.BlockDevices {
+	for _, bd := range group.CStorPoolInstanceBlockDevices {
 		blockDeviceMap[bd.BlockDeviceName] = true
 	}
 	for _, cspiRaidGroup := range cspi.Spec.DataRaidGroups {
-		for _, cspiBDs := range cspiRaidGroup.BlockDevices {
+		for _, cspiBDs := range cspiRaidGroup.CStorPoolInstanceBlockDevices {
 			if blockDeviceMap[cspiBDs.BlockDeviceName] {
 				return true
 			}
@@ -218,11 +218,11 @@ func (pc *PoolConfig) replaceExistingBlockDevice(
 	var newBlockDeviceName string
 
 	// Form CSPI Block Device Map
-	for _, bd := range cspiRaidGroup.BlockDevices {
+	for _, bd := range cspiRaidGroup.CStorPoolInstanceBlockDevices {
 		cspiBlockDeviceMap[bd.BlockDeviceName] = true
 	}
 	// Form CSPC Block Device Map
-	for _, bd := range cspcRaidGroup.BlockDevices {
+	for _, bd := range cspcRaidGroup.CStorPoolInstanceBlockDevices {
 		cspcBlockDeviceMap[bd.BlockDeviceName] = true
 	}
 	// Find Old Block Device Name
@@ -257,9 +257,9 @@ func (pc *PoolConfig) replaceExistingBlockDevice(
 			newBlockDeviceName)
 	}
 	//Replace old block device with new block device in CSPI
-	for index, bd := range cspiRaidGroup.BlockDevices {
+	for index, bd := range cspiRaidGroup.CStorPoolInstanceBlockDevices {
 		if bd.BlockDeviceName == oldBlockDeviceName {
-			cspiRaidGroup.BlockDevices[index].BlockDeviceName = newBlockDeviceName
+			cspiRaidGroup.CStorPoolInstanceBlockDevices[index].BlockDeviceName = newBlockDeviceName
 			return nil
 		}
 	}
@@ -273,13 +273,13 @@ func getReplacedCSPIRaidGroup(
 	cspcRaidGroup *cstor.RaidGroup,
 	cspi *cstor.CStorPoolInstance) *cstor.RaidGroup {
 	blockDeviceMap := make(map[string]bool)
-	for _, bd := range cspcRaidGroup.BlockDevices {
+	for _, bd := range cspcRaidGroup.CStorPoolInstanceBlockDevices {
 		blockDeviceMap[bd.BlockDeviceName] = true
 	}
 	for _, cspiRaidGroup := range cspi.Spec.DataRaidGroups {
 		cspiRaidGroup := cspiRaidGroup
 		misMatchedBDCount := 0
-		for _, cspiBD := range cspiRaidGroup.BlockDevices {
+		for _, cspiBD := range cspiRaidGroup.CStorPoolInstanceBlockDevices {
 			if !blockDeviceMap[cspiBD.BlockDeviceName] {
 				misMatchedBDCount++
 			}
@@ -299,11 +299,11 @@ func getAddedBlockDevicesInGroup(groupOnCSPC, groupOnCSPI *cstor.RaidGroup) []st
 	// name present on the CSPI and corresponding value for
 	// the key is true.
 	bdPresentOnCSPI := make(map[string]bool)
-	for _, bdCSPI := range groupOnCSPI.BlockDevices {
+	for _, bdCSPI := range groupOnCSPI.CStorPoolInstanceBlockDevices {
 		bdPresentOnCSPI[bdCSPI.BlockDeviceName] = true
 	}
 
-	for _, bdCSPC := range groupOnCSPC.BlockDevices {
+	for _, bdCSPC := range groupOnCSPC.CStorPoolInstanceBlockDevices {
 		if !bdPresentOnCSPI[bdCSPC.BlockDeviceName] {
 			addedBlockDevices = append(addedBlockDevices, bdCSPC.BlockDeviceName)
 		}
@@ -381,7 +381,7 @@ func isPoolSpecBlockDevicesGotReplaced(
 	cspcPoolSpec *cstor.PoolSpec, cspi *cstor.CStorPoolInstance) bool {
 	cspcBlockDeviceMap := getBlockDeviceMapFromRaidGroups(cspcPoolSpec.DataRaidGroups)
 	for _, rg := range cspi.Spec.DataRaidGroups {
-		for _, bd := range rg.BlockDevices {
+		for _, bd := range rg.CStorPoolInstanceBlockDevices {
 			if !cspcBlockDeviceMap[bd.BlockDeviceName] {
 				return true
 			}
@@ -396,7 +396,7 @@ func getBlockDeviceMapFromRaidGroups(
 	raidGroups []cstor.RaidGroup) map[string]bool {
 	blockDeviceMap := make(map[string]bool)
 	for _, rg := range raidGroups {
-		for _, bd := range rg.BlockDevices {
+		for _, bd := range rg.CStorPoolInstanceBlockDevices {
 			blockDeviceMap[bd.BlockDeviceName] = true
 		}
 	}

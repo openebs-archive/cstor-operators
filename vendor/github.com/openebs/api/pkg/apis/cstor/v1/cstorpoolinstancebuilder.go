@@ -154,6 +154,29 @@ func (cspi *CStorPoolInstance) RemoveFinalizer(finalizer string) {
 	cspi.Finalizers = util.RemoveString(cspi.Finalizers, finalizer)
 }
 
+// IsDestroyed returns true if CSPI is deletion time stamp is set
+func (cspi *CStorPoolInstance) IsDestroyed() bool {
+	return !cspi.DeletionTimestamp.IsZero()
+}
+
+// IsEmptyStatus is to check whether the status of cStorPoolInstance is empty.
+func (cspi *CStorPoolInstance) IsEmptyStatus() bool {
+	return cspi.Status.Phase == CStorPoolStatusEmpty
+}
+
+// IsPendingStatus is to check if the status of cStorPoolInstance is pending.
+func (cspi *CStorPoolInstance) IsPendingStatus() bool {
+	return cspi.Status.Phase == CStorPoolStatusPending
+}
+
+// GetAllRaidGroups returns list of all raid groups presents in cspi
+func (cspi *CStorPoolInstance) GetAllRaidGroups() []RaidGroup {
+	var rgs []RaidGroup
+	rgs = append(rgs, cspi.Spec.DataRaidGroups...)
+	rgs = append(rgs, cspi.Spec.WriteCacheRaidGroups...)
+	return rgs
+}
+
 // HasAnnotation return true if provided annotation
 // key and value are present on the object.
 func (cspi *CStorPoolInstance) HasAnnotation(key, value string) bool {

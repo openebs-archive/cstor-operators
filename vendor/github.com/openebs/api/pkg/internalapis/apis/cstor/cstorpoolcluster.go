@@ -39,6 +39,7 @@ const (
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:openapi-gen=true
 // +resource:path=cstorpoolcluster
 
 // CStorPoolCluster describes a CStorPoolCluster custom resource.
@@ -119,16 +120,25 @@ type PoolConfig struct {
 	// (See CStorPoolClusterSpec.DefaultPriorityClassName)
 	// If both are empty, not priority class is applied.
 	PriorityClassName string `json:"priorityClassName"`
+
+	// ROThresholdLimit is threshold(percentage base) limit
+	// for pool read only mode. If ROThresholdLimit(%) amount
+	// of pool storage is reached then pool will set to readonly.
+	// NOTE:
+	// 1. If ROThresholdLimit is set to 100 then entire
+	//    pool storage will be used by default it will be set to 85%.
+	// 2. ROThresholdLimit value will be 0 <= ROThresholdLimit <= 100.
+	ROThresholdLimit *int `json:"roThresholdLimit"` //optional
 }
 
 // RaidGroup contains the details of a raid group for the pool
 type RaidGroup struct {
-	BlockDevices []CStorPoolClusterBlockDevice `json:"blockDevices"`
+	CStorPoolInstanceBlockDevices []CStorPoolInstanceBlockDevice `json:"blockDevices"`
 }
 
-// CStorPoolClusterBlockDevice contains the details of block devices that
+// CStorPoolInstanceBlockDevice contains the details of block devices that
 // constitutes a raid group.
-type CStorPoolClusterBlockDevice struct {
+type CStorPoolInstanceBlockDevice struct {
 	// BlockDeviceName is the name of the block device.
 	BlockDeviceName string `json:"blockDeviceName"`
 	// Capacity is the capacity of the block device.
@@ -140,17 +150,17 @@ type CStorPoolClusterBlockDevice struct {
 
 // CStorPoolClusterStatus represents the latest available observations of a CSPC's current state.
 type CStorPoolClusterStatus struct {
-	// CurrentProvisionedInstances is the the number of CSPI present at the current state.
-	CurrentProvisionedInstances int32 `json:"currentProvisionedInstances"`
+	// ProvisionedInstances is the the number of CSPI present at the current state.
+	ProvisionedInstances int32 `json:"provisionedInstances"`
 
-	// RunningInstances is the number of CSPI(s) that are not healthy but in degraded,rebuilding etc mode.
-	RunningInstances int32 `json:"runningInstances"`
+	// DesiredInstances is the number of CSPI(s) that should be provisioned.
+	DesiredInstances int32 `json:"runningInstances"`
 
 	// HealthyInstances is the number of CSPI(s) that are healthy.
 	HealthyInstances int32 `json:"healthyInstances"`
 
 	// Current state of CSPC.
-	Conditions []CStorPoolClusterCondition
+	Conditions []CStorPoolClusterCondition `json:conditions`
 }
 
 type CSPCConditionType string
@@ -158,17 +168,17 @@ type CSPCConditionType string
 // CStorPoolClusterCondition describes the state of a CSPC at a certain point.
 type CStorPoolClusterCondition struct {
 	// Type of CSPC condition.
-	Type CSPCConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=DeploymentConditionType"`
+	Type CSPCConditionType `json:"type"`
 	// Status of the condition, one of True, False, Unknown.
-	Status corev1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	Status corev1.ConditionStatus `json:"status"`
 	// The last time this condition was updated.
-	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
 	// Last time the condition transitioned from one status to another.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,7,opt,name=lastTransitionTime"`
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 	// The reason for the condition's last transition.
-	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
+	Reason string `json:"reason,omitempty"`
 	// A human readable message indicating details about the transition.
-	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
+	Message string `json:"message,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

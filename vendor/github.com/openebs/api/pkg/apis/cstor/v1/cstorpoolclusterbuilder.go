@@ -115,3 +115,12 @@ func (cspc *CStorPoolCluster) HasLabel(key, value string) bool {
 	}
 	return false
 }
+
+// GetBlockDevices returns list of blockdevice names exist in the raid group
+func (rg RaidGroup) GetBlockDevices() []string {
+	var bdNames []string
+	for _, cspcBD := range rg.CStorPoolInstanceBlockDevices {
+		bdNames = append(bdNames, cspcBD.BlockDeviceName)
+	}
+	return bdNames
+}

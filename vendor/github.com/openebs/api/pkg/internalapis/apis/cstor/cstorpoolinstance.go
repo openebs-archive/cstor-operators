@@ -25,6 +25,7 @@ import (
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:openapi-gen=true
 // +resource:path=cstorpoolinstance
 
 // CStorPoolInstance describes a cstor pool instance resource.
@@ -103,34 +104,36 @@ type CStorPoolInstanceStatus struct {
 	Phase CStorPoolInstancePhase `json:"phase"`
 	// Capacity describes the capacity details of a cstor pool
 	Capacity CStorPoolInstanceCapacity `json:"capacity"`
-	// A human readable message indicating details about why the CSPI is in this
-	// condition.
-	Message string `json:"message,omitempty"`
+	//ReadOnly if pool is readOnly or not
+	ReadOnly bool `json:"readOnly"`
 }
 
 // CStorPoolCapacityAttr stores the pool capacity related attributes.
 type CStorPoolInstanceCapacity struct {
+	// Total capacity of the pool, equal to the sum of the all data raidgroups
 	Total resource.Quantity `json:"total"`
-	Free  resource.Quantity `json:"free"`
-	Used  resource.Quantity `json:"used"`
+	// Unsed capacity in the pool
+	Free resource.Quantity `json:"free"`
+	// The amount of capacity allocated to all datasets and internal metadata
+	Used resource.Quantity `json:"used"`
 }
 
 type CSPIConditionType string
 
 // CSPIConditionType describes the state of a CSPI at a certain point.
 type CStorPoolInstanceCondition struct {
-	// Type of CSPI condition.
-	Type CSPIConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=DeploymentConditionType"`
+	// Type of CSPC condition.
+	Type CSPCConditionType `json:"type"`
 	// Status of the condition, one of True, False, Unknown.
-	Status corev1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	Status corev1.ConditionStatus `json:"status"`
 	// The last time this condition was updated.
-	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
 	// Last time the condition transitioned from one status to another.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,7,opt,name=lastTransitionTime"`
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 	// The reason for the condition's last transition.
-	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
+	Reason string `json:"reason,omitempty"`
 	// A human readable message indicating details about the transition.
-	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
+	Message string `json:"message,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

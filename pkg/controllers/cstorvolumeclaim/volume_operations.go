@@ -250,13 +250,6 @@ func (c *CVCController) getOrCreateTargetService(
 		WithSelectorsNew(getTargetServiceSelectors(claim)).
 		WithPorts(cvPorts).
 		Build()
-		//	if err != nil {
-		//		return nil, errors.Wrapf(
-		//			err,
-		//			"failed to build target service {%v}",
-		//			svcObj,
-		//		)
-		//	}
 
 	svcObj, err = c.kubeclientset.CoreV1().Services(openebsNamespace).Create(svcObj)
 	return svcObj, err
@@ -315,13 +308,6 @@ func (c *CVCController) getOrCreateCStorVolumeResource(
 			WithNewVersion(version.GetVersion()).
 			WithDependentsUpgraded()
 
-		if err != nil {
-			return nil, errors.Wrapf(
-				err,
-				"failed to build cstorvolume {%v}",
-				claim.Name,
-			)
-		}
 		return c.clientset.CstorV1().CStorVolumes(openebsNamespace).Create(cvObj)
 	}
 	return cvObj, err
@@ -454,15 +440,7 @@ func (c *CVCController) createCVR(
 			WithDependentsUpgraded().
 			WithStatusPhase(rInfo.phase)
 
-		//	if err != nil {
-		//	return nil, errors.Wrapf(
-		//	err,
-		//	"failed to build cstorvolumereplica {%v}",
-		//	cvrObj.Name,
-		//)
-		//}
-		cvrObj, err = c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
-			Create(cvrObj)
+		cvrObj, err = c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).Create(cvrObj)
 		if err != nil {
 			return nil, errors.Wrapf(
 				err,

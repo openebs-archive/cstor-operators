@@ -239,10 +239,10 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 //       cspiStatus information from zfs/zpool
 func (c *CStorPoolInstanceController) updateROMode(
 	cspiStatus *cstor.CStorPoolInstanceStatus, cspi cstor.CStorPoolInstance) {
-	if cspi.Spec.PoolConfig.ROThresholdLimit == nil {
-		return
+	roThresholdLimit := 85
+	if cspi.Spec.PoolConfig.ROThresholdLimit != nil {
+		roThresholdLimit = *cspi.Spec.PoolConfig.ROThresholdLimit
 	}
-	roThresholdLimit := *cspi.Spec.PoolConfig.ROThresholdLimit
 	totalInBytes := cspiStatus.Capacity.Total.Value()
 	usedInBytes := cspiStatus.Capacity.Used.Value()
 	pool := zpool.PoolName()

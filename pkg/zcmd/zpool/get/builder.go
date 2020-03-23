@@ -76,6 +76,12 @@ func (p *PoolGProperty) WithProperty(key string) *PoolGProperty {
 	return p
 }
 
+// WithPropertyList method fills the PropList field of PoolGProperty object.
+func (p *PoolGProperty) WithPropertyList(keys []string) *PoolGProperty {
+	p.PropList = append(p.PropList, keys...)
+	return p
+}
+
 // WithScriptedMode method update the IsScriptedMode field of PoolGProperty object.
 func (p *PoolGProperty) WithScriptedMode(IsScriptedMode bool) *PoolGProperty {
 	p.IsScriptedMode = IsScriptedMode

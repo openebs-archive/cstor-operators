@@ -34,6 +34,7 @@ const (
 // GetCSPSpec returns a CSPI spec that should be created and claims all the
 // block device present in the CSPI spec
 func (ac *Config) GetCSPISpec() (*cstor.CStorPoolInstance, error) {
+	defaultROThresholdLimit := 85
 	poolSpec, nodeName, err := ac.SelectNode()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to select a node")
@@ -56,6 +57,10 @@ func (ac *Config) GetCSPISpec() (*cstor.CStorPoolInstance, error) {
 
 	if poolSpec.PoolConfig.PriorityClassName == "" {
 		poolSpec.PoolConfig.PriorityClassName = ac.CSPC.Spec.DefaultPriorityClassName
+	}
+
+	if poolSpec.PoolConfig.ROThresholdLimit == nil {
+		poolSpec.PoolConfig.ROThresholdLimit = &defaultROThresholdLimit
 	}
 
 	cspiLabels := ac.buildLabelsForCSPI(nodeName)

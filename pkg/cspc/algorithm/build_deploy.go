@@ -228,7 +228,7 @@ func getDeployMatchLabels() map[string]string {
 func getPoolMgmtImage() string {
 	image, present := os.LookupEnv("OPENEBS_IO_CSPI_MGMT_IMAGE")
 	if !present {
-		image = "quay.io/openebs/pool-manager:ci"
+		image = "quay.io/openebs/cstor-pool-manager:ci"
 	}
 	return image
 }

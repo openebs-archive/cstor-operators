@@ -23,7 +23,7 @@ spec:
         openebs.io/component-name: cspc-operator
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-maya-operator
+      serviceAccountName: openebs-cstor-operator
       containers:
       - name: cspc-operator
         imagePullPolicy: IfNotPresent
@@ -81,7 +81,7 @@ spec:
         openebs.io/component-name: cvc-operator
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-maya-operator
+      serviceAccountName: openebs-cstor-operator
       containers:
       - name: cvc-operator
         imagePullPolicy: IfNotPresent

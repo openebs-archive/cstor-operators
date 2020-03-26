@@ -46,7 +46,7 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/openebs/api v0.0.0-20200319173602-da787ed9fcbf
+# github.com/openebs/api v0.0.0-20200323064123-2d2469b66b89
 github.com/openebs/api/pkg/apis/cstor
 github.com/openebs/api/pkg/apis/cstor/v1
 github.com/openebs/api/pkg/apis/openebs.io

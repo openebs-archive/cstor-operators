@@ -55,8 +55,9 @@ func (ac *Config) GetCSPISpec() (*cstor.CStorPoolInstance, error) {
 		poolSpec.PoolConfig.Tolerations = ac.CSPC.Spec.Tolerations
 	}
 
-	if poolSpec.PoolConfig.PriorityClassName == "" {
-		poolSpec.PoolConfig.PriorityClassName = ac.CSPC.Spec.DefaultPriorityClassName
+	if poolSpec.PoolConfig.PriorityClassName == nil {
+		priorityClassName := ac.CSPC.Spec.DefaultPriorityClassName
+		poolSpec.PoolConfig.PriorityClassName = &priorityClassName
 	}
 
 	if poolSpec.PoolConfig.ROThresholdLimit == nil {

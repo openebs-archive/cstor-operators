@@ -44,7 +44,7 @@ func (ac *Config) SelectNode() (*cstor.PoolSpec, string, error) {
 		pool := pool
 		nodeName, err := ac.GetNodeFromLabelSelector(pool.NodeSelector)
 		if err != nil || nodeName == "" {
-			klog.Errorf("could not use node for selectors {%v}", pool.NodeSelector)
+			klog.Errorf("could not use node for selectors {%v}: {%s}", pool.NodeSelector, err.Error())
 			continue
 		}
 		if ac.VisitedNodes[nodeName] {
@@ -91,10 +91,7 @@ func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 		clientset.
 		CstorV1().
 		CStorPoolInstances(ac.Namespace).
-		List(
-			metav1.
-				ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name},
-		)
+		List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list already created csp(s)")

@@ -30,10 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// OpenEBSServiceAccount name of the openebs service accout with required
-// permissions
 const (
-	OpenEBSServiceAccount = "openebs-maya-operator"
 	// PoolMgmtContainerName is the name of cstor target container name
 	PoolMgmtContainerName = "cstor-pool-mgmt"
 
@@ -94,7 +91,7 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) *appsv1.Deploy
 				WithPriorityClassName(getPriorityClass(cspi)).
 				WithNodeSelector(cspi.Spec.NodeSelector).
 				WithAnnotationsNew(getPodAnnotations()).
-				WithServiceAccountName(OpenEBSServiceAccount).
+				WithServiceAccountName(util.GetServiceAccountName()).
 				WithTolerations(getPoolPodToleration(cspi)...).
 				WithContainers(
 					coreapi.NewContainer().
@@ -399,7 +396,7 @@ func getPoolPodToleration(cspi *cstor.CStorPoolInstance) []corev1.Toleration {
 }
 
 func getPriorityClass(cspi *cstor.CStorPoolInstance) string {
-	if cspi.Spec.PoolConfig.PriorityClassName==nil{
+	if cspi.Spec.PoolConfig.PriorityClassName == nil {
 		return ""
 	}
 	return *cspi.Spec.PoolConfig.PriorityClassName

@@ -280,7 +280,7 @@ func (c *Controller) GetCSPIWithoutDeployment(cspc *cstor.CStorPoolCluster) ([]c
 syncCSPI propagates all the required changes from cspc to respective cspi.
 ToDo: Currently -- in every resync interval the sync is tried and this needs to be improved by queuing cspc
 only at times when it is required.
- */
+*/
 
 func (pc *PoolConfig) syncCSPI(cspc *cstor.CStorPoolCluster) error {
 	cspiList, err := pc.Controller.GetCSPIListForCSPC(cspc)

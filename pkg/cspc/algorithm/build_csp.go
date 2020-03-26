@@ -56,7 +56,7 @@ func (ac *Config) GetCSPISpec() (*cstor.CStorPoolInstance, error) {
 	}
 
 	if poolSpec.PoolConfig.PriorityClassName == nil {
-		priorityClassName:=ac.CSPC.Spec.DefaultPriorityClassName
+		priorityClassName := ac.CSPC.Spec.DefaultPriorityClassName
 		poolSpec.PoolConfig.PriorityClassName = &priorityClassName
 	}
 

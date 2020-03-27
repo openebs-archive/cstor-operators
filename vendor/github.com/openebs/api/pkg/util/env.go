@@ -36,6 +36,17 @@ const (
 	//
 	// This environment variable is set via kubernetes downward API
 	Namespace = "NAMESPACE"
+
+	// DefaultOpenEBSServiceAccount name of the default openebs service accout with
+	// required permissions
+	DefaultOpenEBSServiceAccount = "openebs-maya-operator"
+
+	// OpenEBSServiceAccount is the environment variable to get operator service
+	// account name
+	//
+	// This environment variable is set via kubernetes downward API in cvc and
+	// cspc operators deployments
+	OpenEBSServiceAccount = "OPENEBS_SERVICEACCOUNT_NAME"
 )
 
 // LookupOrFalse looks up an environment variable and returns a string "false"
@@ -75,4 +86,14 @@ func GetOpenebsBaseDirPath() string {
 // downward API where CVC-Operator has been deployed
 func GetNamespace() string {
 	return GetEnv(OpenEBSNamespace)
+}
+
+// GetServiceAccountName gets the name of OPENEBS_SERVICEACCOUNT_NAME env value which is set by the
+// downward API of cvc and cspc operator deployments
+func GetServiceAccountName() string {
+	name, present := os.LookupEnv(OpenEBSServiceAccount)
+	if !present {
+		name = DefaultOpenEBSServiceAccount
+	}
+	return name
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cstorvolumeclaim
+package cstorvolumeconfig
 
 import (
 	"reflect"
@@ -29,22 +29,22 @@ import (
 
 type conditionMergeTestCase struct {
 	description    string
-	cvc            *apis.CStorVolumeClaim
-	newConditions  []apis.CStorVolumeClaimCondition
-	finalCondtions []apis.CStorVolumeClaimCondition
+	cvc            *apis.CStorVolumeConfig
+	newConditions  []apis.CStorVolumeConfigCondition
+	finalCondtions []apis.CStorVolumeConfigCondition
 }
 
 func TestMergeResizeCondition(t *testing.T) {
 	currentTime := metav1.Now()
 
-	cvc := getCVC([]apis.CStorVolumeClaimCondition{
+	cvc := getCVC([]apis.CStorVolumeConfigCondition{
 		{
-			Type:               apis.CStorVolumeClaimResizing,
+			Type:               apis.CStorVolumeConfigResizing,
 			LastTransitionTime: currentTime,
 		},
 	})
 
-	noConditionCVC := getCVC([]apis.CStorVolumeClaimCondition{})
+	noConditionCVC := getCVC([]apis.CStorVolumeConfigCondition{})
 
 	conditionFalseTime := metav1.Now()
 	newTime := metav1.NewTime(time.Now().Add(1 * time.Hour))
@@ -53,35 +53,35 @@ func TestMergeResizeCondition(t *testing.T) {
 		{
 			description:    "when removing all conditions",
 			cvc:            cvc.DeepCopy(),
-			newConditions:  []apis.CStorVolumeClaimCondition{},
-			finalCondtions: []apis.CStorVolumeClaimCondition{},
+			newConditions:  []apis.CStorVolumeConfigCondition{},
+			finalCondtions: []apis.CStorVolumeConfigCondition{},
 		},
 		{
 			description: "adding new condition",
 			cvc:         cvc.DeepCopy(),
-			newConditions: []apis.CStorVolumeClaimCondition{
+			newConditions: []apis.CStorVolumeConfigCondition{
 				{
-					Type: apis.CStorVolumeClaimResizePending,
+					Type: apis.CStorVolumeConfigResizePending,
 				},
 			},
-			finalCondtions: []apis.CStorVolumeClaimCondition{
+			finalCondtions: []apis.CStorVolumeConfigCondition{
 				{
-					Type: apis.CStorVolumeClaimResizePending,
+					Type: apis.CStorVolumeConfigResizePending,
 				},
 			},
 		},
 		{
 			description: "adding same condition with new timestamp",
 			cvc:         cvc.DeepCopy(),
-			newConditions: []apis.CStorVolumeClaimCondition{
+			newConditions: []apis.CStorVolumeConfigCondition{
 				{
-					Type:               apis.CStorVolumeClaimResizing,
+					Type:               apis.CStorVolumeConfigResizing,
 					LastTransitionTime: newTime,
 				},
 			},
-			finalCondtions: []apis.CStorVolumeClaimCondition{
+			finalCondtions: []apis.CStorVolumeConfigCondition{
 				{
-					Type:               apis.CStorVolumeClaimResizing,
+					Type:               apis.CStorVolumeConfigResizing,
 					LastTransitionTime: newTime,
 				},
 			},
@@ -89,15 +89,15 @@ func TestMergeResizeCondition(t *testing.T) {
 		{
 			description: "adding same condition but with different status",
 			cvc:         cvc.DeepCopy(),
-			newConditions: []apis.CStorVolumeClaimCondition{
+			newConditions: []apis.CStorVolumeConfigCondition{
 				{
-					Type:               apis.CStorVolumeClaimResizing,
+					Type:               apis.CStorVolumeConfigResizing,
 					LastTransitionTime: conditionFalseTime,
 				},
 			},
-			finalCondtions: []apis.CStorVolumeClaimCondition{
+			finalCondtions: []apis.CStorVolumeConfigCondition{
 				{
-					Type:               apis.CStorVolumeClaimResizing,
+					Type:               apis.CStorVolumeConfigResizing,
 					LastTransitionTime: conditionFalseTime,
 				},
 			},
@@ -105,15 +105,15 @@ func TestMergeResizeCondition(t *testing.T) {
 		{
 			description: "when no condition exists on pvc",
 			cvc:         noConditionCVC.DeepCopy(),
-			newConditions: []apis.CStorVolumeClaimCondition{
+			newConditions: []apis.CStorVolumeConfigCondition{
 				{
-					Type:               apis.CStorVolumeClaimResizing,
+					Type:               apis.CStorVolumeConfigResizing,
 					LastTransitionTime: currentTime,
 				},
 			},
-			finalCondtions: []apis.CStorVolumeClaimCondition{
+			finalCondtions: []apis.CStorVolumeConfigCondition{
 				{
-					Type:               apis.CStorVolumeClaimResizing,
+					Type:               apis.CStorVolumeConfigResizing,
 					LastTransitionTime: currentTime,
 				},
 			},
@@ -132,16 +132,16 @@ func TestMergeResizeCondition(t *testing.T) {
 
 }
 
-func getCVC(conditions []apis.CStorVolumeClaimCondition) *apis.CStorVolumeClaim {
-	cvc := &apis.CStorVolumeClaim{
+func getCVC(conditions []apis.CStorVolumeConfigCondition) *apis.CStorVolumeConfig {
+	cvc := &apis.CStorVolumeConfig{
 		ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "openebs"},
-		Spec: apis.CStorVolumeClaimSpec{
+		Spec: apis.CStorVolumeConfigSpec{
 			Capacity: corev1.ResourceList{
 				corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("2Gi"),
 			},
 		},
-		Status: apis.CStorVolumeClaimStatus{
-			Phase:      apis.CStorVolumeClaimPhaseBound,
+		Status: apis.CStorVolumeConfigStatus{
+			Phase:      apis.CStorVolumeConfigPhaseBound,
 			Conditions: conditions,
 			Capacity: corev1.ResourceList{
 				corev1.ResourceStorage: resource.MustParse("2Gi"),

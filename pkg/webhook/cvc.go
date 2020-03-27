@@ -29,9 +29,9 @@ import (
 	"k8s.io/klog"
 )
 
-type validateFunc func(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error
+type validateFunc func(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error
 
-type getCVC func(name, namespace string, clientset clientset.Interface) (*cstor.CStorVolumeClaim, error)
+type getCVC func(name, namespace string, clientset clientset.Interface) (*cstor.CStorVolumeConfig, error)
 
 func (wh *webhook) validateCVC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	req := ar.Request
@@ -50,7 +50,7 @@ func (wh *webhook) validateCVCUpdateRequest(req *v1beta1.AdmissionRequest, getCV
 	response := NewAdmissionResponse().
 		SetAllowed().
 		WithResultAsSuccess(http.StatusAccepted).AR
-	var cvcNewObj cstor.CStorVolumeClaim
+	var cvcNewObj cstor.CStorVolumeConfig
 	err := json.Unmarshal(req.Object.Raw, &cvcNewObj)
 	if err != nil {
 		klog.Errorf("Couldn't unmarshal raw object: %v to cvc error: %v", req.Object.Raw, err)
@@ -74,7 +74,7 @@ func (wh *webhook) validateCVCUpdateRequest(req *v1beta1.AdmissionRequest, getCV
 	return response
 }
 
-func validateCVCSpecChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error {
+func validateCVCSpecChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error {
 	validateFuncList := []validateFunc{validateReplicaCount,
 		validatePoolListChanges,
 		validateReplicaScaling,
@@ -94,21 +94,21 @@ func validateCVCSpecChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error 
 	return nil
 }
 
-// TODO: isScalingInProgress(cvcObj *cstor.CStorVolumeClaim) signature need to be
+// TODO: isScalingInProgress(cvcObj *cstor.CStorVolumeConfig) signature need to be
 // updated to cvcObj.IsScaleingInProgress()
-func isScalingInProgress(cvcObj *cstor.CStorVolumeClaim) bool {
+func isScalingInProgress(cvcObj *cstor.CStorVolumeConfig) bool {
 	return len(cvcObj.Spec.Policy.ReplicaPoolInfo) != len(cvcObj.Status.PoolInfo)
 }
 
 // validateReplicaCount returns error if user modified the replica count after
 // provisioning the volume else return nil
-func validateReplicaCount(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error {
-	if cvcOldObj.Spec.ReplicaCount != cvcNewObj.Spec.ReplicaCount {
+func validateReplicaCount(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error {
+	if cvcOldObj.Spec.Provision.ReplicaCount != cvcNewObj.Spec.Provision.ReplicaCount {
 		return errors.Errorf(
 			"cvc %s replicaCount got modified from %d to %d",
 			cvcOldObj.Name,
-			cvcOldObj.Spec.ReplicaCount,
-			cvcNewObj.Spec.ReplicaCount,
+			cvcOldObj.Spec.Provision.ReplicaCount,
+			cvcNewObj.Spec.Provision.ReplicaCount,
 		)
 	}
 	return nil
@@ -116,7 +116,7 @@ func validateReplicaCount(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error {
 
 // validatePoolListChanges returns error if user modified existing pool names with new
 // pool name(s) or if user performed more than one replica scale down at a time
-func validatePoolListChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error {
+func validatePoolListChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error {
 	// Check the new CVC spec changes with old CVC status(Comparing with status
 	// is more appropriate than comparing with spec)
 	oldCurrentPoolNames := cvcOldObj.Status.PoolInfo
@@ -128,14 +128,14 @@ func validatePoolListChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error
 	// Bound as well as pool info in status and spec
 	// TODO: Make below check as cvcOldObj.ISBound()
 	// If CVC Status is not bound then reject
-	if cvcOldObj.Status.Phase != cstor.CStorVolumeClaimPhaseBound {
+	if cvcOldObj.Status.Phase != cstor.CStorVolumeConfigPhaseBound {
 		// If controller is updating pool info then new CVC will be in bound state
-		if cvcNewObj.Status.Phase != cstor.CStorVolumeClaimPhaseBound &&
+		if cvcNewObj.Status.Phase != cstor.CStorVolumeConfigPhaseBound &&
 			// Performed scaling operation on CVC
 			len(oldCurrentPoolNames) != len(newDesiredPoolNames) {
 			return errors.Errorf(
 				"Can't perform scaling of volume replicas when CVC is not in %s state",
-				cstor.CStorVolumeClaimPhaseBound,
+				cstor.CStorVolumeConfigPhaseBound,
 			)
 		}
 	}
@@ -169,7 +169,7 @@ func validatePoolListChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error
 // already in progress.
 // Note: User can perform scaleup of multiple replicas by adding multiple pool
 //       names at time but not by updating CVC pool names with multiple edits.
-func validateReplicaScaling(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error {
+func validateReplicaScaling(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error {
 	if isScalingInProgress(cvcOldObj) {
 		// if old and new CVC has same count of pools then return true else
 		// return false
@@ -182,7 +182,7 @@ func validateReplicaScaling(cvcOldObj, cvcNewObj *cstor.CStorVolumeClaim) error 
 
 // validatePoolNames returns error if there is repeatition of pool names either
 // under spec or status of cvc
-func validatePoolNames(cvcObj *cstor.CStorVolumeClaim) error {
+func validatePoolNames(cvcObj *cstor.CStorVolumeConfig) error {
 	replicaPoolNames := GetDesiredReplicaPoolNames(cvcObj)
 	// Check repeatition of pool names under Spec of CVC Object
 	if !IsUniqueList(replicaPoolNames) {
@@ -204,9 +204,9 @@ func validatePoolNames(cvcObj *cstor.CStorVolumeClaim) error {
 }
 
 func getCVCObject(name, namespace string,
-	clientset clientset.Interface) (*cstor.CStorVolumeClaim, error) {
+	clientset clientset.Interface) (*cstor.CStorVolumeConfig, error) {
 	return clientset.CstorV1().
-		CStorVolumeClaims(namespace).
+		CStorVolumeConfigs(namespace).
 		Get(name, metav1.GetOptions{})
 }
 
@@ -225,7 +225,7 @@ func IsUniqueList(list []string) bool {
 }
 
 // GetDesiredReplicaPoolNames returns list of desired pool names
-func GetDesiredReplicaPoolNames(cvc *cstor.CStorVolumeClaim) []string {
+func GetDesiredReplicaPoolNames(cvc *cstor.CStorVolumeConfig) []string {
 	poolNames := []string{}
 	for _, poolInfo := range cvc.Spec.Policy.ReplicaPoolInfo {
 		poolNames = append(poolNames, poolInfo.PoolName)

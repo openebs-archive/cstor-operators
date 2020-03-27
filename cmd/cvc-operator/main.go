@@ -19,13 +19,13 @@ package main
 import (
 	"os"
 
-	cvc "github.com/openebs/cstor-operators/pkg/controllers/cstorvolumeclaim"
+	cvc "github.com/openebs/cstor-operators/pkg/controllers/cstorvolumeconfig"
 	"k8s.io/klog"
 )
 
 func main() {
 	if err := cvc.Start(); err != nil {
-		klog.Errorf("Failed to start cstorvolumeclaim controller:{%s}", err.Error())
+		klog.Errorf("Failed to start cstorvolumeconfig controller:{%s}", err.Error())
 		os.Exit(1)
 	}
 	os.Exit(0)

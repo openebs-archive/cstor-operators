@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cstorvolumeclaim
+package cstorvolumeconfig
 
 import (
 	"fmt"
@@ -26,7 +26,6 @@ import (
 	informers "github.com/openebs/api/pkg/client/informers/externalversions"
 	listers "github.com/openebs/api/pkg/client/listers/cstor/v1"
 
-	//ndmclientset "github.com/openebs/api/pkg/client/openebs.io/ndm/v1alpha1/clientset/internalclientset"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -52,7 +51,7 @@ type CVCController struct {
 	// ndmclientset is a ndm custom resource package generated for custom API group.
 	//ndmclientset ndmclientset.Interface
 
-	cvcLister listers.CStorVolumeClaimLister
+	cvcLister listers.CStorVolumeConfigLister
 	cvLister  listers.CStorVolumeLister
 
 	cvrLister listers.CStorVolumeReplicaLister
@@ -112,7 +111,7 @@ func (cb *CVCControllerBuilder) withOpenEBSClient(cs clientset.Interface) *CVCCo
 
 // withCVCLister fills cvc lister to controller object.
 func (cb *CVCControllerBuilder) withCVCLister(sl informers.SharedInformerFactory) *CVCControllerBuilder {
-	cvcInformer := sl.Cstor().V1().CStorVolumeClaims()
+	cvcInformer := sl.Cstor().V1().CStorVolumeConfigs()
 	cb.CVCController.cvcLister = cvcInformer.Lister()
 	return cb
 }
@@ -153,7 +152,7 @@ func (cb *CVCControllerBuilder) withCVCStore() *CVCControllerBuilder {
 
 // withCVCSynced adds object sync information in cache to controller object.
 func (cb *CVCControllerBuilder) withCVCSynced(sl informers.SharedInformerFactory) *CVCControllerBuilder {
-	cvcInformer := sl.Cstor().V1().CStorVolumeClaims()
+	cvcInformer := sl.Cstor().V1().CStorVolumeConfigs()
 	cb.CVCController.cvcSynced = cvcInformer.Informer().HasSynced
 	return cb
 }
@@ -177,7 +176,7 @@ func (cb *CVCControllerBuilder) withRecorder(ks kubernetes.Interface) *CVCContro
 
 // withEventHandler adds event handlers controller object.
 func (cb *CVCControllerBuilder) withEventHandler(cvcInformerFactory informers.SharedInformerFactory) *CVCControllerBuilder {
-	cvcInformer := cvcInformerFactory.Cstor().V1().CStorVolumeClaims()
+	cvcInformer := cvcInformerFactory.Cstor().V1().CStorVolumeConfigs()
 	// Set up an event handler for when CVC resources change
 	cvcInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    cb.CVCController.addCVC,
@@ -196,9 +195,9 @@ func (cb *CVCControllerBuilder) Build() (*CVCController, error) {
 	return cb.CVCController, nil
 }
 
-// addCVC is the add event handler for CstorVolumeClaim
+// addCVC is the add event handler for CStorVolumeConfig
 func (c *CVCController) addCVC(obj interface{}) {
-	cvc, ok := obj.(*apis.CStorVolumeClaim)
+	cvc, ok := obj.(*apis.CStorVolumeConfig)
 	if !ok {
 		runtime.HandleError(fmt.Errorf("Couldn't get cvc object %#v", obj))
 		return
@@ -208,10 +207,10 @@ func (c *CVCController) addCVC(obj interface{}) {
 	c.enqueueCVC(cvc)
 }
 
-// updateCVC is the update event handler for CstorVolumeClaim
+// updateCVC is the update event handler for CStorVolumeConfig
 func (c *CVCController) updateCVC(oldObj, newObj interface{}) {
 
-	newCVC, ok := newObj.(*apis.CStorVolumeClaim)
+	newCVC, ok := newObj.(*apis.CStorVolumeConfig)
 	if !ok {
 		runtime.HandleError(fmt.Errorf("Couldn't get cvc object %#v", newCVC))
 		return
@@ -220,16 +219,16 @@ func (c *CVCController) updateCVC(oldObj, newObj interface{}) {
 	c.enqueueCVC(newCVC)
 }
 
-// deleteCVC is the delete event handler for CstorVolumeClaim
+// deleteCVC is the delete event handler for CStorVolumeConfig
 func (c *CVCController) deleteCVC(obj interface{}) {
-	cvc, ok := obj.(*apis.CStorVolumeClaim)
+	cvc, ok := obj.(*apis.CStorVolumeConfig)
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
 			runtime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
 			return
 		}
-		cvc, ok = tombstone.Obj.(*apis.CStorVolumeClaim)
+		cvc, ok = tombstone.Obj.(*apis.CStorVolumeConfig)
 		if !ok {
 			runtime.HandleError(fmt.Errorf("Tombstone contained object that is not a cstorvolumeclaim %#v", obj))
 			return
@@ -248,24 +247,24 @@ func (c *CVCController) Run(threadiness int, stopCh <-chan struct{}) {
 	defer c.workqueue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches
-	klog.Info("Starting CstorVolumeClaim controller")
+	klog.Info("Starting CstorVolumeConfig controller")
 
 	// Wait for the k8s caches to be synced before starting workers
 	klog.Info("Waiting for informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.cvcSynced); !ok {
-		klog.Errorf("failed to sync CstorVolumeClaim caches")
+		klog.Errorf("failed to sync CStorVolumeConfig caches")
 		return
 	}
-	klog.Info("Starting CstorVolumeClaim workers")
+	klog.Info("Starting CStorVolumeConfig workers")
 	// Launch worker to process CVC resources
 	// Threadiness will decide the number of workers you want to launch to process work items from queue
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
 
-	klog.Info("Started CstorVolumeClaim workers")
+	klog.Info("Started CStorVolumeConfig workers")
 	<-stopCh
-	klog.Info("Shutting down CstorVolumeClaim workers")
+	klog.Info("Shutting down CStorVolumeConfig workers")
 }
 
 // runWorker is a long-running function that will continually call the

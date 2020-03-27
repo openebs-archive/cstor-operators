@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	clientset  "github.com/openebs/api/pkg/client/clientset/versioned"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 )
 

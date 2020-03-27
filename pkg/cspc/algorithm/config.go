@@ -17,11 +17,11 @@ limitations under the License.
 package algorithm
 
 import (
-	"github.com/pkg/errors"
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	openebsstoredversion "github.com/openebs/api/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1"
-	cstorstoredversion "github.com/openebs/api/pkg/client/clientset/versioned/typed/cstor/v1"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	cstorstoredversion "github.com/openebs/api/pkg/client/clientset/versioned/typed/cstor/v1"
+	openebsstoredversion "github.com/openebs/api/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -57,7 +57,7 @@ type Builder struct {
 }
 
 // NewBuilder returns an empty instance of Builder object
-// ToDo: Add openebs and kube client set 
+// ToDo: Add openebs and kube client set
 func NewBuilder() *Builder {
 	return &Builder{
 		ConfigObj: &Config{
@@ -93,7 +93,7 @@ func (b *Builder) WithOpenEBSClient(oc clientset.Interface) *Builder {
 
 // WithKubeClient sets the kubeclientset field of config object with provided value.
 func (b *Builder) WithKubeClient(kc kubernetes.Interface) *Builder {
-	b.ConfigObj.kubeclientset=kc
+	b.ConfigObj.kubeclientset = kc
 	return b
 }
 
@@ -115,10 +115,10 @@ func (b *Builder) Build() (*Config, error) {
 	return b.ConfigObj, nil
 }
 
-func (ac *Config)GetStoredOpenEBSVersionClient() openebsstoredversion.OpenebsV1alpha1Interface {
+func (ac *Config) GetStoredOpenEBSVersionClient() openebsstoredversion.OpenebsV1alpha1Interface {
 	return ac.clientset.OpenebsV1alpha1()
 }
 
-func (ac *Config)GetStoredCStorVersionClient() cstorstoredversion.CstorV1Interface {
+func (ac *Config) GetStoredCStorVersionClient() cstorstoredversion.CstorV1Interface {
 	return ac.clientset.CstorV1()
 }

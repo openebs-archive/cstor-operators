@@ -67,9 +67,6 @@ var (
 			MountPath: "/var/openebs/cstor-target",
 		},
 	}
-	// OpenEBSServiceAccount name of the openebs service accout with required
-	// permissions
-	OpenEBSServiceAccount = "openebs-maya-operator"
 	// TargetContainerName is the name of cstor target container name
 	TargetContainerName = "cstor-istgt"
 	// MonitorContainerName is the name of monitor container name
@@ -343,7 +340,7 @@ func (c *CVCController) getOrCreateCStorTargetDeployment(
 				apicore.NewPodTemplateSpec().
 					WithLabelsNew(getDeployTemplateLabels(vol.Name)).
 					WithAnnotationsNew(getDeployTemplateAnnotations()).
-					WithServiceAccountName(OpenEBSServiceAccount).
+					WithServiceAccountName(util.GetServiceAccountName()).
 					// TODO use of affinity
 					//WithAffinity(getDeployTemplateAffinity()).
 					WithPriorityClassName(getPriorityClass(policy)).

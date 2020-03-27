@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	ndmapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	ndmapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	zpool "github.com/openebs/api/pkg/internalapis/apis/cstor"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

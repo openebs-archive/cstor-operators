@@ -19,13 +19,13 @@ package pstatus
 import (
 	"encoding/json"
 	"fmt"
+	vdump "github.com/openebs/api/pkg/internalapis/apis/cstor"
+	"github.com/openebs/cstor-operators/pkg/zcmd/bin"
+	"github.com/pkg/errors"
 	"os/exec"
 	"reflect"
 	"runtime"
 	"strings"
-	vdump "github.com/openebs/api/pkg/internalapis/apis/cstor"
-	"github.com/openebs/cstor-operators/pkg/zcmd/bin"
-	"github.com/pkg/errors"
 )
 
 const (

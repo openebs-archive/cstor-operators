@@ -106,7 +106,7 @@ func (c *Controller) GetCSPIListForCSPC(cspc *cstor.CStorPoolCluster) (*cstor.CS
 	return c.clientset.CstorV1().
 		CStorPoolInstances(cspc.Namespace).
 		List(metav1.
-		ListOptions{
+			ListOptions{
 			LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspc.Name,
 		})
 }

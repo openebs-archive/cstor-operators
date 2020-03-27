@@ -22,12 +22,12 @@ import (
 	types "github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	openebsScheme "github.com/openebs/api/pkg/client/clientset/versioned/scheme"
-	informers "github.com/openebs/api/pkg/client/informers/externalversions"
-	listers "github.com/openebs/api/pkg/client/listers/cstor/v1"
-	v1interface "github.com/openebs/api/pkg/client/informers/externalversions/cstor/v1"
-	corev1 "k8s.io/api/core/v1"
 	cstorstoredversion "github.com/openebs/api/pkg/client/clientset/versioned/typed/cstor/v1"
 	openebsstoredversion "github.com/openebs/api/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1"
+	informers "github.com/openebs/api/pkg/client/informers/externalversions"
+	v1interface "github.com/openebs/api/pkg/client/informers/externalversions/cstor/v1"
+	listers "github.com/openebs/api/pkg/client/listers/cstor/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -165,9 +165,9 @@ func (cb *ControllerBuilder) WithEventHandler(InformerFactory informers.SharedIn
 	return cb
 }
 
-func (cb *ControllerBuilder)withDefaults()  {
-	cb.Controller.syncHandler=cb.Controller.syncCSPC
-	cb.Controller.enqueueCSPC=cb.Controller.enqueue
+func (cb *ControllerBuilder) withDefaults() {
+	cb.Controller.syncHandler = cb.Controller.syncCSPC
+	cb.Controller.enqueueCSPC = cb.Controller.enqueue
 }
 
 // Build returns a controller instance.
@@ -235,18 +235,18 @@ func (c *Controller) deleteCSPC(obj interface{}) {
 	c.enqueueCSPC(cspc)
 }
 
-func GetVersionedCSPCInterface(cspcInformerFactory informers.SharedInformerFactory) v1interface.Interface{
+func GetVersionedCSPCInterface(cspcInformerFactory informers.SharedInformerFactory) v1interface.Interface {
 	return cspcInformerFactory.Cstor().V1()
 }
 
-func GetStoredCSPIVersionInterface(cspiInformerFactory informers.SharedInformerFactory) v1interface.Interface{
+func GetStoredCSPIVersionInterface(cspiInformerFactory informers.SharedInformerFactory) v1interface.Interface {
 	return cspiInformerFactory.Cstor().V1()
 }
 
-func (c *Controller)GetStoredCStorVersionClient() cstorstoredversion.CstorV1Interface {
+func (c *Controller) GetStoredCStorVersionClient() cstorstoredversion.CstorV1Interface {
 	return c.clientset.CstorV1()
 }
 
-func (c *Controller)GetStoredOpenebsVersionClient() openebsstoredversion.OpenebsV1alpha1Interface {
+func (c *Controller) GetStoredOpenebsVersionClient() openebsstoredversion.OpenebsV1alpha1Interface {
 	return c.clientset.OpenebsV1alpha1()
 }

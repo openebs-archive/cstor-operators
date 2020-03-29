@@ -193,15 +193,14 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 	// ToDo: Use the status from the cspi object that is passed in arg else other fields
 	// might get lost.
 	var status cstor.CStorPoolInstanceStatus
-	var err error
 	pool := zpool.PoolName()
 	propertyList := []string{"health", "io.openebs:readonly"}
 
 	// Since we quarried in following order health and io.openebs:readonly output also
 	// will be in same order
-	valueList, er := zpool.GetListOfPropertyValues(pool, propertyList)
-	if er != nil || len(valueList) != len(propertyList) {
-		return errors.Wrapf(err, "Failed to fetch %v output: %v", propertyList, valueList)
+	valueList, err := zpool.GetListOfPropertyValues(pool, propertyList)
+	if err != nil {
+		return errors.Errorf("Failed to fetch %v output: %v error: %v", propertyList, valueList, err)
 	} else {
 		// valueList[0] will hold the value of health of cStor pool
 		// valueList[1] will hold the value of io.openebs:readonly of cStor pool
@@ -218,7 +217,6 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 	c.updateROMode(&status, *cspi)
 
 	if IsStatusChange(cspi.Status, status) {
-		klog.Infof("Status %v", status)
 		cspi.Status = status
 		_, err = zpool.OpenEBSClient.
 			CstorV1().

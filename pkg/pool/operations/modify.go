@@ -79,7 +79,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 					bdev.BlockDeviceName)
 				if er != nil {
 					// This case is not possible
-					err = ErrorWrapf(er,
+					err = ErrorWrapf(err,
 						"Failed to get claim of blockdevice {%s}.. %s",
 						bdev.BlockDeviceName,
 						er.Error())

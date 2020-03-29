@@ -29,7 +29,6 @@ import (
 func GetPropertyValue(poolName, property string) (string, error) {
 	ret, err := zfs.NewPoolGetProperty().
 		WithScriptedMode(true).
-		WithParsableMode(true).
 		WithField("value").
 		WithProperty(property).
 		WithPool(poolName).
@@ -46,7 +45,6 @@ func GetPropertyValue(poolName, property string) (string, error) {
 func GetListOfPropertyValues(poolName string, propertyList []string) ([]string, error) {
 	ret, err := zfs.NewPoolGetProperty().
 		WithScriptedMode(true).
-		WithParsableMode(true).
 		WithField("value").
 		WithPropertyList(propertyList).
 		WithPool(poolName).

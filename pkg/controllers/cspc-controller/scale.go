@@ -29,7 +29,8 @@ import (
 )
 
 // ScaleUp creates as many cstor pool on a node as pendingPoolCount.
-func (pc *PoolConfig) ScaleUp(cspc *cstor.CStorPoolCluster, pendingPoolCount int) error {
+func (pc *PoolConfig) ScaleUp(cspc *cstor.CStorPoolCluster, pendingPoolCount int) {
+	needsStatusUpdate := false
 	for poolCount := 1; poolCount <= pendingPoolCount; poolCount++ {
 		err := pc.CreateCSPI(cspc)
 		if err != nil {
@@ -37,12 +38,18 @@ func (pc *PoolConfig) ScaleUp(cspc *cstor.CStorPoolCluster, pendingPoolCount int
 			pc.Controller.recorder.Event(cspc, corev1.EventTypeWarning, "Create", message)
 			runtime.HandleError(errors.Wrapf(err, "Pool provisioning failed for %d/%d for cstorpoolcluster %s", poolCount, pendingPoolCount, cspc.Name))
 		} else {
+			needsStatusUpdate = true
 			message := fmt.Sprintf("Pool Provisioned %d/%d ", poolCount, pendingPoolCount)
 			pc.Controller.recorder.Event(cspc, corev1.EventTypeNormal, "Create", message)
 			klog.Infof("Pool provisioned successfully %d/%d for cstorpoolcluster %s", poolCount, pendingPoolCount, cspc.Name)
 		}
 	}
-	return nil
+	if needsStatusUpdate {
+		err := pc.Controller.UpdateStatus(cspc)
+		if err != nil {
+			runtime.HandleError(errors.Wrapf(err, "Failed to update cspc %s status", cspc.Name))
+		}
+	}
 }
 
 // CreateCSPI creates CSPI
@@ -88,19 +95,23 @@ func (pc *PoolConfig) CreateCSPIDeployment(cspc *cstor.CStorPoolCluster, cspi *c
 }
 
 // DownScalePool deletes the required pool.
-func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) error {
+func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) {
+	needsStatusUpdate := false
 	orphanedCSP, err := pc.getOrphanedCStorPools(cspc)
+
 	if err != nil {
 		pc.Controller.recorder.Event(cspc, corev1.EventTypeWarning,
 			"DownScale", "Pool downscale failed "+err.Error())
-		return errors.Wrap(err, "could not get orphaned CSP(s)")
+		klog.Errorf("Pool downscale failed as could not get orphaned CSP(s):{%s}" + err.Error())
+		return
 	}
+
 	for _, cspiName := range orphanedCSP {
 		pc.Controller.recorder.Event(cspc, corev1.EventTypeNormal,
 			"DownScale", "De-provisioning pool "+cspiName)
 
 		// TODO : As part of deleting a CSP, do we need to delete associated BDCs ?
-
+		needsStatusUpdate = true
 		err := pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).Delete(cspiName, &metav1.DeleteOptions{})
 		if err != nil {
 			pc.Controller.recorder.Event(cspc, corev1.EventTypeWarning,
@@ -108,7 +119,13 @@ func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) error {
 			klog.Errorf("De-provisioning pool %s failed: %s", cspiName, err)
 		}
 	}
-	return nil
+
+	if needsStatusUpdate {
+		err := pc.Controller.UpdateStatus(cspc)
+		if err != nil {
+			runtime.HandleError(errors.Wrapf(err, "Failed to update cspc %s status", cspc.Name))
+		}
+	}
 }
 
 // getOrphanedCStorPools returns a list of CSPI names that should be deleted.

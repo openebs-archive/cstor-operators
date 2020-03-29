@@ -1,0 +1,145 @@
+/*
+Copyright 2020 The OpenEBS Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package cspccontroller
+
+import (
+	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	"github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/cstor-operators/pkg/controllers/cspc-controller/util"
+	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/klog"
+	"time"
+)
+
+func (c *Controller) UpdateStatus(cspc *cstor.CStorPoolCluster) error {
+	err := c.UpdateInstancesCount(cspc)
+	maxRetry := 3
+
+	if err != nil {
+		klog.Errorf("failed to update cspc status: will retry %d times at 2s interval: {%s}", maxRetry, err.Error())
+		for maxRetry > 0 {
+			cspcNew, err := c.GetStoredCStorVersionClient().CStorPoolClusters(cspc.Namespace).Get(cspc.Name, metav1.GetOptions{})
+
+			if err != nil {
+				// this is possible due to etcd unavailability so do not retry more here
+				return errors.Wrapf(err, "failed to update cspc status")
+			}
+
+			err = c.UpdateInstancesCount(cspcNew)
+			if err != nil {
+				maxRetry = maxRetry - 1
+				klog.Errorf("failed to update cspc status: will retry %d times at 2s interval : {%s}", maxRetry, err.Error())
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return nil
+		}
+
+	}
+	return nil
+}
+
+func (c *Controller) UpdateInstancesCount(cspc *cstor.CStorPoolCluster) error {
+	status, err := c.calculateStatus(cspc)
+	if err != nil {
+		return errors.Wrapf(err, "failed to calculate cspc %s status", cspc.Name)
+	}
+	cspc.Status = status
+	_, err = c.GetStoredCStorVersionClient().CStorPoolClusters(cspc.Namespace).Update(cspc)
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to update cspc %s in namespace %s", cspc.Name, cspc.Namespace)
+	}
+
+	return nil
+}
+
+func (c *Controller) calculateStatus(cspc *cstor.CStorPoolCluster) (cstor.CStorPoolClusterStatus, error) {
+	var healthyCSPIs int32
+	cspiList, err := c.GetCSPIListForCSPC(cspc)
+
+	// List all corresponding pool managers for the cspc
+	poolManagerList, err := c.kubeclientset.
+		AppsV1().
+		Deployments(cspc.Namespace).
+		List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name})
+
+	cspiNameToPoolManager := make(map[string]appsv1.Deployment)
+
+	for _, poolmanager := range poolManagerList.Items {
+		poolmanager := poolmanager // pin it
+		// note: name of cspi and corresponding pool manager is same.
+		cspiNameToPoolManager[poolmanager.Name] = poolmanager
+	}
+
+	if err != nil {
+		return cstor.CStorPoolClusterStatus{}, errors.Wrapf(err, "failed to list cspi(s) for cspc %s in namespace %s", cspc.Name, cspc.Namespace)
+	}
+
+	provisionedCSPIs := int32(len(cspiList.Items))
+	desiredCSPIs := int32(len(cspc.Spec.Pools))
+
+	status := cstor.CStorPoolClusterStatus{
+		ProvisionedInstances: provisionedCSPIs,
+		DesiredInstances:     desiredCSPIs,
+	}
+
+	// Copy conditions one by one so we won't mutate the original object.
+	conditions := cspc.Status.Conditions
+	for i := range conditions {
+		status.Conditions = append(status.Conditions, conditions[i])
+	}
+
+	unavailablePoolManagers := ""
+	isPoolManagerUnavailable := false
+
+	for _, cspi := range cspiList.Items {
+		if IsPoolMangerAvailable(cspiNameToPoolManager[cspi.Name]) {
+			if cspi.Status.Phase == cstor.CStorPoolStatusOnline {
+				healthyCSPIs++
+			}
+		} else {
+			isPoolManagerUnavailable = true
+			unavailablePoolManagers = unavailablePoolManagers + cspi.Name + " "
+		}
+	}
+
+	status.HealthyInstances = healthyCSPIs
+
+	if isPoolManagerUnavailable {
+		minAvailability := util.NewCSPCCondition(cstor.CSPCConditionType("PoolManagerAvailable"), v1.ConditionFalse,
+			"PoolManagersUnavailable", "Pool manager(s): "+unavailablePoolManagers+":does not have minimum available pod")
+		util.SetCSPCCondition(&status, *minAvailability)
+	} else {
+		minAvailability := util.NewCSPCCondition(cstor.CSPCConditionType("PoolManagerAvailable"), v1.ConditionTrue,
+			"PoolManagersAvailable", "Pool manager(s) have minimum available pod")
+		util.SetCSPCCondition(&status, *minAvailability)
+	}
+
+	return status, nil
+}
+
+func IsPoolMangerAvailable(pm appsv1.Deployment) bool {
+	if pm.Status.AvailableReplicas < 1 {
+		return false
+	}
+	return true
+}

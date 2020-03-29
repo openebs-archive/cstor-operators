@@ -21,4 +21,20 @@ spec:
     # shortNames allow shorter string to match your resource on the CLI
     shortNames:
       - cspc
+  additionalPrinterColumns:
+    - JSONPath: .status.healthyInstances
+      name: HealthyInstances
+      description: The number of healthy cStorPoolInstances
+      type: integer
+    - JSONPath: .status.provisionedInstances
+      name: ProvisionedInstances
+      description: The number of provisioned cStorPoolInstances
+      type: integer
+    - JSONPath: .status.desiredInstances
+      name: DesiredInstances
+      description: The number of desired cStorPoolInstances
+      type: integer
+    - JSONPath: .metadata.creationTimestamp
+      name: Age
+      type: date
 ---

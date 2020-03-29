@@ -29,6 +29,7 @@ import (
 func GetPropertyValue(poolName, property string) (string, error) {
 	ret, err := zfs.NewPoolGetProperty().
 		WithScriptedMode(true).
+		WithParsableMode(true).
 		WithField("value").
 		WithProperty(property).
 		WithPool(poolName).
@@ -45,6 +46,7 @@ func GetPropertyValue(poolName, property string) (string, error) {
 func GetListOfPropertyValues(poolName string, propertyList []string) ([]string, error) {
 	ret, err := zfs.NewPoolGetProperty().
 		WithScriptedMode(true).
+		WithParsableMode(true).
 		WithField("value").
 		WithPropertyList(propertyList).
 		WithPool(poolName).
@@ -52,7 +54,10 @@ func GetListOfPropertyValues(poolName string, propertyList []string) ([]string, 
 	if err != nil {
 		return []string{}, err
 	}
-	outStr := strings.Split(strings.TrimSpace(string(ret)), "\n")
+	// NOTE: Don't trim space there might be possibility for some
+	// properties values might be empty. If we trim the space we
+	// will lost the property values
+	outStr := strings.Split(string(ret), "\n")
 	return outStr, nil
 
 }
@@ -63,7 +68,7 @@ func GetCSPICapacity(poolName string) (cstor.CStorPoolInstanceCapacity, error) {
 	propertyList := []string{"free", "allocated", "size"}
 	cspiCapacity := cstor.CStorPoolInstanceCapacity{}
 	valueList, err := GetListOfPropertyValues(poolName, propertyList)
-	if err != nil || len(valueList) != len(propertyList) {
+	if err != nil {
 		return cspiCapacity, errors.Errorf(
 			"failed to get pool %v properties for pool %s cmd out: %v error: %v",
 			propertyList,

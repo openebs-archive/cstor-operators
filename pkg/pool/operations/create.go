@@ -17,10 +17,12 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
@@ -103,5 +105,16 @@ func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.Ra
 	if err != nil {
 		return errors.Errorf("Failed to create pool.. %s .. %s", string(ret), err.Error())
 	}
+
+	// Set compression at the pool level
+	compressionType := cspi.Spec.PoolConfig.Compression
+	err = SetCompression(PoolName(), compressionType)
+	if err != nil {
+		oc.recorder.Event(cspi,
+			corev1.EventTypeWarning,
+			"Pool "+string("FailedToSetCompression"),
+			fmt.Sprintf("Failed to set compression %s to the pool %s : %s", compressionType, PoolName(), err.Error()))
+	}
+
 	return nil
 }

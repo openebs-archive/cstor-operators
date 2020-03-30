@@ -126,9 +126,9 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 			string(common.SuccessCreated),
 			fmt.Sprintf("Pool created successfully"))
 
-		_, err := c.update(cspi)
+		cspiGot, err := c.update(cspi)
 		if err != nil {
-			c.recorder.Event(cspi,
+			c.recorder.Event(cspiGot,
 				corev1.EventTypeWarning,
 				string(common.FailedSynced),
 				err.Error())
@@ -191,7 +191,7 @@ func (c *CStorPoolInstanceController) update(cspi *cstor.CStorPoolInstance) (*cs
 		WithRecorder(c.recorder)
 	cspi, err := oc.Update(cspi)
 	if err != nil {
-		return nil, errors.Errorf("Failed to update pool due to %s", err.Error())
+		return cspi, errors.Errorf("Failed to update pool due to %s", err.Error())
 	}
 	return c.updateStatus(cspi)
 }
@@ -203,11 +203,11 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 	pool := zpool.PoolName()
 	propertyList := []string{"health", "io.openebs:readonly"}
 
-	// Since we quarried in following order health and io.openebs:readonly output also
+	// Since we queried in following order health and io.openebs:readonly output also
 	// will be in same order
 	valueList, err := zpool.GetListOfPropertyValues(pool, propertyList)
 	if err != nil {
-		return nil, errors.Errorf("Failed to fetch %v output: %v error: %v", propertyList, valueList, err)
+		return cspi, errors.Errorf("Failed to fetch %v output: %v error: %v", propertyList, valueList, err)
 	} else {
 		// valueList[0] will hold the value of health of cStor pool
 		// valueList[1] will hold the value of io.openebs:readonly of cStor pool
@@ -219,7 +219,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 
 	status.Capacity, err = zpool.GetCSPICapacity(pool)
 	if err != nil {
-		return nil, errors.Errorf("Failed to sync due to %s", err.Error())
+		return cspi, errors.Errorf("Failed to sync due to %s", err.Error())
 	}
 	c.updateROMode(&status, *cspi)
 

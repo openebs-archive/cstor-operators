@@ -321,6 +321,18 @@ func SetCompression(poolName string, compressionType string) error {
 		compressionType = "off"
 	}
 
+	// Get the compression value that exists in the pool
+	existingCompressionType, err := GetPropertyValue(poolName, "compression")
+	if err != nil {
+		return errors.Errorf("Failed to get compression type:err:%s", err.Error())
+	}
+
+	// If there is no change in the compression algorithm -- simply return.
+	if compressionType == existingCompressionType {
+		return nil
+	}
+
+	// If the requested compression algorithm is supported -- enable that.
 	if SupportedCompressionTypes[compressionType] {
 		ret, err := zfs.NewPoolSetProperty().
 			WithProperty("compression", compressionType).
@@ -334,5 +346,6 @@ func SetCompression(poolName string, compressionType string) error {
 		return nil
 	}
 
+	// If we are here, the requested compression algorithm is not supported.
 	return errors.Errorf("compression type %s not supported", compressionType)
 }

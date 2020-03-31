@@ -318,7 +318,7 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 func SetCompression(poolName string, compressionType string) error {
 	// If compression type is empty -- it means disable compression on the pool
 	if compressionType == "" {
-		compressionType = "off"
+		compressionType = "lz4"
 	}
 
 	// Get the compression value that exists in the pool

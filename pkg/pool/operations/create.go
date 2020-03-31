@@ -96,7 +96,7 @@ func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.Ra
 
 	compressionType := cspi.Spec.PoolConfig.Compression
 	if compressionType == "" {
-		compressionType = "off"
+		compressionType = "lz4"
 	}
 
 	ret, err := zfs.NewPoolCreate().

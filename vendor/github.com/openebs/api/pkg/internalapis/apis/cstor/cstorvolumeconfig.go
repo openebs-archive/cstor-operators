@@ -25,73 +25,85 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=true
 
-// CStorVolumeClaim describes a cstor volume claim resource created as
-// custom resource. CStorVolumeClaim is a request for creating cstor volume
+// CStorVolumeConfig describes a cstor volume claim resource created as
+// custom resource. CStorVolumeConfig is a request for creating cstor volume
 // related resources like deployment, svc etc.
-type CStorVolumeClaim struct {
+type CStorVolumeConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	// Spec defines a specification of a cstor volume claim required
 	// to provisione cstor volume resources
-	Spec CStorVolumeClaimSpec `json:"spec"`
+	Spec CStorVolumeConfigSpec `json:"spec"`
 
 	// Publish contains info related to attachment of a volume to a node.
 	// i.e. NodeId etc.
-	Publish CStorVolumeClaimPublish `json:"publish,omitempty"`
+	Publish CStorVolumeConfigPublish `json:"publish,omitempty"`
 
 	// Status represents the current information/status for the cstor volume
 	// claim, populated by the controller.
-	Status         CStorVolumeClaimStatus `json:"status"`
-	VersionDetails VersionDetails         `json:"versionDetails"`
+	Status         CStorVolumeConfigStatus `json:"status"`
+	VersionDetails VersionDetails          `json:"versionDetails"`
 }
 
-// CStorVolumeClaimSpec is the spec for a CStorVolumeClaim resource
-type CStorVolumeClaimSpec struct {
+// CStorVolumeConfigSpec is the spec for a CStorVolumeConfig resource
+type CStorVolumeConfigSpec struct {
 	// Capacity represents the actual resources of the underlying
 	// cstor volume.
 	Capacity corev1.ResourceList `json:"capacity"`
-	// ReplicaCount represents the actual replica count for the underlying
-	// cstor volume
-	ReplicaCount int `json:"replicaCount"`
 	// CStorVolumeRef has the information about where CstorVolumeClaim
 	// is created from.
 	CStorVolumeRef *corev1.ObjectReference `json:"cstorVolumeRef,omitempty"`
 	// CStorVolumeSource contains the source volumeName@snapShotname
 	// combaination.  This will be filled only if it is a clone creation.
 	CStorVolumeSource string `json:"cstorVolumeSource,omitempty"`
+	// Provision represents the initial volume configuration for the underlying
+	// cstor volume based on the persistent volume request by user. Provision
+	// properties are immutable
+	Provision VolumeProvision `json:"provision"`
 	// Policy contains volume specific required policies target and replicas
 	Policy CStorVolumePolicySpec `json:"policy"`
 }
 
-// CStorVolumeClaimPublish contains info related to attachment of a volume to a node.
+type VolumeProvision struct {
+	// Capacity represents initial capacity of volume replica required during
+	// volume clone operations to maintain some metadata info related to child
+	// resources like snapshot, cloned volumes.
+	Capacity corev1.ResourceList `json:"capacity"`
+	// ReplicaCount represents initial cstor volume replica count, its will not
+	// be updated later on based on scale up/down operations, only readonly
+	// operations and validations.
+	ReplicaCount int32 `json:"replicaCount"`
+}
+
+// CStorVolumeConfigPublish contains info related to attachment of a volume to a node.
 // i.e. NodeId etc.
-type CStorVolumeClaimPublish struct {
+type CStorVolumeConfigPublish struct {
 	// NodeID contains publish info related to attachment of a volume to a node.
 	NodeID string `json:"nodeId,omitempty"`
 }
 
-// CStorVolumeClaimPhase represents the current phase of CStorVolumeClaim.
-type CStorVolumeClaimPhase string
+// CStorVolumeConfigPhase represents the current phase of CStorVolumeConfig.
+type CStorVolumeConfigPhase string
 
 const (
-	//CStorVolumeClaimPhasePending indicates that the cvc is still waiting for
+	//CStorVolumeConfigPhasePending indicates that the cvc is still waiting for
 	//the cstorvolume to be created and bound
-	CStorVolumeClaimPhasePending CStorVolumeClaimPhase = "Pending"
+	CStorVolumeConfigPhasePending CStorVolumeConfigPhase = "Pending"
 
-	//CStorVolumeClaimPhaseBound indiacates that the cstorvolume has been
+	//CStorVolumeConfigPhaseBound indiacates that the cstorvolume has been
 	//provisioned and bound to the cstor volume claim
-	CStorVolumeClaimPhaseBound CStorVolumeClaimPhase = "Bound"
+	CStorVolumeConfigPhaseBound CStorVolumeConfigPhase = "Bound"
 
-	//CStorVolumeClaimPhaseFailed indiacates that the cstorvolume provisioning
+	//CStorVolumeConfigPhaseFailed indiacates that the cstorvolume provisioning
 	//has failed
-	CStorVolumeClaimPhaseFailed CStorVolumeClaimPhase = "Failed"
+	CStorVolumeConfigPhaseFailed CStorVolumeConfigPhase = "Failed"
 )
 
-// CStorVolumeClaimStatus is for handling status of CstorVolume Claim.
-// defines the observed state of CStorVolumeClaim
-type CStorVolumeClaimStatus struct {
-	// Phase represents the current phase of CStorVolumeClaim.
-	Phase CStorVolumeClaimPhase `json:"phase"`
+// CStorVolumeConfigStatus is for handling status of CstorVolume Claim.
+// defines the observed state of CStorVolumeConfig
+type CStorVolumeConfigStatus struct {
+	// Phase represents the current phase of CStorVolumeConfig.
+	Phase CStorVolumeConfigPhase `json:"phase"`
 
 	// PoolInfo represents current pool names where volume replicas exists
 	PoolInfo []string `json:"poolInfo"`
@@ -99,14 +111,14 @@ type CStorVolumeClaimStatus struct {
 	// Capacity the actual resources of the underlying volume.
 	Capacity corev1.ResourceList `json:"capacity,omitempty"`
 
-	Conditions []CStorVolumeClaimCondition `json:"condition,omitempty"`
+	Conditions []CStorVolumeConfigCondition `json:"condition,omitempty"`
 }
 
-// CStorVolumeClaimCondition contains details about state of cstor volume
-type CStorVolumeClaimCondition struct {
+// CStorVolumeConfigCondition contains details about state of cstor volume
+type CStorVolumeConfigCondition struct {
 	// Current Condition of cstor volume claim. If underlying persistent volume is being
 	// resized then the Condition will be set to 'ResizeStarted' etc
-	Type CStorVolumeClaimConditionType `json:"type"`
+	Type CStorVolumeConfigConditionType `json:"type"`
 	// Last time we probed the condition.
 	// +optional
 	LastProbeTime metav1.Time `json:"lastProbeTime,omitempty"`
@@ -119,28 +131,28 @@ type CStorVolumeClaimCondition struct {
 	Message string `json:"message"`
 }
 
-// CStorVolumeClaimConditionType is a valid value of CstorVolumeClaimCondition.Type
-type CStorVolumeClaimConditionType string
+// CStorVolumeConfigConditionType is a valid value of CstorVolumeConfigCondition.Type
+type CStorVolumeConfigConditionType string
 
 // These constants are CVC condition types related to resize operation.
 const (
-	// CStorVolumeClaimResizePending ...
-	CStorVolumeClaimResizing CStorVolumeClaimConditionType = "Resizing"
-	// CStorVolumeClaimResizeFailed ...
-	CStorVolumeClaimResizeFailed CStorVolumeClaimConditionType = "VolumeResizeFailed"
-	// CStorVolumeClaimResizeSuccess ...
-	CStorVolumeClaimResizeSuccess CStorVolumeClaimConditionType = "VolumeResizeSuccessful"
-	// CStorVolumeClaimResizePending ...
-	CStorVolumeClaimResizePending CStorVolumeClaimConditionType = "VolumeResizePending"
+	// CStorVolumeConfigResizePending ...
+	CStorVolumeConfigResizing CStorVolumeConfigConditionType = "Resizing"
+	// CStorVolumeConfigResizeFailed ...
+	CStorVolumeConfigResizeFailed CStorVolumeConfigConditionType = "VolumeResizeFailed"
+	// CStorVolumeConfigResizeSuccess ...
+	CStorVolumeConfigResizeSuccess CStorVolumeConfigConditionType = "VolumeResizeSuccessful"
+	// CStorVolumeConfigResizePending ...
+	CStorVolumeConfigResizePending CStorVolumeConfigConditionType = "VolumeResizePending"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=true
 
-// CStorVolumeClaimList is a list of CStorVolumeClaim resources
-type CStorVolumeClaimList struct {
+// CStorVolumeConfigList is a list of CStorVolumeConfig resources
+type CStorVolumeConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []CStorVolumeClaim `json:"items"`
+	Items []CStorVolumeConfig `json:"items"`
 }

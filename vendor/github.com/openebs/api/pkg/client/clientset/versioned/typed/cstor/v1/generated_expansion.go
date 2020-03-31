@@ -24,7 +24,7 @@ type CStorPoolInstanceExpansion interface{}
 
 type CStorVolumeExpansion interface{}
 
-type CStorVolumeClaimExpansion interface{}
+type CStorVolumeConfigExpansion interface{}
 
 type CStorVolumePolicyExpansion interface{}
 

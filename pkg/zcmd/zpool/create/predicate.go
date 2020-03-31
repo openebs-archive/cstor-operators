@@ -26,6 +26,14 @@ func IsPropertySet() PredicateFunc {
 	}
 }
 
+// IsFSPropertySet method check if the file system Property field of PoolCreate
+// object is set.
+func IsFSPropertySet() PredicateFunc {
+	return func(p *PoolCreate) bool {
+		return len(p.FSProperty) != 0
+	}
+}
+
 // IsPoolSet method check if the Pool field of PoolCreate object is set.
 func IsPoolSet() PredicateFunc {
 	return func(p *PoolCreate) bool {

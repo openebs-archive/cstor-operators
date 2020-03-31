@@ -32,6 +32,24 @@ import (
 	"k8s.io/klog"
 )
 
+var SupportedCompressionTypes = map[string]bool{
+	"on":     true,
+	"off":    true,
+	"lz4":    true,
+	"gle":    true,
+	"lzjb":   true,
+	"gzip":   true,
+	"gzip-1": true,
+	"gzip-2": true,
+	"gzip-3": true,
+	"gzip-4": true,
+	"gzip-5": true,
+	"gzip-6": true,
+	"gzip-7": true,
+	"gzip-8": true,
+	"gzip-9": true,
+}
+
 func (oc *OperationsConfig) getPathForBdevList(bdevs []cstor.CStorPoolInstanceBlockDevice) (map[string][]string, error) {
 	var err error
 
@@ -294,4 +312,40 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 		)
 	}
 	return nil
+}
+
+// SetCompression sets the cstor pool compression
+func SetCompression(poolName string, compressionType string) error {
+	// If compression type is empty -- it means disable compression on the pool
+	if compressionType == "" {
+		compressionType = "lz4"
+	}
+
+	// Get the compression value that exists in the pool
+	existingCompressionType, err := GetPropertyValue(poolName, "compression")
+	if err != nil {
+		return errors.Errorf("Failed to get compression type:err:%s", err.Error())
+	}
+
+	// If there is no change in the compression algorithm -- simply return.
+	if compressionType == existingCompressionType {
+		return nil
+	}
+
+	// If the requested compression algorithm is supported -- enable that.
+	if SupportedCompressionTypes[compressionType] {
+		ret, err := zfs.NewPoolSetProperty().
+			WithProperty("compression", compressionType).
+			WithPool(poolName).
+			Execute()
+		if err != nil {
+			return errors.Errorf(
+				"Failed to update compression type to %s out:%v err:%v",
+				compressionType, string(ret), err)
+		}
+		return nil
+	}
+
+	// If we are here, the requested compression algorithm is not supported.
+	return errors.Errorf("compression type %s not supported", compressionType)
 }

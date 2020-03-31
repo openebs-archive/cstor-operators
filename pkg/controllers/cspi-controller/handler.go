@@ -89,13 +89,20 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 		}
 		zpool.CheckImportedPoolVolume()
 		common.SyncResources.Mux.Unlock()
-		err = c.update(cspi)
+		cspiGot, err := c.update(cspi)
 		if err != nil {
-			c.recorder.Event(cspi,
+			c.recorder.Event(cspiGot,
 				corev1.EventTypeWarning,
 				string(common.FailedSynced),
 				err.Error())
 		}
+
+		// If everything is alright here -- sync the cspi
+		// Note: Even if update fails, cspiGot will not be nil.
+		// In case of failed update, passed cspi to update functions
+		// is returned.
+		c.sync(cspiGot)
+
 		return nil
 	}
 
@@ -119,9 +126,9 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 			string(common.SuccessCreated),
 			fmt.Sprintf("Pool created successfully"))
 
-		err = c.update(cspi)
+		cspiGot, err := c.update(cspi)
 		if err != nil {
-			c.recorder.Event(cspi,
+			c.recorder.Event(cspiGot,
 				corev1.EventTypeWarning,
 				string(common.FailedSynced),
 				err.Error())
@@ -177,30 +184,30 @@ updatestatus:
 	return err
 }
 
-func (c *CStorPoolInstanceController) update(cspi *cstor.CStorPoolInstance) error {
+func (c *CStorPoolInstanceController) update(cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
 	oc := zpool.NewOperationsConfig().
 		WithKubeClientSet(c.kubeclientset).
 		WithOpenEBSClient(c.clientset).
 		WithRecorder(c.recorder)
 	cspi, err := oc.Update(cspi)
 	if err != nil {
-		return errors.Errorf("Failed to update pool due to %s", err.Error())
+		return cspi, errors.Errorf("Failed to update pool due to %s", err.Error())
 	}
 	return c.updateStatus(cspi)
 }
 
-func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance) error {
+func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
 	// ToDo: Use the status from the cspi object that is passed in arg else other fields
 	// might get lost.
 	var status cstor.CStorPoolInstanceStatus
 	pool := zpool.PoolName()
 	propertyList := []string{"health", "io.openebs:readonly"}
 
-	// Since we quarried in following order health and io.openebs:readonly output also
+	// Since we queried in following order health and io.openebs:readonly output also
 	// will be in same order
 	valueList, err := zpool.GetListOfPropertyValues(pool, propertyList)
 	if err != nil {
-		return errors.Errorf("Failed to fetch %v output: %v error: %v", propertyList, valueList, err)
+		return cspi, errors.Errorf("Failed to fetch %v output: %v error: %v", propertyList, valueList, err)
 	} else {
 		// valueList[0] will hold the value of health of cStor pool
 		// valueList[1] will hold the value of io.openebs:readonly of cStor pool
@@ -212,21 +219,23 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 
 	status.Capacity, err = zpool.GetCSPICapacity(pool)
 	if err != nil {
-		return errors.Errorf("Failed to sync due to %s", err.Error())
+		return cspi, errors.Errorf("Failed to sync due to %s", err.Error())
 	}
 	c.updateROMode(&status, *cspi)
 
 	if IsStatusChange(cspi.Status, status) {
 		cspi.Status = status
-		_, err = zpool.OpenEBSClient.
+		cspiGot, err := zpool.OpenEBSClient.
 			CstorV1().
 			CStorPoolInstances(cspi.Namespace).
 			Update(cspi)
 		if err != nil {
-			return errors.Errorf("Failed to updateStatus due to '%s'", err.Error())
+			return cspi, errors.Errorf("Failed to updateStatus due to '%s'", err.Error())
 		}
+		return cspiGot, nil
 	}
-	return nil
+
+	return cspi, nil
 }
 
 // updateROMode sets/unsets the pool readonly mode property. It does the following changes
@@ -345,4 +354,17 @@ func (c *CStorPoolInstanceController) addPoolProtectionFinalizer(
 		cspi.Name,
 		string(cspi.GetUID()))
 	return newCSPI, nil
+}
+
+func (c *CStorPoolInstanceController) sync(cspi *cstor.CStorPoolInstance) {
+	// Right now the only sync activity is compression
+	compressionType := cspi.Spec.PoolConfig.Compression
+	poolName := zpool.PoolName()
+	err := zpool.SetCompression(poolName, compressionType)
+	if err != nil {
+		c.recorder.Event(cspi,
+			corev1.EventTypeWarning,
+			"Pool "+string("FailedToSetCompression"),
+			fmt.Sprintf("Failed to set compression %s to the pool %s : %s", compressionType, poolName, err.Error()))
+	}
 }

@@ -36,7 +36,8 @@ const (
 type PoolCreate struct {
 	// property list
 	Property []string
-
+	// file system property list
+	FSProperty []string
 	// pool name
 	Pool string
 
@@ -74,6 +75,14 @@ func (p *PoolCreate) WithCheck(check ...PredicateFunc) *PoolCreate {
 func (p *PoolCreate) WithProperty(key, value string) *PoolCreate {
 	if value != "" {
 		p.Property = append(p.Property, fmt.Sprintf("%s=%s", key, value))
+	}
+	return p
+}
+
+// WithFSProperty method fills the file system Property field of PoolCreate object.
+func (p *PoolCreate) WithFSProperty(key, value string) *PoolCreate {
+	if value != "" {
+		p.FSProperty = append(p.FSProperty, fmt.Sprintf("%s=%s", key, value))
 	}
 	return p
 }
@@ -149,6 +158,12 @@ func (p *PoolCreate) Build() (*PoolCreate, error) {
 	if IsPropertySet()(p) {
 		for _, v := range p.Property {
 			p.appendCommand(&c, fmt.Sprintf(" -o %s ", v))
+		}
+	}
+
+	if IsFSPropertySet()(p) {
+		for _, v := range p.FSProperty {
+			p.appendCommand(&c, fmt.Sprintf(" -O %s ", v))
 		}
 	}
 

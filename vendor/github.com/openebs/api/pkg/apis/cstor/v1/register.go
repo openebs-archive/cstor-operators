@@ -62,8 +62,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CStorVolumeList{},
 		&CStorVolumeReplica{},
 		&CStorVolumeReplicaList{},
-		&CStorVolumeClaim{},
-		&CStorVolumeClaimList{},
+		&CStorVolumeConfig{},
+		&CStorVolumeConfigList{},
 		&CStorVolumePolicy{},
 		&CStorVolumePolicyList{},
 	)

@@ -51,12 +51,24 @@ type CStorVolumeReplica struct {
 
 // CStorVolumeReplicaSpec is the spec for a CStorVolumeReplica resource
 type CStorVolumeReplicaSpec struct {
+	// TargetIP represents iscsi target IP through which replica cummunicates
+	// IO workloads and other volume operations like snapshot and resize requests
 	TargetIP string `json:"targetIP"`
+	//Represents the actual capacity of the underlying volume
 	Capacity string `json:"capacity"`
 	// ZvolWorkers represents number of threads that executes client IOs
 	ZvolWorkers string `json:"zvolWorkers"`
 	// ReplicaID is unique number to identify the replica
 	ReplicaID string `json:"replicaid"`
+	// Controls the compression algorithm used for this volumes
+	// examples: on|off|gzip|gzip-N|lz4|lzjb|zle
+	Compression string `json:"compression"`
+	// BlockSize is the logical block size in multiple of 512 bytes
+	// BlockSize specifies the block size of the volume. The blocksize
+	// cannot be changed once the volume has been written, so it should be
+	// set at volume creation time. The default blocksize for volumes is 4 Kbytes.
+	// Any power of 2 from 512 bytes to 128 Kbytes is valid.
+	BlockSize uint32 `json:"blockSize"`
 }
 
 // CStorVolumeReplicaPhase is to hold result of action.
@@ -121,7 +133,7 @@ type CStorVolumeReplicaStatus struct {
 	// CStorVolumeReplicaPhase is to holds different phases of replica
 	Phase CStorVolumeReplicaPhase `json:"phase"`
 	// CStorVolumeCapacityDetails represents capacity info of replica
-	Capacity CStorVolumeCapacityDetails `json:"capacity"`
+	Capacity CStorVolumeReplicaCapacityDetails `json:"capacity"`
 	// LastTransitionTime refers to the time when the phase changes
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 	// The last updated time
@@ -132,9 +144,9 @@ type CStorVolumeReplicaStatus struct {
 
 // CStorVolumeCapacityDetails represents capacity information releated to volume
 // replica
-type CStorVolumeCapacityDetails struct {
+type CStorVolumeReplicaCapacityDetails struct {
 	// The amount of space consumed by this volume replica and all its descendents
-	Total string `json:"totalAllocated"`
+	Total string `json:"total"`
 	// The amount of space that is "logically" accessible by this dataset. The logical
 	// space ignores the effect of the compression and copies properties, giving a
 	// quantity closer to the amount of data that applications see.  However, it does

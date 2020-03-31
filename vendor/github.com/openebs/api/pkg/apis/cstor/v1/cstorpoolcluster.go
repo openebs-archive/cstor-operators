@@ -154,7 +154,7 @@ type CStorPoolClusterStatus struct {
 	ProvisionedInstances int32 `json:"provisionedInstances"`
 
 	// DesiredInstances is the number of CSPI(s) that should be provisioned.
-	DesiredInstances int32 `json:"runningInstances"`
+	DesiredInstances int32 `json:"desiredInstances"`
 
 	// HealthyInstances is the number of CSPI(s) that are healthy.
 	HealthyInstances int32 `json:"healthyInstances"`

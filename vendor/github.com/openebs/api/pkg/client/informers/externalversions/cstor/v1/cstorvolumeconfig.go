@@ -31,59 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// CStorVolumeClaimInformer provides access to a shared informer and lister for
-// CStorVolumeClaims.
-type CStorVolumeClaimInformer interface {
+// CStorVolumeConfigInformer provides access to a shared informer and lister for
+// CStorVolumeConfigs.
+type CStorVolumeConfigInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.CStorVolumeClaimLister
+	Lister() v1.CStorVolumeConfigLister
 }
 
-type cStorVolumeClaimInformer struct {
+type cStorVolumeConfigInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewCStorVolumeClaimInformer constructs a new informer for CStorVolumeClaim type.
+// NewCStorVolumeConfigInformer constructs a new informer for CStorVolumeConfig type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewCStorVolumeClaimInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredCStorVolumeClaimInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewCStorVolumeConfigInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredCStorVolumeConfigInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredCStorVolumeClaimInformer constructs a new informer for CStorVolumeClaim type.
+// NewFilteredCStorVolumeConfigInformer constructs a new informer for CStorVolumeConfig type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredCStorVolumeClaimInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredCStorVolumeConfigInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CstorV1().CStorVolumeClaims(namespace).List(options)
+				return client.CstorV1().CStorVolumeConfigs(namespace).List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CstorV1().CStorVolumeClaims(namespace).Watch(options)
+				return client.CstorV1().CStorVolumeConfigs(namespace).Watch(options)
 			},
 		},
-		&cstorv1.CStorVolumeClaim{},
+		&cstorv1.CStorVolumeConfig{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *cStorVolumeClaimInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredCStorVolumeClaimInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *cStorVolumeConfigInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredCStorVolumeConfigInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *cStorVolumeClaimInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&cstorv1.CStorVolumeClaim{}, f.defaultInformer)
+func (f *cStorVolumeConfigInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&cstorv1.CStorVolumeConfig{}, f.defaultInformer)
 }
 
-func (f *cStorVolumeClaimInformer) Lister() v1.CStorVolumeClaimLister {
-	return v1.NewCStorVolumeClaimLister(f.Informer().GetIndexer())
+func (f *cStorVolumeConfigInformer) Lister() v1.CStorVolumeConfigLister {
+	return v1.NewCStorVolumeConfigLister(f.Informer().GetIndexer())
 }

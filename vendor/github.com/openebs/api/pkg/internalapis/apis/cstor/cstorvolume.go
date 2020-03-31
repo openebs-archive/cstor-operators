@@ -37,17 +37,33 @@ type CStorVolume struct {
 // CStorVolumeSpec is the spec for a CStorVolume resource
 type CStorVolumeSpec struct {
 	// Capacity represents the desired size of the underlying volume.
-	Capacity          resource.Quantity `json:"capacity"`
-	TargetIP          string            `json:"targetIP"`
-	TargetPort        string            `json:"targetPort"`
-	Iqn               string            `json:"iqn"`
-	TargetPortal      string            `json:"targetPortal"`
-	NodeBase          string            `json:"nodeBase"`
-	ReplicationFactor int               `json:"replicationFactor"`
-	ConsistencyFactor int               `json:"consistencyFactor"`
+	Capacity resource.Quantity `json:"capacity"`
+
+	// TargetIP IP of the iSCSI target service
+	TargetIP string `json:"targetIP"`
+
+	// iSCSI Target Port typically TCP ports 3260
+	TargetPort string `json:"targetPort"`
+
+	// Target iSCSI Qualified Name.combination of nodeBase
+	Iqn string `json:"iqn"`
+
+	// iSCSI Target Portal. The Portal is combination of IP:port (typically TCP ports 3260)
+	TargetPortal string `json:"targetPortal"`
+
+	// ReplicationFactor represents number of volume replica created during volume
+	// provisioning connect to the target
+	ReplicationFactor int `json:"replicationFactor"`
+
+	// ConsistencyFactor is minimum number of volume replicas i.e. `RF/2 + 1`
+	// has to be connected to the target for write operations. Basically more then
+	// 50% of replica has to be connected to target.
+	ConsistencyFactor int `json:"consistencyFactor"`
+
 	// DesiredReplicationFactor represents maximum number of replicas
-	// that are allowed to connect to the target
+	// that are allowed to connect to the target. Required for scale operations
 	DesiredReplicationFactor int `json:"desiredReplicationFactor"`
+
 	//ReplicaDetails refers to the trusty replica information
 	ReplicaDetails CStorVolumeReplicaDetails `json:"replicaDetails,omitempty"`
 }
@@ -62,20 +78,22 @@ type CStorVolumePhase string
 type CStorVolumeStatus struct {
 	Phase           CStorVolumePhase `json:"phase"`
 	ReplicaStatuses []ReplicaStatus  `json:"replicaStatuses,omitempty"`
-	// Represents the actual resources of the underlying volume.
+	// Represents the actual capacity of the underlying volume.
 	Capacity resource.Quantity `json:"capacity,omitempty"`
 	// LastTransitionTime refers to the time when the phase changes
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
-	LastUpdateTime     metav1.Time `json:"lastUpdateTime,omitempty"`
-	Message            string      `json:"message,omitempty"`
+	// LastUpdateTime refers to the time when last status updated due to any
+	// operations
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
+	// A human-readable message indicating details about why the volume is in this state.
+	Message string `json:"message,omitempty"`
 	// Current Condition of cstorvolume. If underlying persistent volume is being
 	// resized then the Condition will be set to 'ResizePending'.
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	Conditions []CStorVolumeCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,4,rep,name=conditions"`
-	// ReplicaDetails refers to the trusty replica information which are
-	// connected at given time
+	// ReplicaDetails refers to the trusty replica information
 	ReplicaDetails CStorVolumeReplicaDetails `json:"replicaDetails,omitempty"`
 }
 
@@ -116,7 +134,7 @@ type ReplicaStatus struct {
 	ID string `json:"replicaId"`
 	// Mode represents replica status i.e. Healthy, Degraded
 	Mode string `json:"mode"`
-	//
+	// Represents IO number of replica persisted on the disk
 	CheckpointedIOSeq string `json:"checkpointedIOSeq"`
 	// Ongoing reads I/O from target to replica
 	InflightRead string `json:"inflightRead"`

@@ -37,7 +37,7 @@ const (
 	// TargetPort is port for cstor volume
 	TargetPort string = "3260"
 
-	// CStorVolumeReplicaFinalizer is the name of finalizer on CStorVolumeClaim
+	// CStorVolumeReplicaFinalizer is the name of finalizer on CStorVolumeConfig
 	CStorVolumeReplicaFinalizer = "cstorvolumereplica.openebs.io/finalizer"
 )
 
@@ -52,24 +52,24 @@ var (
 	validDesiredVersion = version.GetVersion()
 )
 
-func NewCStorVolumeClaim() *CStorVolumeClaim {
-	return &CStorVolumeClaim{}
+func NewCStorVolumeConfig() *CStorVolumeConfig {
+	return &CStorVolumeConfig{}
 }
 
 // WithName sets the Name field of CVC with provided value.
-func (cvc *CStorVolumeClaim) WithName(name string) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithName(name string) *CStorVolumeConfig {
 	cvc.Name = name
 	return cvc
 }
 
 // WithNamespace sets the Namespace field of CVC provided arguments
-func (cvc *CStorVolumeClaim) WithNamespace(namespace string) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithNamespace(namespace string) *CStorVolumeConfig {
 	cvc.Namespace = namespace
 	return cvc
 }
 
 // WithAnnotationsNew sets the Annotations field of CVC with provided arguments
-func (cvc *CStorVolumeClaim) WithAnnotationsNew(annotations map[string]string) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithAnnotationsNew(annotations map[string]string) *CStorVolumeConfig {
 	cvc.Annotations = make(map[string]string)
 	for key, value := range annotations {
 		cvc.Annotations[key] = value
@@ -79,7 +79,7 @@ func (cvc *CStorVolumeClaim) WithAnnotationsNew(annotations map[string]string) *
 
 // WithAnnotations appends or overwrites existing Annotations
 // values of CVC with provided arguments
-func (cvc *CStorVolumeClaim) WithAnnotations(annotations map[string]string) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithAnnotations(annotations map[string]string) *CStorVolumeConfig {
 
 	if cvc.Annotations == nil {
 		return cvc.WithAnnotationsNew(annotations)
@@ -91,7 +91,7 @@ func (cvc *CStorVolumeClaim) WithAnnotations(annotations map[string]string) *CSt
 }
 
 // WithLacvelsNew sets the Lacvels field of CVC with provided arguments
-func (cvc *CStorVolumeClaim) WithLabelsNew(labels map[string]string) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithLabelsNew(labels map[string]string) *CStorVolumeConfig {
 	cvc.Labels = make(map[string]string)
 	for key, value := range labels {
 		cvc.Labels[key] = value
@@ -101,7 +101,7 @@ func (cvc *CStorVolumeClaim) WithLabelsNew(labels map[string]string) *CStorVolum
 
 // WithLacvels appends or overwrites existing Lacvels
 // values of CVC with provided arguments
-func (cvc *CStorVolumeClaim) WithLabels(labels map[string]string) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithLabels(labels map[string]string) *CStorVolumeConfig {
 	if cvc.Labels == nil {
 		return cvc.WithLabelsNew(labels)
 	}
@@ -112,45 +112,45 @@ func (cvc *CStorVolumeClaim) WithLabels(labels map[string]string) *CStorVolumeCl
 }
 
 // WithFinalizer sets the finalizer field in the CVC
-func (cvc *CStorVolumeClaim) WithFinalizer(finalizers ...string) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithFinalizer(finalizers ...string) *CStorVolumeConfig {
 	cvc.Finalizers = append(cvc.Finalizers, finalizers...)
 	return cvc
 }
 
 // WithOwnerReference sets the OwnerReference field in CVC with required
 //fields
-func (cvc *CStorVolumeClaim) WithOwnerReference(reference metav1.OwnerReference) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithOwnerReference(reference metav1.OwnerReference) *CStorVolumeConfig {
 	cvc.OwnerReferences = append(cvc.OwnerReferences, reference)
 	return cvc
 }
 
 // WithNewVersion sets the current and desired version field of
 // CVC with provided arguments
-func (cvc *CStorVolumeClaim) WithNewVersion(version string) *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithNewVersion(version string) *CStorVolumeConfig {
 	cvc.VersionDetails.Status.Current = version
 	cvc.VersionDetails.Desired = version
 	return cvc
 }
 
 // WithDependentsUpgraded sets the field to true for new CVC
-func (cvc *CStorVolumeClaim) WithDependentsUpgraded() *CStorVolumeClaim {
+func (cvc *CStorVolumeConfig) WithDependentsUpgraded() *CStorVolumeConfig {
 	cvc.VersionDetails.Status.DependentsUpgraded = true
 	return cvc
 }
 
 // HasFinalizer returns true if the provided finalizer is present on the ocvject.
-func (cvc *CStorVolumeClaim) HasFinalizer(finalizer string) bool {
+func (cvc *CStorVolumeConfig) HasFinalizer(finalizer string) bool {
 	finalizersList := cvc.GetFinalizers()
 	return util.ContainsString(finalizersList, finalizer)
 }
 
 // RemoveFinalizer removes the given finalizer from the ocvject.
-func (cvc *CStorVolumeClaim) RemoveFinalizer(finalizer string) {
+func (cvc *CStorVolumeConfig) RemoveFinalizer(finalizer string) {
 	cvc.Finalizers = util.RemoveString(cvc.Finalizers, finalizer)
 }
 
 // GetDesiredReplicaPoolNames returns list of desired pool names
-func GetDesiredReplicaPoolNames(cvc *CStorVolumeClaim) []string {
+func GetDesiredReplicaPoolNames(cvc *CStorVolumeConfig) []string {
 	poolNames := []string{}
 	for _, poolInfo := range cvc.Spec.Policy.ReplicaPoolInfo {
 		poolNames = append(poolNames, poolInfo.PoolName)
@@ -267,12 +267,6 @@ func (cv *CStorVolume) WithCapacity(capacity string) *CStorVolume {
 func (cv *CStorVolume) WithCStorIQN(name string) *CStorVolume {
 	iqn := CStorNodeBase + ":" + name
 	cv.Spec.Iqn = iqn
-	return cv
-}
-
-// WithNodeBase sets the NodeBase field of CStorVolume with provided arguments
-func (cv *CStorVolume) WithNodeBase(nodecvase string) *CStorVolume {
-	cv.Spec.NodeBase = nodecvase
 	return cv
 }
 

@@ -230,7 +230,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 			CStorPoolInstances(cspi.Namespace).
 			Update(cspi)
 		if err != nil {
-			return nil, errors.Errorf("Failed to updateStatus due to '%s'", err.Error())
+			return cspi, errors.Errorf("Failed to updateStatus due to '%s'", err.Error())
 		}
 		return cspiGot, nil
 	}

@@ -94,10 +94,15 @@ func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.Ra
 		vdevlist = append(vdevlist, v[0])
 	}
 
+	compressionType := cspi.Spec.PoolConfig.Compression
+	if compressionType == "" {
+		compressionType = "off"
+	}
+
 	ret, err := zfs.NewPoolCreate().
 		WithType(ptype).
 		WithProperty("cachefile", types.CStorPoolBasePath+types.CacheFileName).
-		WithProperty("compression", cspi.Spec.PoolConfig.Compression).
+		WithProperty("compression", compressionType).
 		WithPool(PoolName()).
 		WithVdevList(vdevlist).
 		Execute()

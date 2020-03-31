@@ -592,11 +592,11 @@ func TestVolumeCapacity(t *testing.T) {
 		// which is under test.
 		volumeName string
 		// expectedCapacity is the capacity that is expected for the test case.
-		expectedCapacity *cstor.CStorVolumeCapacityDetails
+		expectedCapacity *cstor.CStorVolumeReplicaCapacityDetails
 	}{
 		"#1 VolumeCapacity": {
 			volumeName: "cstor-530c9c4f-e0df-11e8-94a8-42010a80013b",
-			expectedCapacity: &cstor.CStorVolumeCapacityDetails{
+			expectedCapacity: &cstor.CStorVolumeReplicaCapacityDetails{
 				Total: "10K",
 				Used:  "6K",
 			},

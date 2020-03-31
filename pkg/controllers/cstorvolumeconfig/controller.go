@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cstorvolumeclaim
+package cstorvolumeconfig
 
 import (
 	"encoding/json"
@@ -43,40 +43,40 @@ import (
 
 const (
 	// SuccessSynced is used as part of the Event 'reason' when a
-	// cstorvolumeclaim is synced
+	// cstorvolumeconfig is synced
 	SuccessSynced = "Synced"
 	// Provisioning is used as part of the Event 'reason' when a
-	// cstorvolumeclaim is in provisioning stage
+	// cstorvolumeconfig is in provisioning stage
 	Provisioning = "Provisioning"
 	// ErrResourceExists is used as part of the Event 'reason' when a
-	// cstorvolumeclaim fails to sync due to a cstorvolumeclaim of the same
+	// cstorvolumeconfig fails to sync due to a cstorvolumeconfig of the same
 	// name already existing.
 	ErrResourceExists = "ErrResourceExists"
 	// MessageResourceExists is the message used for Events when a resource
-	// fails to sync due to a cstorvolumeclaim already existing
+	// fails to sync due to a cstorvolumeconfig already existing
 	MessageResourceExists = "Resource %q already exists and is not managed by CVC"
 	// MessageResourceSynced is the message used for an Event fired when a
-	// cstorvolumeclaim is synced successfully
-	MessageResourceSynced = "cstorvolumeclaim synced successfully"
+	// cstorvolumeconfig is synced successfully
+	MessageResourceSynced = "cstorvolumeconfig synced successfully"
 	// MessageResourceCreated msg used for cstor volume provisioning success event
-	MessageResourceCreated = "cstorvolumeclaim created successfully"
+	MessageResourceCreated = "cstorvolumeconfig created successfully"
 	// MessageCVCPublished msg used for cstor volume provisioning publish events
-	MessageCVCPublished = "cstorvolumeclaim %q must be published/attached on node"
-	// CStorVolumeClaimFinalizer name of finalizer on CStorVolumeClaim that
+	MessageCVCPublished = "cstorvolumeconfig %q must be published/attached on node"
+	// CStorVolumeConfigFinalizer name of finalizer on CStorVolumeConfig that
 	// are bound by CStorVolume
-	CStorVolumeClaimFinalizer = "cvc.openebs.io/finalizer"
+	CStorVolumeConfigFinalizer = "cvc.openebs.io/finalizer"
 	// DeProvisioning is used as part of the event 'reason' during
-	// cstorvolumeclaim deprovisioning stage
+	// cstorvolumeconfig deprovisioning stage
 	DeProvisioning = "DeProvisioning"
 )
 
-var knownResizeConditions = map[apis.CStorVolumeClaimConditionType]bool{
-	apis.CStorVolumeClaimResizing:      true,
-	apis.CStorVolumeClaimResizePending: true,
+var knownResizeConditions = map[apis.CStorVolumeConfigConditionType]bool{
+	apis.CStorVolumeConfigResizing:      true,
+	apis.CStorVolumeConfigResizePending: true,
 }
 
 // Patch struct represent the struct used to patch
-// the cstorvolumeclaim object
+// the cstorvolumeconfig object
 type Patch struct {
 	Op    string `json:"op"`
 	Path  string `json:"path"`
@@ -88,9 +88,9 @@ type Patch struct {
 // with the current status of the resource.
 func (c *CVCController) syncHandler(key string) error {
 	startTime := time.Now()
-	klog.V(4).Infof("Started syncing cstorvolumeclaim %q (%v)", key, startTime)
+	klog.V(4).Infof("Started syncing cstorvolumeconfig %q (%v)", key, startTime)
 	defer func() {
-		klog.V(4).Infof("Finished syncing cstorvolumeclaim %q (%v)", key, time.Since(startTime))
+		klog.V(4).Infof("Finished syncing cstorvolumeconfig %q (%v)", key, time.Since(startTime))
 	}()
 
 	// Convert the namespace/name string into a distinct namespace and name
@@ -101,9 +101,9 @@ func (c *CVCController) syncHandler(key string) error {
 	}
 
 	// Get the cvc resource with this namespace/name
-	cvc, err := c.cvcLister.CStorVolumeClaims(namespace).Get(name)
+	cvc, err := c.cvcLister.CStorVolumeConfigs(namespace).Get(name)
 	if k8serror.IsNotFound(err) {
-		runtime.HandleError(fmt.Errorf("cstorvolumeclaim '%s' has been deleted", key))
+		runtime.HandleError(fmt.Errorf("cstorvolumeconfig '%s' has been deleted", key))
 		return nil
 	}
 	if err != nil {
@@ -116,7 +116,7 @@ func (c *CVCController) syncHandler(key string) error {
 
 // enqueueCVC takes a CVC resource and converts it into a namespace/name
 // string which is then put onto the work queue. This method should *not* be
-// passed resources of any type other than CStorVolumeClaims.
+// passed resources of any type other than CStorVolumeConfigs.
 func (c *CVCController) enqueueCVC(obj interface{}) {
 	var key string
 	var err error
@@ -129,7 +129,7 @@ func (c *CVCController) enqueueCVC(obj interface{}) {
 	/*	if unknown, ok := obj.(cache.DeletedFinalStateUnknown); ok && unknown.Obj != nil {
 			obj = unknown.Obj
 		}
-		if cvc, ok := obj.(*apis.CStorVolumeClaim); ok {
+		if cvc, ok := obj.(*apis.CStorVolumeConfig); ok {
 			objName, err := cache.DeletionHandlingMetaNamespaceKeyFunc(cvc)
 			if err != nil {
 				klog.Errorf("failed to get key from object: %v, %v", err, cvc)
@@ -142,13 +142,13 @@ func (c *CVCController) enqueueCVC(obj interface{}) {
 }
 
 // synCVC is the function which tries to converge to a desired state for the
-// CStorVolumeClaims
-func (c *CVCController) syncCVC(cvc *apis.CStorVolumeClaim) error {
+// CStorVolumeConfigs
+func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 	var err error
 	// CStor Volume Claim should be deleted. Check if deletion timestamp is set
 	// and remove finalizer.
 	if c.isClaimDeletionCandidate(cvc) {
-		klog.Infof("syncClaim: remove finalizer for CStorVolumeClaimVolume [%s]", cvc.Name)
+		klog.Infof("syncClaim: remove finalizer for CStorVolumeConfigVolume [%s]", cvc.Name)
 		err = c.removeClaimFinalizer(cvc)
 		if err != nil {
 			c.recorder.Eventf(cvc, corev1.EventTypeWarning, DeProvisioning, err.Error())
@@ -178,7 +178,7 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeClaim) error {
 		return nil
 	}
 
-	if cvc.Status.Phase == apis.CStorVolumeClaimPhasePending {
+	if cvc.Status.Phase == apis.CStorVolumeConfigPhasePending {
 		klog.V(2).Infof("provisioning cstor volume %+v", cvc)
 		_, err = c.createVolumeOperation(cvc)
 		if err != nil {
@@ -211,10 +211,10 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeClaim) error {
 	return nil
 }
 
-// UpdateCVCObj updates the cstorvolumeclaim object resource to reflect the
+// UpdateCVCObj updates the cstorvolumeconfig object resource to reflect the
 // current state of the world
 func (c *CVCController) updateCVCObj(
-	cvc *apis.CStorVolumeClaim,
+	cvc *apis.CStorVolumeConfig,
 	cv *apis.CStorVolume,
 ) error {
 	// NEVER modify objects from the store. It's a read-only, local cache.
@@ -223,12 +223,12 @@ func (c *CVCController) updateCVCObj(
 	cvcCopy := cvc.DeepCopy()
 	if cvc.Name != cv.Name {
 		return fmt.
-			Errorf("could not bind cstorvolumeclaim %s and cstorvolume %s, name does not match",
+			Errorf("could not bind cstorvolumeconfig %s and cstorvolume %s, name does not match",
 				cvc.Name,
 				cv.Name)
 	}
 
-	_, err := c.clientset.CstorV1().CStorVolumeClaims(cvc.Namespace).Update(cvcCopy)
+	_, err := c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(cvcCopy)
 
 	if err == nil {
 		c.recorder.Event(cvc, corev1.EventTypeNormal,
@@ -243,11 +243,11 @@ func (c *CVCController) updateCVCObj(
 // 1. Create volume service.
 // 2. Create cstorvolume resource with required iscsi information.
 // 3. Create target deployment.
-// 4. Create cstorvolumeclaim resource.
+// 4. Create cstorvolumeconfig resource.
 // 5. Create PDB provisioning volume is HA volume.
-// 6. Update the cstorvolumeclaim with claimRef info, PDB label(only for HA
+// 6. Update the cstorvolumeconfig with claimRef info, PDB label(only for HA
 //    volumes) and bound with cstorvolume.
-func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeClaim) (*apis.CStorVolumeClaim, error) {
+func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
 
 	policyName := cvc.Annotations[string(apitypes.VolumePolicyKey)]
 	volumePolicy, err := c.getVolumePolicy(policyName, cvc)
@@ -308,7 +308,7 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeClaim) (*apis
 	// capacity
 	cvc.Spec.CStorVolumeRef = volumeRef
 	cvc.Spec.Policy = volumePolicy.Spec
-	cvc.Status.Phase = apis.CStorVolumeClaimPhaseBound
+	cvc.Status.Phase = apis.CStorVolumeConfigPhaseBound
 	cvc.Status.Capacity = cvc.Spec.Capacity
 
 	// TODO: Below function needs to be converted into
@@ -327,7 +327,7 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeClaim) (*apis
 
 func (c *CVCController) getVolumePolicy(
 	policyName string,
-	cvc *apis.CStorVolumeClaim,
+	cvc *apis.CStorVolumeConfig,
 ) (*apis.CStorVolumePolicy, error) {
 
 	volumePolicy := &apis.CStorVolumePolicy{}
@@ -358,7 +358,7 @@ func (c *CVCController) isReplicaAffinityEnabled(policy *apis.CStorVolumePolicy)
 // resource among the available cstor pools. This func returns error even when
 // required no.of CVRs are Not created
 func (c *CVCController) distributePendingCVRs(
-	cvc *apis.CStorVolumeClaim,
+	cvc *apis.CStorVolumeConfig,
 	cv *apis.CStorVolume,
 	service *corev1.Service,
 	policy *apis.CStorVolumePolicy,
@@ -375,16 +375,16 @@ func (c *CVCController) distributePendingCVRs(
 	return nil
 }
 
-// isClaimDeletionCandidate checks if a cstorvolumeclaim is a deletion candidate.
-func (c *CVCController) isClaimDeletionCandidate(cvc *apis.CStorVolumeClaim) bool {
+// isClaimDeletionCandidate checks if a cstorvolumeconfig is a deletion candidate.
+func (c *CVCController) isClaimDeletionCandidate(cvc *apis.CStorVolumeConfig) bool {
 	return cvc.ObjectMeta.DeletionTimestamp != nil &&
-		slice.ContainsString(cvc.ObjectMeta.Finalizers, CStorVolumeClaimFinalizer, nil)
+		slice.ContainsString(cvc.ObjectMeta.Finalizers, CStorVolumeConfigFinalizer, nil)
 }
 
-// removeFinalizer removes finalizers present in CStorVolumeClaim resource
+// removeFinalizer removes finalizers present in CStorVolumeConfig resource
 // TODO Avoid removing clone finalizer
 func (c *CVCController) removeClaimFinalizer(
-	cvc *apis.CStorVolumeClaim,
+	cvc *apis.CStorVolumeConfig,
 ) error {
 	if isHAVolume(cvc) {
 		err := c.deletePDBIfNotInUse(cvc)
@@ -406,30 +406,30 @@ func (c *CVCController) removeClaimFinalizer(
 	if err != nil {
 		return errors.Wrapf(
 			err,
-			"failed to remove finalizers from cstorvolumeclaim {%s}",
+			"failed to remove finalizers from cstorvolumeconfig {%s}",
 			cvc.Name,
 		)
 	}
 
 	_, err = c.clientset.
 		CstorV1().
-		CStorVolumeClaims(cvc.Namespace).
+		CStorVolumeConfigs(cvc.Namespace).
 		Patch(cvc.Name, types.JSONPatchType, cvcPatchBytes)
 	if err != nil {
 		return errors.Wrapf(
 			err,
-			"failed to remove finalizers from cstorvolumeclaim {%s}",
+			"failed to remove finalizers from cstorvolumeconfig {%s}",
 			cvc.Name,
 		)
 	}
-	klog.Infof("finalizers removed successfully from cstorvolumeclaim {%s}", cvc.Name)
+	klog.Infof("finalizers removed successfully from cstorvolumeconfig {%s}", cvc.Name)
 	return nil
 }
 
 // getPendingCVRCount gets the pending replica count to be created
 // in case of any failures
 func (c *CVCController) getPendingCVRCount(
-	cvc *apis.CStorVolumeClaim,
+	cvc *apis.CStorVolumeConfig,
 ) (int, error) {
 
 	currentReplicaCount, err := c.getCurrentReplicaCount(cvc)
@@ -437,12 +437,12 @@ func (c *CVCController) getPendingCVRCount(
 		runtime.HandleError(err)
 		return 0, err
 	}
-	return cvc.Spec.ReplicaCount - currentReplicaCount, nil
+	return cvc.Spec.Provision.ReplicaCount - currentReplicaCount, nil
 }
 
 // getCurrentReplicaCount give the current cstorvolumereplicas count for the
 // given volume.
-func (c *CVCController) getCurrentReplicaCount(cvc *apis.CStorVolumeClaim) (int, error) {
+func (c *CVCController) getCurrentReplicaCount(cvc *apis.CStorVolumeConfig) (int, error) {
 	// TODO use lister
 	//	CVRs, err := c.cvrLister.CStorVolumeReplicas(cvc.Namespace).
 	//		List(klabels.Set(pvLabel).AsSelector())
@@ -462,7 +462,7 @@ func (c *CVCController) getCurrentReplicaCount(cvc *apis.CStorVolumeClaim) (int,
 
 // IsCVRPending look for pending cstorvolume replicas compared to desired
 // replica count. returns true if count doesn't matches.
-func (c *CVCController) IsCVRPending(cvc *apis.CStorVolumeClaim) (bool, error) {
+func (c *CVCController) IsCVRPending(cvc *apis.CStorVolumeConfig) (bool, error) {
 
 	selector := klabels.SelectorFromSet(BaseLabels(cvc))
 	CVRs, err := c.cvrLister.CStorVolumeReplicas(cvc.Namespace).
@@ -471,11 +471,11 @@ func (c *CVCController) IsCVRPending(cvc *apis.CStorVolumeClaim) (bool, error) {
 		return false, errors.Errorf("failed to list cvr : %v", err)
 	}
 	// TODO: check for greater values
-	return cvc.Spec.ReplicaCount != len(CVRs), nil
+	return cvc.Spec.Provision.ReplicaCount != len(CVRs), nil
 }
 
 // BaseLabels returns the base labels we apply to cstorvolumereplicas created
-func BaseLabels(cvc *apis.CStorVolumeClaim) map[string]string {
+func BaseLabels(cvc *apis.CStorVolumeConfig) map[string]string {
 	base := map[string]string{
 		pvSelector: cvc.Name,
 	}
@@ -483,7 +483,7 @@ func BaseLabels(cvc *apis.CStorVolumeClaim) map[string]string {
 }
 
 // cvcNeedResize returns true if a cvc desired a resize operation.
-func (c *CVCController) cvcNeedResize(cvc *apis.CStorVolumeClaim) bool {
+func (c *CVCController) cvcNeedResize(cvc *apis.CStorVolumeConfig) bool {
 
 	desiredCVCSize := cvc.Spec.Capacity[corev1.ResourceStorage]
 	actualCVCSize := cvc.Status.Capacity[corev1.ResourceStorage]
@@ -495,8 +495,8 @@ func (c *CVCController) cvcNeedResize(cvc *apis.CStorVolumeClaim) bool {
 // 1. Mark cvc as resizing.
 // 2. Resize the cstorvolume object.
 // 3. Mark cvc as resizing finished
-func (c *CVCController) resizeCVC(cvc *apis.CStorVolumeClaim) error {
-	var updatedCVC *apis.CStorVolumeClaim
+func (c *CVCController) resizeCVC(cvc *apis.CStorVolumeConfig) error {
+	var updatedCVC *apis.CStorVolumeConfig
 	var err error
 	cv, err := c.clientset.CstorV1().CStorVolumes(cvc.Namespace).
 		Get(cvc.Name, metav1.GetOptions{})
@@ -507,7 +507,7 @@ func (c *CVCController) resizeCVC(cvc *apis.CStorVolumeClaim) error {
 	desiredCVCSize := cvc.Spec.Capacity[corev1.ResourceStorage]
 
 	if (cv.Spec.Capacity).Cmp(cv.Status.Capacity) > 0 {
-		c.recorder.Event(cvc, corev1.EventTypeNormal, string(apis.CStorVolumeClaimResizing),
+		c.recorder.Event(cvc, corev1.EventTypeNormal, string(apis.CStorVolumeConfigResizing),
 			fmt.Sprintf("Resize already in progress %s", cvc.Name))
 
 		klog.Warningf("Resize already in progress on %q from: %v to: %v",
@@ -528,46 +528,46 @@ func (c *CVCController) resizeCVC(cvc *apis.CStorVolumeClaim) error {
 	}
 	cvc = updatedCVC
 	// Record an event to indicate that cvc-controller is resizing this volume.
-	c.recorder.Event(cvc, corev1.EventTypeNormal, string(apis.CStorVolumeClaimResizing),
+	c.recorder.Event(cvc, corev1.EventTypeNormal, string(apis.CStorVolumeConfigResizing),
 		fmt.Sprintf("CVCController is resizing volume %s", cvc.Name))
 
 	err = c.resizeCV(cv, desiredCVCSize)
 	if err != nil {
 		// Record an event to indicate that resize operation is failed.
-		c.recorder.Eventf(cvc, corev1.EventTypeWarning, string(apis.CStorVolumeClaimResizeFailed), err.Error())
+		c.recorder.Eventf(cvc, corev1.EventTypeWarning, string(apis.CStorVolumeConfigResizeFailed), err.Error())
 		return err
 	}
 	return nil
 }
 
-func (c *CVCController) markCVCResizeInProgress(cvc *apis.CStorVolumeClaim) (*apis.CStorVolumeClaim, error) {
+func (c *CVCController) markCVCResizeInProgress(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
 	// Mark CVC as Resize Started
-	progressCondition := apis.CStorVolumeClaimCondition{
-		Type:               apis.CStorVolumeClaimResizing,
+	progressCondition := apis.CStorVolumeConfigCondition{
+		Type:               apis.CStorVolumeConfigResizing,
 		LastTransitionTime: metav1.Now(),
 	}
 	newCVC := cvc.DeepCopy()
 	newCVC.Status.Conditions = MergeResizeConditionsOfCVC(newCVC.Status.Conditions,
-		[]apis.CStorVolumeClaimCondition{progressCondition})
+		[]apis.CStorVolumeConfigCondition{progressCondition})
 	return c.PatchCVCStatus(cvc, newCVC)
 }
 
 type resizeProcessStatus struct {
-	condition apis.CStorVolumeClaimCondition
+	condition apis.CStorVolumeConfigCondition
 	processed bool
 }
 
 // MergeResizeConditionsOfCVC updates cvc with desired resize conditions
 // leaving other conditions untouched.
-func MergeResizeConditionsOfCVC(oldConditions, resizeConditions []apis.CStorVolumeClaimCondition) []apis.CStorVolumeClaimCondition {
+func MergeResizeConditionsOfCVC(oldConditions, resizeConditions []apis.CStorVolumeConfigCondition) []apis.CStorVolumeConfigCondition {
 
-	resizeConditionMap := map[apis.CStorVolumeClaimConditionType]*resizeProcessStatus{}
+	resizeConditionMap := map[apis.CStorVolumeConfigConditionType]*resizeProcessStatus{}
 
 	for _, condition := range resizeConditions {
 		resizeConditionMap[condition.Type] = &resizeProcessStatus{condition, false}
 	}
 
-	newConditions := []apis.CStorVolumeClaimCondition{}
+	newConditions := []apis.CStorVolumeConfigCondition{}
 	for _, condition := range oldConditions {
 		// If Condition is of not resize type, we keep it.
 		if _, ok := knownResizeConditions[condition.Type]; !ok {
@@ -589,11 +589,11 @@ func MergeResizeConditionsOfCVC(oldConditions, resizeConditions []apis.CStorVolu
 	return newConditions
 }
 
-func (c *CVCController) markCVCResizeFinished(cvc *apis.CStorVolumeClaim) error {
+func (c *CVCController) markCVCResizeFinished(cvc *apis.CStorVolumeConfig) error {
 	newCVC := cvc.DeepCopy()
 	newCVC.Status.Capacity = cvc.Spec.Capacity
 
-	newCVC.Status.Conditions = MergeResizeConditionsOfCVC(cvc.Status.Conditions, []apis.CStorVolumeClaimCondition{})
+	newCVC.Status.Conditions = MergeResizeConditionsOfCVC(cvc.Status.Conditions, []apis.CStorVolumeConfigCondition{})
 	_, err := c.PatchCVCStatus(cvc, newCVC)
 	if err != nil {
 		klog.Errorf("Mark CVC %q as resize finished failed: %v", cvc.Name, err)
@@ -601,20 +601,20 @@ func (c *CVCController) markCVCResizeFinished(cvc *apis.CStorVolumeClaim) error 
 	}
 
 	klog.V(4).Infof("Resize CVC %q finished", cvc.Name)
-	c.recorder.Eventf(cvc, corev1.EventTypeNormal, string(apis.CStorVolumeClaimResizeSuccess), "Resize volume succeeded")
+	c.recorder.Eventf(cvc, corev1.EventTypeNormal, string(apis.CStorVolumeConfigResizeSuccess), "Resize volume succeeded")
 
 	return nil
 }
 
 // PatchCVCStatus updates CVC status using patch api
 func (c *CVCController) PatchCVCStatus(oldCVC,
-	newCVC *apis.CStorVolumeClaim,
-) (*apis.CStorVolumeClaim, error) {
+	newCVC *apis.CStorVolumeConfig,
+) (*apis.CStorVolumeConfig, error) {
 	patchBytes, err := getPatchData(oldCVC, newCVC)
 	if err != nil {
 		return nil, fmt.Errorf("can't patch status of CVC %s as generate path data failed: %v", oldCVC.Name, err)
 	}
-	updatedClaim, updateErr := c.clientset.CstorV1().CStorVolumeClaims(oldCVC.Namespace).
+	updatedClaim, updateErr := c.clientset.CstorV1().CStorVolumeConfigs(oldCVC.Namespace).
 		Patch(oldCVC.Name, types.MergePatchType, patchBytes)
 
 	if updateErr != nil {
@@ -657,13 +657,13 @@ func (c *CVCController) resizeCV(cv *apis.CStorVolume, newCapacity resource.Quan
 }
 
 // deletePDBIfNotInUse deletes the PDB if no volume is refering to the
-// cStorvolumeclaim PDB
-func (c *CVCController) deletePDBIfNotInUse(cvc *apis.CStorVolumeClaim) error {
+// cStorvolumeconfig PDB
+func (c *CVCController) deletePDBIfNotInUse(cvc *apis.CStorVolumeConfig) error {
 	//TODO: If HALease is enabled active-active then below code needs to be
 	//revist
 	pdbName := getPDBName(cvc)
 	cvcLabelSelector := string(apitypes.PodDisruptionBudgetKey) + "=" + pdbName
-	cvcList, err := c.clientset.CstorV1().CStorVolumeClaims(openebsNamespace).
+	cvcList, err := c.clientset.CstorV1().CStorVolumeConfigs(openebsNamespace).
 		List(metav1.ListOptions{LabelSelector: cvcLabelSelector})
 	if err != nil {
 		return errors.Wrapf(err,
@@ -689,7 +689,7 @@ func (c *CVCController) deletePDBIfNotInUse(cvc *apis.CStorVolumeClaim) error {
 // are treated as scaleup case. If user removed poolInfo entry from spec then
 // changes are treated as scale down case. If user just modifies the pool entry
 // info under the spec then it is a kind of migration which is not yet supported
-func (c *CVCController) scaleVolumeReplicas(cvc *apis.CStorVolumeClaim) error {
+func (c *CVCController) scaleVolumeReplicas(cvc *apis.CStorVolumeConfig) error {
 	var err error
 	if len(cvc.Spec.Policy.ReplicaPoolInfo) > len(cvc.Status.PoolInfo) {
 		cvc, err = c.scaleUpVolumeReplicas(cvc)

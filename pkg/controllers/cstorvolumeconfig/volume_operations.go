@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cstorvolumeclaim
+package cstorvolumeconfig
 
 import (
 	"fmt"
@@ -41,7 +41,7 @@ import (
 )
 
 const (
-	cvcKind = "CStorVolumeClaim"
+	cvcKind = "CStorVolumeConfig"
 	cvKind  = "CStorVolume"
 	// ReplicaCount represents replica count value
 	ReplicaCount = "replicaCount"
@@ -104,7 +104,7 @@ var (
 )
 
 // getTargetServiceLabels get the labels for cstor volume service
-func getTargetServiceLabels(claim *apis.CStorVolumeClaim) map[string]string {
+func getTargetServiceLabels(claim *apis.CStorVolumeConfig) map[string]string {
 	return map[string]string{
 		"openebs.io/target-service":      "cstor-target-svc",
 		"openebs.io/storage-engine-type": "cstor",
@@ -115,7 +115,7 @@ func getTargetServiceLabels(claim *apis.CStorVolumeClaim) map[string]string {
 }
 
 // getTargetServiceSelectors get the selectors for cstor volume service
-func getTargetServiceSelectors(claim *apis.CStorVolumeClaim) map[string]string {
+func getTargetServiceSelectors(claim *apis.CStorVolumeConfig) map[string]string {
 	return map[string]string{
 		"app":                          "cstor-volume-manager",
 		"openebs.io/target":            "cstor-target",
@@ -124,7 +124,7 @@ func getTargetServiceSelectors(claim *apis.CStorVolumeClaim) map[string]string {
 }
 
 // getTargetServiceOwnerReference get the ownerReference for cstorvolume service
-func getTargetServiceOwnerReference(claim *apis.CStorVolumeClaim) []metav1.OwnerReference {
+func getTargetServiceOwnerReference(claim *apis.CStorVolumeConfig) []metav1.OwnerReference {
 	return []metav1.OwnerReference{
 		*metav1.NewControllerRef(claim,
 			apis.SchemeGroupVersion.WithKind(cvcKind)),
@@ -163,7 +163,7 @@ func getCVROwnerReference(cv *apis.CStorVolume) []metav1.OwnerReference {
 }
 
 // getCVLabels get the labels for cstorvolume
-func getCVLabels(claim *apis.CStorVolumeClaim) map[string]string {
+func getCVLabels(claim *apis.CStorVolumeConfig) map[string]string {
 	return map[string]string{
 		"openebs.io/persistent-volume": claim.Name,
 		"openebs.io/version":           version.GetVersion(),
@@ -171,7 +171,7 @@ func getCVLabels(claim *apis.CStorVolumeClaim) map[string]string {
 }
 
 // getCVOwnerReference get the ownerReference for cstorvolume
-func getCVOwnerReference(cvc *apis.CStorVolumeClaim) []metav1.OwnerReference {
+func getCVOwnerReference(cvc *apis.CStorVolumeConfig) []metav1.OwnerReference {
 	return []metav1.OwnerReference{
 		*metav1.NewControllerRef(cvc,
 			apis.SchemeGroupVersion.WithKind(cvcKind)),
@@ -186,7 +186,7 @@ func getNamespace() string {
 
 // getCSPC gets CStorPoolCluster name from cstorvolumeclaim resource
 func getCSPC(
-	claim *apis.CStorVolumeClaim,
+	claim *apis.CStorVolumeConfig,
 ) string {
 
 	cspcName := claim.Labels[string(types.CStorPoolClusterLabelKey)]
@@ -194,7 +194,7 @@ func getCSPC(
 }
 
 // getPDBName returns the PDB name from cStor Volume Claim label
-func getPDBName(claim *apis.CStorVolumeClaim) string {
+func getPDBName(claim *apis.CStorVolumeConfig) string {
 	return claim.GetLabels()[string(types.PodDisruptionBudgetKey)]
 }
 
@@ -223,7 +223,7 @@ func (c *CVCController) listCStorPools(cspcName string) (*apis.CStorPoolInstance
 
 // getOrCreateTargetService creates cstor volume target service
 func (c *CVCController) getOrCreateTargetService(
-	claim *apis.CStorVolumeClaim,
+	claim *apis.CStorVolumeConfig,
 ) (*corev1.Service, error) {
 
 	svcObj, err := c.kubeclientset.CoreV1().Services(openebsNamespace).
@@ -258,7 +258,7 @@ func (c *CVCController) getOrCreateTargetService(
 // getOrCreateCStorVolumeResource creates CStorVolume resource for a cstor volume
 func (c *CVCController) getOrCreateCStorVolumeResource(
 	service *corev1.Service,
-	claim *apis.CStorVolumeClaim,
+	claim *apis.CStorVolumeConfig,
 ) (*apis.CStorVolume, error) {
 	var (
 		srcVolume string
@@ -268,8 +268,8 @@ func (c *CVCController) getOrCreateCStorVolumeResource(
 	qCap := claim.Spec.Capacity[corev1.ResourceStorage]
 
 	// get the replicaCount from cstorvolume claim
-	rfactor := claim.Spec.ReplicaCount
-	desiredRF := claim.Spec.ReplicaCount
+	rfactor := claim.Spec.Provision.ReplicaCount
+	desiredRF := claim.Spec.Provision.ReplicaCount
 	cfactor := rfactor/2 + 1
 
 	volLabels := getCVLabels(claim)
@@ -299,7 +299,6 @@ func (c *CVCController) getOrCreateCStorVolumeResource(
 			WithTargetIP(service.Spec.ClusterIP).
 			WithCapacity(qCap.String()).
 			WithCStorIQN(claim.Name).
-			WithNodeBase(apis.CStorNodeBase).
 			WithTargetPortal(service.Spec.ClusterIP + ":" + apis.TargetPort).
 			WithTargetPort(apis.TargetPort).
 			WithReplicationFactor(rfactor).
@@ -318,7 +317,7 @@ func (c *CVCController) getOrCreateCStorVolumeResource(
 // if pools are less then desired replicaCount its return an error.
 func (c *CVCController) distributeCVRs(
 	pendingReplicaCount int,
-	claim *apis.CStorVolumeClaim,
+	claim *apis.CStorVolumeConfig,
 	service *corev1.Service,
 	volume *apis.CStorVolume,
 	policy *apis.CStorVolumePolicy,
@@ -394,7 +393,7 @@ func getSrcDetails(cstorVolumeSrc string) (string, string, error) {
 func (c *CVCController) createCVR(
 	service *corev1.Service,
 	volume *apis.CStorVolume,
-	claim *apis.CStorVolumeClaim,
+	claim *apis.CStorVolumeConfig,
 	pool *apis.CStorPoolInstance,
 	rInfo replicaInfo,
 ) (*apis.CStorVolumeReplica, error) {
@@ -581,7 +580,7 @@ func (c *CVCController) getOrCreatePodDisruptionBudget(cspcName string,
 
 // addReplicaPoolInfo updates in-memory replicas pool information on spec and
 // status of CVC
-func addReplicaPoolInfo(cvcObj *apis.CStorVolumeClaim, poolNames []string) {
+func addReplicaPoolInfo(cvcObj *apis.CStorVolumeConfig, poolNames []string) {
 	for _, poolName := range poolNames {
 		cvcObj.Spec.Policy.ReplicaPoolInfo = append(
 			cvcObj.Spec.Policy.ReplicaPoolInfo,
@@ -592,7 +591,7 @@ func addReplicaPoolInfo(cvcObj *apis.CStorVolumeClaim, poolNames []string) {
 
 // addPDBLabelOnCVC will add PodDisruptionBudget label on CVC
 func addPDBLabelOnCVC(
-	cvcObj *apis.CStorVolumeClaim, pdbObj *policy.PodDisruptionBudget) {
+	cvcObj *apis.CStorVolumeConfig, pdbObj *policy.PodDisruptionBudget) {
 	cvcLabels := cvcObj.GetLabels()
 	if cvcLabels == nil {
 		cvcLabels = map[string]string{}
@@ -605,9 +604,9 @@ func addPDBLabelOnCVC(
 // If CVC doesn't hold any volume replica pool information then verify with
 // ReplicaCount. If CVC holds any volume replica pool information then verify
 // with Status.PoolInfo
-func isHAVolume(cvcObj *apis.CStorVolumeClaim) bool {
+func isHAVolume(cvcObj *apis.CStorVolumeConfig) bool {
 	if len(cvcObj.Status.PoolInfo) == 0 {
-		return cvcObj.Spec.ReplicaCount >= minHAReplicaCount
+		return cvcObj.Spec.Provision.ReplicaCount >= minHAReplicaCount
 	}
 	return len(cvcObj.Status.PoolInfo) >= minHAReplicaCount
 }
@@ -619,7 +618,7 @@ func isHAVolume(cvcObj *apis.CStorVolumeClaim) bool {
 //    that PDB name. If PDB doesn't exist then create new PDB and return newely
 //    created PDB name.
 // 3. If current volume is not HAVolume then return nothing.
-func (c *CVCController) getUpdatePDBForVolume(cvcObj *apis.CStorVolumeClaim) (string, error) {
+func (c *CVCController) getUpdatePDBForVolume(cvcObj *apis.CStorVolumeConfig) (string, error) {
 	_, hasPDB := cvcObj.GetLabels()[string(types.PodDisruptionBudgetKey)]
 	if hasPDB {
 		err := c.deletePDBIfNotInUse(cvcObj)
@@ -642,7 +641,7 @@ func (c *CVCController) getUpdatePDBForVolume(cvcObj *apis.CStorVolumeClaim) (st
 // 1. Below function will check whether there is any change in desired replica
 //    pool names and current replica pool names.
 // Note: Scale up/down of cvc will not work until cvc is in bound state
-func (c *CVCController) isCVCScalePending(cvc *apis.CStorVolumeClaim) bool {
+func (c *CVCController) isCVCScalePending(cvc *apis.CStorVolumeConfig) bool {
 	desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
 	return util.IsChangeInLists(desiredPoolNames, cvc.Status.PoolInfo)
 }
@@ -663,7 +662,7 @@ func (c *CVCController) isCVCScalePending(cvc *apis.CStorVolumeClaim) bool {
 // 2. Update CVC label to point it to newely PDB got from above step and also
 //    replicas pool information on status of CVC.
 // NOTE: This function return object as well as error if error occured
-func (c *CVCController) updatePDBForScaledVolume(cvc *apis.CStorVolumeClaim) (*apis.CStorVolumeClaim, error) {
+func (c *CVCController) updatePDBForScaledVolume(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
 	var err error
 	cvcCopy := cvc.DeepCopy()
 	pdbName, err := c.getUpdatePDBForVolume(cvc)
@@ -677,7 +676,7 @@ func (c *CVCController) updatePDBForScaledVolume(cvc *apis.CStorVolumeClaim) (*a
 	if pdbName != "" {
 		cvc.Labels[string(types.PodDisruptionBudgetKey)] = pdbName
 	}
-	newCVCObj, err := c.clientset.CstorV1().CStorVolumeClaims(openebsNamespace).Update(cvc)
+	newCVCObj, err := c.clientset.CstorV1().CStorVolumeConfigs(openebsNamespace).Update(cvc)
 	if err != nil {
 		// If error occured point it to old cvc object it self
 		return cvcCopy, errors.Wrapf(err,
@@ -696,8 +695,8 @@ func (c *CVCController) updatePDBForScaledVolume(cvc *apis.CStorVolumeClaim) (*a
 //         HAVolume) and update the replica pool info on CVC(API calls).
 // 3. If CVR doesn't exist on new pool names then return error saying scaledown
 //    is in progress.
-func (c *CVCController) updateCVCWithScaledUpInfo(cvc *apis.CStorVolumeClaim,
-	cvObj *apis.CStorVolume) (*apis.CStorVolumeClaim, error) {
+func (c *CVCController) updateCVCWithScaledUpInfo(cvc *apis.CStorVolumeConfig,
+	cvObj *apis.CStorVolume) (*apis.CStorVolumeConfig, error) {
 	pvName := cvc.GetAnnotations()[volumeID]
 	desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
 	newPoolNames := util.ListDiff(desiredPoolNames, cvc.Status.PoolInfo)
@@ -735,7 +734,7 @@ func (c *CVCController) updateCVCWithScaledUpInfo(cvc *apis.CStorVolumeClaim,
 }
 
 // getScaleDownCVR return CVR which belongs to scale down pool
-func getScaleDownCVR(clientset clientset.Interface, cvc *apis.CStorVolumeClaim) (*apis.CStorVolumeReplica, error) {
+func getScaleDownCVR(clientset clientset.Interface, cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeReplica, error) {
 	pvName := cvc.GetAnnotations()[volumeID]
 	desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
 	removedPoolNames := util.ListDiff(cvc.Status.PoolInfo, desiredPoolNames)
@@ -749,7 +748,7 @@ func getScaleDownCVR(clientset clientset.Interface, cvc *apis.CStorVolumeClaim) 
 //    status of CVC).
 // 2. Creates new CVR on new pools only if CVR on that pool doesn't exists. If
 //    CVR already created then do nothing.
-func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeClaim, cvObj *apis.CStorVolume) error {
+func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig, cvObj *apis.CStorVolume) error {
 	pvName := cvc.GetAnnotations()[volumeID]
 	desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
 	newPoolNames := util.ListDiff(desiredPoolNames, cvc.Status.PoolInfo)
@@ -814,7 +813,7 @@ func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeClaim, 
 //    4.1.1 Update PDB according to the new pools(only if volume is HAVolume).
 //    4.1.2 Update PDB label on CVC and replica pool information on status.
 // 5. If scalingUp of volume replicas was not completed then return error
-func (c *CVCController) scaleUpVolumeReplicas(cvc *apis.CStorVolumeClaim) (*apis.CStorVolumeClaim, error) {
+func (c *CVCController) scaleUpVolumeReplicas(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
 	drCount := len(cvc.Spec.Policy.ReplicaPoolInfo)
 	cvObj, err := c.clientset.CstorV1().CStorVolumes(openebsNamespace).
 		Get(cvc.Name, metav1.GetOptions{})
@@ -844,7 +843,7 @@ func (c *CVCController) scaleUpVolumeReplicas(cvc *apis.CStorVolumeClaim) (*apis
 // 3. Check the status of scale down if scale down was completed then
 //    delete the CVR which belongs to scale down pool and then perform post scaling
 //    process(updating PDB accordingly if it is applicable and CVC replica pool status).
-func (c *CVCController) scaleDownVolumeReplicas(cvc *apis.CStorVolumeClaim) (*apis.CStorVolumeClaim, error) {
+func (c *CVCController) scaleDownVolumeReplicas(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
 	var cvrObj *apis.CStorVolumeReplica
 	drCount := len(cvc.Spec.Policy.ReplicaPoolInfo)
 	cvObj, err := c.clientset.CstorV1().CStorVolumes(openebsNamespace).

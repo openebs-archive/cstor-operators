@@ -497,8 +497,8 @@ NAME                                                                            
 cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  used               6K     -
 cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800087  logicalreferenced  6K     -
 */
-func Capacity(volName string) (*cstor.CStorVolumeCapacityDetails, error) {
-	capacityVolStr := []string{"get", "used,logicalused", volName}
+func Capacity(volName string) (*cstor.CStorVolumeReplicaCapacityDetails, error) {
+	capacityVolStr := []string{"get", "used,logicalreferenced", volName}
 	stdoutStderr, err := RunnerVar.RunCombinedOutput(VolumeReplicaOperator, capacityVolStr...)
 	if err != nil {
 		klog.Errorf("Unable to get volume capacity: %v", string(stdoutStderr))
@@ -582,12 +582,12 @@ cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800
 */
 // capacityOutputParser parse output of `zfs get` command to extract the capacity of the pool.
 // ToDo: Need to find some better way e.g contract for zfs command outputs.
-func capacityOutputParser(output string) *cstor.CStorVolumeCapacityDetails {
+func capacityOutputParser(output string) *cstor.CStorVolumeReplicaCapacityDetails {
 	var outputStr []string
 	// Initialize capacity object.
 	// 'TotalAllocated' value(on cvr) is filled from the value of 'used' property in 'zfs get' output.
 	// 'Used' value(on cvr) is filled from the value of 'logicalused' property in 'zfs get' output.
-	capacity := &cstor.CStorVolumeCapacityDetails{
+	capacity := &cstor.CStorVolumeReplicaCapacityDetails{
 		Total: "",
 		Used:  "",
 	}

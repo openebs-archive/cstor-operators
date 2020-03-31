@@ -137,8 +137,8 @@ func (wh *webhook) getCstorVolumes(listOptions metav1.ListOptions) (*cstor.CStor
 }
 
 // getCstorVolumeClaims gets the list of CstorVolumeclaims based in the source-volume labels
-func (wh *webhook) getCstorVolumeClaims(listOptions metav1.ListOptions) (*cstor.CStorVolumeClaimList, error) {
-	return wh.clientset.CstorV1().CStorVolumeClaims("").List(listOptions)
+func (wh *webhook) getCstorVolumeClaims(listOptions metav1.ListOptions) (*cstor.CStorVolumeConfigList, error) {
+	return wh.clientset.CstorV1().CStorVolumeConfigs("").List(listOptions)
 }
 
 // validatePVCCreateRequest validates persistentvolumeclaim(PVC) create request

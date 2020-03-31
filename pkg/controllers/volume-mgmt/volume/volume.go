@@ -34,15 +34,15 @@ import (
 	"k8s.io/klog"
 )
 
-// VolumeOperator is the name of the tool that makes volume-related operations.
 const (
+	// VolumeOperator is the name of the tool that makes volume-related operations.
 	VolumeOperator = "iscsi"
 )
 
 var (
 	istgtConfFile = `# Global section
 [Global]
-  NodeBase {{.Spec.NodeBase}}
+  NodeBase "iqn.2016-09.com.openebs.cstor"
   PidFile "/var/run/istgt.pid"
   AuthFile "/usr/local/etc/istgt/auth.conf"
   LogFile "/usr/local/etc/istgt/logfile"

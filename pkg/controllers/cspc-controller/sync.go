@@ -36,12 +36,26 @@ import (
 )
 
 func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoolInstanceList) error {
+	if ok, reason := c.ShouldReconcile(*cspc); !ok {
+		// Do not reconcile this cspc
+		message := fmt.Sprintf("Cannot not reconcile CSPC %s as %s", cspc.Name, reason)
+		c.recorder.Event(cspc, corev1.EventTypeWarning, "CSPC Reconcile", message)
+		klog.Warningf("Cannot not reconcile CSPC %s in namespace %s as %s", cspc.Name, cspc.Namespace, reason)
+		return nil
+	}
 
-	// If CSPC is deleted -- delete all the associated CSPI resources.
-	// Cleaning up CSPI resources in case of removing poolSpec from CSPC
+	// cleaning up CSPI resources in case of removing poolSpec from CSPC
 	// or manual CSPI deletion
 	if cspc.DeletionTimestamp.IsZero() {
-		err := c.cleanupCSPIResources(cspc)
+		cspiList, err := c.GetCSPIListForCSPC(cspc)
+		if err != nil {
+			message := fmt.Sprintf("Could not sync CSPC: {%s}", err.Error())
+			c.recorder.Event(cspc, corev1.EventTypeWarning, "Pool Cleanup", message)
+			klog.Errorf("Could not sync CSPC %s in namesapce %s: {%s}", cspc.Name, cspc.Namespace, err.Error())
+			return nil
+		}
+
+		err = c.cleanupCSPIResources(cspiList)
 		if err != nil {
 			message := fmt.Sprintf("Could not sync CSPC: {%s}", err.Error())
 			c.recorder.Event(cspc, corev1.EventTypeWarning, "Pool Cleanup", message)
@@ -67,7 +81,9 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 	if !cspcGot.DeletionTimestamp.IsZero() {
 		err = c.handleCSPCDeletion(cspcGot)
 		if err != nil {
-			klog.Errorf("Failed to sync CSPC %s in namespace %s for deletion:%s", cspc.Name, cspc.Namespace, err.Error())
+			message := fmt.Sprintf("Could not sync for CSPC:{%s} deletion", err.Error())
+			c.recorder.Event(cspc, corev1.EventTypeWarning, "CSPC Cleanup", message)
+			klog.Errorf("Failed to cleanup CSPC %s in namespace %s: %s", cspc.Name, cspc.Namespace, err.Error())
 		}
 		return nil
 	}
@@ -147,13 +163,13 @@ func (c *Controller) handleCSPCDeletion(cspc *cstor.CStorPoolCluster) error {
 	err := c.deleteAssociatedCSPI(cspc)
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to handle CSPC deletion")
+		return errors.Wrap(err, "failed to delete associated cspi(s)")
 	}
 
 	if cspc.HasFinalizer(types.CSPCFinalizer) {
 		err := c.removeCSPCFinalizer(cspc)
 		if err != nil {
-			return errors.Wrapf(err, "failed to handle CSPC %s deletion", cspc.Name)
+			return errors.Wrap(err, "failed to remove cspc finalizers on cspi objects")
 		}
 	}
 
@@ -187,21 +203,25 @@ func (c *Controller) deleteAssociatedCSPI(cspc *cstor.CStorPoolCluster) error {
 // BDC and CSPI resources in correct order and CSPC object itself.
 func (c *Controller) removeCSPCFinalizer(cspc *cstor.CStorPoolCluster) error {
 
-	// clean up all cspi related resources for given cspc
-	err := c.cleanupCSPIResources(cspc)
+	cspiList, err := c.GetCSPIListForCSPC(cspc)
 	if err != nil {
-		klog.Errorf("Failed to cleanup CSPC api object %s: %s", cspc.Name, err.Error())
-		return nil
+		return errors.Wrapf(err, "could not list cspi(s)")
 	}
 
-	cspList, err := c.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).List(metav1.ListOptions{
-		LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name,
-	})
+	// clean up all cspi related resources for given cspc
+	err = c.cleanupCSPIResources(cspiList)
+	if err != nil {
+		return errors.Wrap(err, "failed to cleanup cspc")
+	}
+
+	cspList, err := c.GetCSPIListForCSPC(cspc)
+	if err != nil {
+		return errors.Wrapf(err, "could not list cspi(s)")
+	}
 
 	if len(cspList.Items) > 0 {
 		return errors.Wrap(err, "failed to remove CSPC finalizer on associated resources as "+
 			"CSPI(s) still exists for CSPC")
-
 	}
 
 	cspc.RemoveFinalizer(types.CSPCFinalizer)
@@ -437,4 +457,18 @@ func (pc *PoolConfig) patchPoolDeploymentSpec(cspi *cstor.CStorPoolInstance) err
 	}
 
 	return nil
+}
+
+func (c *Controller) ShouldReconcile(cspc cstor.CStorPoolCluster) (bool, string) {
+	cspcOperatorVersion := version.Current()
+	cspcVersion := cspc.VersionDetails.Status.Current
+	if cspcVersion == "" {
+		return true, ""
+	}
+
+	if cspcVersion != cspcOperatorVersion {
+		return false, fmt.Sprintf("cspc operator version is %s but cspc version is %s", cspcOperatorVersion, cspcVersion)
+	}
+
+	return true, ""
 }

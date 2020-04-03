@@ -20,7 +20,6 @@ import (
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 
-	// ToDo: Move this util package to cstor-operatrs from api repo
 	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,27 +28,28 @@ import (
 
 // cleanupCSPIResources removes the CSPI resources when a CSPI is
 // deleted or downscaled
-func (c *Controller) cleanupCSPIResources(cspcObj *apis.CStorPoolCluster) error {
-	cspiList, err := c.GetCSPIListForCSPC(cspcObj)
-	if err != nil {
-		return errors.Errorf("failed to list cspi for cspc %s to perform cleanup: %s", cspcObj.Name, err.Error())
-	}
+func (c *Controller) cleanupCSPIResources(cspiList *apis.CStorPoolInstanceList) error {
+
 	opts := []cspiCleanupOptions{
 		c.cleanupBDC,
 	}
+
+	var cspiCleanUpError []error
+
 	for _, cspiItem := range cspiList.Items {
 		cspiObj := cspiItem // pin it
 		// cleanup to be performed only if DeletionTimestamp is non zero and if
 		// PoolProtectionFinalizer is not removed wait for the next reconcile attempt
 		if canPerformCSPICleanup(cspiItem) {
 			for _, o := range opts {
-				err = o(cspiObj)
+				err := o(cspiObj)
 				if err != nil {
-					return errors.Wrapf(err, "failed to cleanup cspi %s for cspc %s", cspiItem.Name, cspcObj.Name)
+					return errors.Wrapf(err, "failed to cleanup cspi %s", cspiItem.Name)
 				}
 			}
+
 			cspiObj.Finalizers = util.RemoveString(cspiObj.Finalizers, types.CSPCFinalizer)
-			_, err = c.GetStoredCStorVersionClient().CStorPoolInstances(cspiItem.Namespace).Update(&cspiObj)
+			_, err := c.GetStoredCStorVersionClient().CStorPoolInstances(cspiItem.Namespace).Update(&cspiObj)
 			if err != nil {
 				return errors.Wrapf(err, "failed to remove finalizer from cspi %s", cspiItem.Name)
 			}
@@ -59,11 +59,16 @@ func (c *Controller) cleanupCSPIResources(cspcObj *apis.CStorPoolCluster) error 
 				// if cspi has DeletionTimestamp but the PoolProtectionFinalizer is present
 				// returning error helps prevent removal of finalizer on cspc object
 				// cspc object should not get deleted before all cspi are deleted successfully
-				return errors.Errorf("failed to cleanup cspi %s for cspc %s: waiting for pool to get destroyed or there is no CSPC label on CSPI",
-					cspiItem.Name, cspcObj.Name)
+				newErr := errors.Errorf("failed to cleanup cspi %s: waiting for pool to get destroyed or there is no CSPC label on CSPI",
+					cspiItem.Name)
+				cspiCleanUpError = append(cspiCleanUpError, newErr)
 			}
 		}
 	}
+	if len(cspiCleanUpError) > 0 {
+		return errors.Errorf("failure in cspi cleanup: {%v}", cspiCleanUpError)
+	}
+
 	return nil
 }
 

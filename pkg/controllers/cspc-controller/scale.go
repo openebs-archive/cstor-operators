@@ -102,13 +102,13 @@ func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) {
 	if err != nil {
 		pc.Controller.recorder.Event(cspc, corev1.EventTypeWarning,
 			"DownScale", "Pool downscale failed "+err.Error())
-		klog.Errorf("Pool downscale failed as could not get orphaned CSP(s):{%s}" + err.Error())
+		klog.Errorf("Pool scale down failed as could not get orphaned CSP(s):{%s}" + err.Error())
 		return
 	}
 
 	for _, cspiName := range orphanedCSP {
 		pc.Controller.recorder.Event(cspc, corev1.EventTypeNormal,
-			"DownScale", "De-provisioning pool "+cspiName)
+			"ScaleDown", "De-provisioning pool "+cspiName)
 
 		// TODO : As part of deleting a CSP, do we need to delete associated BDCs ?
 		needsStatusUpdate = true

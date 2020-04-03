@@ -30,8 +30,8 @@ import (
 )
 
 func (c *Controller) UpdateStatusEventually(cspc *cstor.CStorPoolCluster) error {
-	err := c.UpdateStatus(cspc)
 	maxRetry := 3
+	err := c.UpdateStatus(cspc)
 
 	if err != nil {
 		klog.Errorf("failed to update cspc %s status: will retry %d times at 2s interval: {%s}",
@@ -100,12 +100,9 @@ func (c *Controller) calculateStatus(cspc *cstor.CStorPoolCluster) (cstor.CStorP
 		cspiNameToPoolManager[poolmanager.Name] = poolmanager
 	}
 
-	provisionedCSPIs := int32(len(cspiList.Items))
-	desiredCSPIs := int32(len(cspc.Spec.Pools))
-
 	status := cstor.CStorPoolClusterStatus{
-		ProvisionedInstances: provisionedCSPIs,
-		DesiredInstances:     desiredCSPIs,
+		ProvisionedInstances: int32(len(cspiList.Items)),
+		DesiredInstances:     int32(len(cspc.Spec.Pools)),
 	}
 
 	// Copy conditions one by one so we won't mutate the original object.
@@ -144,7 +141,7 @@ func (c *Controller) calculateStatus(cspc *cstor.CStorPoolCluster) (cstor.CStorP
 }
 
 func IsPoolMangerAvailable(pm appsv1.Deployment) bool {
-	if pm.Status.AvailableReplicas < 1 {
+	if pm.Status.ReadyReplicas < 1 {
 		return false
 	}
 	return true

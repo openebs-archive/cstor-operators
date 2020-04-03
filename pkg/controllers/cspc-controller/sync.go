@@ -56,6 +56,12 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 		return nil
 	}
 
+	cspcGot, err = c.populateDesiredInstances(cspcGot)
+	if err != nil {
+		klog.Errorf("failed to add desired instances to CSPC %s in namesapce %s :{%s}", cspc.Name, cspc.Namespace, err.Error())
+		return nil
+	}
+
 	// If deletion timestamp is not zero on CSPC, this means CSPC is deleted
 	// and all the resources associated with cspc should be deleted.
 	if !cspcGot.DeletionTimestamp.IsZero() {
@@ -91,12 +97,10 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 
 	// Create pools if required.
 	if len(cspiList.Items) < len(cspc.Spec.Pools) {
-		return pc.ScaleUp(cspc, len(cspc.Spec.Pools)-len(cspiList.Items))
-	}
-
-	if len(cspiList.Items) > len(cspc.Spec.Pools) {
-		// Scale Down and return
-		return pc.ScaleDown(cspc)
+		pc.ScaleUp(cspc, len(cspc.Spec.Pools)-len(cspiList.Items))
+	} else if len(cspiList.Items) > len(cspc.Spec.Pools) {
+		// Scale Down pools if required
+		pc.ScaleDown(cspc)
 	}
 
 	cspisWithoutDeployment, err := c.GetCSPIWithoutDeployment(cspc)
@@ -105,7 +109,6 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 		message := fmt.Sprintf("Error in getting orphaned CSP :{%s}", err.Error())
 		c.recorder.Event(cspc, corev1.EventTypeWarning, "Pool Create", message)
 		klog.Errorf("Error in getting orphaned CSP for CSPC {%s}:{%s}", cspc.Name, err.Error())
-		return nil
 	}
 
 	if len(cspisWithoutDeployment) > 0 {
@@ -121,6 +124,15 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 	}
 
 	pc.handleOperations()
+
+	err = c.UpdateStatusEventually(cspc)
+	if err != nil {
+		message := fmt.Sprintf("Error in updating status:{%s}", err.Error())
+		c.recorder.Event(cspc, corev1.EventTypeWarning, "Status Update", message)
+		klog.Errorf("Error in updating  CSPC %s status:{%s}", cspc.Name, err.Error())
+		return nil
+	}
+
 	return nil
 }
 
@@ -199,6 +211,23 @@ func (c *Controller) removeCSPCFinalizer(cspc *cstor.CStorPoolCluster) error {
 		return errors.Wrap(err, "failed to remove CSPC finalizer on cspc resource")
 	}
 	return nil
+}
+
+func (c *Controller) populateDesiredInstances(cspc *cstor.CStorPoolCluster) (*cstor.CStorPoolCluster, error) {
+	cspc.Status.DesiredInstances = int32(len(cspc.Spec.Pools))
+
+	cspc, err := c.GetStoredCStorVersionClient().
+		CStorPoolClusters(cspc.Namespace).
+		Update(cspc)
+
+	if err != nil {
+		return nil, errors.Wrapf(
+			err,
+			"failed to update cspc %s while adding desired instances number in spec",
+			cspc.Name,
+		)
+	}
+	return cspc, nil
 }
 
 // populateVersion assigns VersionDetails for old cspc object and newly created
@@ -305,7 +334,7 @@ func (pc *PoolConfig) syncCSPI(cspc *cstor.CStorPoolCluster) error {
 // pool manager deployment if required.
 func (pc *PoolConfig) syncCSPIWithCSPC(cspc *cstor.CStorPoolCluster, cspi *cstor.CStorPoolInstance) error {
 	cspiCopy := cspi.DeepCopy()
-	klog.Infof("Syncing cspi %s from parent cspc %s", cspiCopy.Name, cspc.Name)
+	klog.V(2).Infof("Syncing cspi %s from parent cspc %s", cspiCopy.Name, cspc.Name)
 	for _, poolSpec := range cspc.Spec.Pools {
 		if reflect.DeepEqual(poolSpec.NodeSelector, cspi.Spec.NodeSelector) {
 			poolSpec := poolSpec

@@ -129,7 +129,7 @@ func (c *Controller) calculateStatus(cspc *cstor.CStorPoolCluster) (cstor.CStorP
 
 	if isPoolManagerUnavailable {
 		minAvailability := util.NewCSPCCondition(cstor.CSPCConditionType("PoolManagerAvailable"), v1.ConditionFalse,
-			"PoolManagersUnavailable", "Pool manager(s): "+unavailablePoolManagers+":does not have minimum available pod")
+			"PoolManagersAvailable", "Pool manager(s): "+unavailablePoolManagers+":does not have minimum available pod")
 		util.SetCSPCCondition(&status, *minAvailability)
 	} else {
 		minAvailability := util.NewCSPCCondition(cstor.CSPCConditionType("PoolManagerAvailable"), v1.ConditionTrue,

@@ -125,7 +125,7 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 
 	pc.handleOperations()
 
-	err = c.UpdateStatus(cspc)
+	err = c.UpdateStatusEventually(cspc)
 	if err != nil {
 		message := fmt.Sprintf("Error in updating status:{%s}", err.Error())
 		c.recorder.Event(cspc, corev1.EventTypeWarning, "Status Update", message)

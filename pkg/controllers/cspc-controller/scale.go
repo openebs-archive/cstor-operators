@@ -45,7 +45,7 @@ func (pc *PoolConfig) ScaleUp(cspc *cstor.CStorPoolCluster, pendingPoolCount int
 		}
 	}
 	if needsStatusUpdate {
-		err := pc.Controller.UpdateStatus(cspc)
+		err := pc.Controller.UpdateStatusEventually(cspc)
 		if err != nil {
 			runtime.HandleError(errors.Wrapf(err, "Failed to update cspc %s status", cspc.Name))
 		}
@@ -121,7 +121,7 @@ func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) {
 	}
 
 	if needsStatusUpdate {
-		err := pc.Controller.UpdateStatus(cspc)
+		err := pc.Controller.UpdateStatusEventually(cspc)
 		if err != nil {
 			runtime.HandleError(errors.Wrapf(err, "Failed to update cspc %s status", cspc.Name))
 		}

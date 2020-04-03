@@ -29,24 +29,28 @@ import (
 	"time"
 )
 
-func (c *Controller) UpdateStatus(cspc *cstor.CStorPoolCluster) error {
-	err := c.UpdateInstancesCount(cspc)
+func (c *Controller) UpdateStatusEventually(cspc *cstor.CStorPoolCluster) error {
+	err := c.UpdateStatus(cspc)
 	maxRetry := 3
 
 	if err != nil {
-		klog.Errorf("failed to update cspc status: will retry %d times at 2s interval: {%s}", maxRetry, err.Error())
+		klog.Errorf("failed to update cspc %s status: will retry %d times at 2s interval: {%s}",
+			cspc.Name, maxRetry, err.Error())
 		for maxRetry > 0 {
-			cspcNew, err := c.GetStoredCStorVersionClient().CStorPoolClusters(cspc.Namespace).Get(cspc.Name, metav1.GetOptions{})
+			cspcNew, err := c.GetStoredCStorVersionClient().
+				CStorPoolClusters(cspc.Namespace).
+				Get(cspc.Name, metav1.GetOptions{})
 
 			if err != nil {
 				// this is possible due to etcd unavailability so do not retry more here
 				return errors.Wrapf(err, "failed to update cspc status")
 			}
 
-			err = c.UpdateInstancesCount(cspcNew)
+			err = c.UpdateStatus(cspcNew)
 			if err != nil {
 				maxRetry = maxRetry - 1
-				klog.Errorf("failed to update cspc status: will retry %d times at 2s interval : {%s}", maxRetry, err.Error())
+				klog.Errorf("failed to update cspc %s status: will retry %d times at 2s interval : {%s}",
+					cspc.Name, maxRetry, err.Error())
 				time.Sleep(2 * time.Second)
 				continue
 			}
@@ -54,10 +58,10 @@ func (c *Controller) UpdateStatus(cspc *cstor.CStorPoolCluster) error {
 		}
 
 	}
-	return nil
+	return err
 }
 
-func (c *Controller) UpdateInstancesCount(cspc *cstor.CStorPoolCluster) error {
+func (c *Controller) UpdateStatus(cspc *cstor.CStorPoolCluster) error {
 	status, err := c.calculateStatus(cspc)
 	if err != nil {
 		return errors.Wrapf(err, "failed to calculate cspc %s status", cspc.Name)
@@ -75,12 +79,18 @@ func (c *Controller) UpdateInstancesCount(cspc *cstor.CStorPoolCluster) error {
 func (c *Controller) calculateStatus(cspc *cstor.CStorPoolCluster) (cstor.CStorPoolClusterStatus, error) {
 	var healthyCSPIs int32
 	cspiList, err := c.GetCSPIListForCSPC(cspc)
+	if err != nil {
+		return cstor.CStorPoolClusterStatus{}, errors.Wrapf(err, "failed to list cspi(s) for cspc %s in namespace %s", cspc.Name, cspc.Namespace)
+	}
 
 	// List all corresponding pool managers for the cspc
 	poolManagerList, err := c.kubeclientset.
 		AppsV1().
 		Deployments(cspc.Namespace).
 		List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name})
+	if err != nil {
+		return cstor.CStorPoolClusterStatus{}, errors.Wrapf(err, "failed to list pool-manager deployments for cspc %s in namespace %s", cspc.Name, cspc.Namespace)
+	}
 
 	cspiNameToPoolManager := make(map[string]appsv1.Deployment)
 
@@ -88,10 +98,6 @@ func (c *Controller) calculateStatus(cspc *cstor.CStorPoolCluster) (cstor.CStorP
 		poolmanager := poolmanager // pin it
 		// note: name of cspi and corresponding pool manager is same.
 		cspiNameToPoolManager[poolmanager.Name] = poolmanager
-	}
-
-	if err != nil {
-		return cstor.CStorPoolClusterStatus{}, errors.Wrapf(err, "failed to list cspi(s) for cspc %s in namespace %s", cspc.Name, cspc.Namespace)
 	}
 
 	provisionedCSPIs := int32(len(cspiList.Items))

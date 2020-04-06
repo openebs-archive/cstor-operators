@@ -57,7 +57,6 @@ func TestController_cleanupCSPIResources(t *testing.T) {
 		expectedDeletions int
 	}{
 		{
-
 			cspis: &cstor.CStorPoolInstanceList{
 				Items: []cstor.CStorPoolInstance{
 					*newCSPI("cspi-foo", nil, []string{types.CSPCFinalizer}, true),
@@ -67,7 +66,6 @@ func TestController_cleanupCSPIResources(t *testing.T) {
 		},
 
 		{
-
 			cspis: &cstor.CStorPoolInstanceList{
 				Items: []cstor.CStorPoolInstance{
 					*newCSPI("cspi-foo", nil, []string{types.CSPCFinalizer}, false),
@@ -80,7 +78,6 @@ func TestController_cleanupCSPIResources(t *testing.T) {
 		},
 
 		{
-
 			cspis: &cstor.CStorPoolInstanceList{
 				Items: []cstor.CStorPoolInstance{
 					*newCSPI("cspi-foo", nil, []string{types.CSPCFinalizer}, true),

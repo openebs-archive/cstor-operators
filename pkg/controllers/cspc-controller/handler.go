@@ -103,7 +103,7 @@ func (c *Controller) enqueue(cspc *cstor.CStorPoolCluster) {
 
 // GetCSPIListForCSPC returns list of cspi parented by cspc.
 func (c *Controller) GetCSPIListForCSPC(cspc *cstor.CStorPoolCluster) (*cstor.CStorPoolInstanceList, error) {
-	return c.clientset.CstorV1().
+	return c.GetStoredCStorVersionClient().
 		CStorPoolInstances(cspc.Namespace).
 		List(metav1.
 			ListOptions{

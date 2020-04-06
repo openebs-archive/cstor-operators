@@ -22,6 +22,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// PoolManagersAvailable is added in a cspc when it has its minimum pool-managers required available.
+	MinimumPoolManagersAvailable = "MinimumPoolManagersAvailable"
+	// MinimumPoolManagersUnAvailable is added in a cspc when it doesn't have the minimum required pool-managers
+	// available.
+	MinimumPoolManagersUnAvailable = "MinimumPoolManagersUnAvailable"
+)
+
+// ToDo: Move this to openebs/api once the conditions and status OEP is merged.
+// Reference: https://github.com/openebs/openebs/pull/2942
+
+const (
+	// PoolManagerAvailable is
+	PoolManagerAvailable cstor.CSPCConditionType = "PoolManagerAvailable"
+)
+
 // NewCSPCCondition creates a new cspc condition.
 func NewCSPCCondition(condType cstor.CSPCConditionType, status corev1.ConditionStatus, reason, message string) *cstor.CStorPoolClusterCondition {
 	return &cstor.CStorPoolClusterCondition{

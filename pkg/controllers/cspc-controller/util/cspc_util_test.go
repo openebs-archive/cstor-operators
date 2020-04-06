@@ -1,0 +1,155 @@
+package util
+
+import (
+	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	corev1 "k8s.io/api/core/v1"
+	"reflect"
+
+	"testing"
+)
+
+var (
+	condPoolManagerAvailable = func() cstor.CStorPoolClusterCondition {
+		return cstor.CStorPoolClusterCondition{
+			Type:   PoolManagerAvailable,
+			Status: corev1.ConditionTrue,
+			Reason: "AwesomeCSPCController",
+		}
+	}
+
+	condPoolManagerImaginary = func() cstor.CStorPoolClusterCondition {
+		return cstor.CStorPoolClusterCondition{
+			Type:   "Imaginary",
+			Status: corev1.ConditionTrue,
+			Reason: "AwesomeCSPCController",
+		}
+	}
+
+	condPoolManagerImaginary1 = func() cstor.CStorPoolClusterCondition {
+		return cstor.CStorPoolClusterCondition{
+			Type:   "Imaginary",
+			Status: corev1.ConditionFalse,
+			Reason: "ForSomeReason",
+		}
+	}
+
+	status = func() *cstor.CStorPoolClusterStatus {
+		return &cstor.CStorPoolClusterStatus{
+			Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary(), condPoolManagerAvailable()},
+		}
+	}
+)
+
+func TestGetCondition(t *testing.T) {
+	exampleStatus := status()
+
+	tests := []struct {
+		name string
+
+		status   cstor.CStorPoolClusterStatus
+		condType cstor.CSPCConditionType
+
+		expected bool
+	}{
+		{
+			name:     "condition exists",
+			status:   *exampleStatus,
+			condType: PoolManagerAvailable,
+			expected: true,
+		},
+		{
+			name:     "condition does not exist",
+			status:   *exampleStatus,
+			condType: "testCondition",
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cond := GetCSPCCondition(test.status, test.condType)
+			exists := cond != nil
+			if exists != test.expected {
+				t.Errorf("%s: expected condition to exist: %t, got: %t", test.name, test.expected, exists)
+			}
+		})
+	}
+}
+
+func TestSetCondition(t *testing.T) {
+	tests := []struct {
+		name string
+
+		status *cstor.CStorPoolClusterStatus
+		cond   cstor.CStorPoolClusterCondition
+
+		expectedStatus *cstor.CStorPoolClusterStatus
+	}{
+		{
+			name:           "set for the first time",
+			status:         &cstor.CStorPoolClusterStatus{},
+			cond:           condPoolManagerAvailable(),
+			expectedStatus: &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerAvailable()}},
+		},
+		{
+			name:           "simple set",
+			status:         &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
+			cond:           condPoolManagerAvailable(),
+			expectedStatus: status(),
+		},
+		{
+			name:           "overwrite",
+			status:         &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
+			cond:           condPoolManagerImaginary1(),
+			expectedStatus: &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary1()}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			SetCSPCCondition(test.status, test.cond)
+			if !reflect.DeepEqual(test.status, test.expectedStatus) {
+				t.Errorf("%s: expected status: %v, got: %v", test.name, test.expectedStatus, test.status)
+			}
+		})
+	}
+}
+
+func TestRemoveCondition(t *testing.T) {
+	tests := []struct {
+		name string
+
+		status   *cstor.CStorPoolClusterStatus
+		condType cstor.CSPCConditionType
+
+		expectedStatus *cstor.CStorPoolClusterStatus
+	}{
+		{
+			name:           "remove from empty status",
+			status:         &cstor.CStorPoolClusterStatus{},
+			condType:       PoolManagerAvailable,
+			expectedStatus: &cstor.CStorPoolClusterStatus{},
+		},
+		{
+			name:           "simple remove",
+			status:         &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
+			condType:       "Imaginary",
+			expectedStatus: &cstor.CStorPoolClusterStatus{},
+		},
+		{
+			name:           "doesn't remove anything",
+			status:         status(),
+			condType:       "test-condition",
+			expectedStatus: status(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			RemoveCSPCCondition(test.status, test.condType)
+			if !reflect.DeepEqual(test.status, test.expectedStatus) {
+				t.Errorf("%s: expected status: %v, got: %v", test.name, test.expectedStatus, test.status)
+			}
+		})
+	}
+}

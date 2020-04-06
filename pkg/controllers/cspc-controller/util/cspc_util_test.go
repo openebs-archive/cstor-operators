@@ -52,19 +52,15 @@ func TestGetCondition(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "condition exists",
-
+			name:     "condition exists",
 			status:   *exampleStatus,
 			condType: PoolManagerAvailable,
-
 			expected: true,
 		},
 		{
-			name: "condition does not exist",
-
+			name:     "condition does not exist",
 			status:   *exampleStatus,
 			condType: "testCondition",
-
 			expected: false,
 		},
 	}
@@ -90,27 +86,21 @@ func TestSetCondition(t *testing.T) {
 		expectedStatus *cstor.CStorPoolClusterStatus
 	}{
 		{
-			name: "set for the first time",
-
-			status: &cstor.CStorPoolClusterStatus{},
-			cond:   condPoolManagerAvailable(),
-
+			name:           "set for the first time",
+			status:         &cstor.CStorPoolClusterStatus{},
+			cond:           condPoolManagerAvailable(),
 			expectedStatus: &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerAvailable()}},
 		},
 		{
-			name: "simple set",
-
-			status: &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
-			cond:   condPoolManagerAvailable(),
-
+			name:           "simple set",
+			status:         &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
+			cond:           condPoolManagerAvailable(),
 			expectedStatus: status(),
 		},
 		{
-			name: "overwrite",
-
-			status: &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
-			cond:   condPoolManagerImaginary1(),
-
+			name:           "overwrite",
+			status:         &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
+			cond:           condPoolManagerImaginary1(),
 			expectedStatus: &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary1()}},
 		},
 	}
@@ -135,27 +125,21 @@ func TestRemoveCondition(t *testing.T) {
 		expectedStatus *cstor.CStorPoolClusterStatus
 	}{
 		{
-			name: "remove from empty status",
-
-			status:   &cstor.CStorPoolClusterStatus{},
-			condType: PoolManagerAvailable,
-
+			name:           "remove from empty status",
+			status:         &cstor.CStorPoolClusterStatus{},
+			condType:       PoolManagerAvailable,
 			expectedStatus: &cstor.CStorPoolClusterStatus{},
 		},
 		{
-			name: "simple remove",
-
-			status:   &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
-			condType: "Imaginary",
-
+			name:           "simple remove",
+			status:         &cstor.CStorPoolClusterStatus{Conditions: []cstor.CStorPoolClusterCondition{condPoolManagerImaginary()}},
+			condType:       "Imaginary",
 			expectedStatus: &cstor.CStorPoolClusterStatus{},
 		},
 		{
-			name: "doesn't remove anything",
-
-			status:   status(),
-			condType: "test-condition",
-
+			name:           "doesn't remove anything",
+			status:         status(),
+			condType:       "test-condition",
 			expectedStatus: status(),
 		},
 	}

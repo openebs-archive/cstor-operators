@@ -17,8 +17,11 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
+	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -55,7 +58,8 @@ func getRaidGroupsConfigMap(cspi *cstor.CStorPoolInstance) map[string]raidConfig
 // Update will update the deployed pool according to given cspi object
 // NOTE: Update returns both CSPI as well as error
 func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
-	var isObjChanged, isRaidGroupChanged bool
+	var isObjChanged, isRaidGroupChanged, isReplacementTriggered bool
+	var replacingBlockDeviceCount int
 
 	bdClaimList, err := oc.getBlockDeviceClaimList(
 		types.CStorPoolClusterLabelKey,
@@ -100,6 +104,8 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 						err = ErrorWrapf(err, "Failed to check bdev change {%s}.. %s", bdev.BlockDeviceName, er.Error())
 						continue
 					}
+					isReplacementTriggered = true
+					replacingBlockDeviceCount += 1
 				}
 
 				diskPath := ""
@@ -148,6 +154,8 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 							er.Error(),
 						)
 					} else {
+						isReplacementTriggered = true
+						replacingBlockDeviceCount -= 1
 						oc.recorder.Eventf(cspi,
 							corev1.EventTypeNormal,
 							"BlockDevice Replacement",
@@ -172,6 +180,25 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 		}
 	}
 
+	if isReplacementTriggered {
+		if replacingBlockDeviceCount > 0 {
+			// Add/Update BlockDevice Replacement condition In CSPI
+			condition := cspiutil.NewCSPICondition(
+				cstor.CSPIDiskReplacement,
+				corev1.ConditionTrue,
+				"BlockDeviceReplacement",
+				fmt.Sprintf(
+					"Resilvering %d no.of blockdevices... because of blockdevice replacement error: %s",
+					replacingBlockDeviceCount, err.Error()),
+			)
+			cspiutil.SetCSPICondition(&cspi.Status, *condition)
+		} else {
+			// Update BlockDevice Replacement condition to false in CSPI
+			condition := cspiutil.NewCSPICondition(cstor.CSPIDiskReplacement, corev1.ConditionFalse, "BlockDeviceReplacementSucceess", "Blockdevice replacement was successfully completed")
+			cspiutil.SetCSPICondition(&cspi.Status, *condition)
+		}
+	}
+
 	//TODO revisit for day 2 ops
 	if er := oc.addNewVdevFromCSP(cspi); er != nil {
 		oc.recorder.Eventf(cspi,
@@ -182,7 +209,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 	}
 
 	if isObjChanged {
-		if ncspi, er := OpenEBSClient.
+		if ncspi, er := oc.openebsclientset.
 			CstorV1().
 			CStorPoolInstances(cspi.Namespace).
 			Update(cspi); er != nil {

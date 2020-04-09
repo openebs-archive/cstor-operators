@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
+	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -81,6 +82,12 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 	if isImported {
 		if err != nil {
 			common.SyncResources.Mux.Unlock()
+			// Set Pool Lost condition to true
+			condition := cspiutil.NewCSPICondition(
+				cstor.CSPIPoolLost,
+				corev1.ConditionTrue,
+				"PoolLost", "failed to import"+zpool.PoolName()+"pool")
+			cspi, _ = c.UpdateStatusConditionEventually(cspi, *condition)
 			c.recorder.Event(cspi,
 				corev1.EventTypeWarning,
 				string(common.FailureImported),

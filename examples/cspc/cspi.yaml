@@ -1,30 +1,32 @@
 apiVersion: cstor.openebs.io/v1
-kind: CStorPoolInstance
-metadata:
-  name: cspi-stripe
-  namespace: openebs
-spec:
-  pools:
-    - nodeSelector:
-        kubernetes.io/hostname: "gke-cstor-demo-default-pool-3385ab41-5swq"
-      dataRaidGroups:
-      - blockDevices:
-          - blockDeviceName: "sparse-1e3a8da94af49e16d937d867777699b0"
-      poolConfig:
-        defaultRaidGroupType: "stripe"
-
-    - nodeSelector:
-        kubernetes.io/hostname: "gke-cstor-demo-default-pool-3385ab41-j90d"
-      dataRaidGroups:
-        - blockDevices:
-            - blockDeviceName: "sparse-8935fde3557f1d04dd8c01a635f3c51f"
-      poolConfig:
-        defaultRaidGroupType: "stripe"
-
-    - nodeSelector:
-        kubernetes.io/hostname: "gke-cstor-demo-default-pool-3385ab41-sr33"
-      dataRaidGroups:
-        - blockDevices:
-            - blockDeviceName: "sparse-a0f9a34f5d9133078b4a6b7f341133ea"
-      poolConfig:
-        defaultRaidGroupType: "stripe"
+  kind: CStorPoolInstance
+  metadata:
+    labels:
+      kubernetes.io/hostname: 127.0.0.1
+      openebs.io/cas-type: cstor
+      openebs.io/cstor-pool-cluster: cstor-sparse-pool
+      openebs.io/version: 1.9.0
+    name: cstor-mirror-pool
+    namespace: openebs
+  spec:
+    dataRaidGroups:
+    - blockDevices:
+      - blockDeviceName: sparse-5a92ced3e2ee21eac7b930f670b5eab5
+      - blockDeviceName: sparse-37a7de580322f43a13338bf2467343f5
+    - blockDevices:
+      - blockDeviceName: sparse-72971f3b2e173c1b79db9a43e4cb841f
+      - blockDeviceName: sparse-a205e38ff5ec89c223654fdf1361f182
+    hostName: 127.0.0.1
+    nodeSelector:
+      kubernetes.io/hostname: 127.0.0.1
+    poolConfig:
+      auxResources: null
+      compression: ""
+      dataRaidGroupType: mirror
+      priorityClassName: ""
+      resources: null
+      roThresholdLimit: null
+      thickProvision: false
+      tolerations: null
+      writeCacheGroupType: ""
+    writeCacheRaidGroups: null

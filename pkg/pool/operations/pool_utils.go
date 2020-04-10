@@ -26,7 +26,7 @@ import (
 	zpool "github.com/openebs/api/pkg/internalapis/apis/cstor"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/pool"
-	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
+	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -101,7 +101,7 @@ func getPathForBDevFromBlockDevice(bd *openebsapis.BlockDevice) []string {
 
 // checkIfPoolPresent returns true if pool is available for operations
 func checkIfPoolPresent(name string) bool {
-	if _, err := zfs.NewPoolGetProperty().
+	if _, err := zcmd.NewPoolGetProperty().
 		WithParsableMode(true).
 		WithScriptedMode(true).
 		WithField("name").
@@ -177,14 +177,14 @@ func (oc *OperationsConfig) checkIfPoolNotImported(cspi *cstor.CStorPoolInstance
 
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	if len(devID) != 0 {
-		cmdOut, err = zfs.NewPoolImport().WithDirectory(devID).Execute()
+		cmdOut, err = zcmd.NewPoolImport().WithDirectory(devID).Execute()
 		if strings.Contains(string(cmdOut), PoolName()) {
 			return string(cmdOut), true, nil
 		}
 	}
 	// there are some cases when import is succesful but zpool command return
 	// noisy errors, hence better to check contains before return error
-	cmdOut, err = zfs.NewPoolImport().Execute()
+	cmdOut, err = zcmd.NewPoolImport().Execute()
 	if strings.Contains(string(cmdOut), PoolName()) {
 		return string(cmdOut), true, nil
 	}
@@ -211,7 +211,7 @@ func (oc *OperationsConfig) getBlockDeviceClaimList(key, value string) (
 }
 
 func executeZpoolDump(cspi *cstor.CStorPoolInstance) (zpool.Topology, error) {
-	return zfs.NewPoolDump().
+	return zcmd.NewPoolDump().
 		WithPool(PoolName()).
 		WithStripVdevPath().
 		Execute()
@@ -322,7 +322,7 @@ func SetCompression(poolName string, compressionType string) error {
 	}
 
 	// Get the compression value that exists in the pool
-	existingCompressionType, err := GetPropertyValue(poolName, "compression")
+	existingCompressionType, err := GetVolumePropertyValue(poolName, "compression")
 	if err != nil {
 		return errors.Errorf("Failed to get compression type:err:%s", err.Error())
 	}
@@ -334,9 +334,9 @@ func SetCompression(poolName string, compressionType string) error {
 
 	// If the requested compression algorithm is supported -- enable that.
 	if SupportedCompressionTypes[compressionType] {
-		ret, err := zfs.NewPoolSetProperty().
+		ret, err := zcmd.NewVolumeSetProperty().
 			WithProperty("compression", compressionType).
-			WithPool(poolName).
+			WithDataset(poolName).
 			Execute()
 		if err != nil {
 			return errors.Errorf(

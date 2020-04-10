@@ -82,12 +82,6 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 	if isImported {
 		if err != nil {
 			common.SyncResources.Mux.Unlock()
-			// Set Pool Lost condition to true
-			condition := cspiutil.NewCSPICondition(
-				cstor.CSPIPoolLost,
-				corev1.ConditionTrue,
-				"PoolLost", "failed to import"+zpool.PoolName()+"pool")
-			cspi, _ = c.UpdateStatusConditionEventually(cspi, *condition)
 			c.recorder.Event(cspi,
 				corev1.EventTypeWarning,
 				string(common.FailureImported),
@@ -144,6 +138,15 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 
 	}
 	common.SyncResources.Mux.Unlock()
+	// This case is possible incase of ephemeral disks
+	if !cspi.IsEmptyStatus() && !cspi.IsPendingStatus() {
+		// Set Pool Lost condition to true
+		condition := cspiutil.NewCSPICondition(
+			cstor.CSPIPoolLost,
+			corev1.ConditionTrue,
+			"PoolLost", "failed to import"+zpool.PoolName()+"pool")
+		cspi, _ = c.UpdateStatusConditionEventually(cspi, *condition)
+	}
 	return nil
 }
 
@@ -196,11 +199,11 @@ func (c *CStorPoolInstanceController) update(cspi *cstor.CStorPoolInstance) (*cs
 		WithKubeClientSet(c.kubeclientset).
 		WithOpenEBSClient(c.clientset).
 		WithRecorder(c.recorder)
-	cspi, err := oc.Update(cspi)
+	ncspi, err := oc.Update(cspi)
 	if err != nil {
-		return cspi, errors.Errorf("Failed to update pool due to %s", err.Error())
+		return ncspi, errors.Errorf("Failed to update pool due to %s", err.Error())
 	}
-	return c.updateStatus(cspi)
+	return c.updateStatus(ncspi)
 }
 
 func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
@@ -229,6 +232,8 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 		return cspi, errors.Errorf("Failed to sync due to %s", err.Error())
 	}
 	c.updateROMode(&status, *cspi)
+	// Point to existing conditions
+	status.Conditions = cspi.Status.Conditions
 
 	if IsStatusChange(cspi.Status, status) {
 		cspi.Status = status
@@ -237,6 +242,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 			CStorPoolInstances(cspi.Namespace).
 			Update(cspi)
 		if err != nil {
+			klog.Errorf("Error %v", err)
 			return cspi, errors.Errorf("Failed to updateStatus due to '%s'", err.Error())
 		}
 		return cspiGot, nil

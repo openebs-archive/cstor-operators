@@ -57,10 +57,15 @@ func (oc *OperationsConfig) addRaidGroup(r cstor.RaidGroup, dType, pType string)
 	return err
 }
 
-// addNewVdevFromCSP will add new disk, which is not being used in pool, from cspi to given pool
-func (oc *OperationsConfig) addNewVdevFromCSP(cspi *cstor.CStorPoolInstance) error {
+// TODO: Get better naming convention from reviews
+// updateNewVdevFromCSPI will add new disk, which is not being used in pool,
+// from cspi to given pool. If there is any pool expansion process then below
+// function will update the condition accordingly
+func (oc *OperationsConfig) updateNewVdevFromCSPI(
+	cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
 	var err error
-	var isPoolExpansionTriggered bool
+	var isPoolExpansionTriggered, isStatusConditionChanged bool
+	var newCondition *cstor.CStorPoolInstanceCondition
 	successExpansionReason := "PoolExpansionSuccessful"
 
 	poolTopology, err := zfs.NewPoolDump().
@@ -68,7 +73,7 @@ func (oc *OperationsConfig) addNewVdevFromCSP(cspi *cstor.CStorPoolInstance) err
 		WithStripVdevPath().
 		Execute()
 	if err != nil {
-		return errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
+		return cspi, errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
 	}
 
 	raidGroupConfigMap := getRaidGroupsConfigMap(cspi)
@@ -83,7 +88,7 @@ func (oc *OperationsConfig) addNewVdevFromCSP(cspi *cstor.CStorPoolInstance) err
 			for _, bdev := range raidGroup.CStorPoolInstanceBlockDevices {
 				newPath, er := oc.getPathForBDev(bdev.BlockDeviceName)
 				if er != nil {
-					return errors.Errorf("Failed get bdev {%s} path err {%s}", bdev.BlockDeviceName, er.Error())
+					return cspi, errors.Errorf("Failed get bdev {%s} path err {%s}", bdev.BlockDeviceName, er.Error())
 				}
 				if _, isUsed := checkIfDeviceUsed(newPath, poolTopology); !isUsed {
 					devlist = append(devlist, newPath[0])
@@ -133,23 +138,39 @@ func (oc *OperationsConfig) addNewVdevFromCSP(cspi *cstor.CStorPoolInstance) err
 	condition := cspiutil.GetCSPICondition(cspi.Status, cstor.CSPIPoolExpansion)
 	// If expansion is successfull we need to update the expansion condition as success
 	if condition != nil && !isPoolExpansionTriggered && condition.Reason != successExpansionReason {
-		newCondition := cspiutil.NewCSPICondition(
+		newCondition = cspiutil.NewCSPICondition(
 			cstor.CSPIPoolExpansion,
 			corev1.ConditionFalse,
 			successExpansionReason,
 			"Pool expansion was successfull by adding blockdevices/raid groups",
 		)
-		cspiutil.SetCSPICondition(&cspi.Status, *newCondition)
+		isStatusConditionChanged = true
 	} else if isPoolExpansionTriggered {
-		newCondition := cspiutil.NewCSPICondition(
+		newCondition = cspiutil.NewCSPICondition(
 			cstor.CSPIPoolExpansion,
 			corev1.ConditionTrue,
 			"PoolExpansionInProgress",
-			"Pool expansion is in progress because of blockdevice/raid group addition error: "+err.Error(),
+			fmt.Sprintf("Pool expansion is in progress because of blockdevice/raid group addition error: %v", err),
 		)
-		cspiutil.SetCSPICondition(&cspi.Status, *newCondition)
+		isStatusConditionChanged = true
 	}
-	return err
+
+	// When there is change in the condition then update condition into etcd
+	if isStatusConditionChanged {
+		cspiCopy := cspi.DeepCopy()
+		cspiutil.SetCSPICondition(&cspi.Status, *newCondition)
+		updatedCSPI, updateErr := oc.openebsclientset.
+			CstorV1().
+			CStorPoolInstances(cspi.Namespace).
+			Update(cspi)
+		if updateErr != nil {
+			return cspiCopy, errors.Wrapf(
+				updateErr,
+				"failed to update cspi pool expansion conditions error: %v", err)
+		}
+		cspi = updatedCSPI
+	}
+	return cspi, err
 }
 
 /*
@@ -203,7 +224,7 @@ func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (s
 	}
 
 	if len(oldPaths) == 0 {
-		// Might be pool expansion case i.e added new vdev
+		// Might be pool expansion case i.e by adding new vdev/blockdevice
 		return "", nil
 	}
 

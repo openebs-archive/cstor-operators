@@ -197,15 +197,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 			condition := cspiutil.NewCSPICondition(cstor.CSPIDiskReplacement, corev1.ConditionFalse, "BlockDeviceReplacementSucceess", "Blockdevice replacement was successfully completed")
 			cspiutil.SetCSPICondition(&cspi.Status, *condition)
 		}
-	}
-
-	//TODO revisit for day 2 ops
-	if er := oc.addNewVdevFromCSP(cspi); er != nil {
-		oc.recorder.Eventf(cspi,
-			corev1.EventTypeWarning,
-			"Pool Expansion",
-			"Failed to expand pool... Error: %s", er.Error(),
-		)
+		isObjChanged = true
 	}
 
 	if isObjChanged {
@@ -218,5 +210,18 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 			cspi = ncspi
 		}
 	}
+
+	//TODO revisit for day 2 ops
+	if ncspi, er := oc.updateNewVdevFromCSPI(cspi); er != nil {
+		oc.recorder.Eventf(cspi,
+			corev1.EventTypeWarning,
+			"Pool Expansion",
+			"Failed to expand pool... Error: %s", er.Error(),
+		)
+		err = ErrorWrapf(err, "Pool expansion... err {%s}", er.Error())
+	} else {
+		cspi = ncspi
+	}
+
 	return cspi, err
 }

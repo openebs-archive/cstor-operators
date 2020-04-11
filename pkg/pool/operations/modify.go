@@ -186,7 +186,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 			condition := cspiutil.NewCSPICondition(
 				cstor.CSPIDiskReplacement,
 				corev1.ConditionTrue,
-				"BlockDeviceReplacement",
+				"BlockDeviceReplacementInprogress",
 				fmt.Sprintf(
 					"Resilvering %d no.of blockdevices... because of blockdevice replacement error: %s",
 					replacingBlockDeviceCount, err.Error()),

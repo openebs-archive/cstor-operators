@@ -26,6 +26,7 @@ jobs:
       run: make test
       env:
         GOPATH: /home/runner/work/cstor-operators/go
+
   build:
     name: Build
     runs-on: ubuntu-latest

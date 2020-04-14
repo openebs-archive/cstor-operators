@@ -232,6 +232,8 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 		return cspi, errors.Errorf("Failed to sync due to %s", err.Error())
 	}
 	c.updateROMode(&status, *cspi)
+	// addDiskUnavailableCondition will add DiskUnavailable condition on cspi status
+	c.addDiskUnavailableCondition(cspi)
 	// Point to existing conditions
 	status.Conditions = cspi.Status.Conditions
 
@@ -379,5 +381,35 @@ func (c *CStorPoolInstanceController) sync(cspi *cstor.CStorPoolInstance) {
 			corev1.EventTypeWarning,
 			"Pool "+string("FailedToSetCompression"),
 			fmt.Sprintf("Failed to set compression %s to the pool %s : %s", compressionType, poolName, err.Error()))
+	}
+}
+
+func (c *CStorPoolInstanceController) addDiskUnavailableCondition(cspi *cstor.CStorPoolInstance) {
+	diskUnavailableCondition := cspiutil.GetCSPICondition(cspi.Status, cstor.CSPIDiskUnavailable)
+	oc := zpool.NewOperationsConfig().
+		WithKubeClientSet(c.kubeclientset).
+		WithOpenEBSClient(c.clientset).
+		WithRecorder(c.recorder)
+	unAvailableDisks, err := oc.GetUnavailableDiskList(cspi)
+	if err != nil {
+		klog.Errorf("failed to get unavailable disks error: %v", err)
+		return
+	}
+	if len(unAvailableDisks) > 0 {
+		newCondition := cspiutil.NewCSPICondition(
+			cstor.CSPIDiskUnavailable,
+			corev1.ConditionTrue,
+			"DisksAreUnavailable",
+			fmt.Sprintf("Following disks %v are unavailable/faulted", unAvailableDisks))
+		cspiutil.SetCSPICondition(&cspi.Status, *newCondition)
+	} else {
+		if diskUnavailableCondition != nil {
+			newCondition := cspiutil.NewCSPICondition(
+				cstor.CSPIDiskUnavailable,
+				corev1.ConditionFalse,
+				"DisksAreAvailable",
+				"")
+			cspiutil.SetCSPICondition(&cspi.Status, *newCondition)
+		}
 	}
 }

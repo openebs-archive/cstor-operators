@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openebs/api/pkg/apis/types"
@@ -28,6 +29,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/pool"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -348,4 +350,38 @@ func SetCompression(poolName string, compressionType string) error {
 
 	// If we are here, the requested compression algorithm is not supported.
 	return errors.Errorf("compression type %s not supported", compressionType)
+}
+
+// GetUnavailableDiskList returns the list of faulted disks from the current pool
+func (oc *OperationsConfig) GetUnavailableDiskList(cspi *cstor.CStorPoolInstance) ([]string, error) {
+	faultedDevices := []string{}
+	topology, err := executeZpoolDump(cspi)
+	if err != nil {
+		return []string{}, errors.Wrapf(err, "failed to execute zpool dump")
+	}
+	raidGroupMap := getRaidGroupsConfigMap(cspi)
+	for _, raidGroupsConfig := range raidGroupMap {
+		for raidIndex := 0; raidIndex < len(raidGroupsConfig.RaidGroups); raidIndex++ {
+			raidGroup := raidGroupsConfig.RaidGroups[raidIndex]
+			for bdevIndex := 0; bdevIndex < len(raidGroup.CStorPoolInstanceBlockDevices); bdevIndex++ {
+				bdev := raidGroup.CStorPoolInstanceBlockDevices[bdevIndex]
+				if bdev.DevLink != "" {
+					vdev, isPresent := getVdevFromPath(bdev.DevLink, topology)
+					if !isPresent {
+						klog.Errorf("BlockDevice %s doesn't exist in pool %s", bdev.BlockDeviceName, PoolName())
+						continue
+					}
+					if vdev.VdevStats[zpool.VdevStateIndex] != uint64(zpool.VdevStateHealthy) {
+						oc.recorder.Event(
+							cspi,
+							corev1.EventTypeWarning,
+							"DeviceState",
+							fmt.Sprintf("%s device was in %s state", bdev.BlockDeviceName, vdev.GetVdevState()))
+						faultedDevices = append(faultedDevices, bdev.BlockDeviceName)
+					}
+				}
+			}
+		}
+	}
+	return faultedDevices, nil
 }

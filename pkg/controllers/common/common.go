@@ -18,6 +18,7 @@ package common
 
 import (
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
+	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -245,7 +247,13 @@ func CheckIfPresent(arrStr []string, searchStr string) bool {
 // volumereplica can be created only if pool is present.
 func CheckForCStorPool() {
 	for {
-		poolname, err := pool.GetPoolName()
+		ret, err := zcmd.NewPoolGetProperty().
+			WithScriptedMode(true).
+			WithField("value").
+			WithProperty("name").
+			WithPool("name").
+			Execute()
+		poolname := strings.Split(string(ret), "\n")
 		if reflect.DeepEqual(poolname, []string{}) {
 			klog.Warningf("CStorPool not found. Retrying after %v, err: %v", PoolNameHandlerInterval, err)
 			time.Sleep(PoolNameHandlerInterval)

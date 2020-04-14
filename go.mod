@@ -5,7 +5,9 @@ go 1.13
 require (
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/openebs/api v0.0.0-20200331103231-b4be54796806
+	github.com/onsi/ginkgo v1.12.0 // indirect
+	github.com/onsi/gomega v1.9.0 // indirect
+	github.com/openebs/api v0.0.0-20200414100109-934f0c609d10
 	github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5

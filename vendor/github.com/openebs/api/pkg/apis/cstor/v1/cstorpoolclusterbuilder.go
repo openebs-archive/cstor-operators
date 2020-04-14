@@ -18,6 +18,7 @@ package v1
 
 import (
 	"github.com/openebs/api/pkg/util"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func NewCStorPoolCluster() *CStorPoolCluster {
@@ -79,10 +80,142 @@ func (cspc *CStorPoolCluster) WithLabels(labels map[string]string) *CStorPoolClu
 	return cspc
 }
 
-// WithFinalizer sets the finalizer field in the BDC
+// WithFinalizer sets the finalizer field in the CSPC
 func (cspc *CStorPoolCluster) WithFinalizer(finalizers ...string) *CStorPoolCluster {
 	cspc.Finalizers = append(cspc.Finalizers, finalizers...)
 	return cspc
+}
+
+// WithDefaultResource sets the DefaultResources field in the CSPC
+func (cspc *CStorPoolCluster) WithDefaultResource(resources corev1.ResourceRequirements) *CStorPoolCluster {
+	cspc.Spec.DefaultResources = &resources
+	return cspc
+}
+
+// WithDefaultAuxResources sets the DefaultAuxResources field in the CSPC
+func (cspc *CStorPoolCluster) WithDefaultAuxResources(resources corev1.ResourceRequirements) *CStorPoolCluster {
+	cspc.Spec.DefaultAuxResources = &resources
+	return cspc
+}
+
+// WithTolerations sets the Tolerations field in the CSPC
+func (cspc *CStorPoolCluster) WithTolerations(tolerations []corev1.Toleration) *CStorPoolCluster {
+	cspc.Spec.Tolerations = tolerations
+	return cspc
+}
+
+// WithDefaultPriorityClassName sets the DefaultPriorityClassName field in the CSPC
+func (cspc *CStorPoolCluster) WithDefaultPriorityClassName(priorityClassName string) *CStorPoolCluster {
+	cspc.Spec.DefaultPriorityClassName = priorityClassName
+	return cspc
+}
+
+// WithPoolSpecs sets the Pools field in the CSPC
+func (cspc *CStorPoolCluster) WithPoolSpecs(pools ...PoolSpec) *CStorPoolCluster {
+	cspc.Spec.Pools = append(cspc.Spec.Pools, pools...)
+	return cspc
+}
+
+func NewPoolSpec() *PoolSpec {
+	return &PoolSpec{}
+}
+
+// WithNodeSelector sets the NodeSelector field in poolSpec
+func (ps *PoolSpec) WithNodeSelector(nodeSelector map[string]string) *PoolSpec {
+	ps.NodeSelector = nodeSelector
+	return ps
+}
+
+// WithDataRaidGroups sets the DataRaidGroups field in poolSpec
+func (ps *PoolSpec) WithDataRaidGroups(dataRaidGroups ...RaidGroup) *PoolSpec {
+	ps.DataRaidGroups = append(ps.DataRaidGroups, dataRaidGroups...)
+	return ps
+}
+
+// WithWriteCacheRaidGroups sets the WriteCacheRaidGroups field in poolSpec
+func (ps *PoolSpec) WithWriteCacheRaidGroups(writeCacheRaidGroups ...RaidGroup) *PoolSpec {
+	ps.WriteCacheRaidGroups = append(ps.WriteCacheRaidGroups, writeCacheRaidGroups...)
+	return ps
+}
+
+// WithPoolConfig sets the PoolConfig field in poolSpec
+func (ps *PoolSpec) WithPoolConfig(poolConfig PoolConfig) *PoolSpec {
+	ps.PoolConfig = poolConfig
+	return ps
+}
+
+func NewPoolConfig() *PoolConfig {
+	return &PoolConfig{}
+}
+
+// WithDataRaidGroupType sets the DataRaidGroupType field in PoolConfig
+func (pc *PoolConfig) WithDataRaidGroupType(dataRaidGroupType string) *PoolConfig {
+	pc.DataRaidGroupType = dataRaidGroupType
+	return pc
+}
+
+// WithWriteCacheGroupType sets the WriteCacheGroupType field in PoolConfig
+func (pc *PoolConfig) WithWriteCacheGroupType(writeCacheGroupType string) *PoolConfig {
+	pc.WriteCacheGroupType = writeCacheGroupType
+	return pc
+}
+
+// WithThickProvision sets the ThickProvision field in PoolConfig
+func (pc *PoolConfig) WithThickProvision(thickProvision bool) *PoolConfig {
+	pc.ThickProvision = thickProvision
+	return pc
+}
+
+// WithResources sets the Resources field in PoolConfig
+func (pc *PoolConfig) WithResources(resources *corev1.ResourceRequirements) *PoolConfig {
+	pc.Resources = resources
+	return pc
+}
+
+// WithAuxResources sets the auxResources field in PoolConfig
+func (pc *PoolConfig) WithAuxResources(auxResources *corev1.ResourceRequirements) *PoolConfig {
+	pc.AuxResources = auxResources
+	return pc
+}
+
+// WithTolerations sets the Tolerations field in PoolConfig
+func (pc *PoolConfig) WithTolerations(tolerations []corev1.Toleration) *PoolConfig {
+	pc.Tolerations = tolerations
+	return pc
+}
+
+// WithPriorityClassName sets the PriorityClassName field in PoolConfig
+func (pc *PoolConfig) WithPriorityClassName(priorityClassName *string) *PoolConfig {
+	pc.PriorityClassName = priorityClassName
+	return pc
+}
+
+// WithROThresholdLimit sets the ROThresholdLimit field in PoolConfig
+func (pc *PoolConfig) WithROThresholdLimit(rOThresholdLimit *int) *PoolConfig {
+	pc.ROThresholdLimit = rOThresholdLimit
+	return pc
+}
+
+// NewRaidGroup returns an empty instance of raid group
+func NewRaidGroup() *RaidGroup {
+	return &RaidGroup{}
+}
+
+// WithROThresholdLimit sets the ROThresholdLimit field in PoolConfig
+func (rg *RaidGroup) WithCStorPoolInstanceBlockDevices(cStorPoolInstanceBlockDevices ...CStorPoolInstanceBlockDevice) *RaidGroup {
+	rg.CStorPoolInstanceBlockDevices = append(rg.CStorPoolInstanceBlockDevices, cStorPoolInstanceBlockDevices...)
+	return rg
+}
+
+// NewCStorPoolInstanceBlockDevice returns an empty instance of CStorPoolInstanceBlockDevice
+func NewCStorPoolInstanceBlockDevice() *CStorPoolInstanceBlockDevice {
+	return &CStorPoolInstanceBlockDevice{}
+}
+
+// WithName sets the BlockDeviceName field in CStorPoolInstanceBlockDevice
+func (cspibd *CStorPoolInstanceBlockDevice) WithName(name string) *CStorPoolInstanceBlockDevice {
+	cspibd.BlockDeviceName = name
+	return cspibd
 }
 
 // HasFinalizer returns true if the provided finalizer is present on the object.

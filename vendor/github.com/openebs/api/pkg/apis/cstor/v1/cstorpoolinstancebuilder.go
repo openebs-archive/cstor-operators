@@ -169,6 +169,11 @@ func (cspi *CStorPoolInstance) IsPendingStatus() bool {
 	return cspi.Status.Phase == CStorPoolStatusPending
 }
 
+// IsOnlineStatus is to check if the status of cStorPoolInstance is online.
+func (cspi *CStorPoolInstance) IsOnlineStatus() bool {
+	return cspi.Status.Phase == CStorPoolStatusOnline
+}
+
 // GetAllRaidGroups returns list of all raid groups presents in cspi
 func (cspi *CStorPoolInstance) GetAllRaidGroups() []RaidGroup {
 	var rgs []RaidGroup
@@ -208,6 +213,14 @@ func (cspi *CStorPoolInstance) HasNodeName(nodeName string) bool {
 func HasNodeName(nodeName string) CSPIPredicate {
 	return func(cspi *CStorPoolInstance) bool {
 		return cspi.HasNodeName(nodeName)
+	}
+}
+
+// IsOnline is predicate to filter out based on
+// online CSPI instances.
+func IsOnline() CSPIPredicate {
+	return func(cspi *CStorPoolInstance) bool {
+		return cspi.IsOnlineStatus()
 	}
 }
 

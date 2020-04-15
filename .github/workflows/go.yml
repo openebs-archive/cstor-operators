@@ -26,6 +26,7 @@ jobs:
       run: make test
       env:
         GOPATH: /home/runner/work/cstor-operators/go
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -47,3 +48,115 @@ jobs:
       run: go build ./cmd/...
       env:
         GOPATH: /home/runner/work/cstor-operators/go
+
+  bdd:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/sonasingh46/github-actions
+
+      - name: Configure Minikube
+        run: |
+          chmod +x hack/minikube.sh
+          ./hack/minikube.sh
+          echo ${{ github.event.pull_request.head.sha }}
+          echo ${{ github.event.pull_request.head.sha }}
+
+      - name: Configure Kubectl
+        run: |
+          sudo chown -R $USER $HOME/.kube $HOME/.minikube
+          echo "Get kubectl client and server version"
+          kubectl version
+          echo "Get the node"
+          kubectl get node
+
+      - name: Configure Kustomize
+        run: |
+          chmod +x hack/install_kustomize.sh
+          ./hack/install_kustomize.sh /usr/local/bin/
+          kustomize version
+
+      - name: Install Docker
+        run: |
+          sudo apt-get install \
+              apt-transport-https \
+              ca-certificates \
+              curl \
+              gnupg-agent \
+              software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+          sudo add-apt-repository \
+             "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+             $(lsb_release -cs) \
+             stable"
+
+          sudo apt-get update
+          sudo apt-get install docker-ce docker-ce-cli containerd.io
+          docker --version
+
+      - name: Create openebs namespace and install NDM
+        run: |
+          chmod +x hack/fetch_ndm_operator.sh
+          ./hack/fetch_ndm_operator.sh
+          kubectl create ns openebs
+          echo "Applying customized ndm-operator YAML"
+          kustomize build actions_ci/install_artifacts/ndm-operator | kubectl apply -f -
+          kubectl get ds,deploy -n openebs
+
+      - name: Make cStor operators images
+        run: |
+          make amd64-images IMAGE_TAG=${{ github.event.pull_request.head.sha }}
+
+      - name: Deploy cStor-operators
+        run: |
+          chmod +x hack/fetch_cstor_operators.sh
+          ./hack/fetch_cstor_operators.sh ${{ github.event.pull_request.head.sha }}
+          kubectl apply -f actions_ci/install_artifacts/cstor-operators/crds
+          kubectl apply -f actions_ci/install_artifacts/cstor-operators/rbac.yaml
+          echo "Applying customized cstor-operator YAML"
+          kustomize build actions_ci/install_artifacts/cstor-operators | kubectl apply -f -
+          kubectl get deploy -n openebs
+          echo "Print the images used"
+          kubectl get deploy -n openebs -o=jsonpath='{range .items[*]}{range .spec.template.spec.containers[*]}{.image}{"\n"}{end}'
+
+      - name: Run BDD Tests
+        run: |
+          echo "Installing Ginkgo CLI..."
+          go install github.com/onsi/ginkgo/ginkgo
+          export PATH=$PATH:$(go env GOPATH)/bin
+          ginkgo version
+          echo "Starting BDD Runs..."
+          ginkgo -v -r tests/ -- -kubeconfig=$HOME/.kube/config
+
+      - name: Debug BDD Tests Failure
+        if: failure()
+        run: |
+          echo "Display pods in openebs namespace"
+          kubectl get pod -n openebs
+
+          echo "Get the CSPC(s) and CSPI(s)"
+          kubectl get cspc -n openebs --show-labels
+          kubectl get cspi -n openebs --show-labels
+
+          echo "Get the BD(s) and BDC(s)"
+          kubectl get bd -n openebs --show-labels
+          kubectl get bdc -n openebs --show-labels
+
+          echo "Get the logs of cspc operator"
+          kubectl get pod -n openebs | grep cspc-operator | awk '{print $1}' | xargs kubectl logs -n openebs
+
+
+
+

@@ -62,7 +62,8 @@ deps:
 
 .PHONY: test
 test:
-	go test ./...
+	# "Skipping tests under tests directory. These tests can be run via ginkgo cli."
+	go test `go list ./... | grep -v tests` 
 
 cvc-operator:
 	@echo -n "--> cvc-operator <--"
@@ -130,3 +131,6 @@ cstor-webhook-image:
 	@cp bin/${CSTOR_WEBHOOK}/${WEBHOOK_REPO} build/cstor-webhook/
 	@cd build/${CSTOR_WEBHOOK} && sudo docker build -t ${HUB_USER}/${CSTOR_WEBHOOK}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${CSTOR_WEBHOOK}/${WEBHOOK_REPO}
+
+.PHONY: amd64-images
+images: cspc-operator-image pool-manager-image cstor-webhook-image cvc-operator-image volume-manager-image

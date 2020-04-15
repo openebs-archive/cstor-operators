@@ -39,7 +39,7 @@ if [[ -n "$TRAVIS_TAG" ]] && [[ $TRAVIS_TAG != *"RC"* ]]; then
 fi
 
 # Get the version details
-VERSION="$(cat $GOPATH/src/github.com/openebs/maya/VERSION)"
+VERSION="$(cat VERSION)"
 #VERSION=$(git describe --tags --always --dirty)
 
 # Determine the arch/os combos we're building for

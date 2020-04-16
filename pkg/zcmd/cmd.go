@@ -27,6 +27,7 @@ import (
 	vsnapshotsend "github.com/openebs/cstor-operators/pkg/zcmd/zfs/send"
 	vset "github.com/openebs/cstor-operators/pkg/zcmd/zfs/set"
 	vsnapshot "github.com/openebs/cstor-operators/pkg/zcmd/zfs/snapshot"
+	vlistsnap "github.com/openebs/maya/pkg/zfs/cmd/v1alpha1/zfs/listsnap"
 
 	padd "github.com/openebs/cstor-operators/pkg/zcmd/zpool/add"
 	pattach "github.com/openebs/cstor-operators/pkg/zcmd/zpool/attach"
@@ -125,6 +126,11 @@ func NewPoolCreate() *pcreate.PoolCreate {
 // NewVolumeGetProperty returns new instance of object VolumeGetProperty
 func NewVolumeGetProperty() *vget.VolumeGetProperty {
 	return &vget.VolumeGetProperty{}
+}
+
+// NewVolumeListSnapshot returns new instance of object VolumeListSnapshot
+func NewVolumeListSnapshot() *vlistsnap.VolumeListSnapshot {
+	return &vlistsnap.VolumeListSnapshot{}
 }
 
 // NewVolumeSetProperty returns new instance of object VolumeSetProperty

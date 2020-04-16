@@ -106,6 +106,7 @@ jobs:
           sudo apt-get install docker-ce docker-ce-cli containerd.io
           docker --version
 
+
       - name: Create openebs namespace and install NDM
         run: |
           chmod +x hack/fetch_ndm_operator.sh

@@ -133,4 +133,4 @@ cstor-webhook-image:
 	@rm build/${CSTOR_WEBHOOK}/${WEBHOOK_REPO}
 
 .PHONY: amd64-images
-images: cspc-operator-image pool-manager-image cstor-webhook-image cvc-operator-image volume-manager-image
+amd64-images: cspc-operator-image pool-manager-image cstor-webhook-image cvc-operator-image volume-manager-image

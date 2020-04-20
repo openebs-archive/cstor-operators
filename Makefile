@@ -53,6 +53,9 @@ WEBHOOK_REPO=webhook
 # Specify the name of the docker repo for arm64
 CVC_OPERATOR_ARM64?=cvc-operator-arm64
 
+# Specify the date o build
+BUILD_DATE = $(shell date +'%Y%m%d%H%M%S')
+
 
 # deps ensures fresh go.mod and go.sum.
 .PHONY: deps
@@ -108,7 +111,7 @@ cspc-operator-image:
 	@echo "----------------------------"
 	@PNAME=${CSPC_OPERATOR} CTLNAME=${CSPC_OPERATOR} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${CSPC_OPERATOR}/${CSPC_OPERATOR} build/cspc-operator/
-	@cd build/${CSPC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CSPC_OPERATOR}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${CSPC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CSPC_OPERATOR}:${IMAGE_TAG}  .
 	@rm build/${CSPC_OPERATOR}/${CSPC_OPERATOR}
 
 .PHONY: pool-manager-image

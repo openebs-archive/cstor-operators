@@ -66,12 +66,12 @@ var _ = Describe("CSPC Stripe On One Node", func() {
 
 		})
 
-		//Context("All the cspi(s) of the cspc", func() {
-		//	It("Should be healthy", func() {
-		//		gotHealthyCSPiCount := clientSet.GetOnlineCSPICountEventually(cspc.Name, cspc.Namespace, 1)
-		//		Expect(gotHealthyCSPiCount).To(BeNumerically("==", 1))
-		//	})
-		//})
+		Context("All the cspi(s) of the cspc", func() {
+			It("Should be healthy", func() {
+				gotHealthyCSPiCount := clientSet.GetOnlineCSPICountEventually(cspc.Name, cspc.Namespace, 1)
+				Expect(gotHealthyCSPiCount).To(BeNumerically("==", 1))
+			})
+		})
 
 		//Context("Staus of the cspc i.e. provisionedInstances and healthyInstances ", func() {
 		//	It("Should be updated", func() {

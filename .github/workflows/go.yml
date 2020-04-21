@@ -14,18 +14,13 @@ jobs:
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
-        path: go/src/github.com/openebs/cstor-operators
+      uses: actions/checkout@v2
 
     - name: verify dependencies
       run: make deps
 
     - name: verify tests
       run: make test
-      env:
-        GOPATH: /home/runner/work/cstor-operators/go
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -38,12 +33,7 @@ jobs:
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
-        path: go/src/github.com/openebs/cstor-operators
+      uses: actions/checkout@v2
 
     - name: build all cmd
-      run: go build ./cmd/...
-      env:
-        GOPATH: /home/runner/work/cstor-operators/go
+      run: make build

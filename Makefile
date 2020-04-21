@@ -62,7 +62,13 @@ deps:
 
 .PHONY: test
 test:
+	go fmt ./...
 	go test ./...
+
+
+.PHONY: build
+build:
+	go build ./cmd/...
 
 cvc-operator:
 	@echo -n "--> cvc-operator <--"

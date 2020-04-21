@@ -66,45 +66,45 @@ var _ = Describe("CSPC Stripe On One Node", func() {
 
 		})
 
-		Context("All the cspi(s) of the cspc", func() {
-			It("Should be healthy", func() {
-				gotHealthyCSPiCount := clientSet.GetOnlineCSPICountEventually(cspc.Name, cspc.Namespace, 1)
-				Expect(gotHealthyCSPiCount).To(BeNumerically("==", 1))
-			})
-		})
+		//Context("All the cspi(s) of the cspc", func() {
+		//	It("Should be healthy", func() {
+		//		gotHealthyCSPiCount := clientSet.GetOnlineCSPICountEventually(cspc.Name, cspc.Namespace, 1)
+		//		Expect(gotHealthyCSPiCount).To(BeNumerically("==", 1))
+		//	})
+		//})
 
-		Context("Staus of the cspc i.e. provisionedInstances and healthyInstances ", func() {
-			It("Should be updated", func() {
-				gotProvisionedCount := clientSet.GetProvisionedInstancesStatusOnCSPC(cspc.Name, cspc.Namespace, 1)
-				Expect(gotProvisionedCount).To(BeNumerically("==", 1))
-
-				gotHealthyCount := clientSet.GetHealthyInstancesStatusOnCSPC(cspc.Name, cspc.Namespace, 1)
-				Expect(gotHealthyCount).To(BeNumerically("==", 1))
-			})
-		})
-
-		Context("Deleting the cspc", func() {
-
-			It("No error should be returned", func() {
-				err := clientSet.OpenEBSClientSet.CstorV1().CStorPoolClusters(cspc.Namespace).Delete(cspc.Name, &metav1.DeleteOptions{})
-				Expect(err).To(BeNil())
-			})
-
-			It("No corresponding cspi(s) should be present", func() {
-				gotCSPICount := clientSet.GetCSPICountEventually(cspc.Name, cspc.Namespace, 0)
-				Expect(gotCSPICount).To(BeNumerically("==", 0))
-			})
-
-			It("No corresponding pool-manger deployments should be present", func() {
-				gotPoolMangerCount := clientSet.GetPoolManagerCountEventually(cspc.Name, cspc.Namespace, 0)
-				Expect(gotPoolMangerCount).To(BeNumerically("==", 0))
-			})
-
-			It("the bdc(s) created by cstor-operator should get deleted", func() {
-				gotCount := clientSet.GetBDCCountEventually(cspc.Name, cspc.Namespace, 0)
-				Expect(gotCount).To(BeNumerically("==", 0))
-			})
-		})
+		//Context("Staus of the cspc i.e. provisionedInstances and healthyInstances ", func() {
+		//	It("Should be updated", func() {
+		//		gotProvisionedCount := clientSet.GetProvisionedInstancesStatusOnCSPC(cspc.Name, cspc.Namespace, 1)
+		//		Expect(gotProvisionedCount).To(BeNumerically("==", 1))
+		//
+		//		gotHealthyCount := clientSet.GetHealthyInstancesStatusOnCSPC(cspc.Name, cspc.Namespace, 1)
+		//		Expect(gotHealthyCount).To(BeNumerically("==", 1))
+		//	})
+		//})
+		//
+		//Context("Deleting the cspc", func() {
+		//
+		//	It("No error should be returned", func() {
+		//		err := clientSet.OpenEBSClientSet.CstorV1().CStorPoolClusters(cspc.Namespace).Delete(cspc.Name, &metav1.DeleteOptions{})
+		//		Expect(err).To(BeNil())
+		//	})
+		//
+		//	It("No corresponding cspi(s) should be present", func() {
+		//		gotCSPICount := clientSet.GetCSPICountEventually(cspc.Name, cspc.Namespace, 0)
+		//		Expect(gotCSPICount).To(BeNumerically("==", 0))
+		//	})
+		//
+		//	It("No corresponding pool-manger deployments should be present", func() {
+		//		gotPoolMangerCount := clientSet.GetPoolManagerCountEventually(cspc.Name, cspc.Namespace, 0)
+		//		Expect(gotPoolMangerCount).To(BeNumerically("==", 0))
+		//	})
+		//
+		//	It("the bdc(s) created by cstor-operator should get deleted", func() {
+		//		gotCount := clientSet.GetBDCCountEventually(cspc.Name, cspc.Namespace, 0)
+		//		Expect(gotCount).To(BeNumerically("==", 0))
+		//	})
+		//})
 	})
 
 })

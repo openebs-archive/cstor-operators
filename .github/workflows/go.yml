@@ -149,6 +149,7 @@ jobs:
           echo "Get the CSPC(s) and CSPI(s)"
           kubectl get cspc -n openebs --show-labels
           kubectl get cspi -n openebs --show-labels
+          kubectl get cspi -n openebs -o yaml
 
           echo "Get the BD(s) and BDC(s)"
           kubectl get bd -n openebs --show-labels

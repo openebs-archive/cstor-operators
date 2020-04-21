@@ -57,6 +57,7 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	if len(devID) != 0 {
 		cmdOut, err = zfs.NewPoolImport().
 			WithCachefile(cacheFile).
+			WithProperty("autoexpand", "on").
 			WithProperty("cachefile", cacheFile).
 			WithDirectory(devID).
 			WithPool(PoolName()).
@@ -73,6 +74,7 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	if !poolImported {
 		cmdOut, err = zfs.NewPoolImport().
 			WithCachefile(cacheFile).
+			WithProperty("autoexpand", "on").
 			WithProperty("cachefile", cacheFile).
 			WithPool(PoolName()).
 			Execute()

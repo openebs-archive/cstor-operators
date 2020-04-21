@@ -102,6 +102,7 @@ func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.Ra
 	ret, err := zfs.NewPoolCreate().
 		WithType(ptype).
 		WithProperty("cachefile", types.CStorPoolBasePath+types.CacheFileName).
+		WithProperty("autoexpand", "on").
 		WithFSProperty("compression", compressionType).
 		WithPool(PoolName()).
 		WithVdevList(vdevlist).

@@ -17,8 +17,11 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"os"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -103,19 +106,21 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 				}
 
 				diskPath := ""
+				var diskCapacityInBytes uint64
 				// Let's check if any replacement is needed for this BDev
 				newPath, er := oc.getPathForBDev(bdev.BlockDeviceName)
 				if er != nil {
 					err = ErrorWrapf(err, "Failed to check bdev change {%s}.. %s", bdev.BlockDeviceName, er.Error())
 				} else {
-					if diskPath, er = replacePoolVdev(cspi, oldPath, newPath); er != nil {
+					if diskPath, diskCapacityInBytes, er = replacePoolVdev(cspi, oldPath, newPath); er != nil {
 						err = ErrorWrapf(err, "Failed to replace bdev for {%s}.. %s", bdev.BlockDeviceName, er.Error())
 						continue
 					} else {
-						if !IsEmpty(diskPath) && diskPath != bdev.DevLink {
+						if !IsEmpty(diskPath) && (diskPath != bdev.DevLink || diskCapacityInBytes != bdev.Capacity) {
 							// Here We are updating in underlying slice so no problem
 							// Let's update devLink with new path for this bdev
 							raidGroup.CStorPoolInstanceBlockDevices[bdevIndex].DevLink = diskPath
+							raidGroup.CStorPoolInstanceBlockDevices[bdevIndex].Capacity = diskCapacityInBytes
 							isRaidGroupChanged = true
 						}
 					}
@@ -191,5 +196,57 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 			cspi = ncspi
 		}
 	}
+
+	if ncspi, er := oc.ExpandPoolIfDiskExpanded(cspi); er == nil {
+		cspi = ncspi
+	}
 	return cspi, err
+}
+
+// TODO: Combine ExpandPoolIfDiskExpanded func with Update func(So that
+// we can reduce n/w calls)
+
+// ExpandPoolIfDiskExpanded performs pool expansion when underlying disk got expanded
+// currently it will identify by comparing the capacity of blockdevice and capacity exist
+// on CStorPoolInstanceBlockDevice
+func (oc *OperationsConfig) ExpandPoolIfDiskExpanded(
+	cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
+	var err error
+	var isPoolExpanded bool
+	minimumMB := uint64(500 * 1024 * 1024)
+	openebsNamespace := os.Getenv(string(common.OpenEBSIOPoolName))
+	for _, raidGroup := range cspi.Spec.DataRaidGroups {
+		for _, cspiBlockDevice := range raidGroup.CStorPoolInstanceBlockDevices {
+			if cspiBlockDevice.Capacity > uint64(0) && cspiBlockDevice.DevLink != "" {
+				bdObj, er := oc.getBlockDevice(cspiBlockDevice.BlockDeviceName, openebsNamespace)
+				if er != nil {
+					err = ErrorWrapf(err,
+						"Failed to get blockdevice %s.. err {%s}", cspiBlockDevice.BlockDeviceName, er.Error())
+					continue
+				}
+				if (bdObj.Spec.Capacity.Storage - minimumMB) > cspiBlockDevice.Capacity {
+					er = oc.expandPool(cspiBlockDevice.DevLink, cspiBlockDevice.Capacity)
+					if er != nil {
+						err = ErrorWrapf(err, "Failed to expand disk %s in pool", cspiBlockDevice.DevLink)
+						continue
+					}
+					isPoolExpanded = true
+				}
+			}
+		}
+	}
+	if err != nil {
+		oc.recorder.Eventf(cspi,
+			corev1.EventTypeWarning,
+			"Pool Expansion",
+			"Failed to expand pool when underlying disk expanded err {%s}", err.Error(),
+		)
+	} else if isPoolExpanded {
+		oc.recorder.Event(cspi,
+			corev1.EventTypeNormal,
+			"Pool Expansion",
+			"Expanded the disks which were in use by pool",
+		)
+	}
+	return cspi, nil
 }

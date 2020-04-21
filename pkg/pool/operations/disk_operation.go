@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	"github.com/openebs/cstor-operators/pkg/partition/partprobe"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -146,15 +147,17 @@ func removePoolVdev(csp *cstor.CStorPoolInstance, bdev cstor.CStorPoolClusterBlo
 
 // replacePoolVdev will replace the given bdev disk with
 // disk(i.e npath[0]) and return updated disk path(i.e npath[0])
+// and capacity
 //
-// Note, if a new disk is already being used then we will
-// not perform disk replacement and function will return
-// the used disk path from given path(npath[])
-func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (string, error) {
+// NOTE: If new disk is already being used then we will
+// not perform disk replacement operation and this function wil
+// return the used disk path from given path(npath[]) and capacity
+func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (string, uint64, error) {
 	var usedPath string
+	var diskCapacity uint64
 	var isUsed bool
 	if len(npath) == 0 {
-		return "", errors.Errorf("Empty path for vdev")
+		return "", diskCapacity, errors.Errorf("Empty path for vdev")
 	}
 
 	// Wait! Device path may got changed due to import
@@ -165,23 +168,25 @@ func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (s
 		WithPool(PoolName()).
 		Execute()
 	if err != nil {
-		return "", errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
+		return "", diskCapacity, errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
 	}
 
 	if usedPath, isUsed = checkIfDeviceUsed(npath, poolTopology); isUsed {
-		return usedPath, nil
+		// If path exist in topology then vdev also will exist
+		vdev, _ := getVdevFromPath(usedPath, poolTopology)
+		return usedPath, vdev.Capacity, nil
 	}
 
 	if len(oldPaths) == 0 {
-		// Might be pool expansion case i.e added new vdev
-		return "", nil
+		// Might be pool expansion case i.e added new vdev/blockdevice
+		return "", diskCapacity, nil
 	}
 
 	// Device path may got changed after imports. So let's get the path used by
 	// pool and trigger replace
 	if usedPath, isUsed = checkIfDeviceUsed(oldPaths, poolTopology); !isUsed {
 		// Might be a case where paths in the old blockdevice are not up to date
-		return "", errors.Errorf("Old device links are not in use by pool")
+		return "", diskCapacity, errors.Errorf("Old device links are not in use by pool")
 	}
 
 	// Replace the disk
@@ -196,6 +201,76 @@ func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (s
 			npath[0],
 			PoolName(),
 		)
+		// Replaced deivce will exist in poolTopology after fetching
+		// from zfs
+		newPoolTopology, err := executeZpoolDump()
+		if err != nil {
+			klog.Warningf("failed to execute zpool dump after replacing the blockdevice error: %v", err)
+			return npath[0], diskCapacity, nil
+		}
+		vdev, _ := getVdevFromPath(npath[0], newPoolTopology)
+		return npath[0], vdev.Capacity, nil
 	}
-	return npath[0], err
+	return "", diskCapacity, err
+}
+
+// expandPool will perform pool expansion when underlying disk itself expanded.
+// It perfrom following steps:
+// 1. Trigger `zpool online -e <pool_name> <path_to_disk>` to recover from GPT PMBR mismatch error.
+// =============== Error reported due to mismatch in kernel cache partition and disk =====
+// ||    GPT PMBR size mismatch (1310719 != 1835007) will be corrected by w(rite).      ||
+// ||    Disk /dev/sdb: 7 GiB, 7516192768 bytes, 1835008 sectors                        ||
+// ||    Units: sectors of 1 * 4096 = 4096 bytes                                        ||
+// ||    Sector size (logical/physical): 4096 bytes / 4096 bytes                        ||
+// ||    I/O size (minimum/optimal): 32768 bytes / 1048576 bytes                        ||
+// ||    Disklabel type: gpt                                                            ||
+// ||    Disk identifier: FC9B07E5-02D0-394C-B5F8-EB25FF3C2E36                          ||
+// ||                                                                                   ||
+// ||    Device       Start     End Sectors  Size Type                                  ||
+// ||    /dev/sdb1     2048 1292287 1290240  4.9G Solaris /usr & Apple ZFS              ||
+// ||    /dev/sdb9  1292288 1308671   16384   64M Solaris reserved 1                    ||
+// =======================================================================================
+// 2. partprobe <path_to_disk> (To reload the partition into kernel cache).
+// 3. Trigger `zpool online -e <pool_name> <path_to_disk>` to perfrom pool expansion.
+func (oc *OperationsConfig) expandPool(path string, currentCapacity uint64) error {
+	ret, err := executePoolExpansion(path)
+	if err != nil {
+		return errors.Wrapf(
+			err,
+			"failed to clear GPT PMBR size mismatch error via expansion of pool output: %s", string(ret))
+	}
+
+	ret, err = partprobe.NewDisk().
+		WithDevice(path).
+		Execute()
+	if err != nil {
+		return errors.Wrapf(
+			err,
+			"failed to reload partitions by execute partprobe on device %s output: %s",
+			path,
+			string(ret))
+	}
+
+	ret, err = executePoolExpansion(path)
+	if err != nil {
+		return errors.Wrapf(
+			err,
+			"failed to execute pool expansion using disk %s output: %s", path, string(ret))
+	}
+
+	poolTopology, err := executeZpoolDump()
+	if err != nil {
+		return errors.Wrapf(
+			err,
+			"failed to get pool dump",
+		)
+	}
+	vdev, _ := getVdevFromPath(path, poolTopology)
+	// since the currentCapacity is from zpool dump itself
+	// but before expansion so good to compare
+	if vdev.Capacity <= currentCapacity {
+		return errors.Errorf("performed required steps to expand the pool but disk in pool not expanded")
+	}
+
+	return nil
 }

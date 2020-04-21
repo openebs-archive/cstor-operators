@@ -65,6 +65,15 @@ func (oc *OperationsConfig) getPathForBdevList(bdevs []cstor.CStorPoolInstanceBl
 	return vdev, err
 }
 
+// getBlockDevice returns blockdevice object by fetching from etcd
+func (oc *OperationsConfig) getBlockDevice(
+	bdName, namespace string) (*openebsapis.BlockDevice, error) {
+	return oc.openebsclientset.
+		OpenebsV1alpha1().
+		BlockDevices(namespace).
+		Get(bdName, metav1.GetOptions{})
+}
+
 func (oc *OperationsConfig) getPathForBDev(bdev string) ([]string, error) {
 	var path []string
 	// TODO: replace `NAMESPACE` with env variable from CSPI deployment
@@ -210,7 +219,7 @@ func (oc *OperationsConfig) getBlockDeviceClaimList(key, value string) (
 	return bdcAPIList, nil
 }
 
-func executeZpoolDump(cspi *cstor.CStorPoolInstance) (zpool.Topology, error) {
+func executeZpoolDump() (zpool.Topology, error) {
 	return zfs.NewPoolDump().
 		WithPool(PoolName()).
 		WithStripVdevPath().
@@ -220,10 +229,10 @@ func executeZpoolDump(cspi *cstor.CStorPoolInstance) (zpool.Topology, error) {
 // isResilveringInProgress returns true if resilvering is inprogress at cstor
 // pool
 func isResilveringInProgress(
-	executeCommand func(cspi *cstor.CStorPoolInstance) (zpool.Topology, error),
+	executeCommand func() (zpool.Topology, error),
 	cspi *cstor.CStorPoolInstance,
 	path string) bool {
-	poolTopology, err := executeCommand(cspi)
+	poolTopology, err := executeCommand()
 	if err != nil {
 		// log error
 		klog.Errorf("Failed to get pool topology error: %v", err)
@@ -348,4 +357,16 @@ func SetCompression(poolName string, compressionType string) error {
 
 	// If we are here, the requested compression algorithm is not supported.
 	return errors.Errorf("compression type %s not supported", compressionType)
+}
+
+// executePoolExpansion executes pool expansion command and returns output and
+// error
+// CMD: zpool online -e <pool_name> <path_to_disks>
+// Usually output will be empty
+func executePoolExpansion(path string) ([]byte, error) {
+	return zfs.NewPoolOnline().
+		WithShouldExpand(true).
+		WithDevice(path).
+		WithPool(PoolName()).
+		Execute()
 }

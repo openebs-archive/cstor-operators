@@ -21,7 +21,7 @@ import (
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
-	"github.com/openebs/cstor-operators/pkg/controllers/common"
+	"github.com/openebs/api/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
@@ -216,7 +216,7 @@ func (oc *OperationsConfig) ExpandPoolIfDiskExpanded(
 	var err error
 	var isPoolExpanded bool
 	minimumMB := uint64(500 * 1024 * 1024)
-	openebsNamespace := os.Getenv(string(common.OpenEBSIOPoolName))
+	openebsNamespace := os.Getenv(string(util.Namespace))
 	deviceTypeAndRaidConfigurationMap := getRaidGroupsConfiguration(cspi)
 
 	for _, raidGroupConfig := range deviceTypeAndRaidConfigurationMap {
@@ -227,7 +227,7 @@ func (oc *OperationsConfig) ExpandPoolIfDiskExpanded(
 					bdObj, er := oc.getBlockDevice(cspiBlockDevice.BlockDeviceName, openebsNamespace)
 					if er != nil {
 						err = ErrorWrapf(err,
-							"Failed to get blockdevice %s.. err {%s}", cspiBlockDevice.BlockDeviceName, er.Error())
+							"Failed to get blockdevice %s .. err {%s}", cspiBlockDevice.BlockDeviceName, er.Error())
 						continue
 					}
 					if (bdObj.Spec.Capacity.Storage - minimumMB) > cspiBlockDevice.Capacity {

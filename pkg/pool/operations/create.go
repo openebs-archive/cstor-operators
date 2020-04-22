@@ -64,7 +64,7 @@ func (oc *OperationsConfig) Create(cspi *cstor.CStorPoolInstance) error {
 
 	// We created the pool
 	// Lets update it with extra config, if provided
-	raidGroupConfigMap := getRaidGroupsConfigMap(cspiCopy)
+	raidGroupConfigMap := getRaidGroupsConfiguration(cspiCopy)
 	for deviceType, raidGroupConfig := range raidGroupConfigMap {
 		for _, r := range raidGroupConfig.RaidGroups {
 			if e := oc.addRaidGroup(r, deviceType, raidGroupConfig.RaidGroupType); e != nil {

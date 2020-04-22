@@ -69,7 +69,7 @@ func (oc *OperationsConfig) addNewVdevFromCSP(cspi *cstor.CStorPoolInstance) err
 		return errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
 	}
 
-	raidGroupConfigMap := getRaidGroupsConfigMap(cspi)
+	raidGroupConfigMap := getRaidGroupsConfiguration(cspi)
 
 	for deviceType, raidGroupConfig := range raidGroupConfigMap {
 		for _, raidGroup := range raidGroupConfig.RaidGroups {

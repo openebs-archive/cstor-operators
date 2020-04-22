@@ -15,7 +15,9 @@ COPY entrypoint.sh /usr/local/bin/
 RUN echo '#!/bin/bash\nif [ $# -lt 1 ]; then\n\techo "argument missing"\n\texit 1\nfi\neval "$*"\n' >> /usr/local/bin/execute.sh
 
 RUN chmod +x /usr/local/bin/execute.sh
-RUN apt install netcat -y
+RUN apt-get clean && \
+    apt-get update && \
+    apt-get install -y netcat parted
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ARG BUILD_DATE

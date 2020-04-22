@@ -23,6 +23,7 @@ import (
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 )
 
 const (
@@ -42,7 +43,8 @@ type raidConfiguration struct {
 	RaidGroups    []cstor.RaidGroup
 }
 
-func getRaidGroupsConfigMap(cspi *cstor.CStorPoolInstance) map[string]raidConfiguration {
+// getRaidGroupsConfiguration returns map of DeviceType and raidConfiguration
+func getRaidGroupsConfiguration(cspi *cstor.CStorPoolInstance) map[string]raidConfiguration {
 	raidGroupsMap := map[string]raidConfiguration{}
 	raidGroupsMap[DeviceTypeData] = raidConfiguration{
 		RaidGroups:    cspi.Spec.DataRaidGroups,
@@ -67,7 +69,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 		return cspi, err
 	}
 
-	raidGroupConfigMap := getRaidGroupsConfigMap(cspi)
+	raidGroupConfigMap := getRaidGroupsConfiguration(cspi)
 
 	for _, raidGroupsConfig := range raidGroupConfigMap {
 		// first we will check if there any bdev is replaced or removed
@@ -215,26 +217,33 @@ func (oc *OperationsConfig) ExpandPoolIfDiskExpanded(
 	var isPoolExpanded bool
 	minimumMB := uint64(500 * 1024 * 1024)
 	openebsNamespace := os.Getenv(string(common.OpenEBSIOPoolName))
-	for _, raidGroup := range cspi.Spec.DataRaidGroups {
-		for _, cspiBlockDevice := range raidGroup.CStorPoolInstanceBlockDevices {
-			if cspiBlockDevice.Capacity > uint64(0) && cspiBlockDevice.DevLink != "" {
-				bdObj, er := oc.getBlockDevice(cspiBlockDevice.BlockDeviceName, openebsNamespace)
-				if er != nil {
-					err = ErrorWrapf(err,
-						"Failed to get blockdevice %s.. err {%s}", cspiBlockDevice.BlockDeviceName, er.Error())
-					continue
-				}
-				if (bdObj.Spec.Capacity.Storage - minimumMB) > cspiBlockDevice.Capacity {
-					er = oc.expandPool(cspiBlockDevice.DevLink, cspiBlockDevice.Capacity)
+	deviceTypeAndRaidConfigurationMap := getRaidGroupsConfiguration(cspi)
+
+	for _, raidGroupConfig := range deviceTypeAndRaidConfigurationMap {
+		for raidIndex := 0; raidIndex < len(raidGroupConfig.RaidGroups); raidIndex++ {
+			raidGroup := raidGroupConfig.RaidGroups[raidIndex]
+			for _, cspiBlockDevice := range raidGroup.CStorPoolInstanceBlockDevices {
+				if cspiBlockDevice.Capacity > uint64(0) && cspiBlockDevice.DevLink != "" {
+					bdObj, er := oc.getBlockDevice(cspiBlockDevice.BlockDeviceName, openebsNamespace)
 					if er != nil {
-						err = ErrorWrapf(err, "Failed to expand disk %s in pool", cspiBlockDevice.DevLink)
+						err = ErrorWrapf(err,
+							"Failed to get blockdevice %s.. err {%s}", cspiBlockDevice.BlockDeviceName, er.Error())
 						continue
 					}
-					isPoolExpanded = true
+					if (bdObj.Spec.Capacity.Storage - minimumMB) > cspiBlockDevice.Capacity {
+						er = oc.expandPool(cspiBlockDevice.DevLink, cspiBlockDevice.Capacity)
+						if er != nil {
+							err = ErrorWrapf(err, "Failed to expand disk %s in pool", cspiBlockDevice.DevLink)
+							continue
+						}
+						klog.Infof("Successfully expanded the blockdevice %s in CSPI %s", cspiBlockDevice.BlockDeviceName, cspi.Name)
+						isPoolExpanded = true
+					}
 				}
 			}
 		}
 	}
+
 	if err != nil {
 		oc.recorder.Eventf(cspi,
 			corev1.EventTypeWarning,

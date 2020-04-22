@@ -113,40 +113,40 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 	pc := NewPoolConfig().WithAlgorithmConfig(ac).WithController(c)
 
 	// Create pools if required.
-	if len(cspiList.Items) < len(cspc.Spec.Pools) {
-		pc.ScaleUp(cspc, len(cspc.Spec.Pools)-len(cspiList.Items))
-	} else if len(cspiList.Items) > len(cspc.Spec.Pools) {
+	if len(cspiList.Items) < len(cspcGot.Spec.Pools) {
+		pc.ScaleUp(cspcGot, len(cspcGot.Spec.Pools)-len(cspiList.Items))
+	} else if len(cspiList.Items) > len(cspcGot.Spec.Pools) {
 		// Scale Down pools if required
-		pc.ScaleDown(cspc)
+		pc.ScaleDown(cspcGot)
 	}
 
-	cspisWithoutDeployment, err := c.GetCSPIWithoutDeployment(cspc)
+	cspisWithoutDeployment, err := c.GetCSPIWithoutDeployment(cspcGot)
 	if err != nil {
 		// Note: CSP for which pool deployment does not exists are known as orphaned.
 		message := fmt.Sprintf("Error in getting orphaned CSP :{%s}", err.Error())
-		c.recorder.Event(cspc, corev1.EventTypeWarning, "Pool Create", message)
-		klog.Errorf("Error in getting orphaned CSP for CSPC {%s}:{%s}", cspc.Name, err.Error())
+		c.recorder.Event(cspcGot, corev1.EventTypeWarning, "Pool Create", message)
+		klog.Errorf("Error in getting orphaned CSP for cspcGot {%s}:{%s}", cspcGot.Name, err.Error())
 	}
 
 	if len(cspisWithoutDeployment) > 0 {
-		pc.createDeployForCSPList(cspc, cspisWithoutDeployment)
+		pc.createDeployForCSPList(cspcGot, cspisWithoutDeployment)
 	}
 
 	// sync changes to cspi from cspc e.g. tunables like toleration, resource requirements etc
-	err = pc.syncCSPI(cspc)
+	err = pc.syncCSPI(cspcGot)
 
 	// Not returning error so that `handleOperations` can also be executed.
 	if err != nil {
-		klog.Errorf("failed to sync cspi(s) of cspc %s", cspc.Name)
+		klog.Errorf("failed to sync cspi(s) of cspc %s", cspcGot.Name)
 	}
 
 	pc.handleOperations()
 
-	err = c.UpdateStatusEventually(cspc)
+	err = c.UpdateStatusEventually(cspcGot)
 	if err != nil {
 		message := fmt.Sprintf("Error in updating status:{%s}", err.Error())
-		c.recorder.Event(cspc, corev1.EventTypeWarning, "Status Update", message)
-		klog.Errorf("Error in updating  CSPC %s status:{%s}", cspc.Name, err.Error())
+		c.recorder.Event(cspcGot, corev1.EventTypeWarning, "Status Update", message)
+		klog.Errorf("Error in updating  CSPC %s status:{%s}", cspcGot.Name, err.Error())
 		return nil
 	}
 

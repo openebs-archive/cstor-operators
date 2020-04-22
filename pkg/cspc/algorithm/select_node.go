@@ -120,16 +120,19 @@ func GetBDListForNode(pool cstor.PoolSpec) []string {
 // If the block device(s) is/are unclaimed, then those are claimed.
 func (ac *Config) ClaimBDsForNode(BD []string) error {
 	pendingClaim := 0
+	pendingClaimBDs := make(map[string]bool)
 	for _, bdName := range BD {
 		bdAPIObj, err := ac.clientset.OpenebsV1alpha1().BlockDevices(ac.Namespace).Get(bdName, metav1.GetOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "error in getting details for BD {%s} whether it is claimed", bdName)
 		}
+
 		if IsBlockDeviceClaimed(*bdAPIObj) {
 			IsClaimedBDUsable, errBD := ac.IsClaimedBDUsable(*bdAPIObj)
 			if errBD != nil {
-				return errors.Wrapf(err, "error in getting details for BD {%s} for usability", bdName)
+				return errors.Wrapf(errBD, "error in getting details for BD {%s} for usability", bdName)
 			}
+
 			if !IsClaimedBDUsable {
 				return errors.Errorf("BD {%s} already in use", bdName)
 			}
@@ -140,11 +143,12 @@ func (ac *Config) ClaimBDsForNode(BD []string) error {
 		if err != nil {
 			return errors.Wrapf(err, "Failed to claim BD {%s}", bdName)
 		}
+		pendingClaimBDs[bdAPIObj.Name] = true
 		pendingClaim++
 	}
 
 	if pendingClaim > 0 {
-		return errors.Errorf("%d block device claims are pending", pendingClaim)
+		return errors.Errorf("%d block device claims are pending:%v", pendingClaim, pendingClaimBDs)
 	}
 	return nil
 }
@@ -153,7 +157,7 @@ func (ac *Config) ClaimBDsForNode(BD []string) error {
 func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 	resourceList, err := GetCapacity(ByteCount(bdObj.Spec.Capacity.Storage))
 	if err != nil {
-		return err
+		return errors.Errorf("failed to get capacity from block device %s:%s", bdObj.Name, err)
 	}
 
 	newBDCObj := openebsio.NewBlockDeviceClaim().
@@ -165,13 +169,7 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 		WithCSPCOwnerReference(GetCSPCOwnerReference(ac.CSPC)).
 		WithCapacity(resourceList).
 		WithFinalizer(types.CSPCFinalizer)
-	if err != nil {
-		return errors.Wrapf(err, "failed to build block device claim for bd {%s}", bdObj.Name)
-	}
 
-	if err != nil {
-		return errors.Errorf("Failed to convert internal bdc type to external v1alpha1:{%s}", err.Error())
-	}
 	_, err = ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Create(newBDCObj)
 	if k8serror.IsAlreadyExists(err) {
 		klog.Infof("BDC for BD {%s} already created", bdObj.Name)
@@ -187,7 +185,12 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 // used for provisioning
 func (ac *Config) IsClaimedBDUsable(bd openebsio.BlockDevice) (bool, error) {
 	if IsBlockDeviceClaimed(bd) {
-		bdcName := bd.Spec.ClaimRef.Name
+		claimRef := bd.Spec.ClaimRef
+		if claimRef == nil {
+			return false, errors.New("nil claim reference found in bd")
+		}
+
+		bdcName := claimRef.Name
 		bdcAPIObject, err := ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Get(bdcName, metav1.GetOptions{})
 		if err != nil {
 			return false, errors.Wrapf(err, "could not get block device claim for block device {%s}", bd.Name)

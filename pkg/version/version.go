@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -40,8 +38,7 @@ var (
 )
 
 const (
-	versionFile   string = "/src/github.com/openebs/maya/VERSION"
-	buildMetaFile string = "/src/github.com/openebs/maya/BUILDMETA"
+	versionFile string = "/src/github.com/openebs/maya/VERSION"
 
 	// versionDelimiter is used as a delimiter to separate version info
 	versionDelimiter string = "-"
@@ -120,21 +117,6 @@ func GetVersion() string {
 	return strings.TrimSpace(string(vBytes))
 }
 
-// GetBuildMeta returns the build type from the global VersionMeta variable.
-// If VersionMeta is unset then from the BUILDMETA file at the root of the repo.
-func GetBuildMeta() string {
-	if VersionMeta != "" {
-		return "-" + VersionMeta
-	}
-	path := filepath.Join(os.Getenv("GOPATH") + buildMetaFile)
-	vBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		// ignore error
-		return ""
-	}
-	return "-" + strings.TrimSpace(string(vBytes))
-}
-
 // GetGitCommit returns the Git commit SHA-1 from the global GitCommit variable.
 // If GitCommit is unset then by calling Git directly.
 func GetGitCommit() string {
@@ -152,22 +134,4 @@ func GetGitCommit() string {
 
 func GetVersionDetails() string {
 	return strings.Join([]string{GetVersion(), GetGitCommit()[0:7]}, "-")
-}
-
-// NewVersionCollector returns a collector which exports metrics
-// about current version information.
-// Note: program name should be similar to maya_exporter (with
-// underscore not with dash)
-func NewVersionCollector(program string) *prometheus.GaugeVec {
-	buildInfo := prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: "openebs",
-			Subsystem: program,
-			Name:      "version",
-			Help:      "A metric with a constant '1' value labeled by commit and version from which maya-exporter was built.",
-		},
-		[]string{"commit", "version", "metaversion"},
-	)
-	buildInfo.WithLabelValues(GitCommit, Version, VersionMeta).Set(1)
-	return buildInfo
 }

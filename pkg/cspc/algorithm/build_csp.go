@@ -19,7 +19,7 @@ package algorithm
 import (
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
-	"github.com/openebs/maya/pkg/version"
+	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"

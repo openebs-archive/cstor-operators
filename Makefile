@@ -15,6 +15,20 @@
 
 HUB_USER?=openebs
 
+# Determine the arch/os
+ifeq (${XC_OS}, )
+  XC_OS:=$(shell go env GOOS)
+endif
+export XC_OS
+
+ifeq (${XC_ARCH}, )
+  XC_ARCH:=$(shell go env GOARCH)
+endif
+export XC_ARCH
+
+ARCH:=${XC_OS}_${XC_ARCH}
+export ARCH
+
 ifeq (${IMAGE_TAG}, )
   IMAGE_TAG = ci
   export IMAGE_TAG
@@ -72,7 +86,6 @@ deps:
 test:
 	go fmt ./...
 	go test ./...
-
 
 .PHONY: build
 build:
@@ -148,3 +161,12 @@ cstor-webhook-image.amd64:
 .PHONY: all.amd64
 all.amd64: cspc-operator-image.amd64 pool-manager-image.amd64 cstor-webhook-image.amd64 \
            cvc-operator-image.amd64 volume-manager-image.amd64
+
+# Push images
+.PHONY: deploy-images
+deploy-images:
+	@DIMAGE=openebs/cvc-operator-${XC_ARCH} ./build/push;
+	@DIMAGE=openebs/cspc-operator-${XC_ARCH} ./build/push;
+	@DIMAGE=openebs/cstor-volume-manager-${XC_ARCH} ./build/push;
+	@DIMAGE=openebs/cstor-pool-manager-${XC_ARCH} ./build/push;
+	@DIMAGE=openebs/cstor-webhook-${XC_ARCH} ./build/push;

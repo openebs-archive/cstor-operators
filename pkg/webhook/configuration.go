@@ -23,7 +23,7 @@ import (
 
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
-	"github.com/openebs/maya/pkg/version"
+	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
 	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"

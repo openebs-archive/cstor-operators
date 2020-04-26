@@ -26,7 +26,7 @@ import (
 	"github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 
-	"github.com/openebs/maya/pkg/version"
+	"github.com/openebs/cstor-operators/pkg/version"
 
 	"github.com/openebs/api/pkg/util"
 

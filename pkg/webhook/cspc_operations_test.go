@@ -685,7 +685,7 @@ func TestBlockDeviceReplacement_IsNewBDPresentOnCurrentCSPC(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt // pin it
 		t.Run(tt.name, func(t *testing.T) {
-			bdr := &BlockDeviceReplacement{
+			bdr := &PoolOperations{
 				OldCSPC: tt.fields.OldCSPC,
 				NewCSPC: tt.fields.NewCSPC,
 			}

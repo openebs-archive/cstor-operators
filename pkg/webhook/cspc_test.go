@@ -25,7 +25,7 @@ import (
 func TestValidateSpecChanges(t *testing.T) {
 	tests := map[string]struct {
 		commonPoolSpecs *poolspecs
-		bdr             *BlockDeviceReplacement
+		pOps            *PoolOperations
 		expectedOutput  bool
 	}{
 		"No change in poolSpecs": {
@@ -69,7 +69,7 @@ func TestValidateSpecChanges(t *testing.T) {
 					},
 				},
 			},
-			bdr: &BlockDeviceReplacement{
+			pOps: &PoolOperations{
 				OldCSPC: &cstor.CStorPoolCluster{},
 				NewCSPC: &cstor.CStorPoolCluster{},
 			},
@@ -79,7 +79,7 @@ func TestValidateSpecChanges(t *testing.T) {
 	for name, test := range tests {
 		name, test := name, test
 		t.Run(name, func(t *testing.T) {
-			isValid, _ := ValidateSpecChanges(test.commonPoolSpecs, test.bdr)
+			isValid, _ := ValidateSpecChanges(test.commonPoolSpecs, test.pOps)
 			if isValid != test.expectedOutput {
 				t.Errorf("test: %s failed expected output %t but got %t", name, isValid, test.expectedOutput)
 			}

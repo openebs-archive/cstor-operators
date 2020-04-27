@@ -265,7 +265,7 @@ func getVolumeMonitorImage() string {
 func getVolumeMgmtImage() string {
 	image, present := os.LookupEnv("OPENEBS_IO_CSTOR_VOLUME_MGMT_IMAGE")
 	if !present {
-		image = "openebs/cstor-volume-manager:ci"
+		image = "openebs/cstor-volume-manager-amd64:ci"
 	}
 	return image
 }

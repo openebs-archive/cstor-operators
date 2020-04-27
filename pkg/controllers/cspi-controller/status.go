@@ -29,14 +29,14 @@ import (
 //TODO: Update the code to use patch instead of Update call
 
 // UpdateStatusConditionEventually updates the CSPI in etcd with provided
-// condition. Below function reties for three times to update the CSPI with
+// condition. Below function retries for three times to update the CSPI with
 // provided conditions
 func (c *CStorPoolInstanceController) UpdateStatusConditionEventually(
 	cspi *cstor.CStorPoolInstance,
 	condition cstor.CStorPoolInstanceCondition) (*cstor.CStorPoolInstance, error) {
 	maxRetry := 3
 	cspiCopy := cspi.DeepCopy()
-	updatedCSPI, err := c.UpdateStatus(cspiCopy, condition)
+	updatedCSPI, err := c.UpdateStatusCondition(cspiCopy, condition)
 	if err != nil {
 		klog.Errorf(
 			"failed to update CSPI %s status with condition %s will retry %d times at 2s interval: {%s}",
@@ -51,7 +51,7 @@ func (c *CStorPoolInstanceController) UpdateStatusConditionEventually(
 				// This is possible due to etcd unavailability so do not retry more here
 				return cspi, errors.Wrapf(err, "failed to update cspi status")
 			}
-			updatedCSPI, err = c.UpdateStatus(newCSPI, condition)
+			updatedCSPI, err = c.UpdateStatusCondition(newCSPI, condition)
 			if err != nil {
 				maxRetry = maxRetry - 1
 				klog.Errorf(
@@ -69,7 +69,7 @@ func (c *CStorPoolInstanceController) UpdateStatusConditionEventually(
 	return updatedCSPI, nil
 }
 
-func (c *CStorPoolInstanceController) UpdateStatus(
+func (c *CStorPoolInstanceController) UpdateStatusCondition(
 	cspi *cstor.CStorPoolInstance,
 	condition cstor.CStorPoolInstanceCondition) (*cstor.CStorPoolInstance, error) {
 	cspiutil.SetCSPICondition(&cspi.Status, condition)

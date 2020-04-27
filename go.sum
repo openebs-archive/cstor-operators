@@ -387,6 +387,8 @@ github.com/openebs/api v0.0.0-20200331103231-b4be54796806 h1:vfpQYikhVkFMUocB6wm
 github.com/openebs/api v0.0.0-20200331103231-b4be54796806/go.mod h1:Mj6izkLZT0jNKLs9u1CnbgNoP9BEgY/mgVI7Mc3/Hwc=
 github.com/openebs/api v0.0.0-20200414100109-934f0c609d10 h1:gNqxKHMJwdeRYrmbRUsbaGHCNg8Hm+XAip36lgOvDOY=
 github.com/openebs/api v0.0.0-20200414100109-934f0c609d10/go.mod h1:Mj6izkLZT0jNKLs9u1CnbgNoP9BEgY/mgVI7Mc3/Hwc=
+github.com/openebs/api v0.0.0-20200427082723-9727b6fdf61d h1:dHm11ALLjYsEo/ncOmewWeNdu02771JnBi3yAo+VOiA=
+github.com/openebs/api v0.0.0-20200427082723-9727b6fdf61d/go.mod h1:Mj6izkLZT0jNKLs9u1CnbgNoP9BEgY/mgVI7Mc3/Hwc=
 github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8 h1:ud86nr1TRU9fB3IeBzymBqYjaha/GjgjHCTeFTKeT8A=
 github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8/go.mod h1:QQY9cOHKQwZ73qbv6O//UYUBLNV2S0MRDIfG7t5KOCk=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
@@ -451,6 +453,7 @@ github.com/spf13/cast v1.2.0/go.mod h1:r2rcYCSwa1IExKTDiTfzaxqT2FNHs8hODu4LnUfgK
 github.com/spf13/cast v1.3.0/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/spf13/cobra v0.0.2/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
 github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
+github.com/spf13/cobra v0.0.5 h1:f0B+LkLX6DtmRH1isoNA9VTtNUK9K8xYd28JNNfOv/s=
 github.com/spf13/cobra v0.0.5/go.mod h1:3K3wKZymM7VvHMDS9+Akkh4K60UwM26emMESw8tLCHU=
 github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec/go.mod h1:cQK4TGJAtQXfYWX+Ddv3mKDzgVb68N+wFjFa4jdeBTo=
 github.com/spf13/jwalterweatherman v1.0.0/go.mod h1:cQK4TGJAtQXfYWX+Ddv3mKDzgVb68N+wFjFa4jdeBTo=
@@ -658,6 +661,7 @@ google.golang.org/appengine v1.5.0/go.mod h1:xpcJRLb0r/rnEns0DIKYYv+WjYCduHsrkT7
 google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
 google.golang.org/genproto v0.0.0-20190307195333-5fe7a883aa19/go.mod h1:VzzqZJRnGkLBvHegQrXjBqPurQTc5/KpmUdxsrq26oE=
 google.golang.org/genproto v0.0.0-20190418145605-e7d98fc518a7/go.mod h1:VzzqZJRnGkLBvHegQrXjBqPurQTc5/KpmUdxsrq26oE=
+google.golang.org/genproto v0.0.0-20190502173448-54afdca5d873 h1:nfPFGzJkUDX6uBmpN/pSw7MbOAWegH5QDQuoXFHedLg=
 google.golang.org/genproto v0.0.0-20190502173448-54afdca5d873/go.mod h1:VzzqZJRnGkLBvHegQrXjBqPurQTc5/KpmUdxsrq26oE=
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=
 google.golang.org/grpc v1.20.1/go.mod h1:10oTOabMzJvdu6/UiuZezV6QK5dSlG84ov/aaiqXj38=

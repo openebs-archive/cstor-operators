@@ -33,7 +33,7 @@ const (
 	testKey = "testJSON"
 )
 
-func testExecuteDumpCommand(cspi *cstor.CStorPoolInstance) (zpool.Topology, error) {
+func testExecuteDumpCommand() (zpool.Topology, error) {
 	valuesFromEnv := strings.TrimSpace(os.Getenv(testKey))
 	if valuesFromEnv == "" {
 		return zpool.Topology{}, errors.Errorf("failed to read the testJSON")
@@ -99,7 +99,7 @@ func TestIsResilveringInProgress(t *testing.T) {
 		cspi                *cstor.CStorPoolInstance
 		path                string
 		expectedResilvering bool
-		executeFunc         func(cspi *cstor.CStorPoolInstance) (zpool.Topology, error)
+		executeFunc         func() (zpool.Topology, error)
 	}{
 		"Resilvering In progress": {
 			//In jsonValues persistentDisk_sai-disk1 is replaced with

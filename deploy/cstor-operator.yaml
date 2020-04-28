@@ -27,7 +27,7 @@ spec:
       containers:
       - name: cspc-operator
         imagePullPolicy: IfNotPresent
-        image: openebs/cspc-operator:ci
+        image: openebs/cspc-operator-amd64:ci
         env:
         - name: OPENEBS_NAMESPACE
           valueFrom:
@@ -53,7 +53,7 @@ spec:
         #- name: OPENEBS_IO_CSTOR_POOL_SPARSE_DIR
         #  value: "/var/openebs/sparse"
         - name: OPENEBS_IO_CSPI_MGMT_IMAGE
-          value: "openebs/cstor-pool-manager:ci"
+          value: "openebs/cstor-pool-manager-amd64:ci"
         - name: OPENEBS_IO_CSTOR_POOL_IMAGE
           value: "openebs/cstor-pool:ci"
         - name:  OPENEBS_IO_CSTOR_POOL_EXPORTER_IMAGE
@@ -89,7 +89,7 @@ spec:
       containers:
       - name: cvc-operator
         imagePullPolicy: IfNotPresent
-        image: openebs/cvc-operator:ci
+        image: openebs/cvc-operator-amd64:ci
         env:
         # OPENEBS_IO_BASE_DIR is used to configure base directory for openebs on host path.
         # Where OpenEBS can store required files. Default base path will be /var/openebs
@@ -111,7 +111,7 @@ spec:
         - name: OPENEBS_IO_CSTOR_TARGET_IMAGE
           value: "openebs/cstor-istgt:ci"
         - name:  OPENEBS_IO_CSTOR_VOLUME_MGMT_IMAGE
-          value: "openebs/cstor-volume-manager:ci"
+          value: "openebs/cstor-volume-manager-amd64:ci"
         - name:  OPENEBS_IO_VOLUME_MONITOR_IMAGE
           value: "openebs/m-exporter:ci"
 ---
@@ -142,7 +142,7 @@ spec:
       serviceAccountName: openebs-cstor-operator
       containers:
         - name: admission-webhook
-          image: openebs/cstor-webhook:ci
+          image: openebs/cstor-webhook-amd64:ci
           imagePullPolicy: IfNotPresent
           args:
             - -alsologtostderr

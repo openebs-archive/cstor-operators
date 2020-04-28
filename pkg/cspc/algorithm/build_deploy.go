@@ -24,7 +24,7 @@ import (
 	deployapi "github.com/openebs/api/pkg/kubernetes/apps"
 	coreapi "github.com/openebs/api/pkg/kubernetes/core"
 	util "github.com/openebs/api/pkg/util"
-	"github.com/openebs/maya/pkg/version"
+	"github.com/openebs/cstor-operators/pkg/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -225,7 +225,7 @@ func getDeployMatchLabels() map[string]string {
 func getPoolMgmtImage() string {
 	image, present := os.LookupEnv("OPENEBS_IO_CSPI_MGMT_IMAGE")
 	if !present {
-		image = "quay.io/openebs/cstor-pool-manager:ci"
+		image = "quay.io/openebs/cstor-pool-manager-amd64:ci"
 	}
 	return image
 }

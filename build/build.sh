@@ -26,9 +26,9 @@ DIR="$( cd -P "$( dirname "$SOURCE" )/../" && pwd )"
 cd "$DIR"
 
 # Get the git commit
-if [ -f $GOPATH/src/github.com/openebs/maya/GITCOMMIT ];
+if [ -f $GOPATH/src/github.com/openebs/cstor-operators/GITCOMMIT ];
 then
-    GIT_COMMIT="$(cat $GOPATH/src/github.com/openebs/maya/GITCOMMIT)"
+    GIT_COMMIT="$(cat $GOPATH/src/github.com/openebs/cstor-operators/GITCOMMIT)"
 else
     GIT_COMMIT="$(git rev-parse HEAD)"
 fi
@@ -39,7 +39,7 @@ if [[ -n "$TRAVIS_TAG" ]] && [[ $TRAVIS_TAG != *"RC"* ]]; then
 fi
 
 # Get the version details
-VERSION="$(cat $GOPATH/src/github.com/openebs/maya/VERSION)"
+VERSION="$(cat $GOPATH/src/github.com/openebs/cstor-operators/VERSION)"
 #VERSION=$(git describe --tags --always --dirty)
 
 # Determine the arch/os combos we're building for
@@ -103,9 +103,9 @@ if [ $GOOS = "windows" ]; then
 fi
 
 env GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0  go build ${BUILD_TAG} -ldflags \
-    "-X github.com/openebs/maya/pkg/version.GitCommit=${GIT_COMMIT} \
+    "-X github.com/openebs/cstor-operators/pkg/version.GitCommit=${GIT_COMMIT} \
     -X main.CtlName='${CTLNAME}' \
-    -X github.com/openebs/maya/pkg/version.Version=${VERSION}"\
+    -X github.com/openebs/cstor-operators/pkg/version.Version=${VERSION}"\
     -o $output_name \
     ./cmd/${CTLNAME}
 

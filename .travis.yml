@@ -1,0 +1,50 @@
+dist: bionic
+
+language: go
+
+go:
+  - 1.13.x
+
+env:
+  global:
+   - ARCH=$(go env GOARCH)
+
+sudo: required
+
+services:
+  - docker
+
+jobs:
+  include:
+    - os: linux
+      arch: amd64
+
+addons:
+  apt:
+    update: true
+
+install:
+  - if [ "$TRAVIS_BUILD_DIR" != "$GOPATH/src/github.com/openebs/cstor-operators" ]; then
+      mkdir -p $GOPATH/src/github.com/openebs/;
+      mv $TRAVIS_BUILD_DIR $GOPATH/src/github.com/openebs;
+      cd $GOPATH/src/github.com/openebs/cstor-operators;
+    fi
+  - make deps
+
+before_script: # TODO add golangci yaml config
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.25.0
+
+script:
+  - make test
+  - if [ "$TRAVIS_CPU_ARCH" == "amd64" ]; then
+      make all.amd64;
+    fi
+
+after_success:
+  - make deploy-images
+
+notifications:
+  email:
+    recipients:
+      - prateek.pandey@mayadata.io
+      - ashutosh.kumar@mayadata.io

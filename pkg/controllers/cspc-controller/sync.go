@@ -19,12 +19,14 @@ package cspccontroller
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/cspc/algorithm"
-	"github.com/openebs/maya/pkg/version"
+	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/klog"
-	"reflect"
 )
 
 func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoolInstanceList) error {

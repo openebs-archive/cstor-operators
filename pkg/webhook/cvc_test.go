@@ -24,6 +24,8 @@ import (
 	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
 	"github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -58,7 +60,7 @@ func TestValidateCVCUpdateRequest(t *testing.T) {
 		expectedRsp  bool
 		getCVCObj    getCVC
 	}{
-		"When Failed to Get Object From etcd": {
+		"When failed to Get Object From etcd": {
 			existingObj: &cstor.CStorVolumeConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cvc1",
@@ -109,7 +111,7 @@ func TestValidateCVCUpdateRequest(t *testing.T) {
 			expectedRsp: false,
 			getCVCObj:   getCVCObject,
 		},
-		"When Volume Boud Status Updated With Pool Info": {
+		"When Volume Bound Status Updated With Pool Info": {
 			existingObj: &cstor.CStorVolumeConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cvc3",
@@ -146,7 +148,7 @@ func TestValidateCVCUpdateRequest(t *testing.T) {
 			expectedRsp: true,
 			getCVCObj:   getCVCObject,
 		},
-		"When Volume Replcias were Scaled by modifying exisitng pool names": {
+		"When Volume Replicas were Scaled by modifying existing pool names": {
 			existingObj: &cstor.CStorVolumeConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cvc4",
@@ -195,7 +197,7 @@ func TestValidateCVCUpdateRequest(t *testing.T) {
 			expectedRsp: false,
 			getCVCObj:   getCVCObject,
 		},
-		"When Volume Replcias were migrated": {
+		"When Volume Replicas were migrated": {
 			existingObj: &cstor.CStorVolumeConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cvc5",
@@ -641,6 +643,106 @@ func TestValidateCVCUpdateRequest(t *testing.T) {
 				},
 				Status: cstor.CStorVolumeConfigStatus{
 					PoolInfo: []string{"pool1", "pool2", "pool2"},
+					Phase:    cstor.CStorVolumeConfigPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When immutable provisioned ReplicaCount has been modified": {
+			existingObj: &cstor.CStorVolumeConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc16",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeConfigSpec{
+					Provision: cstor.VolumeProvision{
+						ReplicaCount: 1,
+					},
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeConfigStatus{
+					PoolInfo: []string{"pool1"},
+					Phase:    cstor.CStorVolumeConfigPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc16",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeConfigSpec{
+					Provision: cstor.VolumeProvision{
+						ReplicaCount: 2,
+					},
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeConfigStatus{
+					PoolInfo: []string{"pool1"},
+					Phase:    cstor.CStorVolumeConfigPhaseBound,
+				},
+			},
+			expectedRsp: false,
+			getCVCObj:   getCVCObject,
+		},
+		"When immutable provisioned Capacity has been modified": {
+			existingObj: &cstor.CStorVolumeConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc17",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeConfigSpec{
+					Capacity: corev1.ResourceList{
+						corev1.ResourceStorage: resource.MustParse("1Gi"),
+					},
+					Provision: cstor.VolumeProvision{
+						ReplicaCount: 1,
+						Capacity: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("1Gi"),
+						},
+					},
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeConfigStatus{
+					PoolInfo: []string{"pool1"},
+					Phase:    cstor.CStorVolumeConfigPhaseBound,
+				},
+			},
+			requestedObj: &cstor.CStorVolumeConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cvc17",
+					Namespace: "openebs",
+				},
+				Spec: cstor.CStorVolumeConfigSpec{
+					Capacity: corev1.ResourceList{
+						corev1.ResourceStorage: resource.MustParse("1Gi"),
+					},
+					Provision: cstor.VolumeProvision{
+						ReplicaCount: 1,
+						Capacity: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("5Gi"),
+						},
+					},
+					Policy: cstor.CStorVolumePolicySpec{
+						ReplicaPoolInfo: []cstor.ReplicaPoolInfo{
+							cstor.ReplicaPoolInfo{PoolName: "pool1"},
+						},
+					},
+				},
+				Status: cstor.CStorVolumeConfigStatus{
+					PoolInfo: []string{"pool1"},
 					Phase:    cstor.CStorVolumeConfigPhaseBound,
 				},
 			},

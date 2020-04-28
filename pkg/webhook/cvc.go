@@ -25,6 +25,7 @@ import (
 	util "github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -76,6 +77,7 @@ func (wh *webhook) validateCVCUpdateRequest(req *v1beta1.AdmissionRequest, getCV
 
 func validateCVCSpecChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error {
 	validateFuncList := []validateFunc{validateReplicaCount,
+		validateProvisionedCapacity,
 		validatePoolListChanges,
 		validateReplicaScaling,
 	}
@@ -110,6 +112,19 @@ func validateReplicaCount(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error {
 			cvcOldObj.Spec.Provision.ReplicaCount,
 			cvcNewObj.Spec.Provision.ReplicaCount,
 		)
+	}
+	return nil
+}
+
+// validateProvisionedCapacity returns error if user modified the initial
+// provisioned capacity after provisioning the volume else return nil otherwise
+func validateProvisionedCapacity(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error {
+	newProvisionedCap := cvcNewObj.Spec.Provision.Capacity[corev1.ResourceStorage]
+	oldProvisionedCap := cvcOldObj.Spec.Provision.Capacity[corev1.ResourceStorage]
+
+	if newProvisionedCap.Cmp(oldProvisionedCap) != 0 {
+		return errors.Errorf(
+			"cvc initial provisioned capacity `Spec.Provision.Capacity` is immutable, can't be modified ")
 	}
 	return nil
 }

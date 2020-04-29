@@ -98,7 +98,7 @@ const (
 // CStorPoolInstanceStatus is for handling status of pool.
 type CStorPoolInstanceStatus struct {
 	// Current state of CSPI with details.
-	Conditions []CStorPoolInstanceCondition
+	Conditions []CStorPoolInstanceCondition `json:"conditions,omitempty"`
 	//  The phase of a CStorPool is a simple, high-level summary of the pool state on the
 	//  node.
 	Phase CStorPoolInstancePhase `json:"phase"`
@@ -118,12 +118,27 @@ type CStorPoolInstanceCapacity struct {
 	Used resource.Quantity `json:"used"`
 }
 
-type CSPIConditionType string
+type CStorPoolInstanceConditionType string
+
+const (
+	// CSPIPoolExpansion condition will be available when user triggers
+	// pool expansion by adding blockdevice/raidgroup (or) when underlying
+	// disk got expanded
+	CSPIPoolExpansion CStorPoolInstanceConditionType = "PoolExpansion"
+	// CSPIDiskReplacement condition will be available when user triggers
+	// disk replacement by replacing the blockdevice
+	CSPIDiskReplacement CStorPoolInstanceConditionType = "DiskReplacement"
+	// CSPIDiskUnavailable condition will be available when one (or) more
+	// disks were unavailable
+	CSPIDiskUnavailable CStorPoolInstanceConditionType = "DiskUnavailable"
+	// CSPIPoolLost condition will be available when unable to import the pool
+	CSPIPoolLost CStorPoolInstanceConditionType = "PoolLost"
+)
 
 // CSPIConditionType describes the state of a CSPI at a certain point.
 type CStorPoolInstanceCondition struct {
 	// Type of CSPC condition.
-	Type CSPCConditionType `json:"type"`
+	Type CStorPoolInstanceConditionType `json:"type"`
 	// Status of the condition, one of True, False, Unknown.
 	Status corev1.ConditionStatus `json:"status"`
 	// The last time this condition was updated.

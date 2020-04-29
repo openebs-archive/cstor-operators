@@ -29,6 +29,7 @@ import (
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/debug"
+	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	errors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -654,10 +655,10 @@ func (c *CStorVolumeReplicaController) reconcileVersion(cvr *apis.CStorVolumeRep
 	// the below code uses deep copy to have the state of object just before
 	// any update call is done so that on failure the last state object can be returned
 	if cvr.VersionDetails.Status.Current != cvr.VersionDetails.Desired {
-		if !apis.IsCurrentVersionValid(cvr.VersionDetails.Status.Current) {
+		if !version.IsCurrentVersionValid(cvr.VersionDetails.Status.Current) {
 			return cvr, errors.Errorf("invalid current version %s", cvr.VersionDetails.Status.Current)
 		}
-		if !apis.IsDesiredVersionValid(cvr.VersionDetails.Desired) {
+		if !version.IsDesiredVersionValid(cvr.VersionDetails.Desired) {
 			return cvr, errors.Errorf("invalid desired version %s", cvr.VersionDetails.Desired)
 		}
 		cvrObj := cvr.DeepCopy()

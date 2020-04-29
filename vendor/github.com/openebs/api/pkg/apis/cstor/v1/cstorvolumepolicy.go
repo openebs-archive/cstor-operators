@@ -139,7 +139,7 @@ type Provision struct {
 	// cannot be changed once the volume has been written, so it should be
 	// set at volume creation time. The default blocksize for volumes is 4 Kbytes.
 	// Any power of 2 from 512 bytes to 128 Kbytes is valid.
-	BlockSize uint32 `json:"blockSize"`
+	BlockSize uint32 `json:"blockSize,omitempty"`
 }
 
 // ReplicaPoolInfo represents the pool information of volume replica

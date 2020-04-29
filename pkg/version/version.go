@@ -38,7 +38,7 @@ var (
 )
 
 const (
-	versionFile string = "/src/github.com/openebs/maya/VERSION"
+	versionFile string = "/src/github.com/openebs/cstor-operators/VERSION"
 
 	// versionDelimiter is used as a delimiter to separate version info
 	versionDelimiter string = "-"

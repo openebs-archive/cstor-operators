@@ -1,9 +1,5 @@
 # github.com/BurntSushi/toml v0.3.1
 github.com/BurntSushi/toml
-# github.com/beorn7/perks v1.0.1
-github.com/beorn7/perks/quantile
-# github.com/cespare/xxhash/v2 v2.1.1
-github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/evanphx/json-patch v4.5.0+incompatible
@@ -40,13 +36,11 @@ github.com/imdario/mergo
 github.com/inconshreveable/mousetrap
 # github.com/json-iterator/go v1.1.9
 github.com/json-iterator/go
-# github.com/matttproud/golang_protobuf_extensions v1.0.1
-github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/openebs/api v0.0.0-20200414100109-934f0c609d10
+# github.com/openebs/api v0.0.0-20200429072019-650209fba28b
 github.com/openebs/api/pkg/apis/cstor
 github.com/openebs/api/pkg/apis/cstor/v1
 github.com/openebs/api/pkg/apis/openebs.io
@@ -74,23 +68,8 @@ github.com/openebs/api/pkg/kubernetes/leaderelection
 github.com/openebs/api/pkg/proto
 github.com/openebs/api/pkg/util
 github.com/openebs/api/pkg/util/signals
-# github.com/openebs/maya v0.0.0-20200226142318-6daf5f0486e8
-github.com/openebs/maya/pkg/version
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
-# github.com/prometheus/client_golang v1.4.1
-github.com/prometheus/client_golang/prometheus
-github.com/prometheus/client_golang/prometheus/internal
-# github.com/prometheus/client_model v0.2.0
-github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.9.1
-github.com/prometheus/common/expfmt
-github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
-github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.0.8
-github.com/prometheus/procfs
-github.com/prometheus/procfs/internal/fs
-github.com/prometheus/procfs/internal/util
 # github.com/ryanuber/columnize v2.1.0+incompatible
 github.com/ryanuber/columnize
 # github.com/spf13/cobra v0.0.5

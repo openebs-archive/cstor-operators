@@ -66,6 +66,66 @@ const (
 	PoolScanFuncStates
 )
 
+// NOTE: 1. VdevState represent the state of the vdev/disk in pool.
+//       2. VdevAux represents gives the reason why disk/vdev are in that state.
+
+// VdevState represent various device/disk states
+type VdevState uint64
+
+/*
+ * vdev states are ordered from least to most healthy.
+ * Link: https://github.com/openebs/cstor/blob/f0896898a0be2102e2865cf44b16b88c91f6bb91/include/sys/fs/zfs.h#L723
+ */
+const (
+	// VdevStateUnknown represents uninitialized vdev
+	VdevStateUnknown VdevState = iota
+	// VdevStateClosed represents vdev currently not opened
+	VdevStateClosed
+	// VdevStateOffline represents vdev not allowed to open
+	VdevStateOffline
+	// VdevStateRemoved represents vdev explicitly removed from system
+	VdevStateRemoved
+	// VdevStateCantOpen represents tried to open, but failed
+	VdevStateCantOpen
+	// VdevStateFaulted represents external request to fault device
+	VdevStateFaulted
+	// VdevStateDegraded represents Replicated vdev with unhealthy kids
+	VdevStateDegraded
+	// VdevStateHealthy represents vdev is presumed good
+	VdevStateHealthy
+)
+
+// VdevAux represents reasons why vdev can't open
+type VdevAux uint64
+
+/*
+ * vdev aux states.  When a vdev is in the CANT_OPEN state, the aux field
+ * of the vdev stats structure uses these constants to distinguish why.
+ */
+// NOTE: Added only required enums for more information please have look at
+// https://github.com/openebs/cstor/blob/f0896898a0be2102e2865cf44b16b88c91f6bb91/include/sys/fs/zfs.h#L740
+const (
+	VdevAuxNone            VdevAux = iota /* no error */
+	VdevAuxOpenFailed                     /* ldi_open_*() or vn_open() failed  */
+	VdevAuxCorruptData                    /* bad label or disk contents           */
+	VdevAuxNoReplicas                     /* insufficient number of replicas      */
+	VdevAuxBadGUIDSum                     /* vdev guid sum doesn't match          */
+	VdevAuxTooSmall                       /* vdev size is too small               */
+	VdevAuxBadLabel                       /* the label is OK but invalid          */
+	VdevAuxVersionNewer                   /* on-disk version is too new           */
+	VdevAuxVersionOlder                   /* on-disk version is too old           */
+	VdevAuxUnSupFeat                      /* unsupported features                 */
+	VdevAuxSpared                         /* hot spare used in another pool       */
+	VdevAuxErrExceeded                    /* too many errors                      */
+	VdevAuxIOFailure                      /* experienced I/O failure              */
+	VdevAuxBadLog                         /* cannot read log chain(s)             */
+	VdevAuxExternal                       /* external diagnosis or forced fault   */
+	VdevAuxSplitPool                      /* vdev was split off into another pool */
+	VdevAuxBadAShift                      /* vdev ashift is invalid               */
+	VdevAuxExternalPersist                /* persistent forced fault      */
+	VdevAuxActive                         /* vdev active on a different host      */
+)
+
 const (
 	// PoolOperator is the name of the tool that makes pool-related operations.
 	PoolOperator = "zpool"
@@ -76,6 +136,12 @@ const (
 	// VdevScanStatsScanFuncIndex point to index which inform whether device
 	// under went resilvering or not
 	VdevScanStatsScanFuncIndex = 0
+	// VdevStateIndex represents the device state information
+	VdevStateIndex = 1
+	// VdevAuxIndex represents vdev aux states. When a vdev is
+	// in the CANT_OPEN state, the aux field of the vdev stats
+	// structure uses these constants to distinguish why
+	VdevAuxIndex = 2
 )
 
 // Topology contains the topology strucure of disks used in backend
@@ -127,6 +193,9 @@ type Vdev struct {
 	// 0 means partitioned disk, 1 means whole disk
 	IsWholeDisk int `json:"whole_disk,omitempty"`
 
+	// Capacity represents the size of the disk used in pool
+	Capacity uint64 `json:"asize,omitempty"`
+
 	// vdev indetailed statistics
 	VdevStats []uint64 `json:"vdev_stats,omitempty"`
 
@@ -167,4 +236,35 @@ func (l VdevList) GetVdevFromPath(path string) (Vdev, bool) {
 		}
 	}
 	return Vdev{}, false
+}
+
+// GetVdevState returns current state of Vdev
+// NOTE: Below function is taken from openebs/cstor
+// https://github.com/openebs/cstor/blob/f0896898a0be2102e2865cf44b16b88c91f6bb91/lib/libzfs/libzfs_pool.c#L183<Paste>
+func (v Vdev) GetVdevState() string {
+	state := v.VdevStats[VdevStateIndex]
+	aux := v.VdevStats[VdevAuxIndex]
+	switch state {
+	case uint64(VdevStateClosed):
+		fallthrough
+	case uint64(VdevStateOffline):
+		return "OFFLINE"
+	case uint64(VdevStateRemoved):
+		return "REMOVED"
+	case uint64(VdevStateCantOpen):
+		if aux == uint64(VdevAuxCorruptData) || aux == uint64(VdevAuxBadLog) {
+			return "FAULTED"
+		} else if aux == uint64(VdevAuxSplitPool) {
+			return "SPLIT"
+		} else {
+			return "UNAVAILABLE"
+		}
+	case uint64(VdevStateFaulted):
+		return "FAULTED"
+	case uint64(VdevStateDegraded):
+		return "DEGRADED"
+	case uint64(VdevStateHealthy):
+		return "ONLINE"
+	}
+	return "UNKNOWN"
 }

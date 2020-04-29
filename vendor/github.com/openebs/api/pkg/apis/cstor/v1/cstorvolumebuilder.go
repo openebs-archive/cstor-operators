@@ -23,7 +23,6 @@ import (
 
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
-	"github.com/openebs/maya/pkg/version"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -44,12 +43,6 @@ const (
 var (
 	// ConfFileMutex is to hold the lock while updating istgt.conf file
 	ConfFileMutex = &sync.Mutex{}
-
-	validCurrentVersions = map[string]bool{
-		"1.0.0": true, "1.1.0": true, "1.2.0": true, "1.3.0": true,
-		"1.4.0": true, "1.5.0": true, "1.6.0": true,
-	}
-	validDesiredVersion = version.GetVersion()
 )
 
 func NewCStorVolumeConfig() *CStorVolumeConfig {
@@ -514,18 +507,6 @@ func (vd *VersionDetails) SetSuccessStatus() {
 	vd.Status.Reason = ""
 	vd.Status.State = ReconcileComplete
 	vd.Status.LastUpdateTime = metav1.Now()
-}
-
-// IsCurrentVersionValid verifies if the  current version is valid or not
-func IsCurrentVersionValid(v string) bool {
-	currentVersion := strings.Split(v, "-")[0]
-	return validCurrentVersions[currentVersion]
-}
-
-// IsDesiredVersionValid verifies the desired version is valid or not
-func IsDesiredVersionValid(v string) bool {
-	desiredVersion := strings.Split(v, "-")[0]
-	return validDesiredVersion == desiredVersion
 }
 
 // **************************************************************************

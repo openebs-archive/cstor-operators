@@ -140,6 +140,30 @@ type CStorVolumeReplicaStatus struct {
 	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
 	// A human readable message indicating details about the transition.
 	Message string `json:"message,omitempty"`
+
+	// Snapshots contains list of snapshots, and their properties,
+	// created on CVR
+	Snapshots map[string]CStorSnapshotInfo `json:"snapshots,omitempty"`
+
+	// PendingSnapshots contains list of pending snapshots that are not yet
+	// available on this replica
+	PendingSnapshots map[string]CStorSnapshotInfo `json:"pendingSnapshots,omitempty"`
+}
+
+// CStorSnapshotInfo represents the snapshot information related to particular
+// snapshot
+type CStorSnapshotInfo struct {
+	// LogicalReferenced describes the amount of space that is "logically"
+	// accessable by this snapshot. This logical space ignores the
+	// effect of the compression and copies properties, giving a quantity
+	// closer to the amount of data that application see. It also includes
+	// space consumed by metadata.
+	LogicalReferenced uint64 `json:"logicalReferenced"`
+
+	// TODO: We will revisit when we are working on rebuild estimates
+
+	// Used is the used bytes for given snapshot
+	// Used uint64 `json:"used"`
 }
 
 // CStorVolumeCapacityDetails represents capacity information releated to volume

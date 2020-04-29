@@ -32,7 +32,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -45,6 +44,15 @@ type PoolValidator struct {
 	nodeName  string
 	cspcName  string
 	clientset clientset.Interface
+}
+
+type getCSPC func(name, namespace string, clientset clientset.Interface) (*cstor.CStorPoolCluster, error)
+
+func getCSPCObject(name, namespace string,
+	clientset clientset.Interface) (*cstor.CStorPoolCluster, error) {
+	return clientset.CstorV1().
+		CStorPoolClusters(namespace).
+		Get(name, metav1.GetOptions{})
 }
 
 // Builder is the builder object for Builder
@@ -107,7 +115,7 @@ func (wh *webhook) validateCSPC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionR
 	// validates only if requested operation is CREATE or UPDATE
 	if req.Operation == v1beta1.Update {
 		klog.V(5).Infof("Admission webhook update request for type %s", req.Kind.Kind)
-		return wh.validateCSPCUpdateRequest(req)
+		return wh.validateCSPCUpdateRequest(req, getCSPCObject)
 	} else if req.Operation == v1beta1.Create {
 		klog.V(5).Infof("Admission webhook create request for type %s", req.Kind.Kind)
 		return wh.validateCSPCCreateRequest(req)
@@ -201,6 +209,7 @@ func (wh *webhook) cspcValidation(cspc *cstor.CStorPoolCluster) (bool, string) {
 		}
 		usedNodes[nodeName] = true
 		pValidate := buildPoolValidator.withPoolSpec(pool).
+			withPoolNamespace().
 			withPoolNodeName(nodeName).build()
 		ok, msg := pValidate.poolSpecValidation()
 		if !ok {
@@ -217,7 +226,8 @@ func getDuplicateBlockDeviceList(cspc *cstor.CStorPoolCluster) []string {
 	blockDeviceMap := map[string]bool{}
 	addedBlockDevices := map[string]bool{}
 	for _, poolSpec := range cspc.Spec.Pools {
-		for _, raidGroup := range poolSpec.DataRaidGroups {
+		rgs := append(poolSpec.DataRaidGroups, poolSpec.WriteCacheRaidGroups...)
+		for _, raidGroup := range rgs {
 			for _, bd := range raidGroup.CStorPoolInstanceBlockDevices {
 				// update duplicateBlockDeviceList only if block device is
 				// repeated in CSPC and doesn't exist in duplicate block device
@@ -451,7 +461,7 @@ func (poolValidator *PoolValidator) blockDeviceClaimValidation(bdcName, bdName s
 
 // validateCSPCUpdateRequest validates CSPC update request
 // ToDo: Remove repetitive code.
-func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
+func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest, getCSPC getCSPC) *v1beta1.AdmissionResponse {
 	response := NewAdmissionResponse().SetAllowed().WithResultAsSuccess(http.StatusAccepted).AR
 	var cspcNew cstor.CStorPoolCluster
 	err := json.Unmarshal(req.Object.Raw, &cspcNew)
@@ -461,7 +471,7 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest) *v1b
 		return response
 	}
 	// Get CSPC old object
-	cspcOld, err := wh.clientset.CstorV1().CStorPoolClusters(cspcNew.Namespace).Get(cspcNew.Name, v1.GetOptions{})
+	cspcOld, err := getCSPC(cspcNew.Name, cspcNew.Namespace, wh.clientset)
 	if err != nil {
 		err = errors.Errorf("could not fetch existing cspc for validation: %s", err.Error())
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusInternalServerError).AR
@@ -472,14 +482,12 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest) *v1b
 	if reflect.DeepEqual(cspcNew.Spec, cspcOld.Spec) {
 		return response
 	}
-
 	if ok, msg := wh.cspcValidation(&cspcNew); !ok {
 		err = errors.Errorf("invalid cspc specification: %s", msg)
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusUnprocessableEntity).AR
 		return response
 	}
-
-	bdr := NewBlockDeviceReplacement(wh.kubeClient, wh.clientset).WithNewCSPC(&cspcNew).WithOldCSPC(cspcOld)
+	pOps := NewPoolOperations(wh.kubeClient, wh.clientset).WithNewCSPC(&cspcNew).WithOldCSPC(cspcOld)
 	commonPoolSpec, err := getCommonPoolSpecs(&cspcNew, cspcOld, wh.kubeClient)
 
 	if err != nil {
@@ -487,8 +495,7 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest) *v1b
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusInternalServerError).AR
 		return response
 	}
-
-	if ok, msg := ValidateSpecChanges(commonPoolSpec, bdr); !ok {
+	if ok, msg := ValidateSpecChanges(commonPoolSpec, pOps); !ok {
 		err = errors.Errorf("invalid cspc specification: %s", msg)
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusUnprocessableEntity).AR
 		return response

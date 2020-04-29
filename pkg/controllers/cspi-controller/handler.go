@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
+	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -137,6 +138,15 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 
 	}
 	common.SyncResources.Mux.Unlock()
+	// This case is possible incase of ephemeral disks
+	if !cspi.IsEmptyStatus() && !cspi.IsPendingStatus() {
+		// Set Pool Lost condition to true
+		condition := cspiutil.NewCSPICondition(
+			cstor.CSPIPoolLost,
+			corev1.ConditionTrue,
+			"PoolLost", "failed to import"+zpool.PoolName()+"pool")
+		cspi, _ = c.UpdateStatusConditionEventually(cspi, *condition)
+	}
 	return nil
 }
 
@@ -189,11 +199,11 @@ func (c *CStorPoolInstanceController) update(cspi *cstor.CStorPoolInstance) (*cs
 		WithKubeClientSet(c.kubeclientset).
 		WithOpenEBSClient(c.clientset).
 		WithRecorder(c.recorder)
-	cspi, err := oc.Update(cspi)
+	ncspi, err := oc.Update(cspi)
 	if err != nil {
-		return cspi, errors.Errorf("Failed to update pool due to %s", err.Error())
+		return ncspi, errors.Errorf("Failed to update pool due to %s", err.Error())
 	}
-	return c.updateStatus(cspi)
+	return c.updateStatus(ncspi)
 }
 
 func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
@@ -222,6 +232,10 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 		return cspi, errors.Errorf("Failed to sync due to %s", err.Error())
 	}
 	c.updateROMode(&status, *cspi)
+	// addDiskUnavailableCondition will add DiskUnavailable condition on cspi status
+	c.addDiskUnavailableCondition(cspi)
+	// Point to existing conditions
+	status.Conditions = cspi.Status.Conditions
 
 	if IsStatusChange(cspi.Status, status) {
 		cspi.Status = status
@@ -230,6 +244,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 			CStorPoolInstances(cspi.Namespace).
 			Update(cspi)
 		if err != nil {
+			klog.Errorf("Error %v", err)
 			return cspi, errors.Errorf("Failed to updateStatus due to '%s'", err.Error())
 		}
 		return cspiGot, nil
@@ -366,5 +381,35 @@ func (c *CStorPoolInstanceController) sync(cspi *cstor.CStorPoolInstance) {
 			corev1.EventTypeWarning,
 			"Pool "+string("FailedToSetCompression"),
 			fmt.Sprintf("Failed to set compression %s to the pool %s : %s", compressionType, poolName, err.Error()))
+	}
+}
+
+func (c *CStorPoolInstanceController) addDiskUnavailableCondition(cspi *cstor.CStorPoolInstance) {
+	diskUnavailableCondition := cspiutil.GetCSPICondition(cspi.Status, cstor.CSPIDiskUnavailable)
+	oc := zpool.NewOperationsConfig().
+		WithKubeClientSet(c.kubeclientset).
+		WithOpenEBSClient(c.clientset).
+		WithRecorder(c.recorder)
+	unAvailableDisks, err := oc.GetUnavailableDiskList(cspi)
+	if err != nil {
+		klog.Errorf("failed to get unavailable disks error: %v", err)
+		return
+	}
+	if len(unAvailableDisks) > 0 {
+		newCondition := cspiutil.NewCSPICondition(
+			cstor.CSPIDiskUnavailable,
+			corev1.ConditionTrue,
+			"DisksAreUnavailable",
+			fmt.Sprintf("Following disks %v are unavailable/faulted", unAvailableDisks))
+		cspiutil.SetCSPICondition(&cspi.Status, *newCondition)
+	} else {
+		if diskUnavailableCondition != nil {
+			newCondition := cspiutil.NewCSPICondition(
+				cstor.CSPIDiskUnavailable,
+				corev1.ConditionFalse,
+				"DisksAreAvailable",
+				"")
+			cspiutil.SetCSPICondition(&cspi.Status, *newCondition)
+		}
 	}
 }

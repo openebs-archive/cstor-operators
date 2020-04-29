@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openebs/api/pkg/apis/types"
@@ -26,8 +27,9 @@ import (
 	zpool "github.com/openebs/api/pkg/internalapis/apis/cstor"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/pool"
-	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
+	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -101,7 +103,7 @@ func getPathForBDevFromBlockDevice(bd *openebsapis.BlockDevice) []string {
 
 // checkIfPoolPresent returns true if pool is available for operations
 func checkIfPoolPresent(name string) bool {
-	if _, err := zfs.NewPoolGetProperty().
+	if _, err := zcmd.NewPoolGetProperty().
 		WithParsableMode(true).
 		WithScriptedMode(true).
 		WithField("name").
@@ -177,14 +179,14 @@ func (oc *OperationsConfig) checkIfPoolNotImported(cspi *cstor.CStorPoolInstance
 
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	if len(devID) != 0 {
-		cmdOut, err = zfs.NewPoolImport().WithDirectory(devID).Execute()
+		cmdOut, err = zcmd.NewPoolImport().WithDirectory(devID).Execute()
 		if strings.Contains(string(cmdOut), PoolName()) {
 			return string(cmdOut), true, nil
 		}
 	}
 	// there are some cases when import is succesful but zpool command return
 	// noisy errors, hence better to check contains before return error
-	cmdOut, err = zfs.NewPoolImport().Execute()
+	cmdOut, err = zcmd.NewPoolImport().Execute()
 	if strings.Contains(string(cmdOut), PoolName()) {
 		return string(cmdOut), true, nil
 	}
@@ -211,7 +213,7 @@ func (oc *OperationsConfig) getBlockDeviceClaimList(key, value string) (
 }
 
 func executeZpoolDump(cspi *cstor.CStorPoolInstance) (zpool.Topology, error) {
-	return zfs.NewPoolDump().
+	return zcmd.NewPoolDump().
 		WithPool(PoolName()).
 		WithStripVdevPath().
 		Execute()
@@ -322,7 +324,7 @@ func SetCompression(poolName string, compressionType string) error {
 	}
 
 	// Get the compression value that exists in the pool
-	existingCompressionType, err := GetPropertyValue(poolName, "compression")
+	existingCompressionType, err := GetVolumePropertyValue(poolName, "compression")
 	if err != nil {
 		return errors.Errorf("Failed to get compression type:err:%s", err.Error())
 	}
@@ -334,9 +336,9 @@ func SetCompression(poolName string, compressionType string) error {
 
 	// If the requested compression algorithm is supported -- enable that.
 	if SupportedCompressionTypes[compressionType] {
-		ret, err := zfs.NewPoolSetProperty().
+		ret, err := zcmd.NewVolumeSetProperty().
 			WithProperty("compression", compressionType).
-			WithPool(poolName).
+			WithDataset(poolName).
 			Execute()
 		if err != nil {
 			return errors.Errorf(
@@ -348,4 +350,38 @@ func SetCompression(poolName string, compressionType string) error {
 
 	// If we are here, the requested compression algorithm is not supported.
 	return errors.Errorf("compression type %s not supported", compressionType)
+}
+
+// GetUnavailableDiskList returns the list of faulted disks from the current pool
+func (oc *OperationsConfig) GetUnavailableDiskList(cspi *cstor.CStorPoolInstance) ([]string, error) {
+	faultedDevices := []string{}
+	topology, err := executeZpoolDump(cspi)
+	if err != nil {
+		return []string{}, errors.Wrapf(err, "failed to execute zpool dump")
+	}
+	raidGroupMap := getRaidGroupsConfigMap(cspi)
+	for _, raidGroupsConfig := range raidGroupMap {
+		for raidIndex := 0; raidIndex < len(raidGroupsConfig.RaidGroups); raidIndex++ {
+			raidGroup := raidGroupsConfig.RaidGroups[raidIndex]
+			for bdevIndex := 0; bdevIndex < len(raidGroup.CStorPoolInstanceBlockDevices); bdevIndex++ {
+				bdev := raidGroup.CStorPoolInstanceBlockDevices[bdevIndex]
+				if bdev.DevLink != "" {
+					vdev, isPresent := getVdevFromPath(bdev.DevLink, topology)
+					if !isPresent {
+						klog.Errorf("BlockDevice %s doesn't exist in pool %s", bdev.BlockDeviceName, PoolName())
+						continue
+					}
+					if vdev.VdevStats[zpool.VdevStateIndex] != uint64(zpool.VdevStateHealthy) {
+						oc.recorder.Event(
+							cspi,
+							corev1.EventTypeWarning,
+							"DeviceState",
+							fmt.Sprintf("%s device was in %s state", bdev.BlockDeviceName, vdev.GetVdevState()))
+						faultedDevices = append(faultedDevices, bdev.BlockDeviceName)
+					}
+				}
+			}
+		}
+	}
+	return faultedDevices, nil
 }

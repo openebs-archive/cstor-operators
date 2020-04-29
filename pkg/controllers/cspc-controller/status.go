@@ -22,11 +22,12 @@ import (
 	"github.com/openebs/cstor-operators/pkg/controllers/cspc-controller/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/klog"
 	"time"
+
+	"k8s.io/klog"
 )
 
 func (c *Controller) UpdateStatusEventually(cspc *cstor.CStorPoolCluster) error {

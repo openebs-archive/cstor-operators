@@ -34,7 +34,11 @@ func GetPropertyValue(poolName, property string) (string, error) {
 		WithPool(poolName).
 		Execute()
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err,
+			"failed to get property %s value output: %s",
+			property,
+			string(ret),
+		)
 	}
 	outStr := strings.Split(string(ret), "\n")
 	return outStr[0], nil
@@ -58,6 +62,25 @@ func GetListOfPropertyValues(poolName string, propertyList []string) ([]string, 
 	outStr := strings.Split(string(ret), "\n")
 	return outStr, nil
 
+}
+
+// GetVolumePropertyValue is used to get pool properties using zfs commands
+func GetVolumePropertyValue(poolName, property string) (string, error) {
+	ret, err := zfs.NewVolumeGetProperty().
+		WithScriptedMode(true).
+		WithField("value").
+		WithProperty(property).
+		WithDataset(poolName).
+		Execute()
+	if err != nil {
+		return "", errors.Wrapf(err,
+			"failed to get property %s value output: %s",
+			property,
+			string(ret),
+		)
+	}
+	outStr := strings.Split(string(ret), "\n")
+	return outStr[0], nil
 }
 
 // GetCSPICapacity returns the free, allocated and total capacities of pool in

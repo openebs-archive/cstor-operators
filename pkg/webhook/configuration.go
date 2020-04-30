@@ -36,14 +36,14 @@ import (
 )
 
 const (
-	validatorServiceName = "admission-server-svc"
-	validatorWebhook     = "openebs-validation-webhook-cfg"
-	validatorSecret      = "admission-server-secret"
-	webhookHandlerName   = "admission-webhook.openebs.io"
+	validatorServiceName = "openebs-cstor-admission-server"
+	validatorWebhook     = "openebs-cstor-validation-webhook"
+	validatorSecret      = "openebs-cstor-admission-secret"
+	webhookHandlerName   = "admission-webhook.cstor.openebs.io"
 	validationPath       = "/validate"
 	validationPort       = 8443
-	webhookLabel         = "openebs.io/component-name" + "=" + "admission-webhook"
-	webhooksvcLabel      = "openebs.io/component-name" + "=" + "admission-webhook-svc"
+	webhookLabel         = "openebs.io/component-name" + "=" + "cstor-admission-webhook"
+	webhooksvcLabel      = "openebs.io/component-name" + "=" + "cstor-admission-webhook"
 	// AdmissionNameEnvVar is the constant for env variable ADMISSION_WEBHOOK_NAME
 	// which is the name of the current admission webhook
 	AdmissionNameEnvVar = "ADMISSION_WEBHOOK_NAME"
@@ -100,7 +100,7 @@ func (c *client) createWebhookService(
 	}
 
 	// create service resource that refers to admission server pod
-	serviceLabels := map[string]string{"app": "admission-webhook"}
+	serviceLabels := map[string]string{"app": "cstor-admission-webhook"}
 	svcObj := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -110,8 +110,8 @@ func (c *client) createWebhookService(
 			Namespace: namespace,
 			Name:      serviceName,
 			Labels: map[string]string{
-				"app":                                "admission-webhook",
-				"openebs.io/component-name":          "admission-webhook-svc",
+				"app":                                "cstor-admission-webhook",
+				"openebs.io/component-name":          "cstor-admission-webhook",
 				string(types.OpenEBSVersionLabelKey): version.GetVersion(),
 			},
 			OwnerReferences: []metav1.OwnerReference{ownerReference},
@@ -132,9 +132,9 @@ func (c *client) createWebhookService(
 	return err
 }
 
-// createAdmissionService creates our ValidatingWebhookConfiguration resource
+// createAdmissionValidatingConfig creates our ValidatingWebhookConfiguration resource
 // if it does not exist.
-func (c *client) createAdmissionService(
+func (c *client) createAdmissionValidatingConfig(
 	ownerReference metav1.OwnerReference,
 	validatorWebhook string,
 	namespace string,
@@ -152,7 +152,7 @@ func (c *client) createAdmissionService(
 	if !k8serror.IsNotFound(err) {
 		return errors.Wrapf(
 			err,
-			"failed to get webhook validator {%v}",
+			"failed to get validating WebhookConfiguration for {%v}",
 			validatorWebhook,
 		)
 	}
@@ -206,8 +206,8 @@ func (c *client) createAdmissionService(
 		ObjectMeta: metav1.ObjectMeta{
 			Name: validatorWebhook,
 			Labels: map[string]string{
-				"app":                                "admission-webhook",
-				"openebs.io/component-name":          "admission-webhook",
+				"app":                                "cstor-admission-webhook",
+				"openebs.io/component-name":          "cstor-admission-webhook",
 				string(types.OpenEBSVersionLabelKey): version.GetVersion(),
 			},
 			OwnerReferences: []metav1.OwnerReference{ownerReference},
@@ -261,8 +261,8 @@ func (c *client) createCertsSecret(
 			Name:      secretName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app":                                "admission-webhook",
-				"openebs.io/component-name":          "admission-webhook",
+				"app":                                "cstor-admission-webhook",
+				"openebs.io/component-name":          "cstor-admission-webhook",
 				string(types.OpenEBSVersionLabelKey): version.GetVersion(),
 			},
 			OwnerReferences: []metav1.OwnerReference{ownerReference},
@@ -365,7 +365,7 @@ func InitValidationServer(
 		)
 	}
 
-	validatorErr := c.createAdmissionService(
+	validatorErr := c.createAdmissionValidatingConfig(
 		ownerReference,
 		validatorWebhook,
 		openebsNamespace,

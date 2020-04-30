@@ -21,6 +21,7 @@ import (
 	vcreate "github.com/openebs/cstor-operators/pkg/zcmd/zfs/create"
 	vdestroy "github.com/openebs/cstor-operators/pkg/zcmd/zfs/destroy"
 	vget "github.com/openebs/cstor-operators/pkg/zcmd/zfs/get"
+	vlistsnap "github.com/openebs/cstor-operators/pkg/zcmd/zfs/listsnap"
 	vsnapshotrecv "github.com/openebs/cstor-operators/pkg/zcmd/zfs/receive"
 	vrename "github.com/openebs/cstor-operators/pkg/zcmd/zfs/rename"
 	vrollback "github.com/openebs/cstor-operators/pkg/zcmd/zfs/rollback"
@@ -125,6 +126,11 @@ func NewPoolCreate() *pcreate.PoolCreate {
 // NewVolumeGetProperty returns new instance of object VolumeGetProperty
 func NewVolumeGetProperty() *vget.VolumeGetProperty {
 	return &vget.VolumeGetProperty{}
+}
+
+// NewVolumeListSnapshot returns new instance of object VolumeListSnapshot
+func NewVolumeListSnapshot() *vlistsnap.VolumeListSnapshot {
+	return &vlistsnap.VolumeListSnapshot{}
 }
 
 // NewVolumeSetProperty returns new instance of object VolumeSetProperty

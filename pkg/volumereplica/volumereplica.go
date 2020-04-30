@@ -19,6 +19,7 @@ package volumereplica
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/openebs/cstor-operators/pkg/log/alertlog"
@@ -26,11 +27,14 @@ import (
 	"encoding/json"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	types "github.com/openebs/api/pkg/apis/types"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/debug"
 	"github.com/openebs/cstor-operators/pkg/hash"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -679,4 +683,264 @@ func GetAndUpdateReplicaID(cvr *cstor.CStorVolumeReplica) error {
 		return errors.Errorf("Failed to set ReplicaID for CVR(%s).. %s", cvr.Name, err)
 	}
 	return nil
+}
+
+// GetAndUpdateSnapshotInfo get the snapshot list from ZFS and updates in CVR status.
+// Execution happens in following steps:
+// 1. Get snapshot list from ZFS
+// 2. Checks whether above snapshots exist on CVR under Status.Snapshots:
+//    2.1 If snapshot doesn't exist then get the info of snapshot from ZFS and update
+//        the details in CVR.Status.Snapshots
+// 3. Verify and delete the snapshot details on CVR if it is deleted from ZFS
+// 4. Update the pending list of snapshots by verifying with snapshot list obtained from step1
+// 5. If replica is under rebuilding get the snapshot list from peer CVR and update them
+//    under pending snapshot list
+func GetAndUpdateSnapshotInfo(
+	clientset clientset.Interface, cvr *cstor.CStorVolumeReplica) error {
+	volName := cvr.GetLabels()[types.PersistentVolumeLabelKey]
+	dsName := PoolNameFromCVR(cvr) + "/" + volName
+
+	snapList, err := GetSnapshotList(dsName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get the list of snapshots")
+	}
+
+	// Add/Delete a snapshot in CVR by comparing with snapshots of replicas in ZFS
+	err = addOrDeleteSnapshotListInfo(cvr, snapList)
+	if err != nil {
+		return errors.Wrapf(err, "failed to add snapshot list info")
+	}
+
+	// If CVR is in rebuilding go and get snapshot information
+	// from other replicas and add snapshots under pending snapshot list
+	if cvr.Status.Phase == cstor.CVRStatusRebuilding ||
+		cvr.Status.Phase == cstor.CVRStatusReconstructingNewReplica {
+		err = getAndAddPendingSnapshotList(clientset, cvr)
+		if err != nil {
+			return errors.Wrapf(err, "failed to update pending snapshots")
+		}
+	}
+
+	// It looks like hack but we must do this because of below reason
+	// - There might be chances in nth reconciliation CVR might be in Rebuilding
+	//   and pending snapshots added under CVR.Status.PendingSnapshots and after that
+	//   let us assume this pool is down meanwhile if snapshot deletion request
+	//   came and deleted snapshots in peer replicas. In next reconciliation if
+	//   CVR is Healthy then there might be chances that pending snapshots remains
+	//   as is to cover this corner case below check is required.
+	if cvr.Status.Phase == cstor.CVRStatusOnline &&
+		len(cvr.Status.PendingSnapshots) != 0 {
+		klog.Infof("CVR: %s is marked as %s hence removing pending snapshots %v",
+			cvr.Name,
+			cvr.Status.Phase,
+			getSnapshotNames(cvr.Status.PendingSnapshots),
+		)
+		cvr.Status.PendingSnapshots = nil
+	}
+	return nil
+}
+
+// getAndAddPendingSnapshotList get the snapshot information from peer replicas and
+// add under pending snapshot list
+// NOTE: Below function will delete the snapshot under pending snapshots if doesn't exists
+// on peer replicas
+func getAndAddPendingSnapshotList(
+	clientset clientset.Interface, cvr *cstor.CStorVolumeReplica) error {
+	newSnapshots := []string{}
+	removedSnapshots := []string{}
+
+	peerCVRList, err := getPeerReplicas(clientset, cvr)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get peer CVRs of volume replica %s", cvr.Name)
+	}
+
+	peerSnapshotList := getPeerSnapshotInfoList(peerCVRList)
+	if cvr.Status.PendingSnapshots == nil {
+		cvr.Status.PendingSnapshots = map[string]cstor.CStorSnapshotInfo{}
+	}
+
+	// Delete the pending snapshot that doesn't exist in peer snapshot list
+	for snapName, _ := range cvr.Status.PendingSnapshots {
+		if _, ok := peerSnapshotList[snapName]; !ok {
+			delete(cvr.Status.PendingSnapshots, snapName)
+			removedSnapshots = append(removedSnapshots, snapName)
+		}
+	}
+
+	// Add peer snapshots if doesn't exist on Snapshots and PendingSnapshots
+	// of current CVR
+	for snapName, snapInfo := range peerSnapshotList {
+		if _, ok := cvr.Status.Snapshots[snapName]; !ok {
+			if _, ok := cvr.Status.PendingSnapshots[snapName]; !ok {
+				cvr.Status.PendingSnapshots[snapName] = snapInfo
+				newSnapshots = append(newSnapshots, snapName)
+			}
+		}
+	}
+
+	klog.V(2).Infof(
+		"Adding %v pending snapshots and deleting %v pending snapshots on CVR %s",
+		newSnapshots,
+		removedSnapshots,
+		cvr.Name)
+	return nil
+}
+
+// getPeerReplicas returns list of peer replicas of volume
+func getPeerReplicas(
+	clientset clientset.Interface,
+	cvr *cstor.CStorVolumeReplica) (*cstor.CStorVolumeReplicaList, error) {
+	volName := cvr.GetLabels()[types.PersistentVolumeLabelKey]
+	peerCVRList := &cstor.CStorVolumeReplicaList{}
+	cvrList, err := clientset.CstorV1().
+		CStorVolumeReplicas(cvr.Namespace).
+		List(metav1.ListOptions{LabelSelector: types.PersistentVolumeLabelKey + "=" + volName})
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range cvrList.Items {
+		if obj.Name != cvr.Name {
+			peerCVRList.Items = append(peerCVRList.Items, obj)
+		}
+	}
+	return peerCVRList, nil
+}
+
+// getPeerSnapshotInfoList returns the map of snapshot name and snapshot info
+// If any healthy replica exist in peer replica it will return Status.Snapshots
+// else iterate over all the degraded replicas and get snapshot list
+func getPeerSnapshotInfoList(
+	peerCVRList *cstor.CStorVolumeReplicaList) map[string]cstor.CStorSnapshotInfo {
+
+	snapshotInfoList := map[string]cstor.CStorSnapshotInfo{}
+	for _, cvrObj := range peerCVRList.Items {
+		for snapName, snapInfo := range cvrObj.Status.Snapshots {
+			if _, ok := snapshotInfoList[snapName]; !ok {
+				snapshotInfoList[snapName] = snapInfo
+			}
+		}
+	}
+	return snapshotInfoList
+}
+
+// getSnapshotNames returns snapshot names from map of snapshot and snapshot info
+func getSnapshotNames(snapMap map[string]cstor.CStorSnapshotInfo) []string {
+	snapNameList := make([]string, len(snapMap))
+	for snapName, _ := range snapMap {
+		snapNameList = append(snapNameList, snapName)
+	}
+	return snapNameList
+}
+
+// addOrDeleteSnapshotListInfo adds/deletes the snapshots in CVR
+// It performs below steps:
+// 1. Add snapshot if it doesn't exist in CVR but exist on ZFS.
+// 2. Delete snapshot if exist in CVR but not in ZFS.
+// 3. Delete pending snapshots in CVR if exist in ZFS.
+// NOTE: Below function will get the snapshot info from ZFS
+func addOrDeleteSnapshotListInfo(
+	cvr *cstor.CStorVolumeReplica,
+	currentSnapList map[string]string) error {
+	var err error
+	var snapInfo cstor.CStorSnapshotInfo
+	volName := cvr.GetLabels()[types.PersistentVolumeLabelKey]
+	dsName := PoolNameFromCVR(cvr) + "/" + volName
+	newSnapshots := []string{}
+	removedSnapshots := []string{}
+
+	if cvr.Status.Snapshots == nil {
+		cvr.Status.Snapshots = map[string]cstor.CStorSnapshotInfo{}
+	}
+
+	// Add snapshot if it doesn't exist in CVR but exist on ZFS
+	for snapName, _ := range currentSnapList {
+		// If snapshot doesn't exist in CVR.Status.Snapshots then
+		// get the snapshot info from zfs and Update info in CVR.Status.Snapshots
+		if _, ok := cvr.Status.Snapshots[snapName]; !ok {
+			snapInfo, err = getSnapshotInfo(dsName, snapName)
+			if err != nil {
+				return errors.Wrapf(
+					err,
+					"failed to get the properties of snapshot %s@%s",
+					dsName, snapName)
+			}
+			cvr.Status.Snapshots[snapName] = snapInfo
+			newSnapshots = append(newSnapshots, snapName)
+		}
+	}
+
+	// Delete snapshot if exist in CVR but not in ZFS
+	for snapName, _ := range cvr.Status.Snapshots {
+		if _, ok := currentSnapList[snapName]; !ok {
+			delete(cvr.Status.Snapshots, snapName)
+			removedSnapshots = append(removedSnapshots, snapName)
+		}
+	}
+
+	// Delete pending snapshots in CVR if exist in ZFS
+	for snapName, _ := range cvr.Status.PendingSnapshots {
+		if _, ok := currentSnapList[snapName]; ok {
+			delete(cvr.Status.PendingSnapshots, snapName)
+		}
+	}
+	klog.V(2).Infof(
+		"Adding %v snapshots and deleting %v snapshots on CVR %s",
+		newSnapshots,
+		removedSnapshots,
+		cvr.Name)
+	return nil
+}
+
+// GetSnapshotList get the list of snapshots by executing
+// command: `zfs listsnap <dataset_name>` and returns
+// output: {"name":"pool1\/vol1","snaplist":{"istgt_snap1":null,"istgt_snap2":null}} and
+// error if there are any(Few Error codes: 11 -- TryAgain).
+func GetSnapshotList(dsName string) (map[string]string, error) {
+	snapshotList, err := zfs.NewVolumeListSnapshot().
+		WithDataset(dsName).
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+	return snapshotList.SnapList, nil
+}
+
+// getSnapshotInfo get the snapshot properties from pool by executing zfs commands
+// and returns error if there are any
+func getSnapshotInfo(dsName, snapName string) (cstor.CStorSnapshotInfo, error) {
+	ret, err := zfs.NewVolumeGetProperty().
+		WithScriptedMode(true).
+		WithParsableMode(true).
+		WithField("value").
+		WithProperty("logicalreferenced").
+		WithProperty("used").
+		WithDataset(dsName + "@" + snapName).
+		Execute()
+	if err != nil {
+		return cstor.CStorSnapshotInfo{}, errors.Wrapf(err, "failed to get snapshot properties")
+	}
+	valueList := strings.Split(string(ret), "\n")
+	// Since we made zfs query in following order logicalreferenced,
+	// used output also will be in the same order
+
+	// logicalReferenced and Used values are of type uint64
+	var pUint64 []uint64
+	var valU uint64
+	for _, v := range []string{valueList[0], valueList[1]} {
+		valU, err = strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			break
+		}
+		pUint64 = append(pUint64, valU)
+	}
+	if err != nil {
+		return cstor.CStorSnapshotInfo{}, errors.Wrapf(err, "failed to parse the snapshot properties")
+	}
+
+	snapInfo := cstor.CStorSnapshotInfo{
+		LogicalReferenced: pUint64[0],
+		// TODO: Populate Used value when we are estimating time for rebuild
+		// Used:              pUint64[1],
+	}
+	return snapInfo, nil
 }

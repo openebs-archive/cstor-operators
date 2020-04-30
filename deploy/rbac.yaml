@@ -8,7 +8,7 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: openebs-cstor-operator
+  name: openebs-maya-operator
   namespace: openebs
 ---
 # Define Role that allows operations on K8s pods/deployments
@@ -72,14 +72,13 @@ rules:
   verbs: ["get", "list", "create", "delete", "watch"]
 ---
 # Bind the Service Account with the Role Privileges.
-# TODO: Check if default account also needs to be there
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: openebs-cstor-operator
 subjects:
 - kind: ServiceAccount
-  name: openebs-cstor-operator
+  name: openebs-maya-operator
   namespace: openebs
 roleRef:
   kind: ClusterRole

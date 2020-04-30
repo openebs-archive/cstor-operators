@@ -24,7 +24,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/openebs/maya/pkg/zfs/cmd/v1alpha1/bin"
+	"github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"github.com/pkg/errors"
 )
 

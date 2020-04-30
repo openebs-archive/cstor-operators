@@ -8,6 +8,7 @@ require (
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/openebs/api v0.0.0-20200429072019-650209fba28b
+	github.com/openebs/maya v0.0.0-20200427061642-f52d1c16d5c9
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5

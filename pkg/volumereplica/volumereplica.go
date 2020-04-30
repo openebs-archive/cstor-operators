@@ -939,7 +939,8 @@ func getSnapshotInfo(dsName, snapName string) (cstor.CStorSnapshotInfo, error) {
 
 	snapInfo := cstor.CStorSnapshotInfo{
 		LogicalReferenced: pUint64[0],
-		Used:              pUint64[1],
+		// TODO: Populate Used value when we are estimating time for rebuild
+		// Used:              pUint64[1],
 	}
 	return snapInfo, nil
 }

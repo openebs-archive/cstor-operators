@@ -175,7 +175,6 @@ func (c *CStorVolumeReplicaController) syncHandler(
 			"SyncFailed",
 			fmt.Sprintf("failed to sync CVR error: %s", err.Error()),
 		)
-		return nil
 	}
 
 	_, err = c.clientset.CstorV1().CStorVolumeReplicas(cvrGot.Namespace).Update(cvrGot)

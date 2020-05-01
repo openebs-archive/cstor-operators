@@ -49,8 +49,6 @@ type PoolOperations struct {
 // NewPoolOperations returns an empty PoolOperations object.
 func NewPoolOperations(k kubernetes.Interface, c clientset.Interface) *PoolOperations {
 	return &PoolOperations{
-		OldCSPC:    &cstor.CStorPoolCluster{},
-		NewCSPC:    &cstor.CStorPoolCluster{},
 		kubeClient: k,
 		clientset:  c,
 	}
@@ -479,13 +477,13 @@ type raidGroups struct {
 }
 
 func getNewBDsFromStripeSpec(oldRg, newRg cstor.RaidGroup) []string {
-	mapOldRg := map[string]bool{}
+	mapOldBlockDevices := map[string]bool{}
 	bds := []string{}
 	for _, bd := range oldRg.CStorPoolInstanceBlockDevices {
-		mapOldRg[bd.BlockDeviceName] = true
+		mapOldBlockDevices[bd.BlockDeviceName] = true
 	}
 	for _, bd := range newRg.CStorPoolInstanceBlockDevices {
-		if !mapOldRg[bd.BlockDeviceName] {
+		if !mapOldBlockDevices[bd.BlockDeviceName] {
 			bds = append(bds, bd.BlockDeviceName)
 		}
 	}
@@ -506,9 +504,9 @@ func getBDsFromRaidGroups(rgs []cstor.RaidGroup) []string {
 // getExpandedRaidGroups returns the raid groups only if pool expansion is done
 // by the users
 func getExpandedRaidGroups(
-	newPoolSpec *cstor.PoolSpec, oldRaidGroups []cstor.RaidGroup) []cstor.RaidGroup {
+	raidGroups []cstor.RaidGroup, oldRaidGroups []cstor.RaidGroup) []cstor.RaidGroup {
 	expandedRgs := []cstor.RaidGroup{}
-	for _, newRg := range newPoolSpec.DataRaidGroups {
+	for _, newRg := range raidGroups {
 		isRaidGroupExist := false
 		for _, oldRg := range oldRaidGroups {
 			if IsRaidGroupCommon(oldRg, newRg) {
@@ -549,16 +547,22 @@ func (pOps *PoolOperations) validateNewBDs(newBDs []string, cspc *cstor.CStorPoo
 // 1. New blockdevice shouldn't be claimed by any other CSPC (or) third party.
 // 2. New blockdevice shouldn't be the replacing blockdevice.
 func (pOps *PoolOperations) validatePoolExpansion(
-	newPoolSpec *cstor.PoolSpec, commonRaidGroups *raidGroups, rgType string) error {
+	newPoolSpec *cstor.PoolSpec, commonRaidGroups map[string]*raidGroups) error {
 	var bds []string
-	// Multiple raidGroups doesn't exist for stripe pool spec
-	if _, ok := SupportedPRaidType[cstor.PoolType(rgType)]; ok {
-		bds = getNewBDsFromStripeSpec(commonRaidGroups.oldRaidGroups[0],
-			commonRaidGroups.newRaidGroups[0])
-	} else {
-		// RaidGroups will be added only for mirror, raidz and raidz2 cases
-		newRgs := getExpandedRaidGroups(newPoolSpec, commonRaidGroups.oldRaidGroups)
-		bds = getBDsFromRaidGroups(newRgs)
+	for rgType, rgs := range commonRaidGroups {
+		if rgs.rgType == string(cstor.PoolStriped) {
+			bds = append(bds, getNewBDsFromStripeSpec(rgs.oldRaidGroups[0],
+				rgs.newRaidGroups[0])...)
+		} else {
+			if rgType == "data" {
+				newRgs := getExpandedRaidGroups(newPoolSpec.DataRaidGroups, rgs.oldRaidGroups)
+				bds = getBDsFromRaidGroups(newRgs)
+			}
+			if rgType == "writeCache" {
+				newRgs := getExpandedRaidGroups(newPoolSpec.WriteCacheRaidGroups, rgs.oldRaidGroups)
+				bds = getBDsFromRaidGroups(newRgs)
+			}
+		}
 	}
 	err := pOps.validateNewBDs(bds, pOps.NewCSPC)
 	if err != nil {
@@ -605,8 +609,8 @@ func getIndexedCommonRaidGroups(oldPoolSpec,
 		for _, newRg := range newPoolSpec.WriteCacheRaidGroups {
 			if IsRaidGroupCommon(oldRg, newRg) {
 				isRaidGroupExist = true
-				rgs["data"].oldRaidGroups = append(rgs["data"].oldRaidGroups, oldRg)
-				rgs["data"].newRaidGroups = append(rgs["data"].newRaidGroups, newRg)
+				rgs["writeCache"].oldRaidGroups = append(rgs["writeCache"].oldRaidGroups, oldRg)
+				rgs["writeCache"].newRaidGroups = append(rgs["writeCache"].newRaidGroups, newRg)
 				break
 			}
 		}
@@ -628,6 +632,9 @@ func getIndexedCommonRaidGroups(oldPoolSpec,
 //    2.2 Validate changes for blockdevice replacement scenarios(openebs/openebs#2846).
 // 3. Validate vertical pool expansions if there are any new raidgroups or blockdevices added.
 func (pOps *PoolOperations) ArePoolSpecChangesValid(oldPoolSpec, newPoolSpec *cstor.PoolSpec) (bool, string) {
+	if oldPoolSpec.PoolConfig.DataRaidGroupType != newPoolSpec.PoolConfig.DataRaidGroupType || oldPoolSpec.PoolConfig.WriteCacheGroupType != newPoolSpec.PoolConfig.WriteCacheGroupType {
+		return false, fmt.Sprintf("raidgroup can't be modified")
+	}
 	newToOldBd := make(map[string]string)
 	commonRaidGroups, err := getIndexedCommonRaidGroups(oldPoolSpec, newPoolSpec)
 	if err != nil {
@@ -656,10 +663,11 @@ func (pOps *PoolOperations) ArePoolSpecChangesValid(oldPoolSpec, newPoolSpec *cs
 				break
 			}
 		}
-		err = pOps.validatePoolExpansion(newPoolSpec, v, rgType)
-		if err != nil {
-			return false, fmt.Sprintf("pool expansion validation failed: %v", err)
-		}
+	}
+
+	err = pOps.validatePoolExpansion(newPoolSpec, commonRaidGroups)
+	if err != nil {
+		return false, fmt.Sprintf("pool expansion validation failed: %v", err)
 	}
 
 	for newBD, oldBD := range newToOldBd {

@@ -25,6 +25,7 @@ import (
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
+	"k8s.io/api/admissionregistration/v1beta1"
 	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -69,10 +70,22 @@ var (
 	five = int32(5)
 	// Ignore means that an error calling the webhook is ignored.
 	Ignore = admissionregistration.Ignore
+	// Fail means that an error calling the webhook causes the admission to fail.
+	Fail = admissionregistration.Fail
 	// transformation function lists to upgrade webhook resources
-	transformSecret = []transformSecretFunc{}
-	transformSvc    = []transformSvcFunc{}
-	transformConfig = []transformConfigFunc{}
+	transformSecret       = []transformSecretFunc{}
+	transformSvc          = []transformSvcFunc{}
+	transformConfig       = []transformConfigFunc{}
+	cvcRuleWithOperations = v1beta1.RuleWithOperations{
+		Operations: []v1beta1.OperationType{
+			v1beta1.Update,
+		},
+		Rule: v1beta1.Rule{
+			APIGroups:   []string{"cstor.openebs.io"},
+			APIVersions: []string{"v1"},
+			Resources:   []string{"cstorvolumeconfigs"},
+		},
+	}
 )
 
 // createWebhookService creates our webhook Service resource if it does not
@@ -179,11 +192,13 @@ func (c *client) createAdmissionService(
 					admissionregistration.Delete,
 				},
 				Rule: admissionregistration.Rule{
-					APIGroups:   []string{"*"},
-					APIVersions: []string{"*"},
+					APIGroups:   []string{"cstor.openebs.io"},
+					APIVersions: []string{"v1"},
 					Resources:   []string{"cstorpoolclusters"},
 				},
-			}},
+			},
+			cvcRuleWithOperations,
+		},
 		ClientConfig: admissionregistration.WebhookClientConfig{
 			Service: &admissionregistration.ServiceReference{
 				Namespace: namespace,
@@ -195,7 +210,7 @@ func (c *client) createAdmissionService(
 		// SideEffects:             &sideEffectClass,
 		// AdmissionReviewVersions: []string{"v1"},
 		TimeoutSeconds: &five,
-		FailurePolicy:  &Ignore,
+		FailurePolicy:  &Fail,
 	}
 
 	validator := &admissionregistration.ValidatingWebhookConfiguration{

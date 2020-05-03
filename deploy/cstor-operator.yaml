@@ -23,7 +23,7 @@ spec:
         openebs.io/component-name: cspc-operator
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
       - name: cspc-operator
         imagePullPolicy: IfNotPresent
@@ -85,7 +85,7 @@ spec:
         openebs.io/component-name: cvc-operator
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
       - name: cvc-operator
         imagePullPolicy: IfNotPresent
@@ -118,11 +118,11 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openebs-admission-server
+  name: openebs-cstor-admission-server
   namespace: openebs
   labels:
-    app: admission-webhook
-    openebs.io/component-name: admission-webhook
+    app: cstor-admission-webhook
+    openebs.io/component-name: cstor-admission-webhook
     openebs.io/version: dev
 spec:
   replicas: 1
@@ -131,15 +131,15 @@ spec:
     rollingUpdate: null
   selector:
     matchLabels:
-      app: admission-webhook
+      app: cstor-admission-webhook
   template:
     metadata:
       labels:
-        app: admission-webhook
-        openebs.io/component-name: admission-webhook
+        app: cstor-admission-webhook
+        openebs.io/component-name: cstor-admission-webhook
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
         - name: admission-webhook
           image: openebs/cstor-webhook-amd64:ci
@@ -154,4 +154,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: ADMISSION_WEBHOOK_NAME
-              value: "openebs-admission-server"
+              value: "openebs-cstor-admission-server"

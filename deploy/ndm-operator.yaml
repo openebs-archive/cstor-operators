@@ -71,7 +71,7 @@ spec:
       # kubectl label node <node-name> "openebs.io/nodegroup"="storage-node"
       #nodeSelector:
       #  "openebs.io/nodegroup": "storage-node"
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       hostNetwork: true
       containers:
       - name: node-disk-manager
@@ -162,10 +162,10 @@ spec:
         openebs.io/component-name: ndm-operator
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
         - name: node-disk-operator
-          image: openebs/node-disk-operator-amd64:v0.4.8
+          image: openebs/node-disk-operator-amd64:v0.4.9
           imagePullPolicy: IfNotPresent
           readinessProbe:
             exec:

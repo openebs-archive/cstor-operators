@@ -208,6 +208,13 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 		// change in curent and desired state of replicas pool information
 		_ = c.scaleVolumeReplicas(cvc)
 	}
+
+	// sync policy changes from cvc.spec.policy e.g. tunables like toleration, resource requirements etc
+	err = c.syncPolicySpec(cvc)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -268,7 +275,7 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeConfig) (*api
 	}
 
 	klog.V(2).Infof("creating cstorvolume target deployment")
-	_, err = c.getOrCreateCStorTargetDeployment(cvObj, volumePolicy)
+	_, err = c.getOrCreateCStorTargetDeployment(cvObj, &volumePolicy.Spec)
 	if err != nil {
 		return nil, err
 	}
@@ -325,13 +332,62 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeConfig) (*api
 	return cvc, nil
 }
 
+func (c *CVCController) syncPolicySpec(cvc *apis.CStorVolumeConfig) error {
+	cvcCopy := cvc.DeepCopy()
+
+	err := c.patchTargetDeploymentSpec(cvcCopy)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *CVCController) patchTargetDeploymentSpec(cvc *apis.CStorVolumeConfig) error {
+	orignalDeployObj, err := c.kubeclientset.AppsV1().Deployments(cvc.Namespace).Get(cvc.Name+"-target", metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get target deployment for volume %s in namespace %s", cvc.Name, cvc.Namespace)
+	}
+
+	klog.V(4).Infof("Syncing cvc policy spec \n: %+v", cvc)
+
+	vol, err := c.clientset.CstorV1().CStorVolumes(cvc.Namespace).Get(cvc.Name, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get cstorvolume {%v}", cvc.Name)
+	}
+
+	newDeployObj, err := c.BuildTargetDeployment(vol, &cvc.Spec.Policy)
+	if err != nil {
+		return errors.Wrapf(err, "failed to build target deployment {%v}", vol.Name)
+	}
+
+	twoWayPatchData, orignalDeployObjInBytes, err := getPatchData(orignalDeployObj, newDeployObj)
+	if err != nil {
+		return err
+	}
+
+	strategicPatchData, err := strategicpatch.StrategicMergePatch(orignalDeployObjInBytes, twoWayPatchData, orignalDeployObj)
+	if err != nil {
+		return errors.Wrap(err, "failed to create strategic merge patch data")
+	}
+
+	_, err = c.kubeclientset.AppsV1().Deployments(cvc.Namespace).Patch(orignalDeployObj.Name, types.StrategicMergePatchType, strategicPatchData)
+	if err != nil {
+		return errors.Wrap(err, "failed to patch volume target deployment")
+	}
+
+	return nil
+}
+
 func (c *CVCController) getVolumePolicy(
 	policyName string,
 	cvc *apis.CStorVolumeConfig,
 ) (*apis.CStorVolumePolicy, error) {
 
-	volumePolicy := &apis.CStorVolumePolicy{}
 	var err error
+	volumePolicy := &apis.CStorVolumePolicy{}
+
+	// Get the default policy
+	policySpec := getDefaultPolicySpec()
 
 	if policyName != "" {
 		klog.Infof("uses cstorvolume policy %q to configure volume %q", policyName, cvc.Name)
@@ -344,7 +400,11 @@ func (c *CVCController) getVolumePolicy(
 				cvc.Name,
 			)
 		}
+		validatePolicySpec(&volumePolicy.Spec)
+		return volumePolicy, nil
 	}
+	// retrun the default policy
+	volumePolicy.Spec = policySpec
 	return volumePolicy, nil
 }
 
@@ -610,7 +670,7 @@ func (c *CVCController) markCVCResizeFinished(cvc *apis.CStorVolumeConfig) error
 func (c *CVCController) PatchCVCStatus(oldCVC,
 	newCVC *apis.CStorVolumeConfig,
 ) (*apis.CStorVolumeConfig, error) {
-	patchBytes, err := getPatchData(oldCVC, newCVC)
+	patchBytes, _, err := getPatchData(oldCVC, newCVC)
 	if err != nil {
 		return nil, fmt.Errorf("can't patch status of CVC %s as generate path data failed: %v", oldCVC.Name, err)
 	}
@@ -623,20 +683,20 @@ func (c *CVCController) PatchCVCStatus(oldCVC,
 	return updatedClaim, nil
 }
 
-func getPatchData(oldObj, newObj interface{}) ([]byte, error) {
+func getPatchData(oldObj, newObj interface{}) ([]byte, []byte, error) {
 	oldData, err := json.Marshal(oldObj)
 	if err != nil {
-		return nil, fmt.Errorf("marshal old object failed: %v", err)
+		return nil, nil, fmt.Errorf("marshal old object failed: %v", err)
 	}
 	newData, err := json.Marshal(newObj)
 	if err != nil {
-		return nil, fmt.Errorf("mashal new object failed: %v", err)
+		return nil, nil, fmt.Errorf("mashal new object failed: %v", err)
 	}
 	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, oldObj)
 	if err != nil {
-		return nil, fmt.Errorf("CreateTwoWayMergePatch failed: %v", err)
+		return nil, nil, fmt.Errorf("CreateTwoWayMergePatch failed: %v", err)
 	}
-	return patchBytes, nil
+	return patchBytes, oldData, nil
 }
 
 // resizeCV resize the cstor volume to desired size, and update CV's capacity
@@ -644,7 +704,7 @@ func (c *CVCController) resizeCV(cv *apis.CStorVolume, newCapacity resource.Quan
 	newCV := cv.DeepCopy()
 	newCV.Spec.Capacity = newCapacity
 
-	patchBytes, err := getPatchData(cv, newCV)
+	patchBytes, _, err := getPatchData(cv, newCV)
 	if err != nil {
 		return fmt.Errorf("can't update capacity of CV %s as generate patch data failed: %v", cv.Name, err)
 	}

@@ -18,6 +18,7 @@ package cstorvolumeconfig
 
 import (
 	"os"
+	"strconv"
 
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	deploy "github.com/openebs/api/pkg/kubernetes/apps"
@@ -150,38 +151,38 @@ func getDeployTemplateAffinity() *corev1.Affinity {
 
 // getDeployTolerations returns the array of toleration
 // for target deployement, defaulTolerations will be return if not provided
-func getDeployTolerations(policy *apis.CStorVolumePolicy) []corev1.Toleration {
+func getDeployTolerations(policySpec *apis.CStorVolumePolicySpec) []corev1.Toleration {
 
 	var tolerations []corev1.Toleration
-	if len(policy.Spec.Target.Tolerations) == 0 {
+	if len(policySpec.Target.Tolerations) == 0 {
 		tolerations = defaulTolerations()
 	} else {
-		tolerations = policy.Spec.Target.Tolerations
+		tolerations = policySpec.Target.Tolerations
 	}
 	return tolerations
 }
 
 func defaulTolerations() []corev1.Toleration {
 	return []corev1.Toleration{
-		corev1.Toleration{
+		{
 			Effect:            corev1.TaintEffectNoExecute,
 			Key:               "node.alpha.kubernetes.io/notReady",
 			Operator:          corev1.TolerationOpExists,
 			TolerationSeconds: &tolerationSeconds,
 		},
-		corev1.Toleration{
+		{
 			Effect:            corev1.TaintEffectNoExecute,
 			Key:               "node.alpha.kubernetes.io/unreachable",
 			Operator:          corev1.TolerationOpExists,
 			TolerationSeconds: &tolerationSeconds,
 		},
-		corev1.Toleration{
+		{
 			Effect:            corev1.TaintEffectNoExecute,
 			Key:               "node.kubernetes.io/not-ready",
 			Operator:          corev1.TolerationOpExists,
 			TolerationSeconds: &tolerationSeconds,
 		},
-		corev1.Toleration{
+		{
 			Effect:            corev1.TaintEffectNoExecute,
 			Key:               "node.kubernetes.io/unreachable",
 			Operator:          corev1.TolerationOpExists,
@@ -198,19 +199,34 @@ func getTargetMgmtMounts() []corev1.VolumeMount {
 	return defaultMounts
 }
 
+// setIstgtEnvs sets the target container performance tunables env required for
+// cstorvolume target deployment
+func setIstgtEnvs(policySpec *apis.CStorVolumePolicySpec) []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  "QueueDepth",
+			Value: policySpec.Target.QueueDepth,
+		},
+		{
+			Name:  "Luworkers",
+			Value: strconv.FormatInt(policySpec.Target.IOWorkers, 10),
+		},
+	}
+}
+
 // getDeployTemplateEnvs return the common env required for
 // cstorvolume target deployment
 func getDeployTemplateEnvs(cstorid string) []corev1.EnvVar {
 	return []corev1.EnvVar{
-		corev1.EnvVar{
+		{
 			Name:  "OPENEBS_IO_CSTOR_VOLUME_ID",
 			Value: cstorid,
 		},
-		corev1.EnvVar{
+		{
 			Name:  "RESYNC_INTERVAL",
 			Value: resyncInterval,
 		},
-		corev1.EnvVar{
+		{
 			Name: "NODE_NAME",
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
@@ -218,7 +234,7 @@ func getDeployTemplateEnvs(cstorid string) []corev1.EnvVar {
 				},
 			},
 		},
-		corev1.EnvVar{
+		{
 			Name: "POD_NAME",
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
@@ -226,7 +242,7 @@ func getDeployTemplateEnvs(cstorid string) []corev1.EnvVar {
 				},
 			},
 		},
-		corev1.EnvVar{
+		{
 			Name: "OPENEBS_NAMESPACE",
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
@@ -272,7 +288,7 @@ func getVolumeMgmtImage() string {
 
 func getContainerPort(port int32) []corev1.ContainerPort {
 	return []corev1.ContainerPort{
-		corev1.ContainerPort{
+		{
 			ContainerPort: port,
 		},
 	}
@@ -280,38 +296,38 @@ func getContainerPort(port int32) []corev1.ContainerPort {
 
 // getResourceRequirementForCStorTarget returns resource requirement for cstor
 // target container.
-func getResourceRequirementForCStorTarget(policy *apis.CStorVolumePolicy) *corev1.ResourceRequirements {
+func getResourceRequirementForCStorTarget(policySpec *apis.CStorVolumePolicySpec) *corev1.ResourceRequirements {
 	var resourceRequirements *corev1.ResourceRequirements
-	if policy.Spec.Target.Resources == nil {
+	if policySpec.Target.Resources == nil {
 		resourceRequirements = &corev1.ResourceRequirements{}
 	} else {
-		resourceRequirements = policy.Spec.Target.Resources
+		resourceRequirements = policySpec.Target.Resources
 	}
 	// TODO: add default values for resources if both are nil
 	return resourceRequirements
 }
 
 // getAuxResourceRequirement returns resource requirement for cstor target side car containers.
-func getAuxResourceRequirement(policy *apis.CStorVolumePolicy) *corev1.ResourceRequirements {
+func getAuxResourceRequirement(policySpec *apis.CStorVolumePolicySpec) *corev1.ResourceRequirements {
 	var auxResourceRequirements *corev1.ResourceRequirements
-	if policy.Spec.Target.AuxResources == nil {
+	if policySpec.Target.AuxResources == nil {
 		auxResourceRequirements = &corev1.ResourceRequirements{}
 	} else {
-		auxResourceRequirements = policy.Spec.Target.AuxResources
+		auxResourceRequirements = policySpec.Target.AuxResources
 	}
 	// TODO: add default values for resources if both are nil
 	return auxResourceRequirements
 }
 
-func getPriorityClass(policy *apis.CStorVolumePolicy) string {
-	return policy.Spec.Target.PriorityClassName
+func getPriorityClass(policySpec *apis.CStorVolumePolicySpec) string {
+	return policySpec.Target.PriorityClassName
 }
 
 // getOrCreateCStorTargetDeployment get or create the cstor target deployment
 // for a given cstorvolume.
 func (c *CVCController) getOrCreateCStorTargetDeployment(
 	vol *apis.CStorVolume,
-	policy *apis.CStorVolumePolicy,
+	policySpec *apis.CStorVolumePolicySpec,
 ) (*appsv1.Deployment, error) {
 
 	deployObj, err := c.kubeclientset.AppsV1().Deployments(openebsNamespace).
@@ -326,74 +342,89 @@ func (c *CVCController) getOrCreateCStorTargetDeployment(
 	}
 
 	if k8serror.IsNotFound(err) {
-		deployObj = deploy.NewDeployment().
-			WithName(vol.Name + "-target").
-			WithLabelsNew(getDeployLabels(vol.Name)).
-			WithAnnotationsNew(getDeployAnnotation()).
-			WithOwnerReferenceNew(getDeployOwnerReference(vol)).
-			WithReplicas(&deployreplicas).
-			WithStrategyType(
-				appsv1.RecreateDeploymentStrategyType,
-			).
-			WithSelectorMatchLabelsNew(getDeployMatchLabels(vol.Name)).
-			WithPodTemplateSpec(
-				apicore.NewPodTemplateSpec().
-					WithLabelsNew(getDeployTemplateLabels(vol.Name)).
-					WithAnnotationsNew(getDeployTemplateAnnotations()).
-					WithServiceAccountName(util.GetServiceAccountName()).
-					// TODO use of affinity
-					//WithAffinity(getDeployTemplateAffinity()).
-					WithPriorityClassName(getPriorityClass(policy)).
-					WithNodeSelectorByValue(policy.Spec.Target.NodeSelector).
-					WithTolerationsNew(getDeployTolerations(policy)...).
-					WithContainers(
-						apicore.NewContainer().
-							WithImage(getVolumeTargetImage()).
-							WithName(TargetContainerName).
-							WithImagePullPolicy(corev1.PullIfNotPresent).
-							WithPortsNew(getContainerPort(3260)).
-							WithResourcesByRef(getResourceRequirementForCStorTarget(policy)).
-							WithPrivilegedSecurityContext(&privileged).
-							WithVolumeMountsNew(getTargetMgmtMounts()),
-						apicore.NewContainer().
-							WithImage(getVolumeMonitorImage()).
-							WithName(MonitorContainerName).
-							WithCommandNew([]string{"maya-exporter"}).
-							WithArgumentsNew([]string{"-e=cstor"}).
-							WithResourcesByRef(getAuxResourceRequirement(policy)).
-							WithPortsNew(getContainerPort(9500)).
-							WithVolumeMountsNew(getMonitorMounts()),
-						apicore.NewContainer().
-							WithImage(getVolumeMgmtImage()).
-							WithName(MgmtContainerName).
-							WithImagePullPolicy(corev1.PullIfNotPresent).
-							WithPortsNew(getContainerPort(80)).
-							WithEnvsNew(getDeployTemplateEnvs(string(vol.UID))).
-							WithResourcesByRef(getAuxResourceRequirement(policy)).
-							WithPrivilegedSecurityContext(&privileged).
-							WithVolumeMountsNew(getTargetMgmtMounts()),
-					).
-					WithVolumes(
-						apicore.NewVolume().
-							WithName("sockfile").
-							WithEmptyDir(&corev1.EmptyDirVolumeSource{}),
-						apicore.NewVolume().
-							WithName("conf").
-							WithEmptyDir(&corev1.EmptyDirVolumeSource{}),
-						apicore.NewVolume().
-							WithName("storagepath").
-							WithHostPathAndType(
-								util.GetOpenebsBaseDirPath()+"/cstor-target/"+vol.Name,
-								&hostpathType,
-							),
-					),
-			).
-			Build()
+		deployObj, err = c.BuildTargetDeployment(vol, policySpec)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build deployment object")
+		}
 
 		deployObj, err = c.kubeclientset.AppsV1().Deployments(openebsNamespace).Create(deployObj)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create deployment object")
 		}
 	}
+	return deployObj, nil
+}
+
+// BuildTargetDeployment builds the target deploytment object for a given volume
+// and policy
+func (c *CVCController) BuildTargetDeployment(
+	vol *apis.CStorVolume,
+	policySpec *apis.CStorVolumePolicySpec,
+) (*appsv1.Deployment, error) {
+
+	deployObj := deploy.NewDeployment().
+		WithName(vol.Name + "-target").
+		WithLabelsNew(getDeployLabels(vol.Name)).
+		WithAnnotationsNew(getDeployAnnotation()).
+		WithOwnerReferenceNew(getDeployOwnerReference(vol)).
+		WithReplicas(&deployreplicas).
+		WithStrategyType(
+			appsv1.RecreateDeploymentStrategyType,
+		).
+		WithSelectorMatchLabelsNew(getDeployMatchLabels(vol.Name)).
+		WithPodTemplateSpec(
+			apicore.NewPodTemplateSpec().
+				WithLabelsNew(getDeployTemplateLabels(vol.Name)).
+				WithAnnotationsNew(getDeployTemplateAnnotations()).
+				WithServiceAccountName(util.GetServiceAccountName()).
+				// TODO use of affinity
+				//WithAffinity(getDeployTemplateAffinity()).
+				WithPriorityClassName(getPriorityClass(policySpec)).
+				WithNodeSelectorByValue(policySpec.Target.NodeSelector).
+				WithTolerationsNew(getDeployTolerations(policySpec)...).
+				WithContainers(
+					apicore.NewContainer().
+						WithImage(getVolumeTargetImage()).
+						WithName(TargetContainerName).
+						WithImagePullPolicy(corev1.PullIfNotPresent).
+						WithPortsNew(getContainerPort(3260)).
+						WithEnvsNew(setIstgtEnvs(policySpec)).
+						WithResourcesByRef(getResourceRequirementForCStorTarget(policySpec)).
+						WithPrivilegedSecurityContext(&privileged).
+						WithVolumeMountsNew(getTargetMgmtMounts()),
+					apicore.NewContainer().
+						WithImage(getVolumeMonitorImage()).
+						WithName(MonitorContainerName).
+						WithCommandNew([]string{"maya-exporter"}).
+						WithArgumentsNew([]string{"-e=cstor"}).
+						WithResourcesByRef(getAuxResourceRequirement(policySpec)).
+						WithPortsNew(getContainerPort(9500)).
+						WithVolumeMountsNew(getMonitorMounts()),
+					apicore.NewContainer().
+						WithImage(getVolumeMgmtImage()).
+						WithName(MgmtContainerName).
+						WithImagePullPolicy(corev1.PullIfNotPresent).
+						WithPortsNew(getContainerPort(80)).
+						WithEnvsNew(getDeployTemplateEnvs(string(vol.UID))).
+						WithResourcesByRef(getAuxResourceRequirement(policySpec)).
+						WithPrivilegedSecurityContext(&privileged).
+						WithVolumeMountsNew(getTargetMgmtMounts()),
+				).
+				WithVolumes(
+					apicore.NewVolume().
+						WithName("sockfile").
+						WithEmptyDir(&corev1.EmptyDirVolumeSource{}),
+					apicore.NewVolume().
+						WithName("conf").
+						WithEmptyDir(&corev1.EmptyDirVolumeSource{}),
+					apicore.NewVolume().
+						WithName("storagepath").
+						WithHostPathAndType(
+							util.GetOpenebsBaseDirPath()+"/cstor-target/"+vol.Name,
+							&hostpathType,
+						),
+				),
+		).
+		Build()
 	return deployObj, nil
 }

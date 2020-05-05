@@ -52,7 +52,7 @@ POD_NAME=$1
 POD_MAX_RETRY=$2
 for i in $(seq 1 $POD_MAX_RETRY) ; do
  PodStatus=$(kubectl get pod $POD_NAME --output="jsonpath={.status.phase}")
- if [ "$PVCStatus" == "Running" ]; then
+ if [ "$PodStatus" == "Running" ]; then
  echo "Pod $POD_NAME running"
  break
  else

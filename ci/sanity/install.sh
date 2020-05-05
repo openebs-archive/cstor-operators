@@ -17,7 +17,7 @@ kubectl apply -f ./deploy/cstor-operator.yaml
 
 echo "Install CSI"
 
-kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-csi/master/deploy/csi-operator-ubuntu-18.04.yaml
+kubectl apply -f ./ci/artifacts/csi-operator-ubuntu-18.04.yaml
 
 sleep 5
 

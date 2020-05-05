@@ -148,7 +148,9 @@ func (ac *Config) ClaimBDsForNode(BD []string) error {
 	}
 
 	if pendingClaim > 0 {
-		return errors.Errorf("%d block device claims are pending:%v", pendingClaim, pendingClaimBDs)
+		return errors.Errorf("%d block device claims are pending, " +
+			"BDs that are pending for claim are:" +
+			":%v", pendingClaim, pendingClaimBDs)
 	}
 	return nil
 }

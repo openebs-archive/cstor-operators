@@ -1,0 +1,14 @@
+apiVersion: cstor.openebs.io/v1
+kind: CStorPoolCluster
+metadata:
+  name: cspc-stripe
+  namespace: openebs
+spec:
+  pools:
+    - nodeSelector:
+        kubernetes.io/hostname: "NODE_NAME"
+      dataRaidGroups:
+        - blockDevices:
+            - blockDeviceName: "BD_NAME"
+      poolConfig:
+        dataRaidGroupType: "stripe"

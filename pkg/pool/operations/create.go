@@ -106,6 +106,7 @@ func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.Ra
 		WithPool(PoolName()).
 		WithVdevList(vdevlist).
 		Execute()
+
 	if err != nil {
 		return errors.Errorf("Failed to create pool.. %s .. %s", string(ret), err.Error())
 	}

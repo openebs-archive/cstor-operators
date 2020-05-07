@@ -23,6 +23,7 @@ import (
 
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	apitypes "github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/cstor-operators/pkg/util/hash"
 	"github.com/openebs/cstor-operators/pkg/version"
 	errors "github.com/pkg/errors"
 	"k8s.io/klog"
@@ -334,6 +335,8 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeConfig) (*api
 
 	// update volume replica pool information on cvc spec and status
 	addReplicaPoolInfo(cvc, poolNames)
+	// add hash label in cvc generated from volume policy spec
+	addPolicySpecHash(cvc)
 
 	err = c.updateCVCObj(cvc, cvObj)
 	if err != nil {
@@ -342,13 +345,36 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeConfig) (*api
 	return cvc, nil
 }
 
-func (c *CVCController) syncPolicySpec(cvcNew *apis.CStorVolumeConfig) error {
-	cvcNewCopy := cvcNew.DeepCopy()
-	// TODO: compare hash for the policySpec, if required then only reconcile the
-	// policy
-	err := c.patchTargetDeploymentSpec(cvcNewCopy)
-	if err != nil {
-		return err
+// syncPolicySpec reconcile the policy changes to volume target deployment
+// for each volumes based on desired changes under cvc.Spec.Policy
+func (c *CVCController) syncPolicySpec(cvc *apis.CStorVolumeConfig) error {
+	cvcCopy := cvc.DeepCopy()
+
+	// compare hash label value to the generated hash out of policy changes
+	if cvcCopy.Labels[hash.TemplateHashLabelName] != hash.HashObject(cvcCopy.Spec.Policy) {
+		klog.V(4).Infof("Initiated policy reconcile for cvc %q :", cvc.Name)
+		err := c.patchTargetDeploymentSpec(cvcCopy)
+		if err != nil {
+			c.recorder.Event(cvcCopy, corev1.EventTypeWarning,
+				string("PolicySync"),
+				fmt.Sprintf("failed to patch target deployment for cvc %s, err %s ", cvcCopy.Name, err.Error()),
+			)
+			return err
+		}
+		// update the hash value in cvc labels generated for new policy changes
+		addPolicySpecHash(cvcCopy)
+		_, err = c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(cvcCopy)
+		if err != nil {
+			c.recorder.Event(cvcCopy, corev1.EventTypeWarning,
+				string("PolicySync"),
+				fmt.Sprintf("failed to update hash label in cvc %q, err %s", cvcCopy.Name, err.Error()),
+			)
+			return err
+		}
+		c.recorder.Event(cvcCopy, corev1.EventTypeNormal,
+			string("PolicySync"),
+			fmt.Sprintf("successfully sync policy for cvc %s", cvcCopy.Name),
+		)
 	}
 	return nil
 }
@@ -419,6 +445,11 @@ func (c *CVCController) getVolumePolicy(
 	return volumePolicy, nil
 }
 
+func addPolicySpecHash(cvc *apis.CStorVolumeConfig) {
+	labels := hash.SetTemplateHashLabel(cvc.Labels, cvc.Spec.Policy)
+	cvc.WithLabels(labels)
+}
+
 // isReplicaAffinityEnabled checks if replicaAffinity has been enabled using
 // cstor volume policy
 func (c *CVCController) isReplicaAffinityEnabled(policy *apis.CStorVolumePolicy) bool {
@@ -467,7 +498,7 @@ func (c *CVCController) removeClaimFinalizer(
 		}
 	}
 	cvcPatch := []Patch{
-		Patch{
+		{
 			Op:   "remove",
 			Path: "/metadata/finalizers",
 		},

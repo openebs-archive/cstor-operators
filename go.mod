@@ -3,6 +3,7 @@ module github.com/openebs/cstor-operators
 go 1.13
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/onsi/ginkgo v1.12.0 // indirect
@@ -11,6 +12,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect

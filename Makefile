@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-HUB_USER?=openebs
+IMAGE_ORG?=openebs
 
 # Determine the arch/os
 ifeq (${XC_OS}, )
@@ -100,63 +100,63 @@ cvc-operator:
 .PHONY: cvc-operator-image.amd64
 cvc-operator-image.amd64:
 	@echo -n "--> cvc-operator image <--"
-	@echo "${HUB_USER}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG}"
 	@echo "----------------------------"
 	@PNAME=${CVC_OPERATOR} CTLNAME=${CVC_OPERATOR} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${CVC_OPERATOR}/${CVC_OPERATOR} build/cvc-operator/
-	@cd build/${CVC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${CVC_OPERATOR} && sudo docker build -t ${IMAGE_ORG}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${CVC_OPERATOR}/${CVC_OPERATOR}
 
 .PHONY: cvc-operator-image.arm64
 cvc-operator-image.arm64:
 	@echo "----------------------------"
 	@echo -n "--> arm64 based cvc-operator image "
-	@echo "${HUB_USER}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG}"
 	@echo "----------------------------"
 	@PNAME=${CVC_OPERATOR} CTLNAME=${CVC_OPERATOR} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${CVC_OPERATOR}/${CVC_OPERATOR} build/cvc-operator/
-	@cd build/${CVC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CVC_OPERATOR_ARM64}:${IMAGE_TAG} -f Dockerfile.arm64 --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${CVC_OPERATOR} && sudo docker build -t ${IMAGE_ORG}/${CVC_OPERATOR_ARM64}:${IMAGE_TAG} -f Dockerfile.arm64 --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${CVC_OPERATOR}/${CVC_OPERATOR}
 
 .PHONY: volume-manager-image.amd64
 volume-manager-image.amd64:
 	@echo -n "--> volume manager image <--"
-	@echo "${HUB_USER}/${VOLUME_MANAGER_REPO_NAME}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${VOLUME_MANAGER_REPO_NAME}:${IMAGE_TAG}"
 	@echo "----------------------------"
 	@PNAME=${VOLUME_MANAGER} CTLNAME=${VOLUME_MANAGER} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${VOLUME_MANAGER}/${VOLUME_MANAGER} build/volume-manager/
-	@cd build/${VOLUME_MANAGER} && sudo docker build -t ${HUB_USER}/${VOLUME_MANAGER_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${VOLUME_MANAGER} && sudo docker build -t ${IMAGE_ORG}/${VOLUME_MANAGER_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${VOLUME_MANAGER}/${VOLUME_MANAGER}
 
 .PHONY: cspc-operator-image.amd64
 cspc-operator-image.amd64:
 	@echo -n "--> cspc-operator image <--"
-	@echo "${HUB_USER}/${CSPC_OPERATOR_REPO_NAME}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${CSPC_OPERATOR_REPO_NAME}:${IMAGE_TAG}"
 	@echo "----------------------------"
 	@PNAME=${CSPC_OPERATOR} CTLNAME=${CSPC_OPERATOR} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${CSPC_OPERATOR}/${CSPC_OPERATOR} build/cspc-operator/
-	@cd build/${CSPC_OPERATOR} && sudo docker build -t ${HUB_USER}/${CSPC_OPERATOR_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${CSPC_OPERATOR} && sudo docker build -t ${IMAGE_ORG}/${CSPC_OPERATOR_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${CSPC_OPERATOR}/${CSPC_OPERATOR}
 
 .PHONY: pool-manager-image.amd64
 pool-manager-image.amd64:
 	@echo -n "--> pool manager image <--"
-	@echo "${HUB_USER}/${POOL_MANAGER_REPO_NAME}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${POOL_MANAGER_REPO_NAME}:${IMAGE_TAG}"
 	@echo "----------------------------"
 	@PNAME=${POOL_MANAGER} CTLNAME=${POOL_MANAGER} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${POOL_MANAGER}/${POOL_MANAGER} build/pool-manager/
-	@cd build/${POOL_MANAGER} && sudo docker build -t ${HUB_USER}/${POOL_MANAGER_REPO_NAME}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} --build-arg BUILD_DATE=${BUILD_DATE} . --no-cache
+	@cd build/${POOL_MANAGER} && sudo docker build -t ${IMAGE_ORG}/${POOL_MANAGER_REPO_NAME}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} --build-arg BUILD_DATE=${BUILD_DATE} . --no-cache
 	@rm build/${POOL_MANAGER}/${POOL_MANAGER}
 
 .PHONY: cstor-webhook-image.amd64
 cstor-webhook-image.amd64:
 	@echo "----------------------------"
 	@echo -n "--> cstor-webhook image "
-	@echo "${HUB_USER}/${CSTOR_WEBHOOK_REPO_NAME}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${CSTOR_WEBHOOK_REPO_NAME}:${IMAGE_TAG}"
 	@echo "----------------------------"
 	@PNAME=${CSTOR_WEBHOOK} CTLNAME=${WEBHOOK_REPO} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${CSTOR_WEBHOOK}/${WEBHOOK_REPO} build/cstor-webhook/
-	@cd build/${CSTOR_WEBHOOK} && sudo docker build -t ${HUB_USER}/${CSTOR_WEBHOOK_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
+	@cd build/${CSTOR_WEBHOOK} && sudo docker build -t ${IMAGE_ORG}/${CSTOR_WEBHOOK_REPO_NAME}:${IMAGE_TAG} --build-arg BUILD_DATE=${BUILD_DATE} .
 	@rm build/${CSTOR_WEBHOOK}/${WEBHOOK_REPO}
 
 .PHONY: all.amd64

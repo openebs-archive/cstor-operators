@@ -25,7 +25,6 @@ import (
 
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 
-	apistypes "github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/debug"
@@ -41,10 +40,6 @@ import (
 	"k8s.io/klog"
 )
 
-const (
-	v130 = "1.3.0"
-)
-
 type upgradeParams struct {
 	cvr    *apis.CStorVolumeReplica
 	client clientset.Interface
@@ -53,11 +48,7 @@ type upgradeParams struct {
 type upgradeFunc func(u *upgradeParams) (*apis.CStorVolumeReplica, error)
 
 var (
-	upgradeMap = map[string]upgradeFunc{
-		"1.0.0": setReplicaID,
-		"1.1.0": setReplicaID,
-		"1.2.0": setReplicaID,
-	}
+	upgradeMap = map[string]upgradeFunc{}
 )
 
 // CVRPatch struct represent the struct used to patch
@@ -98,17 +89,6 @@ func (c *CStorVolumeReplicaController) syncHandler(
 			"failed to reconcile cvr {%s}: object not found",
 			key,
 		)
-	}
-	cvrGot, err = c.populateVersion(cvrGot)
-	if err != nil {
-		klog.Errorf("failed to add versionDetails to cvr %s:%s", cvrGot.Name, err.Error())
-		c.recorder.Event(
-			cvrGot,
-			corev1.EventTypeWarning,
-			"FailedPopulate",
-			fmt.Sprintf("Failed to add current version: %s", err.Error()),
-		)
-		return nil
 	}
 	cvrGot, err = c.reconcileVersion(cvrGot)
 	if err != nil {
@@ -695,43 +675,4 @@ func (c *CStorVolumeReplicaController) reconcileVersion(cvr *apis.CStorVolumeRep
 		return cvrObj, nil
 	}
 	return cvr, nil
-}
-
-// populateVersion assigns VersionDetails for old cvr object
-func (c *CStorVolumeReplicaController) populateVersion(cvr *apis.CStorVolumeReplica) (
-	*apis.CStorVolumeReplica, error,
-) {
-	v := cvr.Labels[string(apistypes.OpenEBSVersionLabelKey)]
-	// 1.3.0 onwards new CVR will have the field populated during creation
-	if v < v130 && cvr.VersionDetails.Status.Current == "" {
-		cvrObj := cvr.DeepCopy()
-		cvrObj.VersionDetails.Status.Current = v
-		cvrObj.VersionDetails.Desired = v
-		cvrObj, err := c.clientset.CstorV1().CStorVolumeReplicas(cvrObj.Namespace).
-			Update(cvrObj)
-
-		if err != nil {
-			return cvr, err
-		}
-		klog.Infof("Version %s added on cvr %s", v, cvrObj.Name)
-		return cvrObj, nil
-	}
-	return cvr, nil
-}
-
-// setReplicaID sets the replica_id if not present for old cvrs when
-// they are upgraded to version 1.3.0 or above.
-func setReplicaID(u *upgradeParams) (*apis.CStorVolumeReplica, error) {
-	cvr := u.cvr
-	cvrObj := cvr.DeepCopy()
-	err := volumereplica.GetAndUpdateReplicaID(cvrObj)
-	if err != nil {
-		return cvr, err
-	}
-	cvrObj, err = u.client.CstorV1().
-		CStorVolumeReplicas(cvrObj.Namespace).Update(cvrObj)
-	if err != nil {
-		return cvr, err
-	}
-	return cvrObj, nil
 }

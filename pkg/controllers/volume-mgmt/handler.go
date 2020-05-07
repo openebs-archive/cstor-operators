@@ -48,12 +48,7 @@ type upgradeParams struct {
 type upgradeFunc func(u *upgradeParams) (*apis.CStorVolume, error)
 
 var (
-	v130       = "1.3.0"
-	upgradeMap = map[string]upgradeFunc{
-		"1.0.0": setDesiredRF,
-		"1.1.0": setDesiredRF,
-		"1.2.0": setDesiredRF,
-	}
+	upgradeMap = map[string]upgradeFunc{}
 )
 
 // syncHandler compares the actual state with the desired, and attempts to
@@ -67,17 +62,6 @@ func (c *CStorVolumeController) syncHandler(
 	cStorVolumeGot, err := c.getVolumeResource(key)
 	if err != nil {
 		return err
-	}
-	cStorVolumeGot, err = c.populateVersion(cStorVolumeGot)
-	if err != nil {
-		klog.Errorf("failed to add versionDetails to cv %s:%s", cStorVolumeGot.Name, err.Error())
-		c.recorder.Event(
-			cStorVolumeGot,
-			corev1.EventTypeWarning,
-			"FailedPopulate",
-			fmt.Sprintf("Failed to add current version: %s", err.Error()),
-		)
-		return nil
 	}
 	cStorVolumeGot, err = c.reconcileVersion(cStorVolumeGot)
 	if err != nil {
@@ -770,34 +754,5 @@ func (c *CStorVolumeController) reconcileVersion(cv *apis.CStorVolume) (*apis.CS
 		}
 		return cvObject, nil
 	}
-	return cv, nil
-}
-
-// populateVersion assigns VersionDetails for old cv object
-func (c *CStorVolumeController) populateVersion(cv *apis.CStorVolume) (
-	*apis.CStorVolume, error,
-) {
-	v := cv.Labels[string(types.OpenEBSVersionLabelKey)]
-	// 1.3.0 onwards new CV will have the field populated during creation
-	if v < v130 && cv.VersionDetails.Status.Current == "" {
-		cvObj := cv.DeepCopy()
-		cvObj.VersionDetails.Status.Current = v
-		cvObj.VersionDetails.Desired = v
-		cvObj, err := c.clientset.CstorV1().CStorVolumes(cvObj.Namespace).
-			Update(cvObj)
-
-		if err != nil {
-			return cv, err
-		}
-		klog.Infof("Version %s added on cstorvolume %s", v, cvObj.Name)
-		return cvObj, nil
-	}
-	return cv, nil
-}
-
-func setDesiredRF(u *upgradeParams) (*apis.CStorVolume, error) {
-	cv := u.cv
-	// Set new field DesiredReplicationFactor as ReplicationFactor
-	cv.Spec.DesiredReplicationFactor = cv.Spec.ReplicationFactor
 	return cv, nil
 }

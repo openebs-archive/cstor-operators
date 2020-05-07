@@ -20,9 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/cstor-operators/pkg/cspc/algorithm"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
@@ -34,6 +36,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/klog"
+)
+
+type upgradeParams struct {
+	cspc   *cstor.CStorPoolCluster
+	client clientset.Interface
+}
+
+type upgradeFunc func(u *upgradeParams) (*cstor.CStorPoolCluster, error)
+
+var (
+	upgradeMap = map[string]upgradeFunc{}
 )
 
 func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoolInstanceList) error {
@@ -68,6 +81,24 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 	cspcGot, err := c.populateVersion(cspc)
 	if err != nil {
 		klog.Errorf("failed to add versionDetails to CSPC %s in namesapce %s :{%s}", cspc.Name, cspc.Namespace, err.Error())
+		return nil
+	}
+
+	cspcGot, err = c.reconcileVersion(cspcGot)
+	if err != nil {
+		message := fmt.Sprintf("Failed to upgrade cspc to %s version: %s",
+			cspcGot.VersionDetails.Desired,
+			err.Error())
+		klog.Errorf("failed to upgrade cspc %s:%s", cspcGot.Name, err.Error())
+		c.recorder.Event(cspc, corev1.EventTypeWarning, "FailedUpgrade", message)
+		cspcGot.VersionDetails.Status.SetErrorStatus(
+			"Failed to reconcile cspc version",
+			err,
+		)
+		_, err = c.clientset.CstorV1().CStorPoolClusters(cspcGot.Namespace).Update(cspcGot)
+		if err != nil {
+			klog.Errorf("failed to update versionDetails status for cspc %s:%s", cspcGot.Name, err.Error())
+		}
 		return nil
 	}
 
@@ -303,6 +334,52 @@ func (c *Controller) EstimateCSPCVersion(cspc *cstor.CStorPoolCluster) (string, 
 		return version.Current(), nil
 	}
 	return cspiList.Items[0].Labels[types.OpenEBSVersionLabelKey], nil
+}
+
+func (c *Controller) reconcileVersion(cspc *cstor.CStorPoolCluster) (*cstor.CStorPoolCluster, error) {
+	var err error
+	// the below code uses deep copy to have the state of object just before
+	// any update call is done so that on failure the last state object can be returned
+	if cspc.VersionDetails.Status.Current != cspc.VersionDetails.Desired {
+		if !version.IsCurrentVersionValid(cspc.VersionDetails.Status.Current) {
+			return cspc, errors.Errorf("invalid current version %s", cspc.VersionDetails.Status.Current)
+		}
+		if !version.IsDesiredVersionValid(cspc.VersionDetails.Desired) {
+			return cspc, errors.Errorf("invalid desired version %s", cspc.VersionDetails.Desired)
+		}
+		cspcObj := cspc.DeepCopy()
+		if cspc.VersionDetails.Status.State != cstor.ReconcileInProgress {
+			cspcObj.VersionDetails.Status.SetInProgressStatus()
+			cspcObj, err = c.clientset.CstorV1().CStorPoolClusters(cspcObj.Namespace).Update(cspcObj)
+			if err != nil {
+				return cspc, err
+			}
+		}
+		// As no other steps are required just change current version to
+		// desired version
+		path := strings.Split(cspcObj.VersionDetails.Status.Current, "-")[0]
+		u := &upgradeParams{
+			cspc:   cspcObj,
+			client: c.clientset,
+		}
+		// Get upgrade function for corresponding path, if path does not
+		// exits then no upgrade is required and funcValue will be nil.
+		funcValue := upgradeMap[path]
+		if funcValue != nil {
+			cspcObj, err = funcValue(u)
+			if err != nil {
+				return cspcObj, err
+			}
+		}
+		cspc = cspcObj.DeepCopy()
+		cspcObj.VersionDetails.SetSuccessStatus()
+		cspcObj, err = c.clientset.CstorV1().CStorPoolClusters(cspcObj.Namespace).Update(cspcObj)
+		if err != nil {
+			return cspc, errors.Wrap(err, "failed to update CSPC")
+		}
+		return cspcObj, nil
+	}
+	return cspc, nil
 }
 
 // GetCSPIWithoutDeployment gets the CSPIs for whom the pool deployment does not exists.

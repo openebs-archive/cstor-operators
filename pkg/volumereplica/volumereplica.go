@@ -31,7 +31,7 @@ import (
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/debug"
-	"github.com/openebs/cstor-operators/pkg/hash"
+	"github.com/openebs/cstor-operators/pkg/util/hash"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

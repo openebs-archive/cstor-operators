@@ -466,7 +466,7 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest, getC
 	var cspcNew cstor.CStorPoolCluster
 	err := json.Unmarshal(req.Object.Raw, &cspcNew)
 	if err != nil {
-		klog.Errorf("Could not unmarshal cspc %s raw object: %v, %v", req.Name, err, req.Object.Raw)
+		klog.Errorf("Could not unmarshal cspc %s raw object: %v, %+v", req.Name, err, string(req.Object.Raw))
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusBadRequest).AR
 		return response
 	}

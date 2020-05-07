@@ -54,7 +54,7 @@ func (wh *webhook) validateCVCUpdateRequest(req *v1beta1.AdmissionRequest, getCV
 	var cvcNewObj cstor.CStorVolumeConfig
 	err := json.Unmarshal(req.Object.Raw, &cvcNewObj)
 	if err != nil {
-		klog.Errorf("Couldn't unmarshal raw object: %v to cvc error: %v", req.Object.Raw, err)
+		klog.Errorf("Couldn't unmarshal raw object: %+v to cvc error: %v", string(req.Object.Raw), err)
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusBadRequest).AR
 		return response
 	}

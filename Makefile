@@ -118,7 +118,6 @@ CVC_OPERATOR_ARM64?=cvc-operator-arm64
 deps:
 	@go mod tidy
 	@go mod verify
-	@git diff --exit-code -- go.sum go.mod
 
 .PHONY: test
 test:

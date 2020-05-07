@@ -23,6 +23,7 @@ import (
 
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	apitypes "github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/cstor-operators/pkg/version"
 	errors "github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -144,6 +145,15 @@ func (c *CVCController) enqueueCVC(obj interface{}) {
 // synCVC is the function which tries to converge to a desired state for the
 // CStorVolumeConfigs
 func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
+
+	if ok, reason := c.ShouldReconcile(cvc); !ok {
+		// Do not reconcile cvc if version mismatched
+		message := fmt.Sprintf("can not reconcile CVC %s as %s", cvc.Name, reason)
+		c.recorder.Event(cvc, corev1.EventTypeWarning, "CVC Reconcile", message)
+		klog.Warningf("Cannot not reconcile CVC %s in namespace %s as %s", cvc.Name, cvc.Namespace, reason)
+		return nil
+	}
+
 	var err error
 	// CStor Volume Claim should be deleted. Check if deletion timestamp is set
 	// and remove finalizer.
@@ -332,10 +342,11 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeConfig) (*api
 	return cvc, nil
 }
 
-func (c *CVCController) syncPolicySpec(cvc *apis.CStorVolumeConfig) error {
-	cvcCopy := cvc.DeepCopy()
-
-	err := c.patchTargetDeploymentSpec(cvcCopy)
+func (c *CVCController) syncPolicySpec(cvcNew *apis.CStorVolumeConfig) error {
+	cvcNewCopy := cvcNew.DeepCopy()
+	// TODO: compare hash for the policySpec, if required then only reconcile the
+	// policy
+	err := c.patchTargetDeploymentSpec(cvcNewCopy)
 	if err != nil {
 		return err
 	}
@@ -772,4 +783,21 @@ func (c *CVCController) scaleVolumeReplicas(cvc *apis.CStorVolumeConfig) error {
 		"ScalingVolumeReplicas",
 		"successfully scaled volume replicas to %d", len(cvc.Status.PoolInfo))
 	return nil
+}
+
+func (c *CVCController) ShouldReconcile(cvc *apis.CStorVolumeConfig) (bool, string) {
+	cvcOperatorVersion := version.Current()
+	cvcVersion := cvc.VersionDetails.Status.Current
+	// if version is not exists means its a brand new resource that has not been
+	// reconciled by controller yet
+	if cvcVersion == "" {
+		return true, ""
+	}
+
+	if cvcVersion != cvcOperatorVersion {
+		return false, fmt.Sprintf("cvc operator version is %s but cvc version is %s",
+			cvcOperatorVersion,
+			cvcVersion)
+	}
+	return true, ""
 }

@@ -45,6 +45,9 @@ type PoolStatus struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolStatus returns new instance of object PoolStatus
@@ -70,6 +73,12 @@ func (p *PoolStatus) WithCommand(Command string) *PoolStatus {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolStatus object.
+func (p *PoolStatus) WithExecutor(executor bin.Executor) *PoolStatus {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolStatus object by builder
 func (p *PoolStatus) Validate() *PoolStatus {
 	for _, check := range p.checks {
@@ -86,6 +95,11 @@ func (p *PoolStatus) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

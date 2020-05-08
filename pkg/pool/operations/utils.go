@@ -28,6 +28,8 @@ const (
 	PoolPrefix string = "cstor-"
 )
 
+var poolName string
+
 // ErrorWrapf wrap error
 // If given err is nil then it will return new error
 func ErrorWrapf(err error, format string, args ...interface{}) error {
@@ -40,7 +42,10 @@ func ErrorWrapf(err error, format string, args ...interface{}) error {
 
 // PoolName return pool name for given CSPI object
 func PoolName() string {
-	return PoolPrefix + os.Getenv(string(common.OpenEBSIOPoolName))
+	if poolName == "" {
+		poolName = PoolPrefix + os.Getenv(string(common.OpenEBSIOPoolName))
+	}
+	return poolName
 }
 
 // IsEmpty check if string is empty or not

@@ -18,6 +18,7 @@ package v1alpha2
 
 import (
 	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	zcmd "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 )
@@ -32,8 +33,12 @@ type OperationsConfig struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
+
+	// ZcmdExecutor is used to execute ZFS and ZPOOL commands
+	zcmdExecutor zcmd.Executor
 }
 
+// NewOperationsConfig builds the new instance of OperationsConfig
 func NewOperationsConfig() *OperationsConfig {
 	return &OperationsConfig{}
 }
@@ -44,14 +49,20 @@ func (oc *OperationsConfig) WithKubeClientSet(ks kubernetes.Interface) *Operatio
 	return oc
 }
 
-// withOpenEBSClient fills openebs client to controller object.
+// WithOpenEBSClient fills openebs client to controller object.
 func (oc *OperationsConfig) WithOpenEBSClient(ocs openebsclientset.Interface) *OperationsConfig {
 	oc.openebsclientset = ocs
 	return oc
 }
 
-// withRecorder fills recorder to generate events on CSPI
+// WithRecorder fills recorder to generate events on CSPI
 func (oc *OperationsConfig) WithRecorder(recorder record.EventRecorder) *OperationsConfig {
 	oc.recorder = recorder
+	return oc
+}
+
+// WithZcmdExecutor fills the zcmdExecutor to execute ZPOOL/ZFS commands
+func (oc *OperationsConfig) WithZcmdExecutor(executor zcmd.Executor) *OperationsConfig {
+	oc.zcmdExecutor = executor
 	return oc
 }

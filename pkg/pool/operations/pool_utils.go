@@ -28,6 +28,7 @@ import (
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
+	bin "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,13 +103,14 @@ func getPathForBDevFromBlockDevice(bd *openebsapis.BlockDevice) []string {
 }
 
 // checkIfPoolPresent returns true if pool is available for operations
-func checkIfPoolPresent(name string) bool {
+func checkIfPoolPresent(name string, executor bin.Executor) bool {
 	if _, err := zcmd.NewPoolGetProperty().
 		WithParsableMode(true).
 		WithScriptedMode(true).
-		WithField("name").
+		WithField("value").
 		WithProperty("name").
 		WithPool(name).
+		WithExecutor(executor).
 		Execute(); err != nil {
 		return false
 	}
@@ -179,14 +181,14 @@ func (oc *OperationsConfig) checkIfPoolNotImported(cspi *cstor.CStorPoolInstance
 
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	if len(devID) != 0 {
-		cmdOut, err = zcmd.NewPoolImport().WithDirectory(devID).Execute()
+		cmdOut, err = zcmd.NewPoolImport().WithDirectory(devID).WithExecutor(oc.zcmdExecutor).Execute()
 		if strings.Contains(string(cmdOut), PoolName()) {
 			return string(cmdOut), true, nil
 		}
 	}
 	// there are some cases when import is succesful but zpool command return
 	// noisy errors, hence better to check contains before return error
-	cmdOut, err = zcmd.NewPoolImport().Execute()
+	cmdOut, err = zcmd.NewPoolImport().WithExecutor(oc.zcmdExecutor).Execute()
 	if strings.Contains(string(cmdOut), PoolName()) {
 		return string(cmdOut), true, nil
 	}
@@ -212,20 +214,22 @@ func (oc *OperationsConfig) getBlockDeviceClaimList(key, value string) (
 	return bdcAPIList, nil
 }
 
-func executeZpoolDump(cspi *cstor.CStorPoolInstance) (zpool.Topology, error) {
+func executeZpoolDump(cspi *cstor.CStorPoolInstance, zcmdExecutor bin.Executor) (zpool.Topology, error) {
 	return zcmd.NewPoolDump().
 		WithPool(PoolName()).
 		WithStripVdevPath().
+		WithExecutor(zcmdExecutor).
 		Execute()
 }
 
 // isResilveringInProgress returns true if resilvering is inprogress at cstor
 // pool
 func isResilveringInProgress(
-	executeCommand func(cspi *cstor.CStorPoolInstance) (zpool.Topology, error),
+	executeCommand func(cspi *cstor.CStorPoolInstance, executor bin.Executor) (zpool.Topology, error),
 	cspi *cstor.CStorPoolInstance,
-	path string) bool {
-	poolTopology, err := executeCommand(cspi)
+	path string,
+	executor bin.Executor) bool {
+	poolTopology, err := executeCommand(cspi, executor)
 	if err != nil {
 		// log error
 		klog.Errorf("Failed to get pool topology error: %v", err)
@@ -331,14 +335,14 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 }
 
 // SetCompression sets the cstor pool compression
-func SetCompression(poolName string, compressionType string) error {
+func (oc *OperationsConfig) SetCompression(poolName string, compressionType string) error {
 	// If compression type is empty -- it means disable compression on the pool
 	if compressionType == "" {
 		compressionType = "lz4"
 	}
 
 	// Get the compression value that exists in the pool
-	existingCompressionType, err := GetVolumePropertyValue(poolName, "compression")
+	existingCompressionType, err := GetVolumePropertyValue(poolName, "compression", oc.zcmdExecutor)
 	if err != nil {
 		return errors.Errorf("Failed to get compression type:err:%s", err.Error())
 	}
@@ -353,6 +357,7 @@ func SetCompression(poolName string, compressionType string) error {
 		ret, err := zcmd.NewVolumeSetProperty().
 			WithProperty("compression", compressionType).
 			WithDataset(poolName).
+			WithExecutor(oc.zcmdExecutor).
 			Execute()
 		if err != nil {
 			return errors.Errorf(
@@ -369,7 +374,7 @@ func SetCompression(poolName string, compressionType string) error {
 // GetUnavailableDiskList returns the list of faulted disks from the current pool
 func (oc *OperationsConfig) GetUnavailableDiskList(cspi *cstor.CStorPoolInstance) ([]string, error) {
 	faultedDevices := []string{}
-	topology, err := executeZpoolDump(cspi)
+	topology, err := executeZpoolDump(cspi, oc.zcmdExecutor)
 	if err != nil {
 		return []string{}, errors.Wrapf(err, "failed to execute zpool dump")
 	}

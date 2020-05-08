@@ -46,3 +46,10 @@ func IsCommandSet() PredicateFunc {
 		return len(v.Command) != 0
 	}
 }
+
+// IsExecutorSet method check if the Executor field of VolumeSetProperty object is set.
+func IsExecutorSet() PredicateFunc {
+	return func(v *VolumeSetProperty) bool {
+		return v.Executor != nil
+	}
+}

@@ -57,6 +57,9 @@ type PoolDiskReplace struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolDiskReplace returns new instance of object PoolDiskReplace
@@ -106,6 +109,12 @@ func (p *PoolDiskReplace) WithCommand(Command string) *PoolDiskReplace {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolDiskReplace object.
+func (p *PoolDiskReplace) WithExecutor(executor bin.Executor) *PoolDiskReplace {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolDiskReplace object by builder
 func (p *PoolDiskReplace) Validate() *PoolDiskReplace {
 	for _, check := range p.checks {
@@ -122,6 +131,11 @@ func (p *PoolDiskReplace) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

@@ -53,8 +53,12 @@ func (oc *OperationsConfig) addRaidGroup(r cstor.RaidGroup, dType, pType string)
 		WithType(pType).
 		WithPool(PoolName()).
 		WithVdevList(vdevlist).
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // TODO: Get better naming convention from reviews
@@ -71,6 +75,7 @@ func (oc *OperationsConfig) updateNewVdevFromCSPI(
 	poolTopology, err := zfs.NewPoolDump().
 		WithPool(PoolName()).
 		WithStripVdevPath().
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err != nil {
 		return cspi, errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
@@ -112,12 +117,13 @@ func (oc *OperationsConfig) updateNewVdevFromCSPI(
 				}
 			} else if len(devlist) != 0 && raidGroupConfig.RaidGroupType == string(cstor.PoolStriped) {
 				isPoolExpansionTriggered = true
-				if _, er := zfs.NewPoolExpansion().
+				if ret, er := zfs.NewPoolExpansion().
 					WithDeviceType(getZFSDeviceType(deviceType)).
 					WithVdevList(devlist).
 					WithPool(PoolName()).
+					WithExecutor(oc.zcmdExecutor).
 					Execute(); er != nil {
-					err = ErrorWrapf(err, "Failed to add devlist %v.. err {%s}", devlist, er.Error())
+					err = ErrorWrapf(err, "Failed to add devlist %v.. err {%s} {%s}", devlist, string(ret), er.Error())
 				} else {
 					isRaidGroupExpanded = true
 					message = fmt.Sprintf(
@@ -201,7 +207,7 @@ func removePoolVdev(csp *cstor.CStorPoolInstance, bdev cstor.CStorPoolClusterBlo
 // Note, if a new disk is already being used then we will
 // not perform disk replacement and function will return
 // the used disk path from given path(npath[])
-func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (string, error) {
+func (oc *OperationsConfig) replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (string, error) {
 	var usedPath string
 	var isUsed bool
 	if len(npath) == 0 {
@@ -214,6 +220,7 @@ func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (s
 		NewPoolDump().
 		WithStripVdevPath().
 		WithPool(PoolName()).
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err != nil {
 		return "", errors.Errorf("Failed to fetch pool topology.. %s", err.Error())
@@ -240,6 +247,7 @@ func replacePoolVdev(cspi *cstor.CStorPoolInstance, oldPaths, npath []string) (s
 		WithOldVdev(usedPath).
 		WithNewVdev(npath[0]).
 		WithPool(PoolName()).
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err == nil {
 		klog.Infof("Triggered replacement of %s with %s on pool %s",

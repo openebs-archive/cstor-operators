@@ -25,6 +25,7 @@ import (
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	ndmapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	zpool "github.com/openebs/api/pkg/internalapis/apis/cstor"
+	bin "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -33,7 +34,7 @@ const (
 	testKey = "testJSON"
 )
 
-func testExecuteDumpCommand(cspi *cstor.CStorPoolInstance) (zpool.Topology, error) {
+func testExecuteDumpCommand(cspi *cstor.CStorPoolInstance, executor bin.Executor) (zpool.Topology, error) {
 	valuesFromEnv := strings.TrimSpace(os.Getenv(testKey))
 	if valuesFromEnv == "" {
 		return zpool.Topology{}, errors.Errorf("failed to read the testJSON")
@@ -99,7 +100,7 @@ func TestIsResilveringInProgress(t *testing.T) {
 		cspi                *cstor.CStorPoolInstance
 		path                string
 		expectedResilvering bool
-		executeFunc         func(cspi *cstor.CStorPoolInstance) (zpool.Topology, error)
+		executeFunc         func(cspi *cstor.CStorPoolInstance, exeutor bin.Executor) (zpool.Topology, error)
 	}{
 		"Resilvering In progress": {
 			//In jsonValues persistentDisk_sai-disk1 is replaced with
@@ -154,7 +155,7 @@ func TestIsResilveringInProgress(t *testing.T) {
 		// pin it
 		name, test := name, test
 		os.Setenv(testKey, test.jsonValues)
-		isResilvering := isResilveringInProgress(test.executeFunc, test.cspi, test.path)
+		isResilvering := isResilveringInProgress(test.executeFunc, test.cspi, test.path, nil)
 		if test.expectedResilvering != isResilvering {
 			t.Errorf("test %s failed expected resilvering process: %t but got %t",
 				name,

@@ -49,6 +49,9 @@ type VolumeSetProperty struct {
 	// checks is list of predicate function used for validating object
 	checks []PredicateFunc
 
+	// Executor is to execute the zfs command
+	Executor bin.Executor
+
 	// error
 	err error
 }
@@ -88,6 +91,12 @@ func (v *VolumeSetProperty) WithCommand(Command string) *VolumeSetProperty {
 	return v
 }
 
+// WithExecutor method fills the Execute field of VolumeSetProperty object.
+func (v *VolumeSetProperty) WithExecutor(executor bin.Executor) *VolumeSetProperty {
+	v.Executor = executor
+	return v
+}
+
 // Validate is to validate generated VolumeSetProperty object by builder
 func (v *VolumeSetProperty) Validate() *VolumeSetProperty {
 	for _, check := range v.checks {
@@ -103,6 +112,10 @@ func (v *VolumeSetProperty) Execute() ([]byte, error) {
 	v, err := v.Build()
 	if err != nil {
 		return nil, err
+	}
+
+	if IsExecutorSet()(v) {
+		return v.Executor.Execute(v.Command)
 	}
 	// execute command here
 	// #nosec

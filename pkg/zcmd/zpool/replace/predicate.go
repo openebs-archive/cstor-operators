@@ -60,3 +60,10 @@ func IsCommandSet() PredicateFunc {
 		return len(p.Command) != 0
 	}
 }
+
+// IsExecutorSet method check if the Executor field of PoolDiskReplace object is set.
+func IsExecutorSet() PredicateFunc {
+	return func(p *PoolDiskReplace) bool {
+		return p.Executor != nil
+	}
+}

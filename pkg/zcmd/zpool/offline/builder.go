@@ -52,6 +52,9 @@ type PoolOffline struct {
 	// checks is list of predicate function used for validating object
 	checks []PredicateFunc
 
+	// Executor is to execute the commands
+	Executor bin.Executor
+
 	// error
 	err error
 }
@@ -97,6 +100,12 @@ func (p *PoolOffline) WithCommand(Command string) *PoolOffline {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolOffline object.
+func (p *PoolOffline) WithExecutor(executor bin.Executor) *PoolOffline {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolOffline object by builder
 func (p *PoolOffline) Validate() *PoolOffline {
 	for _, check := range p.checks {
@@ -113,6 +122,11 @@ func (p *PoolOffline) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

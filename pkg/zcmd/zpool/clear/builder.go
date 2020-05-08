@@ -48,6 +48,9 @@ type PoolClear struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolClear returns new instance of object PoolClear
@@ -79,6 +82,12 @@ func (p *PoolClear) WithCommand(Command string) *PoolClear {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolClear object.
+func (p *PoolClear) WithExecutor(executor bin.Executor) *PoolClear {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolClear object by builder
 func (p *PoolClear) Validate() *PoolClear {
 	for _, check := range p.checks {
@@ -95,6 +104,11 @@ func (p *PoolClear) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

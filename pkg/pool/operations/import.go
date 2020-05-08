@@ -35,7 +35,7 @@ import (
 // - If pool is imported or not
 // - If any error occurred during import operation
 func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) {
-	if poolExist := checkIfPoolPresent(PoolName()); poolExist {
+	if poolExist := checkIfPoolPresent(PoolName(), oc.zcmdExecutor); poolExist {
 		return true, nil
 	}
 
@@ -76,6 +76,7 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 			WithDirectory(devID).
 			WithProperty("cachefile", cacheFile).
 			WithPool(PoolName()).
+			WithExecutor(oc.zcmdExecutor).
 			Execute()
 	}
 

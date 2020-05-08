@@ -61,6 +61,9 @@ type PoolImport struct {
 	// checks is list of predicate function used for validating object
 	checks []PredicateFunc
 
+	// Executor is to execute the commands
+	Executor bin.Executor
+
 	// error
 	err error
 }
@@ -126,6 +129,12 @@ func (p *PoolImport) WithCommand(Command string) *PoolImport {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolImport object.
+func (p *PoolImport) WithExecutor(executor bin.Executor) *PoolImport {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolImport object by builder
 func (p *PoolImport) Validate() *PoolImport {
 	for _, check := range p.checks {
@@ -141,6 +150,10 @@ func (p *PoolImport) Execute() ([]byte, error) {
 	p, err := p.Build()
 	if err != nil {
 		return nil, err
+	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
 	}
 	// execute command here
 	// #nosec

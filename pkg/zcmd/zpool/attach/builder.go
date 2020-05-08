@@ -57,6 +57,9 @@ type PoolAttach struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolAttach returns new instance of object PoolAttach
@@ -106,6 +109,12 @@ func (p *PoolAttach) WithCommand(Command string) *PoolAttach {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolDump object.
+func (p *PoolAttach) WithExecutor(executor bin.Executor) *PoolAttach {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolAttach object by builder
 func (p *PoolAttach) Validate() *PoolAttach {
 	for _, check := range p.checks {
@@ -122,6 +131,11 @@ func (p *PoolAttach) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

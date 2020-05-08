@@ -46,6 +46,9 @@ type PoolSProperty struct {
 	// checks is list of predicate function used for validating object
 	checks []PredicateFunc
 
+	// Executor is to execute the commands
+	Executor bin.Executor
+
 	// error
 	err error
 }
@@ -79,6 +82,12 @@ func (p *PoolSProperty) WithCommand(Command string) *PoolSProperty {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolDump object.
+func (p *PoolSProperty) WithExecutor(executor bin.Executor) *PoolSProperty {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolSProperty object by builder
 func (p *PoolSProperty) Validate() *PoolSProperty {
 	for _, check := range p.checks {
@@ -95,6 +104,11 @@ func (p *PoolSProperty) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

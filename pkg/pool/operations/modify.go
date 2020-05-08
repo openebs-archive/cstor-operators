@@ -114,7 +114,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 				if er != nil {
 					err = ErrorWrapf(err, "Failed to check bdev change {%s}.. %s", bdev.BlockDeviceName, er.Error())
 				} else {
-					if diskPath, er = replacePoolVdev(cspi, oldPath, newPath); er != nil {
+					if diskPath, er = oc.replacePoolVdev(cspi, oldPath, newPath); er != nil {
 						err = ErrorWrapf(err, "Failed to replace bdev for {%s}.. %s", bdev.BlockDeviceName, er.Error())
 						continue
 					} else {
@@ -143,7 +143,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 				//   2.1 Unclaim the old blockdevice which was used by pool
 				//   2.2 Remove the annotation from blockdeviceclaim which is
 				//       inuse by cstor pool
-				if predecessorBDName != "" && !isResilveringInProgress(executeZpoolDump, cspi, diskPath) {
+				if predecessorBDName != "" && !isResilveringInProgress(executeZpoolDump, cspi, diskPath, oc.zcmdExecutor) {
 					oldBDClaim, _ := bdClaimList.GetBlockDeviceClaimFromBDName(
 						predecessorBDName)
 					if er := oc.cleanUpReplacementMarks(oldBDClaim, bdClaim); er != nil {

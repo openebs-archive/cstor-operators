@@ -19,6 +19,7 @@ package cstorvolumeconfig
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
@@ -28,6 +29,7 @@ import (
 	errors "github.com/pkg/errors"
 	"k8s.io/klog"
 
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -84,6 +86,17 @@ type Patch struct {
 	Path  string `json:"path"`
 	Value string `json:"value"`
 }
+
+type upgradeParams struct {
+	cvc    *apis.CStorVolumeConfig
+	client clientset.Interface
+}
+
+type upgradeFunc func(u *upgradeParams) (*apis.CStorVolumeConfig, error)
+
+var (
+	upgradeMap = map[string]upgradeFunc{}
+)
 
 // syncHandler compares the actual state with the desired, and attempts to
 // converge the two. It then updates the Status block of the spcPoolUpdated resource
@@ -156,6 +169,25 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 	}
 
 	var err error
+
+	cvc, err = c.reconcileVersion(cvc)
+	if err != nil {
+		message := fmt.Sprintf("Failed to upgrade cvc to %s version: %s",
+			cvc.VersionDetails.Desired,
+			err.Error())
+		klog.Errorf("failed to upgrade cvc %s:%s", cvc.Name, err.Error())
+		c.recorder.Event(cvc, corev1.EventTypeWarning, "FailedUpgrade", message)
+		cvc.VersionDetails.Status.SetErrorStatus(
+			"Failed to reconcile cvc version",
+			err,
+		)
+		_, err = c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(cvc)
+		if err != nil {
+			klog.Errorf("failed to update versionDetails status for cvc %s:%s", cvc.Name, err.Error())
+		}
+		return nil
+	}
+
 	// CStor Volume Claim should be deleted. Check if deletion timestamp is set
 	// and remove finalizer.
 	if c.isClaimDeletionCandidate(cvc) {
@@ -831,4 +863,50 @@ func (c *CVCController) ShouldReconcile(cvc *apis.CStorVolumeConfig) (bool, stri
 			cvcVersion)
 	}
 	return true, ""
+}
+
+func (c *CVCController) reconcileVersion(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
+	var err error
+	// the below code uses deep copy to have the state of object just before
+	// any update call is done so that on failure the last state object can be returned
+	if cvc.VersionDetails.Status.Current != cvc.VersionDetails.Desired {
+		if !version.IsCurrentVersionValid(cvc.VersionDetails.Status.Current) {
+			return cvc, errors.Errorf("invalid current version %s", cvc.VersionDetails.Status.Current)
+		}
+		if !version.IsDesiredVersionValid(cvc.VersionDetails.Desired) {
+			return cvc, errors.Errorf("invalid desired version %s", cvc.VersionDetails.Desired)
+		}
+		cvcObj := cvc.DeepCopy()
+		if cvc.VersionDetails.Status.State != apis.ReconcileInProgress {
+			cvcObj.VersionDetails.Status.SetInProgressStatus()
+			cvcObj, err = c.clientset.CstorV1().CStorVolumeConfigs(cvcObj.Namespace).Update(cvcObj)
+			if err != nil {
+				return cvc, err
+			}
+		}
+		// As no other steps are required just change current version to
+		// desired version
+		path := strings.Split(cvcObj.VersionDetails.Status.Current, "-")[0]
+		u := &upgradeParams{
+			cvc:    cvcObj,
+			client: c.clientset,
+		}
+		// Get upgrade function for corresponding path, if path does not
+		// exits then no upgrade is required and funcValue will be nil.
+		funcValue := upgradeMap[path]
+		if funcValue != nil {
+			cvcObj, err = funcValue(u)
+			if err != nil {
+				return cvcObj, err
+			}
+		}
+		cvc = cvcObj.DeepCopy()
+		cvcObj.VersionDetails.SetSuccessStatus()
+		cvcObj, err = c.clientset.CstorV1().CStorVolumeConfigs(cvcObj.Namespace).Update(cvcObj)
+		if err != nil {
+			return cvc, errors.Wrap(err, "failed to update cvc")
+		}
+		return cvcObj, nil
+	}
+	return cvc, nil
 }

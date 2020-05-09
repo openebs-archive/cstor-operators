@@ -54,7 +54,7 @@ func (mPoolInfo *MockPoolInfo) GetProperty(cmd string) ([]byte, error) {
 			// We are fetching the pool only during starting reconciliation
 			// So here good reduce ResilveringProgress count
 			output = addToOutput(output, mPoolInfo.PoolName)
-			if mPoolInfo.TestConfig.ResilveringProgress > 0 {
+			if mPoolInfo.IsReplacementTriggered && mPoolInfo.TestConfig.ResilveringProgress > 0 {
 				mPoolInfo.TestConfig.ResilveringProgress--
 			}
 		}

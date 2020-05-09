@@ -37,9 +37,10 @@ func (mPoolInfo *MockPoolInfo) Replace(cmd string) ([]byte, error) {
 	values := strings.Split(cmd, "replace")
 	if len(values) == 2 {
 		paths := strings.Split(strings.TrimSpace(values[1]), " ")
-		if len(paths) != 3 {
+		if len(paths) < 3 {
 			return []byte("inappropriate command"), errors.Errorf("exit status 1")
 		}
+		// paths contains: paths[0] -- PoolName; paths[1] -- oldDevlink; paths[3] -- newDevLink
 		err := mPoolInfo.replacePathInVdev(paths[1], paths[2], mPoolInfo.Topology.VdevTree.Topvdev)
 		if err != nil {
 			return []byte(err.Error()), errors.Errorf("exit status 1")

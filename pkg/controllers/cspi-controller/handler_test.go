@@ -18,8 +18,10 @@ package cspicontroller
 
 import (
 	"fmt"
+	"html"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,12 +32,14 @@ import (
 	openebsinformers "github.com/openebs/api/pkg/client/informers/externalversions"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
+	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	"github.com/openebs/cstor-operators/pkg/controllers/testutil"
 	executor "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/executor"
 	zpool "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/zpool"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
@@ -81,16 +85,25 @@ type testConfig struct {
 	writeCacheRaidGroups []cstor.RaidGroup
 	// writeCacheGroupType defines the writecache raid group
 	writeCacheGroupType string
-	// ReplaceBlockDevices in cStor pool
-	replaceBlcokDevices map[string]string
+	// replaceBlockDevices in cStor pool
+	replaceBlockDevices map[string]string
 	// isDay2OperationNeedToPerform is set then above operations will be performed
 	isDay2OperationNeedToPerform bool
 	// loopCount times reconcile function will be called
 	loopCount int
+	// ejectErrorCount eject the error in zpool commands once it reaches to zero
+	// NOTE: If test needs to have error then ejectErrorCount > loopCount
+	ejectErrorCount int
 	// time interval to trigger reconciliation
 	loopDelay time.Duration
 	// poolInfo will usefull to execute pool commands
 	poolInfo *zpool.MockPoolInfo
+	// shouldPoolOperationInProgress it can be set to true only when
+	// errors were injected in ZPOOL commands. If the value is enabled
+	// it will verify whether the pool operations are in porgress or not
+	// if the pool operations are not in progress then test will be marked
+	// as failed
+	shouldPoolOperationInProgress bool
 }
 
 // newFixture returns a new fixture
@@ -309,7 +322,10 @@ func (f *fixture) prepareCSPIForDeploying(cspi *cstor.CStorPoolInstance) error {
 }
 
 // replaceBlockDevices replace old blockdevice with new blockdevice
-func replaceBlockDevices(cspi *cstor.CStorPoolInstance, oldToNewBlockDeviceMap map[string]string) {
+func (f *fixture) replaceBlockDevices(
+	cspi *cstor.CStorPoolInstance,
+	oldToNewBlockDeviceMap map[string]string) error {
+	cspcName := cspi.GetLabels()[string(types.CStorPoolClusterLabelKey)]
 	// Replace old blockdevice with new blockdevice if exist in Data RaidGroup
 	for rgIndex, _ := range cspi.Spec.DataRaidGroups {
 		for bdIndex, cspiBD := range cspi.Spec.DataRaidGroups[rgIndex].CStorPoolInstanceBlockDevices {
@@ -330,6 +346,19 @@ func replaceBlockDevices(cspi *cstor.CStorPoolInstance, oldToNewBlockDeviceMap m
 			}
 		}
 	}
+
+	// Claim New BlockDevices witch replacement marks
+	for oldBDName, newBDName := range oldToNewBlockDeviceMap {
+		bdcObj, err := f.createBlockDeviceClaim(newBDName, cspcName, map[string]string{types.PredecessorBDLabelKey: oldBDName})
+		if err != nil {
+			return err
+		}
+		err = f.claimBlockdevice(newBDName, bdcObj)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // updateCSPIToPerformDay2Operation updates the CSPI with provided
@@ -368,6 +397,11 @@ func (f *fixture) updateCSPIToPerformDay2Operation(cspiName string, tConfig test
 			cspiObj.Spec.PoolConfig.WriteCacheGroupType = tConfig.writeCacheGroupType
 		}
 		if cspiObj.Spec.PoolConfig.WriteCacheGroupType == string(cstor.PoolStriped) {
+			// If writeCacheRaidGroup is nil initilize it
+			if cspiObj.Spec.WriteCacheRaidGroups == nil {
+				cspiObj.Spec.WriteCacheRaidGroups = []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{}}}
+			}
 			cspiObj.Spec.WriteCacheRaidGroups[0].CStorPoolInstanceBlockDevices = append(
 				cspiObj.Spec.WriteCacheRaidGroups[0].CStorPoolInstanceBlockDevices,
 				tConfig.writeCacheRaidGroups[0].CStorPoolInstanceBlockDevices...)
@@ -375,13 +409,16 @@ func (f *fixture) updateCSPIToPerformDay2Operation(cspiName string, tConfig test
 			cspiObj.Spec.WriteCacheRaidGroups = append(cspiObj.Spec.WriteCacheRaidGroups, tConfig.writeCacheRaidGroups...)
 		}
 		// Claim Newely Added WriteCacheRaidGroups BlockDevices
-		err = f.createClaimsForRaidGroupBlockDevices(tConfig.dataRaidGroups, cspcName)
+		err = f.createClaimsForRaidGroupBlockDevices(tConfig.writeCacheRaidGroups, cspcName)
 		if err != nil {
 			return err
 		}
 	}
-	if tConfig.replaceBlcokDevices != nil {
-		replaceBlockDevices(cspiObj, tConfig.replaceBlcokDevices)
+	if tConfig.replaceBlockDevices != nil {
+		err = f.replaceBlockDevices(cspiObj, tConfig.replaceBlockDevices)
+		if err != nil {
+			return err
+		}
 	}
 	_, err = f.openebsClient.CstorV1().CStorPoolInstances(ns).Update(cspiObj)
 	if err != nil {
@@ -406,6 +443,7 @@ func (f *fixture) run_(
 	expectError bool,
 	testConfig testConfig) {
 	isCSPIUpdated := false
+	ejectErrorCount := testConfig.ejectErrorCount
 	c, informers, recorder, err := f.newCSPIController(testConfig.poolInfo)
 	if err != nil {
 		f.t.Fatalf("error creating cspi controller: %v", err)
@@ -415,17 +453,37 @@ func (f *fixture) run_(
 		defer close(stopCh)
 		informers.Start(stopCh)
 	}
+	defer func(recorder *record.FakeRecorder) {
+		close(recorder.Events)
+	}(recorder)
 
 	// Waitgroup for starting pool and VolumeReplica controller goroutines.
 	// var wg sync.WaitGroup
 	go printEvent(recorder)
 
 	for i := 0; i < testConfig.loopCount; i++ {
+
+		// TODO: Need to check with team how feasible injecting errors and ejecting them
+		if testConfig.poolInfo != nil && ejectErrorCount <= 0 {
+			// Eject all zpool command errors which were inserted during test configuration
+			// time
+			testConfig.poolInfo.TestConfig.ZpoolCommand = zpool.ZpoolCommandError{}
+		}
+
 		err = c.reconcile(cspiName)
 		if !expectError && err != nil {
 			f.t.Errorf("error syncing cspc: %v", err)
 		} else if expectError && err == nil {
 			f.t.Error("expected error syncing cspc, got nil")
+		}
+
+		// When CSPI is updated to perform pool operation and if errors are
+		// injected then we can verify pool operation progress
+		if isCSPIUpdated && testConfig.shouldPoolOperationInProgress && ejectErrorCount > 0 {
+			// When error is injected pool operations should be in pending state
+			if ok, msg := f.isPoolOperationPending(cspiName, testConfig); !ok {
+				f.t.Errorf("injected error in zpool commands %s", msg)
+			}
 		}
 
 		if testConfig.isDay2OperationNeedToPerform && !isCSPIUpdated {
@@ -439,6 +497,7 @@ func (f *fixture) run_(
 			isCSPIUpdated = true
 		}
 
+		ejectErrorCount--
 		if testConfig.loopCount > 1 {
 			time.Sleep(testConfig.loopDelay)
 		}
@@ -521,6 +580,25 @@ func (f *fixture) verifyCSPIAutoGeneratedSpec(
 	return nil
 }
 
+func isStatusConditionMatched(
+	cspi *cstor.CStorPoolInstance,
+	condType cstor.CStorPoolInstanceConditionType,
+	reason string) (bool, string) {
+	cond := cspiutil.GetCSPICondition(cspi.Status, condType)
+	if cond == nil {
+		return false, fmt.Sprintf("%s condition not exist", condType)
+	}
+	if cond.Reason != reason {
+		return false, fmt.Sprintf(
+			"%s reason is expected to present on %s status condition but got %s reason",
+			reason,
+			condType,
+			cond.Reason,
+		)
+	}
+	return true, ""
+}
+
 // verifyCSPI status verifies whether status of CSPI and returns
 // error if any of the fileds are zero
 func (f *fixture) verifyCSPIStatus(
@@ -534,20 +612,87 @@ func (f *fixture) verifyCSPIStatus(
 		return errors.Errorf("CSPI %s capacity field is empty %v", cspi.Name, cspi.Status.Capacity)
 	}
 	if tConfig.isDay2OperationNeedToPerform {
-		// Add code for verifying conditions on CSPI relevant to operation
+		if tConfig.dataRaidGroups != nil || tConfig.writeCacheRaidGroups != nil {
+			if ok, msg := isStatusConditionMatched(cspi, cstor.CSPIPoolExpansion, "PoolExpansionSuccessful"); !ok {
+				return errors.Errorf("CSPI %s pool expansion condition %s", cspi.Name, msg)
+			}
+		}
+		if tConfig.replaceBlockDevices != nil {
+			if ok, msg := isStatusConditionMatched(cspi, cstor.CSPIDiskReplacement, "BlockDeviceReplacementSucceess"); !ok {
+				return errors.Errorf("CSPI %s pool replacement condtion %s", cspi.Name, msg)
+			}
+		}
 	}
 	return nil
 }
 
+// isPoolOperationPending returns true if pool operation is InProgress else return false
+func (f *fixture) isPoolOperationPending(cspiName string, tConfig testConfig) (bool, string) {
+	ns, name, err := cache.SplitMetaNamespaceKey(cspiName)
+	if err != nil {
+		return false, err.Error()
+	}
+	cspiObj, err := f.openebsClient.CstorV1().CStorPoolInstances(ns).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return false, err.Error()
+	}
+	if tConfig.writeCacheRaidGroups != nil || tConfig.dataRaidGroups != nil {
+		if ok, msg := isStatusConditionMatched(cspiObj, cstor.CSPIPoolExpansion, "PoolExpansionInProgress"); !ok {
+			return false, fmt.Sprintf("Expected pool expansion to be in progress but %s", msg)
+		}
+	}
+	return true, ""
+}
+
+// isReplacementMarksExists returns false when there are no replacement marks
+// 1. Verify existence of claim for Old BlockDevice
+// 2. Verify existence of "openebs.io/bd-predecessor" annotation on new blockdevice claim
+func (f *fixture) isReplacementMarksExists(testConfig testConfig) (bool, string) {
+	// Old BDC should be deleted and new BDC shouldn't have any replacement marks
+	for oldBDName, newBDName := range testConfig.replaceBlockDevices {
+		// Since we are creating blockdevice claims with "blockdeviceclaim-" + blockdevice name
+		oldBDCName := "blockdeviceclaim-" + oldBDName
+		newBDName := "blockdeviceclaim-" + newBDName
+		_, err := f.openebsClient.
+			OpenebsV1alpha1().
+			BlockDeviceClaims("openebs").
+			Get(oldBDCName, metav1.GetOptions{})
+		if err != nil {
+			if !k8serror.IsNotFound(err) {
+				return true, fmt.Sprintf("Failed to get claim of old blockdevice %s error: %s", oldBDName, err.Error())
+			}
+		}
+		newBDBDC, err := f.openebsClient.
+			OpenebsV1alpha1().
+			BlockDeviceClaims("openebs").
+			Get(newBDName, metav1.GetOptions{})
+		if err != nil {
+			return true, fmt.Sprintf("Failed to get claim of blockdevice %s error: %s", newBDName, err.Error())
+		}
+		if _, ok := newBDBDC.GetAnnotations()[types.PredecessorBDLabelKey]; ok {
+			return true, fmt.Sprintf("Replacement mark exist on claim of blockdevice %s", newBDName)
+		}
+	}
+	return false, ""
+}
+
 // printEvent prints the events reported by controller
 func printEvent(recorder *record.FakeRecorder) {
+	rocket := html.UnescapeString("&#128640;")
+	warning := html.UnescapeString("&#10071;")
 	for {
 		msg, ok := <-recorder.Events
 		// Channel is closed
 		if !ok {
 			break
 		}
-		fmt.Println("Event: ", msg)
+		if strings.Contains(msg, "Normal") {
+			// Below line prints 🚀 to identify event
+			fmt.Println("Event:  ", rocket, msg)
+		} else {
+			// Below line prints ❗ to identify event
+			fmt.Println("Event:  ", warning, msg)
+		}
 	}
 }
 
@@ -639,6 +784,7 @@ func TestCSPIFinalizerRemoval(t *testing.T) {
 						},
 					},
 				},
+				ejectErrorCount: 3,
 			},
 			shouldFinalizerExist: true,
 			expectError:          true,
@@ -990,13 +1136,14 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 func TestCSPIPoolExpansion(t *testing.T) {
 	f := newFixture(t)
 	f.SetFakeClient()
-	f.createFakeBlockDevices(50, "node1")
+	f.createFakeBlockDevices(60, "node1")
 	f.fakeNodeCreator("node1")
 
 	tests := map[string]struct {
 		cspi                         *cstor.CStorPoolInstance
 		shouldVerifyCSPIAutoGenerate bool
 		shouldVerifyCSPIStatus       bool
+		expectedPoolOperationPending bool
 		testConfig                   testConfig
 	}{
 		"Provision Stripe Pool And Expand DataRaidGroup": {
@@ -1029,6 +1176,356 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				},
 			},
 		},
+		"Provision Stripe Pool and expand data and writecache raid groups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-bar-stripe-expand").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-bar-stripe-expand"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("stripe").
+					WithWriteCacheGroupType("stripe")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-4"},
+						{BlockDeviceName: "blockdevice-5"},
+					},
+				},
+				}).
+				WithWriteCacheRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-6"},
+						{BlockDeviceName: "blockdevice-7"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount:                    4,
+				loopDelay:                    time.Microsecond * 100,
+				poolInfo:                     &zpool.MockPoolInfo{},
+				isDay2OperationNeedToPerform: true,
+				dataRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-8"},
+						{BlockDeviceName: "blockdevice-9"}},
+					},
+				},
+				writeCacheRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-10"},
+						{BlockDeviceName: "blockdevice-11"}},
+					},
+				},
+			},
+		},
+		"Provision Mirror Pool and expand writecache raid groups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-bar-mirror-expand").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-bar-mirror-expand"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("mirror")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-12"},
+						{BlockDeviceName: "blockdevice-13"},
+					},
+				},
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-14"},
+							{BlockDeviceName: "blockdevice-15"},
+						},
+					},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount:                    4,
+				loopDelay:                    time.Microsecond * 100,
+				poolInfo:                     &zpool.MockPoolInfo{},
+				isDay2OperationNeedToPerform: true,
+				writeCacheGroupType:          "mirror",
+				writeCacheRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-16"},
+						{BlockDeviceName: "blockdevice-17"}},
+					},
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-18"},
+						{BlockDeviceName: "blockdevice-19"}},
+					},
+				},
+			},
+		},
+		"Provision Mirror Pool and expand data raid groups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-expand-data-raidgroup").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-expand-data-raidgroup"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("mirror")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-20"},
+						{BlockDeviceName: "blockdevice-21"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount:                    4,
+				loopDelay:                    time.Microsecond * 100,
+				poolInfo:                     &zpool.MockPoolInfo{},
+				isDay2OperationNeedToPerform: true,
+				dataRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-22"},
+						{BlockDeviceName: "blockdevice-23"}},
+					},
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-24"},
+						{BlockDeviceName: "blockdevice-25"}},
+					},
+				},
+			},
+		},
+		"Provision Mirror Pool and expand data and write cache raid groups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-expand-both-mirror-raidgroups").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-expand-both-mirror-raidgroups"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("mirror")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-26"},
+						{BlockDeviceName: "blockdevice-27"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount:                    4,
+				loopDelay:                    time.Microsecond * 100,
+				poolInfo:                     &zpool.MockPoolInfo{},
+				isDay2OperationNeedToPerform: true,
+				dataRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-28"},
+						{BlockDeviceName: "blockdevice-29"}},
+					},
+				},
+				writeCacheGroupType: "mirror",
+				writeCacheRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-30"},
+						{BlockDeviceName: "blockdevice-31"}},
+					},
+				},
+			},
+		},
+		"Provision Raidz Pool and expand data and write cache raid groups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-expand-both-raidz-raidgroups").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-expand-both-raidz-raidgroups"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("raidz")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-32"},
+						{BlockDeviceName: "blockdevice-33"},
+						{BlockDeviceName: "blockdevice-34"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount:                    4,
+				loopDelay:                    time.Microsecond * 100,
+				poolInfo:                     &zpool.MockPoolInfo{},
+				isDay2OperationNeedToPerform: true,
+				dataRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-35"},
+						{BlockDeviceName: "blockdevice-36"},
+						{BlockDeviceName: "blockdevice-37"}},
+					},
+				},
+				writeCacheGroupType: "raidz",
+				writeCacheRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-38"},
+						{BlockDeviceName: "blockdevice-39"}},
+					},
+				},
+			},
+		},
+		"Provision Raidz Pool and add writecache stripe raid groups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-add-writecache-raidgroup").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-add-writecache-raidgroup"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("raidz")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-40"},
+						{BlockDeviceName: "blockdevice-41"},
+						{BlockDeviceName: "blockdevice-42"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount:                    4,
+				loopDelay:                    time.Microsecond * 100,
+				poolInfo:                     &zpool.MockPoolInfo{},
+				isDay2OperationNeedToPerform: true,
+				writeCacheGroupType:          "stripe",
+				writeCacheRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-43"},
+						{BlockDeviceName: "blockdevice-44"}},
+					},
+				},
+			},
+		},
+		"Provision Raidz2 Pool and add writecache raidz raid groups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-add-writecache-raidz-raidgroup").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-add-writecache-raidz-raidgroup"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("raidz2")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-45"},
+						{BlockDeviceName: "blockdevice-46"},
+						{BlockDeviceName: "blockdevice-47"},
+						{BlockDeviceName: "blockdevice-48"},
+						{BlockDeviceName: "blockdevice-49"},
+						{BlockDeviceName: "blockdevice-50"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount:                    4,
+				loopDelay:                    time.Microsecond * 100,
+				poolInfo:                     &zpool.MockPoolInfo{},
+				isDay2OperationNeedToPerform: true,
+				writeCacheGroupType:          "raidz",
+				writeCacheRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-51"},
+						{BlockDeviceName: "blockdevice-52"},
+						{BlockDeviceName: "blockdevice-53"}},
+					},
+				},
+			},
+		},
+		"Provision stripe Pool and expand data raidgroup by injecting error in zpool add command": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-foo-stripe-expand-witherror").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-foo-stripe-expand-witherror"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("stripe")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-54"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount: 5,
+				// In 4th iteration expanding will be successfull
+				// In 5th iteration device links will be updated
+				ejectErrorCount:               3,
+				shouldPoolOperationInProgress: true,
+				loopDelay:                     time.Microsecond * 100,
+				poolInfo: &zpool.MockPoolInfo{
+					TestConfig: zpool.TestConfig{
+						ZpoolCommand: zpool.ZpoolCommandError{
+							ZpoolAddError: true,
+						},
+					},
+				},
+				isDay2OperationNeedToPerform: true,
+				dataRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-55"},
+						{BlockDeviceName: "blockdevice-56"}},
+					},
+				},
+			},
+		},
+		"Provision stripe Pool and expand data raidgroup by injecting error permanently in zpool add command": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-bar-stripe-expand-witherror").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-bar-stripe-expand-witherror"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("stripe")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-57"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: false,
+			shouldVerifyCSPIStatus:       false,
+			expectedPoolOperationPending: true,
+			testConfig: testConfig{
+				loopCount: 4,
+				// Expansion operation shouldn't be succeeded
+				ejectErrorCount:               5,
+				shouldPoolOperationInProgress: true,
+				loopDelay:                     time.Microsecond * 100,
+				poolInfo: &zpool.MockPoolInfo{
+					TestConfig: zpool.TestConfig{
+						ZpoolCommand: zpool.ZpoolCommandError{
+							ZpoolAddError: true,
+						},
+					},
+				},
+				isDay2OperationNeedToPerform: true,
+				dataRaidGroups: []cstor.RaidGroup{
+					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-58"},
+						{BlockDeviceName: "blockdevice-59"}},
+					},
+				},
+			},
+		},
 	}
 
 	os.Setenv(string(common.OpenEBSIOPoolName), "1234")
@@ -1057,6 +1554,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			if err != nil {
 				t.Errorf("error getting cspc %s: %v", cspi.Name, err)
 			}
+
 			// Verify does AutoGenerated Configuration was updated(As of now
 			// we are verifying only device links)
 			if test.shouldVerifyCSPIAutoGenerate {
@@ -1070,6 +1568,187 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				err = f.verifyCSPIStatus(cspi, test.testConfig)
 				if err != nil {
 					t.Errorf("Test: %q validation failed %s", name, err.Error())
+				}
+			}
+			if test.expectedPoolOperationPending {
+				if ok, msg := f.isPoolOperationPending(testutil.GetKey(test.cspi, t), test.testConfig); !ok {
+					t.Errorf("Expected pool operation to be in pending state but %s", msg)
+				}
+			}
+		})
+	}
+	os.Unsetenv(string(common.OpenEBSIOPoolName))
+	os.Unsetenv(util.Namespace)
+}
+
+// TestCSPIPoolReplacement will provision pool and then it
+// will perform replacement operation by replacing blockdevices
+func TestCSPIBlockDeviceReplacement(t *testing.T) {
+	f := newFixture(t)
+	f.SetFakeClient()
+	f.createFakeBlockDevices(25, "node1")
+	f.fakeNodeCreator("node1")
+
+	tests := map[string]struct {
+		cspi                         *cstor.CStorPoolInstance
+		shouldVerifyCSPIAutoGenerate bool
+		shouldVerifyCSPIStatus       bool
+		expectedPoolOperationPending bool
+		testConfig                   testConfig
+	}{
+		"Provision Mirror Pool And Replace BlockDevice": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-foo-mirror-replace").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-foo-stripe-replace"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("mirror")).
+				WithDataRaidGroups([]cstor.RaidGroup{
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-1"},
+							{BlockDeviceName: "blockdevice-2"},
+						},
+					},
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-3"},
+							{BlockDeviceName: "blockdevice-4"},
+						},
+					},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount: 4,
+				loopDelay: time.Microsecond * 100,
+				poolInfo: &zpool.MockPoolInfo{
+					TestConfig: zpool.TestConfig{
+						ResilveringProgress: 2,
+					},
+				},
+				isDay2OperationNeedToPerform: true,
+				replaceBlockDevices: map[string]string{
+					"blockdevice-2": "blockdevice-5",
+					"blockdevice-4": "blockdevice-6",
+				},
+			},
+		},
+		"Provision Raidz Pool And Replace Both Group BlockDevices": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-foo-raidz-replace").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-foo-raidz-replace"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("raidz").
+					WithWriteCacheGroupType("raidz")).
+				WithDataRaidGroups([]cstor.RaidGroup{
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-7"},
+							{BlockDeviceName: "blockdevice-8"},
+							{BlockDeviceName: "blockdevice-9"},
+						},
+					},
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-10"},
+							{BlockDeviceName: "blockdevice-11"},
+							{BlockDeviceName: "blockdevice-12"},
+						},
+					},
+				}).
+				WithWriteCacheRaidGroups([]cstor.RaidGroup{
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-13"},
+							{BlockDeviceName: "blockdevice-14"},
+							{BlockDeviceName: "blockdevice-15"},
+						},
+					},
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-16"},
+							{BlockDeviceName: "blockdevice-17"},
+							{BlockDeviceName: "blockdevice-18"},
+						},
+					},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: testConfig{
+				loopCount: 4,
+				loopDelay: time.Microsecond * 100,
+				poolInfo: &zpool.MockPoolInfo{
+					TestConfig: zpool.TestConfig{
+						ResilveringProgress: 2,
+					},
+				},
+				isDay2OperationNeedToPerform: true,
+				replaceBlockDevices: map[string]string{
+					"blockdevice-9":  "blockdevice-19",
+					"blockdevice-12": "blockdevice-20",
+					"blockdevice-14": "blockdevice-21",
+					"blockdevice-15": "blockdevice-22",
+					"blockdevice-16": "blockdevice-23",
+				},
+			},
+		},
+	}
+
+	os.Setenv(string(common.OpenEBSIOPoolName), "1234")
+	os.Setenv(util.Namespace, "openebs")
+	common.Init()
+	for name, test := range tests {
+		name := name
+		test := test
+		t.Run(name, func(t *testing.T) {
+			test.cspi.Kind = "CStorPoolInstance"
+			// Create a CSPI to persist it in a fake store
+			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(test.cspi)
+			// Create claims for blockdevices exist on cspi
+			err := f.prepareCSPIForDeploying(test.cspi)
+			if err != nil {
+				t.Errorf("Test: %q failed to prepare pools %s", name, err.Error())
+			}
+			f.run_(testutil.GetKey(test.cspi, t), true, false, test.testConfig)
+			// CSPI controller is to create pools and manage it using zpool/zfs command
+			// line utility. Since there is no real zrepl process is running we can
+			// check spec and status autogenerated part
+			cspi, err := f.openebsClient.
+				CstorV1().
+				CStorPoolInstances(test.cspi.Namespace).
+				Get(test.cspi.Name, metav1.GetOptions{})
+			if err != nil {
+				t.Errorf("error getting cspc %s: %v", cspi.Name, err)
+			}
+
+			// Verify does AutoGenerated Configuration was updated(As of now
+			// we are verifying only device links)
+			if test.shouldVerifyCSPIAutoGenerate {
+				err = f.verifyCSPIAutoGeneratedSpec(cspi, test.testConfig)
+				if err != nil {
+					t.Errorf("Test: %q validation failed %s", name, err.Error())
+				}
+			}
+			// Verify CSPI Status Part
+			if test.shouldVerifyCSPIStatus {
+				err = f.verifyCSPIStatus(cspi, test.testConfig)
+				if err != nil {
+					t.Errorf("Test: %q validation failed %s", name, err.Error())
+				}
+			}
+			if test.expectedPoolOperationPending {
+				if ok, msg := f.isPoolOperationPending(testutil.GetKey(test.cspi, t), test.testConfig); !ok {
+					t.Errorf("Expected pool operation to be in pending state but %s", msg)
+				}
+			} else {
+				if ok, msg := f.isReplacementMarksExists(test.testConfig); ok {
+					t.Errorf("Expected not to have any replacement marks but %s", msg)
 				}
 			}
 		})

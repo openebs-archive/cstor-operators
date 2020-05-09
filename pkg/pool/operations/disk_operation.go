@@ -89,6 +89,7 @@ func (oc *OperationsConfig) updateNewVdevFromCSPI(
 			wholeGroup := true
 			var message string
 			var devlist []string
+			var newBlockDeviceList []string
 
 			for _, bdev := range raidGroup.CStorPoolInstanceBlockDevices {
 				newPath, er := oc.getPathForBDev(bdev.BlockDeviceName)
@@ -97,6 +98,7 @@ func (oc *OperationsConfig) updateNewVdevFromCSPI(
 				}
 				if _, isUsed := checkIfDeviceUsed(newPath, poolTopology); !isUsed {
 					devlist = append(devlist, newPath[0])
+					newBlockDeviceList = append(newBlockDeviceList, bdev.BlockDeviceName)
 				} else {
 					wholeGroup = false
 				}
@@ -127,7 +129,11 @@ func (oc *OperationsConfig) updateNewVdevFromCSPI(
 				} else {
 					isRaidGroupExpanded = true
 					message = fmt.Sprintf(
-						"Pool Expanded Successfully By Adding BlockDevice Under Raid Group")
+						"Pool Expanded Successfully By Adding BlockDevices: %v device type: %s pool type: %s",
+						newBlockDeviceList,
+						deviceType,
+						raidGroupConfig.RaidGroupType,
+					)
 				}
 			}
 			if isRaidGroupExpanded {

@@ -188,8 +188,8 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 				corev1.ConditionTrue,
 				"BlockDeviceReplacementInprogress",
 				fmt.Sprintf(
-					"Resilvering %d no.of blockdevices... because of blockdevice replacement error: %s",
-					replacingBlockDeviceCount, err.Error()),
+					"Resilvering %d no.of blockdevices... because of blockdevice replacement error: %v",
+					replacingBlockDeviceCount, err),
 			)
 			cspiutil.SetCSPICondition(&cspi.Status, *condition)
 		} else {

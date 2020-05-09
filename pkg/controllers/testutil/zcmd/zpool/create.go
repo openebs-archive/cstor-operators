@@ -63,6 +63,10 @@ func (mPoolInfo *MockPoolInfo) buildTopologyFromCommand(cmd string) *internalapi
 	}
 	values := strings.Split(cmd, " ")
 	for i, s := range values {
+		// Skip if it is cache file
+		if strings.Contains(s, "cstor-poolpool.cache") {
+			continue
+		}
 		if poolType == "" && strings.ContainsAny(s, "/") {
 			poolType = string(cstor.PoolStriped)
 			mPoolInfo.DataRaidGroupType = poolType

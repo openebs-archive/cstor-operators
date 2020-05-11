@@ -51,7 +51,7 @@ before_script: # TODO add golangci yaml config
 script:
   - make test
   - if [ "$TRAVIS_CPU_ARCH" == "amd64" ]; then
-      make all.amd64;
+      make all.amd64 || exit 1;
     fi
   # Install openebs-operators, cstor-csi, ndm-operators and other
   # dependencies.

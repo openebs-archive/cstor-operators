@@ -51,8 +51,21 @@ var (
 
 func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoolInstanceList) error {
 
+	// If deletion timestamp is not zero on CSPC, this means CSPC is deleted
+	// and all the resources associated with cspc should be deleted.
+	if !cspc.DeletionTimestamp.IsZero() {
+		err := c.handleCSPCDeletion(cspc)
+		if err != nil {
+			message := fmt.Sprintf("Could not sync for CSPC:{%s} deletion", err.Error())
+			c.recorder.Event(cspc, corev1.EventTypeWarning, "CSPC Cleanup", message)
+			klog.Errorf("Failed to cleanup CSPC %s in namespace %s: %s", cspc.Name, cspc.Namespace, err.Error())
+		}
+		return nil
+	}
+
 	// cleaning up CSPI resources in case of removing poolSpec from CSPC
 	// or manual CSPI deletion
+	// This should be performed before reconcileVersion is done.
 	if cspc.DeletionTimestamp.IsZero() {
 		cspiList, err := c.GetCSPIListForCSPC(cspc)
 		if err != nil {
@@ -106,18 +119,6 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 	cspcGot, err = c.populateDesiredInstances(cspcGot)
 	if err != nil {
 		klog.Errorf("failed to add desired instances to CSPC %s in namesapce %s :{%s}", cspc.Name, cspc.Namespace, err.Error())
-		return nil
-	}
-
-	// If deletion timestamp is not zero on CSPC, this means CSPC is deleted
-	// and all the resources associated with cspc should be deleted.
-	if !cspcGot.DeletionTimestamp.IsZero() {
-		err = c.handleCSPCDeletion(cspcGot)
-		if err != nil {
-			message := fmt.Sprintf("Could not sync for CSPC:{%s} deletion", err.Error())
-			c.recorder.Event(cspc, corev1.EventTypeWarning, "CSPC Cleanup", message)
-			klog.Errorf("Failed to cleanup CSPC %s in namespace %s: %s", cspc.Name, cspc.Namespace, err.Error())
-		}
 		return nil
 	}
 

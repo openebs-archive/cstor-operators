@@ -160,14 +160,6 @@ func (c *CVCController) enqueueCVC(obj interface{}) {
 // CStorVolumeConfigs
 func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 
-	if ok, reason := c.ShouldReconcile(cvc); !ok {
-		// Do not reconcile cvc if version mismatched
-		message := fmt.Sprintf("can not reconcile CVC %s as %s", cvc.Name, reason)
-		c.recorder.Event(cvc, corev1.EventTypeWarning, "CVC Reconcile", message)
-		klog.Warningf("Cannot not reconcile CVC %s in namespace %s as %s", cvc.Name, cvc.Namespace, reason)
-		return nil
-	}
-
 	var err error
 
 	cvc, err = c.reconcileVersion(cvc)
@@ -196,6 +188,14 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 		if err != nil {
 			c.recorder.Eventf(cvc, corev1.EventTypeWarning, DeProvisioning, err.Error())
 		}
+		return nil
+	}
+
+	if ok, reason := c.ShouldReconcile(cvc); !ok {
+		// Do not reconcile cvc if version mismatched
+		message := fmt.Sprintf("can not reconcile CVC %s as %s", cvc.Name, reason)
+		c.recorder.Event(cvc, corev1.EventTypeWarning, "CVC Reconcile", message)
+		klog.Warningf("Cannot not reconcile CVC %s in namespace %s as %s", cvc.Name, cvc.Namespace, reason)
 		return nil
 	}
 

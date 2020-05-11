@@ -50,13 +50,6 @@ var (
 )
 
 func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoolInstanceList) error {
-	if ok, reason := c.ShouldReconcile(*cspc); !ok {
-		// Do not reconcile this cspc
-		message := fmt.Sprintf("Cannot not reconcile CSPC %s as %s", cspc.Name, reason)
-		c.recorder.Event(cspc, corev1.EventTypeWarning, "CSPC Reconcile", message)
-		klog.Warningf("Cannot not reconcile CSPC %s in namespace %s as %s", cspc.Name, cspc.Namespace, reason)
-		return nil
-	}
 
 	// cleaning up CSPI resources in case of removing poolSpec from CSPC
 	// or manual CSPI deletion
@@ -99,6 +92,14 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 		if err != nil {
 			klog.Errorf("failed to update versionDetails status for cspc %s:%s", cspcGot.Name, err.Error())
 		}
+		return nil
+	}
+
+	if ok, reason := c.ShouldReconcile(*cspc); !ok {
+		// Do not reconcile this cspc
+		message := fmt.Sprintf("Cannot not reconcile CSPC %s as %s", cspc.Name, reason)
+		c.recorder.Event(cspc, corev1.EventTypeWarning, "CSPC Reconcile", message)
+		klog.Warningf("Cannot not reconcile CSPC %s in namespace %s as %s", cspc.Name, cspc.Namespace, reason)
 		return nil
 	}
 

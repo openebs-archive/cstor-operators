@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -ex
+
 echo "Install cstor-operators CRDs"
 
 kubectl apply -f ./deploy/crds

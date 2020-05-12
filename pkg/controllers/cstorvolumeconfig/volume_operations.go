@@ -361,7 +361,12 @@ func (c *CVCController) distributeCVRs(
 	}
 
 	if len(usablePoolList.Items) < pendingReplicaCount {
-		return errors.New("not enough pools available to create replicas")
+		return errors.Errorf(
+			"not enough pools are available of provided CSPC: %q, usable pool count: %d pending replica count: %d",
+			cspcName,
+			len(usablePoolList.Items),
+			pendingReplicaCount,
+		)
 	}
 
 	for count, pool := range usablePoolList.Items {

@@ -18,8 +18,11 @@ package cspccontroller
 
 import (
 	"fmt"
+
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/cspc/algorithm"
+
+	"time"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -27,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
-	"time"
 )
 
 // PoolConfig embeds alogrithm config from algorithm package and Controller object.

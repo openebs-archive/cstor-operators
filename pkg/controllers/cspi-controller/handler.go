@@ -18,13 +18,16 @@ package cspicontroller
 
 import (
 	"fmt"
+	"strings"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
+	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
+	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +35,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
+)
+
+type upgradeParams struct {
+	cspi   *cstor.CStorPoolInstance
+	client clientset.Interface
+}
+
+type upgradeFunc func(u *upgradeParams) (*cstor.CStorPoolInstance, error)
+
+var (
+	upgradeMap = map[string]upgradeFunc{}
 )
 
 // reconcile will ensure that pool for given
@@ -65,6 +79,25 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 			err.Error())
 		return nil
 	}
+
+	cspiObj, err = c.reconcileVersion(cspiObj)
+	if err != nil {
+		message := fmt.Sprintf("Failed to upgrade cspi to %s version: %s",
+			cspiObj.VersionDetails.Desired,
+			err.Error())
+		klog.Errorf("failed to upgrade cspi %s:%s", cspiObj.Name, err.Error())
+		c.recorder.Event(cspiObj, corev1.EventTypeWarning, "FailedUpgrade", message)
+		cspiObj.VersionDetails.Status.SetErrorStatus(
+			"Failed to reconcile cspi version",
+			err,
+		)
+		_, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(cspiObj)
+		if err != nil {
+			klog.Errorf("failed to update versionDetails status for cspi %s:%s", cspiObj.Name, err.Error())
+		}
+		return nil
+	}
+
 	cspi = cspiObj
 
 	// take a lock for common package for updating variables
@@ -412,4 +445,50 @@ func (c *CStorPoolInstanceController) addDiskUnavailableCondition(cspi *cstor.CS
 			cspiutil.SetCSPICondition(&cspi.Status, *newCondition)
 		}
 	}
+}
+
+func (c *CStorPoolInstanceController) reconcileVersion(cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
+	var err error
+	// the below code uses deep copy to have the state of object just before
+	// any update call is done so that on failure the last state object can be returned
+	if cspi.VersionDetails.Status.Current != cspi.VersionDetails.Desired {
+		if !version.IsCurrentVersionValid(cspi.VersionDetails.Status.Current) {
+			return cspi, errors.Errorf("invalid current version %s", cspi.VersionDetails.Status.Current)
+		}
+		if !version.IsDesiredVersionValid(cspi.VersionDetails.Desired) {
+			return cspi, errors.Errorf("invalid desired version %s", cspi.VersionDetails.Desired)
+		}
+		cspiObj := cspi.DeepCopy()
+		if cspi.VersionDetails.Status.State != cstor.ReconcileInProgress {
+			cspiObj.VersionDetails.Status.SetInProgressStatus()
+			cspiObj, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(cspiObj)
+			if err != nil {
+				return cspi, err
+			}
+		}
+		// As no other steps are required just change current version to
+		// desired version
+		path := strings.Split(cspiObj.VersionDetails.Status.Current, "-")[0]
+		u := &upgradeParams{
+			cspi:   cspiObj,
+			client: c.clientset,
+		}
+		// Get upgrade function for corresponding path, if path does not
+		// exits then no upgrade is required and funcValue will be nil.
+		funcValue := upgradeMap[path]
+		if funcValue != nil {
+			cspiObj, err = funcValue(u)
+			if err != nil {
+				return cspiObj, err
+			}
+		}
+		cspi = cspiObj.DeepCopy()
+		cspiObj.VersionDetails.SetSuccessStatus()
+		cspiObj, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(cspiObj)
+		if err != nil {
+			return cspi, errors.Wrap(err, "failed to update CSPI")
+		}
+		return cspiObj, nil
+	}
+	return cspi, nil
 }

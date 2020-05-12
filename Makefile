@@ -207,3 +207,8 @@ deploy-images:
 	@DIMAGE=${IMAGE_ORG}/cstor-volume-manager-${XC_ARCH} ./build/push;
 	@DIMAGE=${IMAGE_ORG}/cstor-pool-manager-${XC_ARCH} ./build/push;
 	@DIMAGE=${IMAGE_ORG}/cstor-webhook-${XC_ARCH} ./build/push;
+
+.PHONY: gen-api-docs
+gen-api-docs:
+	@echo ">> generating cstor 'v1' apis docs"
+	go run github.com/ahmetb/gen-crd-api-reference-docs -api-dir ../api/pkg/apis/cstor/v1 -config hack/api-docs/config.json -template-dir hack/api-docs/template -out-file docs/api-references/apis.md

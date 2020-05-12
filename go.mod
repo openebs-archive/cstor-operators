@@ -3,6 +3,7 @@ module github.com/openebs/cstor-operators
 go 1.13
 
 require (
+	github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
 	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0

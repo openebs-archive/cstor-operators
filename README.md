@@ -87,7 +87,7 @@ make all.amd64
 
 ## Code of conduct
 
-Please read the code of conduct [here](CODE_OF_CONDUCT.md)
+This project follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
 
 [Docker environment]: https://docs.docker.com/engine
 [Go environment]: https://golang.org/doc/install

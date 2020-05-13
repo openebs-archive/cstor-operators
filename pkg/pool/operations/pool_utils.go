@@ -291,7 +291,19 @@ func getVdevFromPath(path string, topology zpool.Topology) (zpool.Vdev, bool) {
 // by pool
 func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.BlockDeviceClaim) error {
 	if oldObj != nil {
-		oldObj.RemoveFinalizer(types.CSPCFinalizer)
+		if util.ContainsString(oldObj.Finalizers, types.CSPCFinalizer) {
+			oldObj.RemoveFinalizer(types.CSPCFinalizer)
+			_, err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(oldObj.Namespace).Update(oldObj)
+			if err != nil {
+				return errors.Wrapf(
+					err,
+					"Failed to remove finalizer %s on claim %s of blockdevice %s",
+					types.CSPCFinalizer,
+					oldObj.Name,
+					oldObj.Spec.BlockDeviceName,
+				)
+			}
+		}
 		err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(newObj.Namespace).Delete(oldObj.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrapf(
@@ -300,6 +312,7 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 				oldObj.Spec.BlockDeviceName,
 			)
 		}
+		klog.Infof("Triggered deletion on claim %s of blockdevice %s", oldObj.Name, oldObj.Spec.BlockDeviceName)
 	}
 	bdAnnotations := newObj.GetAnnotations()
 	delete(bdAnnotations, types.PredecessorBDLabelKey)
@@ -313,6 +326,7 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 			newObj.Name,
 		)
 	}
+	klog.Infof("Cleared replacement marks on blockdevice %s", newObj.Name)
 	return nil
 }
 

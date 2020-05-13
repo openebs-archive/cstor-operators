@@ -70,24 +70,11 @@ See [contributing](#contributing) section to learn more about how to contribute 
 
 ## Contributing
 
-This [link](docs/developer-guide/start.md) contains all information about
-building cstor-operators from source, contribution guide and whom to contact etc.
-
-If you want to build the cstor-operators right away then the following is the step:
-
-#### You have a working [Go environment] and [Docker environment].
-
-```
-mkdir -p $GOPATH/src/k8s.io
-cd $GOPATH/src/k8s.io
-git clone https://github.com/openebs/cstor-operators
-cd cstor-operators
-make all.amd64
-```
+Please read the contributing guidelines [here](./CONTRIBUTING.md).
 
 ## Code of conduct
 
-This project follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
+Pleae read the community code of conduct [here](./CODE_OF_CONDUCT.md).
 
 [Docker environment]: https://docs.docker.com/engine
 [Go environment]: https://golang.org/doc/install

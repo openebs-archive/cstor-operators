@@ -1,29 +1,32 @@
 # cstor-operators
 [![Go](https://github.com/openebs/cstor-operators/workflows/Go/badge.svg)](https://github.com/openebs/cstor-operators/actions)
 [![Build Status](https://travis-ci.org/openebs/cstor-operators.svg?branch=master)](https://travis-ci.org/openebs/cstor-operators)
-[![Slack](https://img.shields.io/badge/JOIN-SLACK-blue)](https://openebs-community.slack.com)
+[![Slack](https://img.shields.io/badge/JOIN-SLACK-blue)](https://slack.cncf.io)
 
 <img width="300" align="right" alt="OpenEBS Logo" src="https://raw.githubusercontent.com/cncf/artwork/master/projects/openebs/stacked/color/openebs-stacked-color.png" xmlns="http://www.w3.org/1999/html">
 
-Collection of OpenEBS cStor Data Engine Operators. The data engine operators
-are responsible for cStor pool and volume orchestration.
-
+Collection of enhanced Operators for OpenEBS cStor Data Engine.
 
 ## Project Status
 
-This project is under active development and is considered to be in beta state.
+This project is under active development and is considered to be in alpha state.
 
-The current implementation supports the following for cStor pools and volumes:
+The data engine operators works in conjunction with the [cStor CSI driver](https://github.com/openebs/cstor-csi) to finally
+provide a consumable volume for stateful workloads.
+
+The current implementation supports the following Operations on cStor pools and volumes:
 1. Provisioning and De-provisioning of cStor pools.
 2. Pool expansion by adding disk.
 3. Disk replacement by removing a disk.
 4. Volume replica scale up and scale down.
 5. Volume resize.
 
-The data engine operators works in conjunction with the cStor CSI driver to finally
-provide a consumable volume for stateful workloads.
+We are actively working on the following additional tasks for the beta release:
 
-For more details on cStor-CSI drivers, please refer [here](https://github.com/openebs/cstor-csi)
+6. Reactor the Velero-plugin to work with cStor CSI abstractions
+7. Support migration from old cStor operators to new operators backed by CSI. 
+8. Seamless upgrades
+
 
 Table of contents:
 ==================

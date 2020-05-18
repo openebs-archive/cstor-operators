@@ -315,8 +315,9 @@ func (c *CStorPoolInstanceController) updateROMode(
 	if cspi.Spec.PoolConfig.ROThresholdLimit != nil {
 		roThresholdLimit = *cspi.Spec.PoolConfig.ROThresholdLimit
 	}
-	totalInBytes := cspiStatus.Capacity.Total.Value()
+	availableInBytes := cspiStatus.Capacity.Free.Value()
 	usedInBytes := cspiStatus.Capacity.Used.Value()
+	totalInBytes := availableInBytes + usedInBytes
 	pool := zpool.PoolName()
 	oc := zpool.NewOperationsConfig().
 		WithZcmdExecutor(c.zcmdExecutor)

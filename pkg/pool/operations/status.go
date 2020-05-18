@@ -24,6 +24,7 @@ import (
 	bin "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog"
 )
 
 // GetPropertyValue will return value of given property for given pool
@@ -46,7 +47,7 @@ func GetPropertyValue(poolName, property string, executor bin.Executor) (string,
 	return outStr[0], nil
 }
 
-// GetListOfPropertyValues will return value list for given property list
+// GetPoolListPropertyValues will return value list for given property list
 // NOTE: It will return the property values in the same order as property list
 func (oc *OperationsConfig) GetListOfPropertyValues(
 	poolName string, propertyList []string) ([]string, error) {
@@ -56,6 +57,26 @@ func (oc *OperationsConfig) GetListOfPropertyValues(
 		WithPropertyList(propertyList).
 		WithPool(poolName).
 		WithExecutor(oc.zcmdExecutor).
+		Execute()
+	if err != nil {
+		return []string{}, err
+	}
+	// NOTE: Don't trim space there might be possibility for some
+	// properties values might be empty. If we trim the space we
+	// will lost the property values
+	outStr := strings.Split(string(ret), "\n")
+	return outStr, nil
+
+}
+
+// GetVolumeListPropertyValues will return value list for given property list
+// NOTE: It will return the property values in the same order as property list
+func GetVolumeListPropertyValues(dataSetName string, propertyList []string) ([]string, error) {
+	ret, err := zfs.NewVolumeGetProperty().
+		WithScriptedMode(true).
+		WithField("value").
+		WithPropertyList(propertyList).
+		WithDataset(dataSetName).
 		Execute()
 	if err != nil {
 		return []string{}, err
@@ -103,36 +124,37 @@ func (oc *OperationsConfig) GetCSPICapacity(poolName string) (cstor.CStorPoolIns
 			err,
 		)
 	}
-	// Since it was quarried in free, allocated and size output also
+	// Since it was quarried in used, logicalused and available output also
 	// will be in same order.
-	// valueList[0] contains value of free capacity in cStor pool
-	// valueList[1] contains value of allocated capacity in cStor pool
-	// valueList[2] contains total capacity of cStor pool
-	freeSizeInBinarySI := GetCapacityInBinarySi(valueList[0])
-	allocatedSizeInBinarySI := GetCapacityInBinarySi(valueList[1])
-	totalSizeInBinarySI := GetCapacityInBinarySi(valueList[2])
+	// valueList[0] contains value of used capacity in cStor pool
+	// valueList[1] contains value of logicalused capacity in cStor pool
+	// valueList[2] contains value of available capacity of cStor pool
+	usedSizeInBinarySI := GetCapacityInBinarySi(valueList[0])
+	logicalUsedSizeInBinarySI := GetCapacityInBinarySi(valueList[1])
+	availableSizeInBinarySI := GetCapacityInBinarySi(valueList[2])
+	klog.Infof("Pool Capacity Status Used: %s logicalUsed: %s Free %s", usedSizeInBinarySI, logicalUsedSizeInBinarySI, availableSizeInBinarySI)
 
-	cspiCapacity.Free, err = GetCapacityFromString(freeSizeInBinarySI)
-	if err != nil {
-		return cspiCapacity, errors.Wrapf(err,
-			"failed to parse pool free size %s of pool %s",
-			freeSizeInBinarySI,
-			poolName,
-		)
-	}
-	cspiCapacity.Used, err = GetCapacityFromString(allocatedSizeInBinarySI)
+	cspiCapacity.Used, err = GetCapacityFromString(usedSizeInBinarySI)
 	if err != nil {
 		return cspiCapacity, errors.Wrapf(err,
 			"failed to parse pool used size %s of pool %s",
-			allocatedSizeInBinarySI,
+			usedSizeInBinarySI,
 			poolName,
 		)
 	}
-	cspiCapacity.Total, err = GetCapacityFromString(totalSizeInBinarySI)
+	cspiCapacity.LogicalUsed, err = GetCapacityFromString(logicalUsedSizeInBinarySI)
 	if err != nil {
 		return cspiCapacity, errors.Wrapf(err,
-			"failed to parse pool total size %s of pool %s",
-			totalSizeInBinarySI,
+			"failed to parse pool logicalused size %s of pool %s",
+			logicalUsedSizeInBinarySI,
+			poolName,
+		)
+	}
+	cspiCapacity.Free, err = GetCapacityFromString(availableSizeInBinarySI)
+	if err != nil {
+		return cspiCapacity, errors.Wrapf(err,
+			"failed to parse pool free size %s of pool %s",
+			availableSizeInBinarySI,
 			poolName,
 		)
 	}

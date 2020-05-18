@@ -30,14 +30,18 @@ spec:
       name: Allocated
       description: The amount of storage space within the pool that has been physically allocated
       type: string
+    - JSONPath: .status.capacity.logicalUsed
+      name: Used
+      description: The amount of space that is "logically" consumed by this pool and all its descendents.
+      type: string
     - JSONPath: .status.capacity.free
       name: Free
       description: The amount of free space available in the pool
       type: string
-    - JSONPath: .status.capacity.total
-      name: Capacity
-      description: Total size of the storage pool
-      type: string
+    - JSONPath: .status.readOnly
+      name: ReadOnly
+      description: Identifies the pool read only mode
+      type: boolean
     - JSONPath: .status.phase
       name: Status
       description: Identifies the current health of the pool

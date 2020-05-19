@@ -71,8 +71,23 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	}
 
 	if !poolImported {
+		// Import the pool by reading from cache file
 		cmdOut, err = zfs.NewPoolImport().
 			WithCachefile(cacheFile).
+			WithProperty("cachefile", cacheFile).
+			WithPool(PoolName()).
+			Execute()
+		if err == nil {
+			poolImported = true
+		} else {
+			// TODO may be possible that there is no pool exists or no cache file exists
+			klog.Errorf("Failed to import pool by reading cache file: %s : %s", cmdOut, err.Error())
+		}
+	}
+
+	if !poolImported {
+		// Import the pool without cache file
+		cmdOut, err = zfs.NewPoolImport().
 			WithProperty("cachefile", cacheFile).
 			WithPool(PoolName()).
 			Execute()

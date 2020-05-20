@@ -81,7 +81,7 @@ const (
 )
 
 const (
-	CStorPoolBasePath = "/var/openebs/cstor-pool"
+	CStorPoolBasePath = "/var/openebs/cstor-pool/"
 	CacheFileName     = "pool.cache"
 )
 

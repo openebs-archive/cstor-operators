@@ -29,6 +29,10 @@ const (
 	StoragePoolKindCSPC = "CStorPoolCluster"
 	// APIVersion holds the value of OpenEBS version
 	APIVersion = "openebs.io/v1alpha1"
+
+	// bdTagKey defines the label selector key
+	// used for grouping block devices using a tag.
+	bdTagKey = "openebs.io/block-device-tag"
 )
 
 func NewBlockDeviceClaim() *BlockDeviceClaim {
@@ -141,6 +145,23 @@ func (bdc *BlockDeviceClaim) WithBlockVolumeMode(mode corev1.PersistentVolumeMod
 	if mode == corev1.PersistentVolumeBlock {
 		bdc.Spec.Details.BlockVolumeMode = VolumeModeBlock
 	}
+	return bdc
+}
+
+// WithBlockDeviceTag appends (or creates) the BDC Label Selector
+// by setting the provided value to the fixed key
+// openebs.io/block-device-tag
+// This will enable the NDM to pick only devices that
+// match the node (hostname) and block device tag value.
+func (bdc *BlockDeviceClaim) WithBlockDeviceTag(bdTagValue string) *BlockDeviceClaim  {
+	if bdc.Spec.Selector == nil {
+		bdc.Spec.Selector = &metav1.LabelSelector{}
+	}
+	if bdc.Spec.Selector.MatchLabels == nil {
+		bdc.Spec.Selector.MatchLabels = map[string]string{}
+	}
+
+	bdc.Spec.Selector.MatchLabels[bdTagKey] = bdTagValue
 	return bdc
 }
 

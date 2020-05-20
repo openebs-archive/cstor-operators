@@ -127,6 +127,21 @@ kubectl apply -f ./ci/sanity/cspc.yaml
 
 IsPoolHealthy 30
 
+## Once the pool is healthy verify whether cachefile stored in persistent path
+## Get the CSPC name
+echo "Verifying whether pool cachefile is stored in persistent path"
+cspcName=$(kubectl get cspc -n openebs -o=jsonpath={.items[0].metadata.name})
+if [ $? -ne 0 ]; then
+    echo "Failed to get CSPC name"
+    exit 1
+fi
+## verify whether cache file present in persistent path
+ls -lrth /var/openebs/cstor-pool/${cspcName}/pool.cache
+if [ $? -ne 0 ]; then
+    echo "cache file is not present in persistent path"
+    exit 1
+fi
+
 echo "Applying cstor-csi storage class"
 kubectl apply -f ./ci/artifacts/csi-storageclass.yaml
 echo "Deploying Busy-Box pod to use the cStor CSI volume..."

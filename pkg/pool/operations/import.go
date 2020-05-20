@@ -30,8 +30,7 @@ import (
 )
 
 // Import will import pool for given CSPI object.
-// It will also set `cachefile` property for that pool
-// if it is mentioned in object
+// It will always set `cachefile` property for that pool
 // It will return following thing
 // - If pool is imported or not
 // - If any error occurred during import operation
@@ -54,42 +53,27 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	klog.Infof("Importing pool %s %s", string(cspi.GetUID()), PoolName())
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	cacheFile := types.CStorPoolBasePath + types.CacheFileName
-	if len(devID) != 0 {
-		// Cachefile property takes more precedence over the directory
-		// for sparse based pools importing based on directory make more
-		// sense. As if we mention WithCacheFile then directory is not considered
+
+	// Import the pool using cachefile
+	// command will looks like: zpool import -c <cachefile_path> -o <cachefile_path> <pool_name>
+	cmdOut, err = zfs.NewPoolImport().
+		WithCachefile(cacheFile).
+		WithProperty("cachefile", cacheFile).
+		WithPool(PoolName()).
+		Execute()
+	if err == nil {
+		poolImported = true
+	} else {
+		// TODO may be possible that there is no pool exists or no cache file exists
+		klog.Errorf("Failed to import pool by reading cache file: %s : %s", cmdOut, err.Error())
+	}
+
+	if !poolImported {
+		// Import the pool without cachefile by scanning the directory
+		// For sparse based pools import command: zpool import -d <parent_dir_sparse_files> -o <cachefile_path> <pool_name>
+		// For device based pools import command: zpool import -o <cachefile_path> <pool_name>(by default it will scan /dev directory)
 		cmdOut, err = zfs.NewPoolImport().
-			WithProperty("cachefile", cacheFile).
 			WithDirectory(devID).
-			WithPool(PoolName()).
-			Execute()
-		if err == nil {
-			poolImported = true
-		} else {
-			// If pool import failed, fallback to try for import without Directory
-			klog.Errorf("Failed to import pool with directory %s : %s : %s",
-				devID, cmdOut, err.Error())
-		}
-	}
-
-	if !poolImported {
-		// Import the pool by reading from cache file
-		cmdOut, err = zfs.NewPoolImport().
-			WithCachefile(cacheFile).
-			WithProperty("cachefile", cacheFile).
-			WithPool(PoolName()).
-			Execute()
-		if err == nil {
-			poolImported = true
-		} else {
-			// TODO may be possible that there is no pool exists or no cache file exists
-			klog.Errorf("Failed to import pool by reading cache file: %s : %s", cmdOut, err.Error())
-		}
-	}
-
-	if !poolImported {
-		// Import the pool without cache file
-		cmdOut, err = zfs.NewPoolImport().
 			WithProperty("cachefile", cacheFile).
 			WithPool(PoolName()).
 			Execute()
@@ -97,7 +81,7 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 
 	if err != nil {
 		// TODO may be possible that there is no pool exists..
-		klog.Errorf("Failed to import pool : %s : %s", cmdOut, err.Error())
+		klog.Errorf("Failed to import pool by scanning directory: %s : %s", cmdOut, err.Error())
 		return false, err
 	}
 

@@ -446,7 +446,6 @@ func (c *CStorPoolInstanceController) addDiskUnavailableCondition(cspi *cstor.CS
 	}
 }
 
-<<<<<<< HEAD
 func (c *CStorPoolInstanceController) reconcileVersion(cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
 	var err error
 	// the below code uses deep copy to have the state of object just before

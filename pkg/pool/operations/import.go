@@ -36,6 +36,9 @@ import (
 // - If any error occurred during import operation
 func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) {
 	if poolExist := checkIfPoolPresent(PoolName(), oc.zcmdExecutor); poolExist {
+		// If the pool is renamed and imported but the pool-mgmt restarts
+		// for some reason then the annotation should be removed.
+		delete(cspi.Annotations, string(types.OpenEBSCStorExistingPoolName))
 		return true, nil
 	}
 
@@ -53,13 +56,17 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	klog.Infof("Importing pool %s %s", string(cspi.GetUID()), PoolName())
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	cacheFile := types.CStorPoolBasePath + types.CacheFileName
+	// oldName denotes the pool name that may be present
+	// from previous version and needs to be imported with new name
+	oldName := cspi.Annotations[types.OpenEBSCStorExistingPoolName]
 
 	// Import the pool using cachefile
 	// command will looks like: zpool import -c <cachefile_path> -o <cachefile_path> <pool_name>
 	cmdOut, err = zfs.NewPoolImport().
 		WithCachefile(cacheFile).
 		WithProperty("cachefile", cacheFile).
-		WithPool(PoolName()).
+		WithPool(oldName).
+		WithNewPool(PoolName()).
 		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err == nil {
@@ -76,7 +83,8 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 		cmdOut, err = zfs.NewPoolImport().
 			WithDirectory(devID).
 			WithProperty("cachefile", cacheFile).
-			WithPool(PoolName()).
+			WithPool(oldName).
+			WithNewPool(PoolName()).
 			WithExecutor(oc.zcmdExecutor).
 			Execute()
 	}
@@ -86,6 +94,11 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 		klog.Errorf("Failed to import pool by scanning directory: %s : %s", cmdOut, err.Error())
 		return false, err
 	}
+
+	// after successful import of pool the annotation needs to be deleted
+	// to avoid renaming of pool that is already renamed which will cause
+	// pool not found errors
+	delete(cspi.Annotations, types.OpenEBSCStorExistingPoolName)
 
 	common.SyncResources.IsImported = true
 	oc.recorder.Event(cspi,

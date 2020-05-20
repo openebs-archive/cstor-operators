@@ -55,8 +55,10 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	cacheFile := types.CStorPoolBasePath + types.CacheFileName
 	if len(devID) != 0 {
+		// Cachefile property takes more precedence over the directory
+		// for sparse based pools importing based on directory make more
+		// sense. As if we mention WithCacheFile then directory is not considered
 		cmdOut, err = zfs.NewPoolImport().
-			WithCachefile(cacheFile).
 			WithProperty("cachefile", cacheFile).
 			WithDirectory(devID).
 			WithPool(PoolName()).

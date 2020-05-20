@@ -136,7 +136,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 ## verify whether cache file present in persistent path
-ls -lrth /var/openebs/cstor-pool/${cspc_name}/pool.cache
+ls -lrth /var/openebs/cstor-pool/${cspcName}/pool.cache
 if [ $? -ne 0 ]; then
     echo "cache file is not present in persistent path"
     exit 1

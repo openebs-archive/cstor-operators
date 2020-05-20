@@ -23,21 +23,21 @@ import (
 )
 
 // SetProperty mocks the zpool get command and returns the error based on the output
-func (mPoolInfo *MockPoolInfo) SetProperty(cmd string) ([]byte, error) {
+func (poolMocker *PoolMocker) SetProperty(cmd string) ([]byte, error) {
 
 	// If configuration expects error then return error
-	if mPoolInfo.TestConfig.ZpoolCommand.ZpoolGetError {
+	if poolMocker.TestConfig.ZpoolCommand.ZpoolGetError {
 		return getPropertyError(cmd)
 	}
 
 	values := strings.Split(cmd, " ")
-	if mPoolInfo.PoolName == "" {
+	if poolMocker.PoolName == "" {
 		return []byte(fmt.Sprintf("cannot open '%s': no such pool", values[len(values)-1])), errors.Errorf("exit statu 1")
 	}
-	if !strings.Contains(cmd, mPoolInfo.PoolName) {
+	if !strings.Contains(cmd, poolMocker.PoolName) {
 		return []byte(fmt.Sprintf("cannot open '%s': no such pool", values[len(values)-1])), errors.Errorf("exit statu 1")
 	}
-	// Add fields in MockPoolInfo for setting the property
+	// Add fields in PoolMocker for setting the property
 	return []byte{}, nil
 }
 

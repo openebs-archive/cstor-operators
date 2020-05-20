@@ -23,20 +23,20 @@ import (
 )
 
 // GetProperty mocks the zpool get command and returns the error based on the output
-func (mPoolInfo *MockPoolInfo) GetProperty(cmd string) ([]byte, error) {
+func (poolMocker *PoolMocker) GetProperty(cmd string) ([]byte, error) {
 	var isProperty bool
 	var output string
 
 	// If configuration expects error then return error
-	if mPoolInfo.TestConfig.ZpoolCommand.ZpoolGetError {
+	if poolMocker.TestConfig.ZpoolCommand.ZpoolGetError {
 		return getPropertyError(cmd)
 	}
 
 	values := strings.Split(cmd, " ")
-	if mPoolInfo.PoolName == "" {
+	if poolMocker.PoolName == "" {
 		return []byte(fmt.Sprintf("cannot open '%s': no such pool", values[len(values)-1])), errors.Errorf("exit statu 1")
 	}
-	if !strings.Contains(cmd, mPoolInfo.PoolName) {
+	if !strings.Contains(cmd, poolMocker.PoolName) {
 		return []byte(fmt.Sprintf("cannot open '%s': no such pool", values[len(values)-1])), errors.Errorf("exit statu 1")
 	}
 
@@ -53,33 +53,43 @@ func (mPoolInfo *MockPoolInfo) GetProperty(cmd string) ([]byte, error) {
 		if isProperty && strings.Contains(val, "name") {
 			// We are fetching the pool only during starting reconciliation
 			// So here good reduce ResilveringProgress count
-			output = addToOutput(output, mPoolInfo.PoolName)
-			if mPoolInfo.IsReplacementTriggered && mPoolInfo.TestConfig.ResilveringProgress > 0 {
-				mPoolInfo.TestConfig.ResilveringProgress--
+			output = addToOutput(output, poolMocker.PoolName)
+			if poolMocker.IsReplacementInProgress && poolMocker.TestConfig.ResilveringProgress > 0 {
+				poolMocker.TestConfig.ResilveringProgress--
 			}
 		}
-		// If command is to query free space in pool
-		if isProperty && strings.Contains(val, "free") {
-			output = addToOutput(output, "9.94G")
-		}
-		// If command is to query allocated space in pool
-		if isProperty && strings.Contains(val, "allocated") {
-			output = addToOutput(output, "69.5K")
-		}
-		// If command is to query size space in pool
-		if isProperty && strings.Contains(val, "size") {
-			output = addToOutput(output, "9.94G")
-		}
 
-		if isProperty && strings.Contains(val, "health") {
-			output = addToOutput(output, "ONLINE")
-		}
-
-		if isProperty && strings.Contains(val, "io.openebs:readonly") {
-			output = addToOutput(output, "off")
+		if isProperty {
+			output = addToOutput(output, getPropertyValues(val))
 		}
 	}
 	return []byte(output), nil
+}
+
+// getPropertyValues returns the values for quaried properties
+func getPropertyValues(command string) string {
+	var values string
+	// If command is to get free space in pool
+	if strings.Contains(command, "free") {
+		values = addToOutput(values, "9.94G")
+	}
+	// If command is to get allocated space in pool
+	if strings.Contains(command, "allocated") {
+		values = addToOutput(values, "69.5K")
+	}
+	// If command is to get size space in pool
+	if strings.Contains(command, "size") {
+		values = addToOutput(values, "9.94G")
+	}
+
+	if strings.Contains(command, "health") {
+		values = addToOutput(values, "ONLINE")
+	}
+
+	if strings.Contains(command, "io.openebs:readonly") {
+		values = addToOutput(values, "off")
+	}
+	return values
 }
 
 func addToOutput(output, value string) string {

@@ -25,20 +25,20 @@ import (
 
 // Dump mocks zpool dump command and return output based on
 // test configuration
-func (mPoolInfo *MockPoolInfo) Dump(cmd string) ([]byte, error) {
+func (poolMocker *PoolMocker) Dump(cmd string) ([]byte, error) {
 	// If configuration expects error then return error
-	if mPoolInfo.TestConfig.ZpoolCommand.ZpoolDumpError {
+	if poolMocker.TestConfig.ZpoolCommand.ZpoolDumpError {
 		return dumpError(cmd)
 	}
 
-	if mPoolInfo.PoolName == "" {
+	if poolMocker.PoolName == "" {
 		return []byte{}, nil
 	}
-	if mPoolInfo.IsReplacementTriggered && mPoolInfo.TestConfig.ResilveringProgress == 0 {
-		mPoolInfo.updateResilveringFinished(mPoolInfo.Topology.VdevTree.Topvdev)
-		mPoolInfo.IsReplacementTriggered = false
+	if poolMocker.IsReplacementInProgress && poolMocker.TestConfig.ResilveringProgress == 0 {
+		poolMocker.updateResilveringFinished(poolMocker.Topology.VdevTree.Topvdev)
+		poolMocker.IsReplacementInProgress = false
 	}
-	encode, err := json.Marshal(mPoolInfo.Topology)
+	encode, err := json.Marshal(poolMocker.Topology)
 	if err != nil {
 		return []byte(fmt.Sprintf("failed to parse data %s", err.Error())), errors.Errorf("exit status 1")
 	}
@@ -51,7 +51,7 @@ func dumpError(cmd string) ([]byte, error) {
 
 // updateResilveringFinished marks the resilvering process is completed if there is any
 // resilvering marks present
-func (mPoolInfo *MockPoolInfo) updateResilveringFinished(vdev []internalapi.Vdev) {
+func (poolMocker *PoolMocker) updateResilveringFinished(vdev []internalapi.Vdev) {
 	for i, v := range vdev {
 		if len(v.ScanStats) != 0 {
 			// Marking as resilvering is finished
@@ -64,7 +64,7 @@ func (mPoolInfo *MockPoolInfo) updateResilveringFinished(vdev []internalapi.Vdev
 				vdev[i].Children[j].VdevStats[internalapi.VdevScanProcessedIndex] = 0
 				vdev[i].Children[j].ScanStats = []uint64{}
 			}
-			mPoolInfo.updateResilveringFinished(p.Children)
+			poolMocker.updateResilveringFinished(p.Children)
 		}
 	}
 }

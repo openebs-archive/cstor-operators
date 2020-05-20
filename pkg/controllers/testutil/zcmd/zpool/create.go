@@ -29,17 +29,17 @@ import (
 
 // Create mocks the zpool create command and will fill the topology
 // according to the command triggered
-func (mPool *MockPoolInfo) Create(cmd string) ([]byte, error) {
-	if mPool.TestConfig.ZpoolCommand.ZpoolCreateError {
+func (poolMocker *PoolMocker) Create(cmd string) ([]byte, error) {
+	if poolMocker.TestConfig.ZpoolCommand.ZpoolCreateError {
 		return createError(cmd)
 	}
-	topology := mPool.buildTopologyFromCommand(cmd)
-	mPool.Topology = topology
-	mPool.PoolName = "cstor-" + os.Getenv(string(common.OpenEBSIOPoolName))
+	topology := poolMocker.buildTopologyFromCommand(cmd)
+	poolMocker.Topology = topology
+	poolMocker.PoolName = "cstor-" + os.Getenv(string(common.OpenEBSIOPoolName))
 	values := strings.Split(cmd, "compression")
 	if len(values) == 2 {
 		partCommand := strings.TrimSpace(values[1])
-		mPool.Compression = strings.Split(partCommand, " ")[0]
+		poolMocker.Compression = strings.Split(partCommand, " ")[0]
 	}
 	return []byte{}, nil
 }
@@ -49,7 +49,7 @@ func createError(cmd string) ([]byte, error) {
 }
 
 // buildTopologyFromCommand returns the fake Vdev topology from command
-func (mPoolInfo *MockPoolInfo) buildTopologyFromCommand(cmd string) *internalapi.Topology {
+func (poolMocker *PoolMocker) buildTopologyFromCommand(cmd string) *internalapi.Topology {
 	var poolType string
 	var writeCache bool
 	var diskCount int
@@ -69,7 +69,7 @@ func (mPoolInfo *MockPoolInfo) buildTopologyFromCommand(cmd string) *internalapi
 		}
 		if poolType == "" && strings.ContainsAny(s, "/") {
 			poolType = string(cstor.PoolStriped)
-			mPoolInfo.DataRaidGroupType = poolType
+			poolMocker.DataRaidGroupType = poolType
 		}
 		if _, ok := supportedPoolTypes[s]; ok {
 			poolType = s
@@ -80,7 +80,7 @@ func (mPoolInfo *MockPoolInfo) buildTopologyFromCommand(cmd string) *internalapi
 				if values[i-1] != "log" {
 					writeCache = false
 				} else {
-					mPoolInfo.WriteCacheRaidGroupType = poolType
+					poolMocker.WriteCacheRaidGroupType = poolType
 				}
 			}
 			topology.VdevTree.Topvdev = append(topology.VdevTree.Topvdev, getTopVdevFromRaidType(groupName, writeCache))
@@ -103,7 +103,7 @@ func (mPoolInfo *MockPoolInfo) buildTopologyFromCommand(cmd string) *internalapi
 			diskCount++
 		}
 	}
-	mPoolInfo.DiskCount = diskCount
+	poolMocker.DiskCount = diskCount
 	topology.ChildrenCount = len(topology.VdevTree.Topvdev)
 
 	return topology

@@ -342,7 +342,7 @@ func (oc *OperationsConfig) SetCompression(poolName string, compressionType stri
 	}
 
 	// Get the compression value that exists in the pool
-	existingCompressionType, err := GetVolumePropertyValue(poolName, "compression", oc.zcmdExecutor)
+	existingCompressionType, err := oc.GetVolumePropertyValue(poolName, "compression")
 	if err != nil {
 		return errors.Errorf("Failed to get compression type:err:%s", err.Error())
 	}

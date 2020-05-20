@@ -20,23 +20,32 @@ import (
 	internalapi "github.com/openebs/api/pkg/internalapis/apis/cstor"
 )
 
-// MockPoolInfo contains the pool information which
-// will helpful to return error
-type MockPoolInfo struct {
-	Topology                *internalapi.Topology
-	PoolName                string
-	DataRaidGroupType       string
+// PoolMocker mocks the zpool utitlity commands
+type PoolMocker struct {
+	// Topology holds the vdev topology of the pool
+	Topology *internalapi.Topology
+	// PoolName holds the cstor pool name
+	PoolName string
+	// DataRaidGroupType represents the type of the data raid group
+	DataRaidGroupType string
+	// WriteCacheRaidGroupType represents the type of the write cache raid group
 	WriteCacheRaidGroupType string
-	Compression             string
-	IsPoolImported          bool
-	IsPoolReadOnlyMode      bool
-	IsReplacementTriggered  bool
-	DiskCount               int
-	TestConfig              TestConfig
+	// Compression holds the type of pool compression
+	Compression string
+	// IsPoolImported used to know whether pool is imported or not
+	IsPoolImported bool
+	// IsPoolReadOnlyMode informs pool ReadOnly mode
+	IsPoolReadOnlyMode bool
+	// IsReplacementInProgress the status of replacement operation
+	IsReplacementInProgress bool
+	// DiskCount represents the total no.of disks present in the pool
+	DiskCount int
+	// TestConfig holds the test related information
+	TestConfig TestConfig
 }
 
 // TestConfig holds the the test configuration based on this
-// configuration mocked zpool will return error
+// configuration zpool utility commands will return error
 type TestConfig struct {
 	ZpoolCommand ZpoolCommandError
 	// ResilveringProgress represents fake resilvering progress
@@ -46,6 +55,7 @@ type TestConfig struct {
 }
 
 // ZpoolCommandError used to inject the errors in various Zpool commands
+// It will help to mock the zpool command behaviour
 type ZpoolCommandError struct {
 	ZpoolAddError        bool
 	ZpoolClearError      bool

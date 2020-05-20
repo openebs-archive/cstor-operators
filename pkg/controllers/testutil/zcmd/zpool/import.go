@@ -22,19 +22,19 @@ import (
 )
 
 // Import mocks zpool import command
-func (mPoolInfo *MockPoolInfo) Import(cmd string) ([]byte, error) {
+func (poolMocker *PoolMocker) Import(cmd string) ([]byte, error) {
 	// If configuration expects error then return error
-	if mPoolInfo.TestConfig.ZpoolCommand.ZpoolImportError {
+	if poolMocker.TestConfig.ZpoolCommand.ZpoolImportError {
 		return importError(cmd)
 	}
 
 	if len(strings.Split(cmd, " ")) == 2 {
 		return []byte{}, nil
 	}
-	if mPoolInfo.PoolName == "" {
+	if poolMocker.PoolName == "" {
 		return []byte("no pools available to import"), errors.Errorf("exit status 1")
 	}
-	mPoolInfo.IsPoolImported = true
+	poolMocker.IsPoolImported = true
 	return []byte{}, nil
 }
 

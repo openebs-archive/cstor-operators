@@ -18,9 +18,9 @@ package zpool
 import "github.com/pkg/errors"
 
 // Delete is mock zpool destroy command
-func (mPoolInfo *MockPoolInfo) Delete(cmd string) ([]byte, error) {
+func (poolMocker *PoolMocker) Delete(cmd string) ([]byte, error) {
 	// If configuration expects error then return error
-	if mPoolInfo.TestConfig.ZpoolCommand.ZpoolDestroyError {
+	if poolMocker.TestConfig.ZpoolCommand.ZpoolDestroyError {
 		return deleteError(cmd)
 	}
 	return []byte{}, nil

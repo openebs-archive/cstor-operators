@@ -36,6 +36,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/controllers/testutil"
 	executor "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/executor"
 	zpool "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/zpool"
+	pooloperation "github.com/openebs/cstor-operators/pkg/pool/operations"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -97,7 +98,7 @@ type testConfig struct {
 	// time interval to trigger reconciliation
 	loopDelay time.Duration
 	// poolInfo will usefull to execute pool commands
-	poolInfo *zpool.MockPoolInfo
+	poolInfo *zpool.PoolMocker
 	// shouldPoolOperationInProgress it can be set to true only when
 	// errors were injected in ZPOOL commands. If the value is enabled
 	// it will verify whether the pool operations are in porgress or not
@@ -131,19 +132,27 @@ func NoResyncPeriodFunc() time.Duration {
 
 // newCSPIController returns a fake cspi controller
 func (f *fixture) newCSPIController(
-	poolInfo *zpool.MockPoolInfo) (*CStorPoolInstanceController, openebsinformers.SharedInformerFactory, *record.FakeRecorder, error) {
+	poolInfo *zpool.PoolMocker) (*CStorPoolInstanceController, openebsinformers.SharedInformerFactory, *record.FakeRecorder, error) {
 	//// Load kubernetes client set by preloading with k8s objects.
 	//f.k8sClient = fake.NewSimpleClientset(f.k8sObjects...)
 	//
 	//// Load openebs client set by preloading with openebs objects.
 	//f.openebsClient = openebsFakeClientset.NewSimpleClientset(f.openebsObjects...)
 
-	fakeZCMDExecutor := executor.NewFakeZCommandFromPoolInfo(poolInfo)
+	fakeZCMDExecutor := executor.NewFakeZCommandFromPoolMocker(poolInfo)
 
 	cspiInformerFactory := openebsinformers.NewSharedInformerFactory(f.openebsClient, NoResyncPeriodFunc())
 	//cspiInformerFactory := informers.NewSharedInformerFactory(openebsClient, getSyncInterval())
 
 	recorder := record.NewFakeRecorder(1024)
+
+	// Instantiate the operations config
+	operationsConfig := pooloperation.NewOperationsConfig().
+		WithKubeClientSet(f.k8sClient).
+		WithOpenEBSClient(f.openebsClient).
+		WithRecorder(recorder).
+		WithZcmdExecutor(fakeZCMDExecutor)
+
 	// Build a fake controller
 	controller := &CStorPoolInstanceController{
 		kubeclientset:           f.k8sClient,
@@ -152,6 +161,7 @@ func (f *fixture) newCSPIController(
 		workqueue:               workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), poolControllerName),
 		recorder:                recorder,
 		zcmdExecutor:            fakeZCMDExecutor,
+		operationsConfig:        operationsConfig,
 	}
 
 	for _, rs := range f.cspiLister {
@@ -748,7 +758,7 @@ func TestCSPIFinalizerRemoval(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 2,
 				loopDelay: time.Second * 0,
-				poolInfo:  &zpool.MockPoolInfo{},
+				poolInfo:  &zpool.PoolMocker{},
 			},
 			shouldFinalizerExist: false,
 			expectError:          false,
@@ -761,7 +771,7 @@ func TestCSPIFinalizerRemoval(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 2,
 				loopDelay: time.Second * 0,
-				poolInfo: &zpool.MockPoolInfo{
+				poolInfo: &zpool.PoolMocker{
 					PoolName: "cstor-1234",
 				},
 			},
@@ -776,7 +786,7 @@ func TestCSPIFinalizerRemoval(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 2,
 				loopDelay: time.Second * 0,
-				poolInfo: &zpool.MockPoolInfo{
+				poolInfo: &zpool.PoolMocker{
 					PoolName: "cstor-1234",
 					TestConfig: zpool.TestConfig{
 						ZpoolCommand: zpool.ZpoolCommandError{
@@ -865,7 +875,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
-				poolInfo:  &zpool.MockPoolInfo{},
+				poolInfo:  &zpool.PoolMocker{},
 			},
 		},
 		"Stripe Pool Provisioning With WriteCache RaidGroup": {
@@ -896,7 +906,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
-				poolInfo:  &zpool.MockPoolInfo{},
+				poolInfo:  &zpool.PoolMocker{},
 			},
 		},
 		"Stripe Pool Provisioning With Multiple DataRaidGroups & WriteCache RaidGroup": {
@@ -931,7 +941,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
-				poolInfo:  &zpool.MockPoolInfo{},
+				poolInfo:  &zpool.PoolMocker{},
 			},
 		},
 		"Mirror Pool With Multiple RaidGroups": {
@@ -978,7 +988,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
-				poolInfo:  &zpool.MockPoolInfo{},
+				poolInfo:  &zpool.PoolMocker{},
 			},
 		},
 		"Raidz Pool With Multiple Data RaidGroups": {
@@ -1021,7 +1031,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
-				poolInfo:  &zpool.MockPoolInfo{},
+				poolInfo:  &zpool.PoolMocker{},
 			},
 		},
 		"Raidz2 Pool With Multiple Data RaidGroups": {
@@ -1070,7 +1080,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
-				poolInfo:  &zpool.MockPoolInfo{},
+				poolInfo:  &zpool.PoolMocker{},
 			},
 		},
 	}
@@ -1166,7 +1176,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			testConfig: testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
-				poolInfo:                     &zpool.MockPoolInfo{},
+				poolInfo:                     &zpool.PoolMocker{},
 				isDay2OperationNeedToPerform: true,
 				dataRaidGroups: []cstor.RaidGroup{
 					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
@@ -1205,7 +1215,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			testConfig: testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
-				poolInfo:                     &zpool.MockPoolInfo{},
+				poolInfo:                     &zpool.PoolMocker{},
 				isDay2OperationNeedToPerform: true,
 				dataRaidGroups: []cstor.RaidGroup{
 					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
@@ -1248,7 +1258,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			testConfig: testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
-				poolInfo:                     &zpool.MockPoolInfo{},
+				poolInfo:                     &zpool.PoolMocker{},
 				isDay2OperationNeedToPerform: true,
 				writeCacheGroupType:          "mirror",
 				writeCacheRaidGroups: []cstor.RaidGroup{
@@ -1284,7 +1294,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			testConfig: testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
-				poolInfo:                     &zpool.MockPoolInfo{},
+				poolInfo:                     &zpool.PoolMocker{},
 				isDay2OperationNeedToPerform: true,
 				dataRaidGroups: []cstor.RaidGroup{
 					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
@@ -1319,7 +1329,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			testConfig: testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
-				poolInfo:                     &zpool.MockPoolInfo{},
+				poolInfo:                     &zpool.PoolMocker{},
 				isDay2OperationNeedToPerform: true,
 				dataRaidGroups: []cstor.RaidGroup{
 					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
@@ -1358,7 +1368,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			testConfig: testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
-				poolInfo:                     &zpool.MockPoolInfo{},
+				poolInfo:                     &zpool.PoolMocker{},
 				isDay2OperationNeedToPerform: true,
 				dataRaidGroups: []cstor.RaidGroup{
 					{CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
@@ -1398,7 +1408,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			testConfig: testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
-				poolInfo:                     &zpool.MockPoolInfo{},
+				poolInfo:                     &zpool.PoolMocker{},
 				isDay2OperationNeedToPerform: true,
 				writeCacheGroupType:          "stripe",
 				writeCacheRaidGroups: []cstor.RaidGroup{
@@ -1434,7 +1444,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			testConfig: testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
-				poolInfo:                     &zpool.MockPoolInfo{},
+				poolInfo:                     &zpool.PoolMocker{},
 				isDay2OperationNeedToPerform: true,
 				writeCacheGroupType:          "raidz",
 				writeCacheRaidGroups: []cstor.RaidGroup{
@@ -1470,7 +1480,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				ejectErrorCount:               3,
 				shouldPoolOperationInProgress: true,
 				loopDelay:                     time.Microsecond * 100,
-				poolInfo: &zpool.MockPoolInfo{
+				poolInfo: &zpool.PoolMocker{
 					TestConfig: zpool.TestConfig{
 						ZpoolCommand: zpool.ZpoolCommandError{
 							ZpoolAddError: true,
@@ -1510,7 +1520,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				ejectErrorCount:               5,
 				shouldPoolOperationInProgress: true,
 				loopDelay:                     time.Microsecond * 100,
-				poolInfo: &zpool.MockPoolInfo{
+				poolInfo: &zpool.PoolMocker{
 					TestConfig: zpool.TestConfig{
 						ZpoolCommand: zpool.ZpoolCommandError{
 							ZpoolAddError: true,
@@ -1624,7 +1634,7 @@ func TestCSPIBlockDeviceReplacement(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 4,
 				loopDelay: time.Microsecond * 100,
-				poolInfo: &zpool.MockPoolInfo{
+				poolInfo: &zpool.PoolMocker{
 					TestConfig: zpool.TestConfig{
 						ResilveringProgress: 2,
 					},
@@ -1683,7 +1693,7 @@ func TestCSPIBlockDeviceReplacement(t *testing.T) {
 			testConfig: testConfig{
 				loopCount: 4,
 				loopDelay: time.Microsecond * 100,
-				poolInfo: &zpool.MockPoolInfo{
+				poolInfo: &zpool.PoolMocker{
 					TestConfig: zpool.TestConfig{
 						ResilveringProgress: 2,
 					},

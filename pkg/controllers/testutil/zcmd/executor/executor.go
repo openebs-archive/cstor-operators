@@ -25,26 +25,26 @@ import (
 	"github.com/pkg/errors"
 )
 
-// FakeZcmd contains the information about Pool and Volumes
+// FakeZcmd holds the Pool and Volumes information
 // which will helpful to mocking zpool and zfs commands
 type FakeZcmd struct {
-	mPoolInfo   *zpool.MockPoolInfo
-	mVolumeInfo *zfs.MockVolumeInfo
+	poolMocker   *zpool.PoolMocker
+	volumeMocker *zfs.VolumeMocker
 }
 
 // NewFakeZCommand returns new instance of FakeZcmd
 func NewFakeZCommand() *FakeZcmd {
 	return &FakeZcmd{
-		mPoolInfo:   &zpool.MockPoolInfo{},
-		mVolumeInfo: &zfs.MockVolumeInfo{},
+		poolMocker:   &zpool.PoolMocker{},
+		volumeMocker: &zfs.VolumeMocker{},
 	}
 }
 
-// NewFakeZCommandFromPoolInfo returns new instance of FakeZcmd from MockPoolInfo
-func NewFakeZCommandFromPoolInfo(mPoolInfo *zpool.MockPoolInfo) *FakeZcmd {
+// NewFakeZCommandFromPoolMocker returns new instance of FakeZcmd from MockPoolInfo
+func NewFakeZCommandFromPoolMocker(poolMocker *zpool.PoolMocker) *FakeZcmd {
 	return &FakeZcmd{
-		mPoolInfo:   mPoolInfo,
-		mVolumeInfo: &zfs.MockVolumeInfo{},
+		poolMocker:   poolMocker,
+		volumeMocker: &zfs.VolumeMocker{},
 	}
 }
 
@@ -64,23 +64,23 @@ func (f *FakeZcmd) executePoolCommands(cmd string) ([]byte, error) {
 	values := strings.Split(cmd, " ")
 	switch values[1] {
 	case "create":
-		return f.mPoolInfo.Create(cmd)
+		return f.poolMocker.Create(cmd)
 	case "import":
-		return f.mPoolInfo.Import(cmd)
+		return f.poolMocker.Import(cmd)
 	case "get":
-		return f.mPoolInfo.GetProperty(cmd)
+		return f.poolMocker.GetProperty(cmd)
 	case "destroy":
-		return f.mPoolInfo.Delete(cmd)
+		return f.poolMocker.Delete(cmd)
 	case "dump":
-		return f.mPoolInfo.Dump(cmd)
+		return f.poolMocker.Dump(cmd)
 	case "add":
-		return f.mPoolInfo.Add(cmd)
+		return f.poolMocker.Add(cmd)
 	case "labelclear":
-		return f.mPoolInfo.LabelClear(cmd)
+		return f.poolMocker.LabelClear(cmd)
 	case "replace":
-		return f.mPoolInfo.Replace(cmd)
+		return f.poolMocker.Replace(cmd)
 	case "set":
-		return f.mPoolInfo.SetProperty(cmd)
+		return f.poolMocker.SetProperty(cmd)
 	}
 	return []byte(fmt.Sprintf("Please mock zpool %s command", values[1])), errors.Errorf("exit status 1")
 }
@@ -90,7 +90,7 @@ func (f *FakeZcmd) executeVolumeCommands(cmd string) ([]byte, error) {
 	values := strings.Split(cmd, " ")
 	switch values[1] {
 	case "get":
-		return f.mVolumeInfo.GetProperty(cmd)
+		return f.volumeMocker.GetProperty(cmd)
 	}
 	return []byte(fmt.Sprintf("Please mock zfs %s command", values[1])), errors.Errorf("exit status 1")
 }

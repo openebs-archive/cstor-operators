@@ -28,9 +28,9 @@ var (
 
 // Replace mocks the zpool replace command and retutns error based on the test
 // configuration
-func (mPoolInfo *MockPoolInfo) Replace(cmd string) ([]byte, error) {
+func (poolMocker *PoolMocker) Replace(cmd string) ([]byte, error) {
 	// If configuration expects error then return error
-	if mPoolInfo.TestConfig.ZpoolCommand.ZpoolReplaceError {
+	if poolMocker.TestConfig.ZpoolCommand.ZpoolReplaceError {
 		return replaceError(cmd)
 	}
 	// zpool replace <pool_name> <old_path> <new_path>
@@ -41,17 +41,17 @@ func (mPoolInfo *MockPoolInfo) Replace(cmd string) ([]byte, error) {
 			return []byte("inappropriate command"), errors.Errorf("exit status 1")
 		}
 		// paths contains: paths[0] -- PoolName; paths[1] -- oldDevlink; paths[3] -- newDevLink
-		err := mPoolInfo.replacePathInVdev(paths[1], paths[2], mPoolInfo.Topology.VdevTree.Topvdev)
+		err := poolMocker.replacePathInVdev(paths[1], paths[2], poolMocker.Topology.VdevTree.Topvdev)
 		if err != nil {
 			return []byte(err.Error()), errors.Errorf("exit status 1")
 		}
 	}
-	mPoolInfo.IsReplacementTriggered = true
+	poolMocker.IsReplacementInProgress = true
 	return []byte{}, nil
 }
 
 // replacePathInVdev replace the old path with new path in Topology
-func (mPoolInfo *MockPoolInfo) replacePathInVdev(oldPath, newPath string, vdev []internalapi.Vdev) error {
+func (poolMocker *PoolMocker) replacePathInVdev(oldPath, newPath string, vdev []internalapi.Vdev) error {
 	for i, v := range vdev {
 		if v.Path == oldPath {
 			vdev[i].Path = newPath
@@ -68,7 +68,7 @@ func (mPoolInfo *MockPoolInfo) replacePathInVdev(oldPath, newPath string, vdev [
 				vdev[i].Children[j].ScanStats = resilveringVdevStats
 				return nil
 			}
-			if err := mPoolInfo.replacePathInVdev(oldPath, newPath, p.Children); err == nil {
+			if err := poolMocker.replacePathInVdev(oldPath, newPath, p.Children); err == nil {
 				return nil
 			}
 		}

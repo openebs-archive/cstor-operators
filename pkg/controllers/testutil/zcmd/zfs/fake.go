@@ -16,9 +16,9 @@ limitations under the License.
 
 package zfs
 
-// MockVolumeInfo contains the volume information which
+// VolumeMocker contains the volume information which
 // will helpful to execute zfs command
-type MockVolumeInfo struct {
+type VolumeMocker struct {
 	PoolName    string
 	Compression string
 }

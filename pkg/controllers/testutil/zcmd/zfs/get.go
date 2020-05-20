@@ -21,7 +21,10 @@ import (
 )
 
 // GetProperty mocks the zfs get command and returns the error based on the output
-func (mPoolInfo *MockVolumeInfo) GetProperty(cmd string) ([]byte, error) {
+// TODO: Having GetProperty as a method will help to return desired value
+// set for ZFS properties by the TestCase(As of now we are not setting
+// in test configuration)
+func (volumeMocker *VolumeMocker) GetProperty(cmd string) ([]byte, error) {
 	var isProperty bool
 	var output string
 

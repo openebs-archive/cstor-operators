@@ -27,20 +27,20 @@ import (
 )
 
 // Add mocks the zpool add command and returns error based on the test configuration
-func (mPoolInfo *MockPoolInfo) Add(cmd string) ([]byte, error) {
-	if mPoolInfo.PoolName == "" {
-		return []byte("cannot open 'pool': no such pool"), errors.Errorf("exist status 1")
+func (poolMocker *PoolMocker) Add(cmd string) ([]byte, error) {
+	if poolMocker.PoolName == "" {
+		return []byte("cannot open 'pool': no such pool"), errors.Errorf("exit status 1")
 	}
 	// If configuration expects error then return error
-	if mPoolInfo.TestConfig.ZpoolCommand.ZpoolAddError {
+	if poolMocker.TestConfig.ZpoolCommand.ZpoolAddError {
 		return addError(cmd)
 	}
-	mPoolInfo.addVdev(cmd)
+	poolMocker.addVdev(cmd)
 	return []byte{}, nil
 }
 
 // addVdev adds the new vdev/devices into the pool topology
-func (mPoolInfo *MockPoolInfo) addVdev(cmd string) {
+func (poolMocker *PoolMocker) addVdev(cmd string) {
 	var poolType string
 	var isWriteCache bool
 	values := strings.Split(cmd, " ")
@@ -57,8 +57,8 @@ func (mPoolInfo *MockPoolInfo) addVdev(cmd string) {
 			if s != "stripe" {
 				rand.Seed(time.Now().UnixNano())
 				groupName := fmt.Sprintf("%s-%d", s, rand.Intn(21))
-				mPoolInfo.Topology.VdevTree.Topvdev = append(
-					mPoolInfo.Topology.VdevTree.Topvdev,
+				poolMocker.Topology.VdevTree.Topvdev = append(
+					poolMocker.Topology.VdevTree.Topvdev,
 					getTopVdevFromRaidType(groupName, isWriteCache))
 			}
 		}
@@ -68,17 +68,17 @@ func (mPoolInfo *MockPoolInfo) addVdev(cmd string) {
 		}
 		if strings.ContainsAny(s, "/") {
 			if poolType == "stripe" {
-				mPoolInfo.Topology.VdevTree.Topvdev = append(
-					mPoolInfo.Topology.VdevTree.Topvdev,
+				poolMocker.Topology.VdevTree.Topvdev = append(
+					poolMocker.Topology.VdevTree.Topvdev,
 					getVdevFromDisk(s, isWriteCache))
 			} else {
-				lenTopLevelVdev := len(mPoolInfo.Topology.VdevTree.Topvdev) - 1
-				mPoolInfo.Topology.VdevTree.Topvdev[lenTopLevelVdev].Children = append(
-					mPoolInfo.Topology.VdevTree.Topvdev[lenTopLevelVdev].Children,
+				lenTopLevelVdev := len(poolMocker.Topology.VdevTree.Topvdev) - 1
+				poolMocker.Topology.VdevTree.Topvdev[lenTopLevelVdev].Children = append(
+					poolMocker.Topology.VdevTree.Topvdev[lenTopLevelVdev].Children,
 					getVdevFromDisk(s, isWriteCache),
 				)
 			}
-			mPoolInfo.DiskCount++
+			poolMocker.DiskCount++
 		}
 	}
 }

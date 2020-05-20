@@ -48,13 +48,14 @@ func GetPropertyValue(poolName, property string, executor bin.Executor) (string,
 
 // GetListOfPropertyValues will return value list for given property list
 // NOTE: It will return the property values in the same order as property list
-func GetListOfPropertyValues(poolName string, propertyList []string, executor bin.Executor) ([]string, error) {
+func (oc *OperationsConfig) GetListOfPropertyValues(
+	poolName string, propertyList []string) ([]string, error) {
 	ret, err := zfs.NewPoolGetProperty().
 		WithScriptedMode(true).
 		WithField("value").
 		WithPropertyList(propertyList).
 		WithPool(poolName).
-		WithExecutor(executor).
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err != nil {
 		return []string{}, err
@@ -68,13 +69,13 @@ func GetListOfPropertyValues(poolName string, propertyList []string, executor bi
 }
 
 // GetVolumePropertyValue is used to get pool properties using zfs commands
-func GetVolumePropertyValue(poolName, property string, executor bin.Executor) (string, error) {
+func (oc *OperationsConfig) GetVolumePropertyValue(poolName, property string) (string, error) {
 	ret, err := zfs.NewVolumeGetProperty().
 		WithScriptedMode(true).
 		WithField("value").
 		WithProperty(property).
 		WithDataset(poolName).
-		WithExecutor(executor).
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err != nil {
 		return "", errors.Wrapf(err,
@@ -89,10 +90,10 @@ func GetVolumePropertyValue(poolName, property string, executor bin.Executor) (s
 
 // GetCSPICapacity returns the free, allocated and total capacities of pool in
 // a structure
-func GetCSPICapacity(poolName string, executor bin.Executor) (cstor.CStorPoolInstanceCapacity, error) {
+func (oc *OperationsConfig) GetCSPICapacity(poolName string) (cstor.CStorPoolInstanceCapacity, error) {
 	propertyList := []string{"free", "allocated", "size"}
 	cspiCapacity := cstor.CStorPoolInstanceCapacity{}
-	valueList, err := GetListOfPropertyValues(poolName, propertyList, executor)
+	valueList, err := oc.GetListOfPropertyValues(poolName, propertyList)
 	if err != nil {
 		return cspiCapacity, errors.Errorf(
 			"failed to get pool %v properties for pool %s cmd out: %v error: %v",
@@ -157,7 +158,7 @@ func GetCapacityInBinarySi(capacity string) string {
 }
 
 // SetPoolRDMode set the pool ReadOnly property based on the arrgument
-func SetPoolRDMode(poolName string, isROMode bool, executor bin.Executor) error {
+func (oc *OperationsConfig) SetPoolRDMode(poolName string, isROMode bool) error {
 	mode := "off"
 	if isROMode {
 		mode = "on"
@@ -165,7 +166,7 @@ func SetPoolRDMode(poolName string, isROMode bool, executor bin.Executor) error 
 	ret, err := zfs.NewPoolSetProperty().
 		WithProperty("io.openebs:readonly", mode).
 		WithPool(poolName).
-		WithExecutor(executor).
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err != nil {
 		return errors.Errorf(

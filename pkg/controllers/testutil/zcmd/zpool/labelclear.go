@@ -16,6 +16,6 @@ limitations under the License.
 package zpool
 
 // LabelClear mocks the zpool labelclear command
-func (mPoolInfo *MockPoolInfo) LabelClear(cmd string) ([]byte, error) {
+func (poolMocker *PoolMocker) LabelClear(cmd string) ([]byte, error) {
 	return []byte{}, nil
 }

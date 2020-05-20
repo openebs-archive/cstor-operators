@@ -113,16 +113,8 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 	// take a lock for common package for updating variables
 	common.SyncResources.Mux.Lock()
 
-	// Instantiate the pool operation config
-	// ToDo: NewOperationsConfig is used a other handlers e.g. destroy: fix the repeatability.
-	oc := zpool.NewOperationsConfig().
-		WithKubeClientSet(c.kubeclientset).
-		WithOpenEBSClient(c.clientset).
-		WithRecorder(c.recorder).
-		WithZcmdExecutor(c.zcmdExecutor)
-
 	// try to import pool
-	isImported, err = oc.Import(cspi)
+	isImported, err = c.operationsConfig.Import(cspi)
 	if isImported {
 		if err != nil {
 			common.SyncResources.Mux.Unlock()
@@ -152,7 +144,7 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 	}
 
 	if cspi.IsEmptyStatus() || cspi.IsPendingStatus() {
-		err = oc.Create(cspi)
+		err = c.operationsConfig.Create(cspi)
 		if err != nil {
 			// We will try to create it in next event
 			c.recorder.Event(cspi,
@@ -160,7 +152,7 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 				string(common.FailureCreate),
 				fmt.Sprintf("Failed to create pool due to '%s'", err.Error()))
 
-			_ = oc.Delete(cspi)
+			_ = c.operationsConfig.Delete(cspi)
 			common.SyncResources.Mux.Unlock()
 			return nil
 		}
@@ -200,14 +192,10 @@ func (c *CStorPoolInstanceController) destroy(cspi *cstor.CStorPoolInstance) err
 	if !util.ContainsString(cspi.Finalizers, types.PoolProtectionFinalizer) {
 		return nil
 	}
-	// Instantiate the pool operation config
-	oc := zpool.NewOperationsConfig().
-		WithKubeClientSet(c.kubeclientset).
-		WithOpenEBSClient(c.clientset).
-		WithZcmdExecutor(c.zcmdExecutor)
+
 	// DeletePool is to delete cstor zpool.
 	// It will also clear the label for relevant disk
-	err := oc.Delete(cspi)
+	err := c.operationsConfig.Delete(cspi)
 	if err != nil {
 		c.recorder.Event(cspi,
 			corev1.EventTypeWarning,
@@ -261,7 +249,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 
 	// Since we queried in following order health and io.openebs:readonly output also
 	// will be in same order
-	valueList, err := zpool.GetListOfPropertyValues(pool, propertyList, c.zcmdExecutor)
+	valueList, err := c.operationsConfig.GetListOfPropertyValues(pool, propertyList)
 	if err != nil {
 		return cspi, errors.Errorf("Failed to fetch %v output: %v error: %v", propertyList, valueList, err)
 	} else {
@@ -273,7 +261,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 		}
 	}
 
-	status.Capacity, err = zpool.GetCSPICapacity(pool, c.zcmdExecutor)
+	status.Capacity, err = c.operationsConfig.GetCSPICapacity(pool)
 	if err != nil {
 		return cspi, errors.Errorf("Failed to sync due to %s", err.Error())
 	}
@@ -308,6 +296,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 func (c *CStorPoolInstanceController) updateROMode(
 	cspiStatus *cstor.CStorPoolInstanceStatus, cspi cstor.CStorPoolInstance) {
 	roThresholdLimit := 85
+
 	if cspi.Spec.PoolConfig.ROThresholdLimit != nil {
 		roThresholdLimit = *cspi.Spec.PoolConfig.ROThresholdLimit
 	}
@@ -321,7 +310,7 @@ func (c *CStorPoolInstanceController) updateROMode(
 	// recommended to perform operations
 	if (int(usedPercentage) >= roThresholdLimit) && roThresholdLimit != 100 {
 		if !cspiStatus.ReadOnly {
-			if err := zpool.SetPoolRDMode(pool, true, c.zcmdExecutor); err != nil {
+			if err := c.operationsConfig.SetPoolRDMode(pool, true); err != nil {
 				// Here, we are just logging in next reconciliation it will be retried
 				klog.Errorf("failed to set pool ReadOnly Mode to %t error: %s", true, err.Error())
 			} else {
@@ -336,7 +325,7 @@ func (c *CStorPoolInstanceController) updateROMode(
 		}
 	} else {
 		if cspiStatus.ReadOnly {
-			if err := zpool.SetPoolRDMode(pool, false, c.zcmdExecutor); err != nil {
+			if err := c.operationsConfig.SetPoolRDMode(pool, false); err != nil {
 				klog.Errorf("Failed to unset pool readOnly mode : %v", err)
 			} else {
 				cspiStatus.ReadOnly = false
@@ -418,12 +407,10 @@ func (c *CStorPoolInstanceController) addPoolProtectionFinalizer(
 }
 
 func (c *CStorPoolInstanceController) sync(cspi *cstor.CStorPoolInstance) {
-	oc := zpool.NewOperationsConfig().
-		WithZcmdExecutor(c.zcmdExecutor)
 	// Right now the only sync activity is compression
 	compressionType := cspi.Spec.PoolConfig.Compression
 	poolName := zpool.PoolName()
-	err := oc.SetCompression(poolName, compressionType)
+	err := c.operationsConfig.SetCompression(poolName, compressionType)
 	if err != nil {
 		c.recorder.Event(cspi,
 			corev1.EventTypeWarning,
@@ -434,12 +421,8 @@ func (c *CStorPoolInstanceController) sync(cspi *cstor.CStorPoolInstance) {
 
 func (c *CStorPoolInstanceController) addDiskUnavailableCondition(cspi *cstor.CStorPoolInstance) {
 	diskUnavailableCondition := cspiutil.GetCSPICondition(cspi.Status, cstor.CSPIDiskUnavailable)
-	oc := zpool.NewOperationsConfig().
-		WithKubeClientSet(c.kubeclientset).
-		WithOpenEBSClient(c.clientset).
-		WithRecorder(c.recorder).
-		WithZcmdExecutor(c.zcmdExecutor)
-	unAvailableDisks, err := oc.GetUnavailableDiskList(cspi)
+	unAvailableDisks, err := c.operationsConfig.GetUnavailableDiskList(cspi)
+
 	if err != nil {
 		klog.Errorf("failed to get unavailable disks error: %v", err)
 		return
@@ -463,6 +446,7 @@ func (c *CStorPoolInstanceController) addDiskUnavailableCondition(cspi *cstor.CS
 	}
 }
 
+<<<<<<< HEAD
 func (c *CStorPoolInstanceController) reconcileVersion(cspi *cstor.CStorPoolInstance) (*cstor.CStorPoolInstance, error) {
 	var err error
 	// the below code uses deep copy to have the state of object just before
@@ -509,7 +493,7 @@ func (c *CStorPoolInstanceController) reconcileVersion(cspi *cstor.CStorPoolInst
 	return cspi, nil
 }
 
-// validateCSPI validates the CSPI and returns error
+// validateCSPI returns error if CSPI spec validation fails otherwise nil
 func validateCSPI(cspi *cstor.CStorPoolInstance) error {
 	if len(cspi.Spec.DataRaidGroups) == 0 {
 		return errors.Errorf("No data RaidGroups exists")
@@ -523,14 +507,13 @@ func validateCSPI(cspi *cstor.CStorPoolInstance) error {
 	}
 	for _, rg := range cspi.Spec.DataRaidGroups {
 		if len(rg.CStorPoolInstanceBlockDevices) == 0 {
-			return errors.Errorf("No BlockDevices exist in DataRaidGroup")
+			return errors.Errorf("No BlockDevices exist in one of the DataRaidGroup")
 		}
 	}
 	for _, rg := range cspi.Spec.WriteCacheRaidGroups {
 		if len(rg.CStorPoolInstanceBlockDevices) == 0 {
-			return errors.Errorf("No BlockDevices exist in WriteCache RaidGroup")
+			return errors.Errorf("No BlockDevices exist in one of the WriteCache RaidGroup")
 		}
 	}
 	return nil
->>>>>>> chore(refactor): add fake controller testing for cspi-controller
 }

@@ -130,7 +130,7 @@ IsPoolHealthy 30
 ## Once the pool is healthy verify whether cachefile stored in persistent path
 ## Get the CSPC name
 echo "Verifying whether pool cachefile is stored in persistent path"
-cspcName=$(kubectl get cspc -n openebs -o jsonpath={.items[0].metadata.name})
+cspcName=$(kubectl get cspc -n openebs -o=jsonpath={.items[0].metadata.name})
 if [ $? -ne 0 ]; then
     echo "Failed to get CSPC name"
     exit 1

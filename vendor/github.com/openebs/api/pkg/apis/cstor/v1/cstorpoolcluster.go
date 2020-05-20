@@ -160,7 +160,7 @@ type CStorPoolClusterStatus struct {
 	HealthyInstances int32 `json:"healthyInstances"`
 
 	// Current state of CSPC.
-	Conditions []CStorPoolClusterCondition `json:conditions`
+	Conditions []CStorPoolClusterCondition `json:"conditions"`
 }
 
 type CSPCConditionType string

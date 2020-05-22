@@ -649,10 +649,10 @@ func (pOps *PoolOperations) ArePoolSpecChangesValid(oldPoolSpec, newPoolSpec *cs
 	}
 	for _, v := range commonRaidGroups {
 		rgType := v.rgType
-		for _, oldRg := range v.oldRaidGroups {
-			oldRg := oldRg
-			for _, newRg := range v.newRaidGroups {
-				newRg := newRg
+		for index, _ := range v.oldRaidGroups {
+			oldRg := v.oldRaidGroups[index]
+			for _, _ = range v.newRaidGroups {
+				newRg := v.newRaidGroups[index]
 				if err = validateRaidGroupChanges(&oldRg, &newRg, rgType); err != nil {
 					return false, fmt.Sprintf("raid group validation failed: %v", err)
 				}

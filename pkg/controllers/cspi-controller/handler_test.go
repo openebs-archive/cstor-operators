@@ -36,7 +36,6 @@ import (
 	"github.com/openebs/cstor-operators/pkg/controllers/testutil"
 	executor "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/executor"
 	zpool "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/zpool"
-	pooloperation "github.com/openebs/cstor-operators/pkg/pool/operations"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -146,13 +145,6 @@ func (f *fixture) newCSPIController(
 
 	recorder := record.NewFakeRecorder(1024)
 
-	// Instantiate the operations config
-	operationsConfig := pooloperation.NewOperationsConfig().
-		WithKubeClientSet(f.k8sClient).
-		WithOpenEBSClient(f.openebsClient).
-		WithRecorder(recorder).
-		WithZcmdExecutor(fakeZCMDExecutor)
-
 	// Build a fake controller
 	controller := &CStorPoolInstanceController{
 		kubeclientset:           f.k8sClient,
@@ -161,7 +153,6 @@ func (f *fixture) newCSPIController(
 		workqueue:               workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), poolControllerName),
 		recorder:                recorder,
 		zcmdExecutor:            fakeZCMDExecutor,
-		operationsConfig:        operationsConfig,
 	}
 
 	for _, rs := range f.cspiLister {

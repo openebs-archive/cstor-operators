@@ -60,6 +60,7 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 		WithCachefile(cacheFile).
 		WithProperty("cachefile", cacheFile).
 		WithPool(PoolName()).
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err == nil {
 		poolImported = true

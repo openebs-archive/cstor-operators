@@ -23,6 +23,10 @@ import (
 	"k8s.io/client-go/tools/record"
 )
 
+// TODO: Move entier package files to pkg/controller/cspi-controller
+// Because this structure contains all most all the fields of
+// CStorPoolInstanceController
+
 type OperationsConfig struct {
 	// kubeclientset is a standard kubernetes clientset
 	kubeclientset kubernetes.Interface

@@ -30,7 +30,6 @@ import (
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	common "github.com/openebs/cstor-operators/pkg/controllers/common"
-	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
@@ -64,9 +63,6 @@ type CStorPoolInstanceController struct {
 	// zcmdExecutor is an interface that knows to execute ZFS and ZPOOL commands.
 	// This is useful in mocking.
 	zcmdExecutor zcmd.Executor
-
-	// OperationsConfig holds the configuration required to execute pool operations
-	operationsConfig *zpool.OperationsConfig
 }
 
 // NewCStorPoolInstanceController returns a new instance of CStorPoolInstance controller
@@ -101,13 +97,6 @@ func NewCStorPoolInstanceController(
 	// Instantiate the zcmdExecutor to execute zpool/zfs commands
 	zcmdExecutor := zcmd.NewZcmd()
 
-	// Instantiate the operations config
-	operationsConfig := zpool.NewOperationsConfig().
-		WithKubeClientSet(kubeclientset).
-		WithOpenEBSClient(clientset).
-		WithRecorder(recorder).
-		WithZcmdExecutor(zcmdExecutor)
-
 	controller := &CStorPoolInstanceController{
 		kubeclientset:           kubeclientset,
 		clientset:               clientset,
@@ -115,7 +104,6 @@ func NewCStorPoolInstanceController(
 		workqueue:               workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), poolControllerName),
 		recorder:                recorder,
 		zcmdExecutor:            zcmdExecutor,
-		operationsConfig:        operationsConfig,
 	}
 
 	klog.Info("Setting up event handlers for CSPI")

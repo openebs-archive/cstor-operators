@@ -56,6 +56,9 @@ type PoolCreate struct {
 	// checks is list of predicate function used for validating object
 	checks []PredicateFunc
 
+	// Executor is to execute the commands
+	Executor bin.Executor
+
 	// error
 	err error
 }
@@ -123,6 +126,12 @@ func (p *PoolCreate) WithCommand(Command string) *PoolCreate {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolCreate object.
+func (p *PoolCreate) WithExecutor(executor bin.Executor) *PoolCreate {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolCreate object by builder
 func (p *PoolCreate) Validate() *PoolCreate {
 	for _, check := range p.checks {
@@ -139,6 +148,10 @@ func (p *PoolCreate) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

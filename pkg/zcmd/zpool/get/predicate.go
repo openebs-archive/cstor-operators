@@ -60,3 +60,10 @@ func IsFieldListSet() PredicateFunc {
 		return len(p.FieldList) != 0
 	}
 }
+
+// IsExecutorSet method check if the Executor field of PoolGproperty object is set.
+func IsExecutorSet() PredicateFunc {
+	return func(p *PoolGProperty) bool {
+		return p.Executor != nil
+	}
+}

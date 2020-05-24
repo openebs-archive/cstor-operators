@@ -51,6 +51,9 @@ type PoolOnline struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolOnline returns new instance of object PoolOnline
@@ -88,6 +91,12 @@ func (p *PoolOnline) WithCommand(Command string) *PoolOnline {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolOnline object.
+func (p *PoolOnline) WithExecutor(executor bin.Executor) *PoolOnline {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolOnline object by builder
 func (p *PoolOnline) Validate() *PoolOnline {
 	for _, check := range p.checks {
@@ -104,6 +113,11 @@ func (p *PoolOnline) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

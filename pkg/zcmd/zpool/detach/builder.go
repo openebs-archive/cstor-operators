@@ -48,6 +48,9 @@ type PoolDetach struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolDetach returns new instance of object PoolDetach
@@ -95,6 +98,11 @@ func (p *PoolDetach) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

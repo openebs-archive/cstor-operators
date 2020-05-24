@@ -17,13 +17,17 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"strconv"
+	"testing"
+	"time"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebscore "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
 	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
 	openebsinformers "github.com/openebs/api/pkg/client/informers/externalversions"
 	"github.com/openebs/cstor-operators/pkg/controllers/testutil"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -32,9 +36,6 @@ import (
 	core "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
-	"strconv"
-	"testing"
-	"time"
 )
 
 // fixture encapsulates fake client sets and client-go testing objects.

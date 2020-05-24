@@ -29,7 +29,7 @@ func (oc *OperationsConfig) Delete(cspi *cstor.CStorPoolInstance) error {
 	klog.Infof("Destroying a pool {%s}", zpoolName)
 
 	// Let's check if pool exists or not
-	if poolExist := checkIfPoolPresent(zpoolName); !poolExist {
+	if poolExist := checkIfPoolPresent(zpoolName, oc.zcmdExecutor); !poolExist {
 		klog.Infof("Pool %s not imported.. so, can't destroy", zpoolName)
 		return nil
 	}
@@ -37,6 +37,7 @@ func (oc *OperationsConfig) Delete(cspi *cstor.CStorPoolInstance) error {
 	// First delete a pool
 	ret, err := zfs.NewPoolDestroy().
 		WithPool(zpoolName).
+		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err != nil {
 		klog.Errorf("Failed to destroy a pool {%s}.. %s", ret, err.Error())
@@ -60,7 +61,9 @@ func (oc *OperationsConfig) ClearPoolLabel(raidGroups ...cstor.RaidGroup) {
 		for _, v := range disklist {
 			if _, err := zfs.NewPoolLabelClear().
 				WithForceFully(true).
-				WithVdev(v[0]).Execute(); err != nil {
+				WithVdev(v[0]).
+				WithExecutor(oc.zcmdExecutor).
+				Execute(); err != nil {
 				klog.Errorf("Failed to perform label clear for disk {%s}.. %s", v, err.Error())
 			}
 		}

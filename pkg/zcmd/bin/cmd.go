@@ -16,9 +16,13 @@ limitations under the License.
 
 package bin
 
+import (
+	"os/exec"
+)
+
 const (
 	// ZPOOL is zpool command name
-	ZPOOL = "/usr/local/bin/zpool"
+	ZPOOL = "zpool"
 
 	// BASH is bash command name
 	BASH = "bash"
@@ -26,3 +30,24 @@ const (
 	// ZFS is zfs command name
 	ZFS = "zfs"
 )
+
+// Executor is an interface for executing ZPOOL/ZFS operations
+type Executor interface {
+	Execute(command string) ([]byte, error)
+}
+
+// Zcmd is structure which is responsible for executing ZPOOl/ZFS
+// commands
+type Zcmd struct{}
+
+// NewZcmd is new instance of Zcmd
+func NewZcmd() *Zcmd {
+	return &Zcmd{}
+}
+
+// Execute is to execute zpool/zfs commands in bash
+func (z *Zcmd) Execute(command string) ([]byte, error) {
+	// execute command here
+	// #nosec
+	return exec.Command(BASH, "-c", command).CombinedOutput()
+}

@@ -58,6 +58,9 @@ type VolumeGetProperty struct {
 	// checks is list of predicate function used for validating object
 	checks []PredicateFunc
 
+	// Executor is to execute the commands
+	Executor bin.Executor
+
 	// error
 	err error
 }
@@ -115,6 +118,12 @@ func (v *VolumeGetProperty) WithCommand(Command string) *VolumeGetProperty {
 	return v
 }
 
+// WithExecutor method fills the Executor field of VolumeGetProperty object.
+func (v *VolumeGetProperty) WithExecutor(executor bin.Executor) *VolumeGetProperty {
+	v.Executor = executor
+	return v
+}
+
 // Validate is to validate generated VolumeGetProperty object by builder
 func (v *VolumeGetProperty) Validate() *VolumeGetProperty {
 	for _, check := range v.checks {
@@ -131,6 +140,11 @@ func (v *VolumeGetProperty) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(v) {
+		return v.Executor.Execute(v.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", v.Command).CombinedOutput()

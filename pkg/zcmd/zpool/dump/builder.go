@@ -19,13 +19,14 @@ package pstatus
 import (
 	"encoding/json"
 	"fmt"
-	vdump "github.com/openebs/api/pkg/internalapis/apis/cstor"
-	"github.com/openebs/cstor-operators/pkg/zcmd/bin"
-	"github.com/pkg/errors"
 	"os/exec"
 	"reflect"
 	"runtime"
 	"strings"
+
+	vdump "github.com/openebs/api/pkg/internalapis/apis/cstor"
+	"github.com/openebs/cstor-operators/pkg/zcmd/bin"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -49,6 +50,9 @@ type PoolDump struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolDump returns new instance of object PoolDump
@@ -80,6 +84,12 @@ func (p *PoolDump) WithStripVdevPath() *PoolDump {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolDump object.
+func (p *PoolDump) WithExecutor(executor bin.Executor) *PoolDump {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolDump object by builder
 func (p *PoolDump) Validate() *PoolDump {
 	for _, check := range p.checks {
@@ -93,15 +103,21 @@ func (p *PoolDump) Validate() *PoolDump {
 // Execute is to execute generated PoolDump object
 func (p *PoolDump) Execute() (vdump.Topology, error) {
 	var t vdump.Topology
+	var out []byte
+	var err error
 
-	p, err := p.Build()
+	p, err = p.Build()
 	if err != nil {
 		return t, err
 	}
 
-	// execute command here
-	// #nosec
-	out, err := exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()
+	if IsExecutorSet()(p) {
+		out, err = p.Executor.Execute(p.Command)
+	} else {
+		// execute command here
+		// #nosec
+		out, err = exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()
+	}
 	if err != nil {
 		return t, err
 	}

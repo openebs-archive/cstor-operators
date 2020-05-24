@@ -46,3 +46,10 @@ func IsCommandSet() PredicateFunc {
 		return len(p.Command) != 0
 	}
 }
+
+// IsExecutorSet method check if the Executor field of PoolExport object is set.
+func IsExecutorSet() PredicateFunc {
+	return func(p *PoolExport) bool {
+		return p.Executor != nil
+	}
+}

@@ -51,6 +51,9 @@ type PoolExport struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolExport returns new instance of object PoolExport
@@ -98,12 +101,23 @@ func (p *PoolExport) Validate() *PoolExport {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolExport object.
+func (p *PoolExport) WithExecutor(executor bin.Executor) *PoolExport {
+	p.Executor = executor
+	return p
+}
+
 // Execute is to execute generated PoolExport object
 func (p *PoolExport) Execute() ([]byte, error) {
 	p, err := p.Build()
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,16 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+package zpool
 
-package v1alpha2
-
-import (
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	"k8s.io/client-go/kubernetes"
-)
-
-// KubeClient is for kubernetes CR operation
-var KubeClient kubernetes.Interface
-
-// OpenEBSClient is for openebs CR operation
-var OpenEBSClient clientset.Interface
+// LabelClear mocks the zpool labelclear command
+func (poolMocker *PoolMocker) LabelClear(cmd string) ([]byte, error) {
+	return []byte{}, nil
+}

@@ -57,6 +57,9 @@ type PoolGProperty struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolGetProperty returns new instance of object PoolGProperty
@@ -112,6 +115,12 @@ func (p *PoolGProperty) WithCommand(Command string) *PoolGProperty {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolDump object.
+func (p *PoolGProperty) WithExecutor(executor bin.Executor) *PoolGProperty {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolGProperty object by builder
 func (p *PoolGProperty) Validate() *PoolGProperty {
 	for _, check := range p.checks {
@@ -128,6 +137,11 @@ func (p *PoolGProperty) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

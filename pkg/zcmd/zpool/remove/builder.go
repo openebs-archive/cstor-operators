@@ -46,6 +46,8 @@ type PoolRemove struct {
 	// checks is list of predicate function used for validating object
 	checks []PredicateFunc
 
+	// Executor is to execute the commands
+	Executor bin.Executor
 	// error
 	err error
 }
@@ -79,6 +81,12 @@ func (p *PoolRemove) WithCommand(Command string) *PoolRemove {
 	return p
 }
 
+// WithExecutor method fills the Executor field of PoolDump object.
+func (p *PoolRemove) WithExecutor(executor bin.Executor) *PoolRemove {
+	p.Executor = executor
+	return p
+}
+
 // Validate is to validate generated PoolRemove object by builder
 func (p *PoolRemove) Validate() *PoolRemove {
 	for _, check := range p.checks {
@@ -95,6 +103,11 @@ func (p *PoolRemove) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

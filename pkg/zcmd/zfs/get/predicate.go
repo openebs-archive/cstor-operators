@@ -67,3 +67,10 @@ func IsFieldListSet() PredicateFunc {
 		return len(v.FieldList) != 0
 	}
 }
+
+// IsExecutorSet method check if the Executor field of VolumeGetProperty object is set.
+func IsExecutorSet() PredicateFunc {
+	return func(v *VolumeGetProperty) bool {
+		return v.Executor != nil
+	}
+}

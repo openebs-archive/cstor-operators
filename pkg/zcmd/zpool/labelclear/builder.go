@@ -48,6 +48,9 @@ type PoolLabelClear struct {
 
 	// error
 	err error
+
+	// Executor is to execute the commands
+	Executor bin.Executor
 }
 
 // NewPoolLabelClear returns new instance of object PoolLabelClear
@@ -73,6 +76,12 @@ func (p *PoolLabelClear) WithVdev(vdev string) *PoolLabelClear {
 	return p
 }
 
+// WithExecutor method fills the Vdev field of PoolLabelClear object.
+func (p *PoolLabelClear) WithExecutor(executor bin.Executor) *PoolLabelClear {
+	p.Executor = executor
+	return p
+}
+
 // WithCommand method fills the Command field of PoolLabelClear object.
 func (p *PoolLabelClear) WithCommand(Command string) *PoolLabelClear {
 	p.Command = Command
@@ -95,6 +104,11 @@ func (p *PoolLabelClear) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if IsExecutorSet()(p) {
+		return p.Executor.Execute(p.Command)
+	}
+
 	// execute command here
 	// #nosec
 	return exec.Command(bin.BASH, "-c", p.Command).CombinedOutput()

@@ -30,7 +30,7 @@ import (
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	common "github.com/openebs/cstor-operators/pkg/controllers/common"
-	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
+	zcmd "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	openebsScheme "github.com/openebs/api/pkg/client/clientset/versioned/scheme"
@@ -59,6 +59,10 @@ type CStorPoolInstanceController struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
+
+	// zcmdExecutor is an interface that knows to execute ZFS and ZPOOL commands.
+	// This is useful in mocking.
+	zcmdExecutor zcmd.Executor
 }
 
 // NewCStorPoolInstanceController returns a new instance of CStorPoolInstance controller
@@ -70,8 +74,6 @@ func NewCStorPoolInstanceController(
 
 	// obtain references to shared index informers for the cStorPoolInstance resources
 	cStorPoolInstanceInformer := cStorInformerFactory.Cstor().V1().CStorPoolInstances()
-	zpool.KubeClient = kubeclientset
-	zpool.OpenEBSClient = clientset
 
 	err := openebsScheme.AddToScheme(scheme.Scheme)
 	if err != nil {
@@ -92,12 +94,16 @@ func NewCStorPoolInstanceController(
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: poolControllerName})
 
+	// Instantiate the zcmdExecutor to execute zpool/zfs commands
+	zcmdExecutor := zcmd.NewZcmd()
+
 	controller := &CStorPoolInstanceController{
 		kubeclientset:           kubeclientset,
 		clientset:               clientset,
 		cStorPoolInstanceSynced: cStorPoolInstanceInformer.Informer().HasSynced,
 		workqueue:               workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), poolControllerName),
 		recorder:                recorder,
+		zcmdExecutor:            zcmdExecutor,
 	}
 
 	klog.Info("Setting up event handlers for CSPI")

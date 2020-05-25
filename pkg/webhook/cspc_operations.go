@@ -651,23 +651,21 @@ func (pOps *PoolOperations) ArePoolSpecChangesValid(oldPoolSpec, newPoolSpec *cs
 		rgType := v.rgType
 		for index, _ := range v.oldRaidGroups {
 			oldRg := v.oldRaidGroups[index]
-			for _, _ = range v.newRaidGroups {
-				newRg := v.newRaidGroups[index]
-				if err = validateRaidGroupChanges(&oldRg, &newRg, rgType); err != nil {
-					return false, fmt.Sprintf("raid group validation failed: %v", err)
+			// Already mapped(via index) old raid groups and new raid groups in
+			// commonRaidGroups no need to iterate over v.newRaidGroups
+			newRg := v.newRaidGroups[index]
+
+			if err = validateRaidGroupChanges(&oldRg, &newRg, rgType); err != nil {
+				return false, fmt.Sprintf("raid group validation failed: %v", err)
+			}
+			if IsBlockDeviceReplacementCase(&oldRg, &newRg) {
+				if ok, msg := pOps.IsBDReplacementValid(&newRg, &oldRg, rgType); !ok {
+					return false, msg
 				}
-				if IsBlockDeviceReplacementCase(&oldRg, &newRg) {
-					if ok, msg := pOps.IsBDReplacementValid(&newRg, &oldRg, rgType); !ok {
-						return false, msg
-					}
-					newBD := GetNewBDFromRaidGroups(&newRg, &oldRg)
-					for k, v := range newBD {
-						newToOldBd[k] = v
-					}
+				newBD := GetNewBDFromRaidGroups(&newRg, &oldRg)
+				for k, v := range newBD {
+					newToOldBd[k] = v
 				}
-				// Already mapped(via index) old raid groups and new raid groups in
-				// commonRaidGroups no need to check other raid groups
-				break
 			}
 		}
 	}

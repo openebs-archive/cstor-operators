@@ -56,16 +56,16 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	klog.Infof("Importing pool %s %s", string(cspi.GetUID()), PoolName())
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	cacheFile := types.CStorPoolBasePath + types.CacheFileName
-	// oldName denotes the pool name that may be present
+	// existingPoolName denotes the pool name that may be present
 	// from previous version and needs to be imported with new name
-	oldName := cspi.Annotations[types.OpenEBSCStorExistingPoolName]
+	existingPoolName := cspi.Annotations[types.OpenEBSCStorExistingPoolName]
 
 	// Import the pool using cachefile
 	// command will looks like: zpool import -c <cachefile_path> -o <cachefile_path> <pool_name>
 	cmdOut, err = zfs.NewPoolImport().
 		WithCachefile(cacheFile).
 		WithProperty("cachefile", cacheFile).
-		WithPool(oldName).
+		WithPool(existingPoolName).
 		WithNewPool(PoolName()).
 		WithExecutor(oc.zcmdExecutor).
 		Execute()
@@ -83,7 +83,7 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 		cmdOut, err = zfs.NewPoolImport().
 			WithDirectory(devID).
 			WithProperty("cachefile", cacheFile).
-			WithPool(oldName).
+			WithPool(existingPoolName).
 			WithNewPool(PoolName()).
 			WithExecutor(oc.zcmdExecutor).
 			Execute()

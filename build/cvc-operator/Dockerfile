@@ -11,6 +11,8 @@ RUN apk add --no-cache \
     ca-certificates
 
 COPY cvc-operator /usr/local/bin/cvc-operator
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ARG ARCH
 ARG DBUILD_DATE
@@ -24,4 +26,5 @@ LABEL org.label-schema.build-date=$DBUILD_DATE
 LABEL org.label-schema.vcs-url=$DBUILD_REPO_URL
 LABEL org.label-schema.url=$DBUILD_SITE_URL
 
-ENTRYPOINT ["/usr/local/bin/cvc-operator"]
+ENTRYPOINT entrypoint.sh
+EXPOSE 5757

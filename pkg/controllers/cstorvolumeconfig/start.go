@@ -30,6 +30,8 @@ import (
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	informers "github.com/openebs/api/pkg/client/informers/externalversions"
 	leader "github.com/openebs/api/pkg/kubernetes/leaderelection"
+	server "github.com/openebs/cstor-operators/pkg/server"
+	cvcserver "github.com/openebs/cstor-operators/pkg/server/cstorvolumeconfig"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -39,6 +41,8 @@ import (
 var (
 	// lease lock resource name for lease API resource
 	leaderElectionLockName = "cvc-controller-leader"
+	// port on which CVC server serve the REST request
+	port = 5757
 )
 
 // Command line flags
@@ -47,7 +51,16 @@ var (
 	resyncPeriod            = flag.Duration("resync-period", 60*time.Second, "Resync interval of the controller.")
 	leaderElection          = flag.Bool("leader-election", false, "Enables leader election.")
 	leaderElectionNamespace = flag.String("leader-election-namespace", "", "The namespace where the leader election resource exists. Defaults to the pod namespace if not set.")
+	bindAddr                = flag.String("bind", "", "IP Address to bind for CVC-Operator Server")
 )
+
+// ServerOptions holds information to start the CVC server
+type ServerOptions struct {
+	// Address on which CVC server will serve the requests
+	bindAddress string
+	// httpServer holds the CVC Server configurations
+	httpServer *cvcserver.HTTPServer
+}
 
 // Start starts the cstorvolumeclaim controller.
 func Start() error {
@@ -77,11 +90,12 @@ func Start() error {
 		return errors.Wrap(err, "error building openebs clientset")
 	}
 
-	// Building NDM Clientset
-	//	ndmClient, err := ndmclientset.NewForConfig(cfg)
-	//if err != nil {
-	//return errors.Wrap(err, "error building ndm clientset")
-	//}
+	// setupCVCServer instantiate the HTTP server to serve the CVC request
+	srvOptions, err := setupCVCServer(kubeClient, openebsClient)
+	if err != nil {
+		return errors.Wrapf(err, "failed to setupCVCServer")
+	}
+	defer srvOptions.httpServer.Shutdown()
 
 	// openebsNamespace will hold where the OpenEBS is installed
 	openebsNamespace = getNamespace()
@@ -151,4 +165,35 @@ func getClusterConfig(kubeconfig string) (*rest.Config, error) {
 		return clientcmd.BuildConfigFromFlags("", kubeconfig)
 	}
 	return rest.InClusterConfig()
+}
+
+// setupCVCServer will load the required server configuration and start the CVC server
+func setupCVCServer(k8sclientset kubernetes.Interface, openebsClientset clientset.Interface) (*ServerOptions, error) {
+	options := &ServerOptions{}
+	// Load default server config
+	config := server.DefaultServerConfig()
+
+	// Update BindAddress if address is provided as a option
+	if bindAddr != nil && *bindAddr != "" {
+		config.BindAddr = *bindAddr
+	}
+	config.Port = &port
+	err := config.NormalizeAddrs()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to setup CVC Server")
+	}
+
+	cvcServer := cvcserver.NewCVCServer(config, os.Stdout).
+		WithOpenebsClientSet(openebsClientset).
+		WithKubernetesClientSet(k8sclientset)
+
+	// Setup the HTTP server
+	http, err := cvcserver.NewHTTPServer(cvcServer)
+	if err != nil {
+		cvcServer.Shutdown()
+		klog.Errorf("failed to start http server: %+v", err)
+		return nil, err
+	}
+	options.httpServer = http
+	return options, nil
 }

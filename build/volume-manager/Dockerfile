@@ -21,8 +21,6 @@ ARG DBUILD_SITE_URL
 
 LABEL org.label-schema.name="cstor-volume-manager"
 LABEL org.label-schema.description="Volume manager for cStor volumes"
-LABEL org.label-schema.url="http://www.openebs.io/"
-LABEL org.label-schema.vcs-url="https://github.com/openebs/cstor-operators"
 LABEL org.label-schema.schema-version="1.0"
 LABEL org.label-schema.build-date=$BUILD_DATE
 LABEL org.label-schema.build-date=$DBUILD_DATE

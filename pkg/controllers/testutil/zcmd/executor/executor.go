@@ -86,6 +86,7 @@ func (f *FakeZcmd) executePoolCommands(cmd string) ([]byte, error) {
 }
 
 func (f *FakeZcmd) executeVolumeCommands(cmd string) ([]byte, error) {
+	f.volumeMocker.PoolName = f.poolMocker.PoolName
 	cmd = strings.TrimSpace(cmd)
 	values := strings.Split(cmd, " ")
 	switch values[1] {

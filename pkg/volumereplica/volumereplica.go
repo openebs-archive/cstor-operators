@@ -32,7 +32,8 @@ import (
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/debug"
 	"github.com/openebs/cstor-operators/pkg/util/hash"
-	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
+	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
+	bin "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -106,6 +107,35 @@ type Stats struct {
 	RebuildFailedCnt          int    `json:"rebuildFailedCnt"`
 	Quorum                    int    `json:"quorum"`
 }
+
+// GetListOfPropertyValues will return value list for given property list
+// NOTE: It will return the property values in the same order as property list
+func GetListOfPropertyValues(dataSetName string, propertyList []string, executor bin.Executor) ([]string, error) {
+	ret, err := zcmd.NewVolumeGetProperty().
+		WithScriptedMode(true).
+		WithField("value").
+		WithPropertyList(propertyList).
+		WithDataset(dataSetName).
+		WithExecutor(executor).
+		Execute()
+	if err != nil {
+		return []string{}, err
+	}
+	// NOTE: Don't trim space there might be possibility for some
+	// properties values might be empty. If we trim the space we
+	// will lost the property values
+	outStr := strings.Split(string(ret), "\n")
+	return outStr, nil
+
+}
+
+/*
+*************************************************************************************************
+*                                                                                               *
+*                       TODO: Update below code with latest practices                           *
+*                                                                                               *
+*************************************************************************************************
+ */
 
 // RunnerVar the runner variable for executing binaries.
 var RunnerVar util.Runner
@@ -628,7 +658,7 @@ func GenerateReplicaID(cvr *cstor.CStorVolumeReplica) error {
 // GetReplicaIDFromZFS returns replicaID for provided volume name by executing
 // ZFS commands
 func GetReplicaIDFromZFS(volumeName string) (string, error) {
-	ret, err := zfs.NewVolumeGetProperty().
+	ret, err := zcmd.NewVolumeGetProperty().
 		WithScriptedMode(true).
 		WithParsableMode(true).
 		WithField("value").
@@ -656,7 +686,7 @@ func SetReplicaID(cvr *cstor.CStorVolumeReplica) error {
 	}
 
 	if len(sid) == 0 {
-		lr, err := zfs.NewVolumeSetProperty().
+		lr, err := zcmd.NewVolumeSetProperty().
 			WithProperty("io.openebs:zvol_replica_id", cvr.Spec.ReplicaID).
 			WithDataset(vol).
 			Execute()
@@ -896,7 +926,7 @@ func addOrDeleteSnapshotListInfo(
 // output: {"name":"pool1\/vol1","snaplist":{"istgt_snap1":null,"istgt_snap2":null}} and
 // error if there are any(Few Error codes: 11 -- TryAgain).
 func GetSnapshotList(dsName string) (map[string]string, error) {
-	snapshotList, err := zfs.NewVolumeListSnapshot().
+	snapshotList, err := zcmd.NewVolumeListSnapshot().
 		WithDataset(dsName).
 		Execute()
 	if err != nil {
@@ -908,7 +938,7 @@ func GetSnapshotList(dsName string) (map[string]string, error) {
 // getSnapshotInfo get the snapshot properties from pool by executing zfs commands
 // and returns error if there are any
 func getSnapshotInfo(dsName, snapName string) (cstor.CStorSnapshotInfo, error) {
-	ret, err := zfs.NewVolumeGetProperty().
+	ret, err := zcmd.NewVolumeGetProperty().
 		WithScriptedMode(true).
 		WithParsableMode(true).
 		WithField("value").

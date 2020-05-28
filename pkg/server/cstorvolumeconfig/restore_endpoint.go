@@ -148,9 +148,10 @@ func (rOps *restoreAPIOps) get() (interface{}, error) {
 func (rOps *restoreAPIOps) createVolumeForRestore(restoreObj *openebsapis.CStorRestore) error {
 	namespace := getOpenEBSNamespace()
 
-	// If Restore is from remote backup then volume creation is handled by velero-plugin
-	// So let's check if volume resources exist or not
-	if !restoreObj.Spec.Local {
+	// If the request is to restore local backup then velero-plugin will not create PVC.
+	// So let's create CVC with annotation "openebs.io/created-through" which will be propagated
+	// to CVRs. If CVR controller observe this annotation then it will not set targetIP.
+	if restoreObj.Spec.Local {
 		// 1. Fetch the storageclass from etcd
 		// 2. Validate the storageclass whether it has required details to create CVC
 		scObj, err := rOps.k8sclientset.StorageV1().StorageClasses().Get(restoreObj.Spec.StorageClass, metav1.GetOptions{})
@@ -413,9 +414,8 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 				"openebs.io/source-volume":          restoreObj.Spec.VolumeName,
 			},
 			Annotations: map[string]string{
-				"openebs.io/volumeID":        restoreObj.Spec.VolumeName,
-				"openebs.io/volume-policy":   scObj.Parameters["cstorVolumePolicy"],
-				"openebs.io/created-through": "restore",
+				"openebs.io/volumeID":      restoreObj.Spec.VolumeName,
+				"openebs.io/volume-policy": scObj.Parameters["cstorVolumePolicy"],
 			},
 			Finalizers: []string{"cvc.openebs.io/finalizer"},
 		},
@@ -430,7 +430,7 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 				corev1.ResourceName(corev1.ResourceStorage): restoreObj.Spec.Size,
 			},
 			// If CStorVolumeSource is mentioned then CVC controller treat it as a clone request
-			CStorVolumeSource: restoreObj.Spec.VolumeName + "@" + restoreObj.Spec.RestoreName,
+			CStorVolumeSource: restoreObj.Spec.RestoreSrc + "@" + restoreObj.Spec.RestoreName,
 		},
 		Publish: cstor.CStorVolumeConfigPublish{
 			NodeID: nodeID,

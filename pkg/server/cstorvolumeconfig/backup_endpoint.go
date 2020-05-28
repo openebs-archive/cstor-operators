@@ -99,16 +99,17 @@ func (bOps *backupAPIOps) create() (interface{}, error) {
 	}
 	klog.Infof("Backup snapshot:'%s' created successfully for volume:%s response: %s", backUp.Spec.SnapName, backUp.Spec.VolumeName, snapResp)
 
+	// In case of local backup no need to create CStorBackup CR
+	if backUp.Spec.LocalSnap {
+		return "", nil
+	}
+
 	backUp.Name = backUp.Spec.SnapName + "-" + backUp.Spec.VolumeName
 
 	// find healthy CVR which will helps to create backup CR
 	cvr, err := findHealthyCVR(bOps.clientset, backUp.Spec.VolumeName)
 	if err != nil {
 		return nil, CodedError(400, fmt.Sprintf("Failed to find healthy replica"))
-	}
-
-	if backUp.Spec.LocalSnap {
-		return "", nil
 	}
 
 	backUp.ObjectMeta.Labels = map[string]string{

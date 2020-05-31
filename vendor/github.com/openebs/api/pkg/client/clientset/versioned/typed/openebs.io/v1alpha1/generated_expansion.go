@@ -21,3 +21,9 @@ package v1alpha1
 type BlockDeviceExpansion interface{}
 
 type BlockDeviceClaimExpansion interface{}
+
+type CStorBackupExpansion interface{}
+
+type CStorCompletedBackupExpansion interface{}
+
+type CStorRestoreExpansion interface{}

@@ -52,6 +52,9 @@ const (
 	// CStorPoolInstanceNameLabelKey is the key used on pool dependent resources
 	CStorPoolInstanceNameLabelKey = "cstorpoolinstance.openebs.io/name"
 
+	// CStorPoolInstanceUIDLabelKey is the key used on pool dependent resources
+	CStorPoolInstanceUIDLabelKey = "cstorpoolinstance.openebs.io/uid"
+
 	// PersistentVolumeLabelKey label key set in all cstorvolume replicas of a
 	// given volume
 	PersistentVolumeLabelKey = "openebs.io/persistent-volume"
@@ -103,4 +106,14 @@ const (
 	IoWaitTime = 10
 	//TotalWaitTime is the max time duration to wait for doing snapshot operation on all the replicas
 	TotalWaitTime = 60
+)
+
+const (
+	// OpenEBSDisableDependantsReconcileKey is the annotation key that decides to create
+	// children objects with OpenEBSDisableReconcileKey as true or false
+	OpenEBSDisableDependantsReconcileKey = "reconcile.openebs.io/disable-dependants"
+
+	// OpenEBSCStorExistingPoolName is the name of the cstor pool already present on 
+	// the disk that needs to be imported and renamed
+	OpenEBSCStorExistingPoolName = "import.cspi.cstor.openebs.io/existing-pool-name"
 )

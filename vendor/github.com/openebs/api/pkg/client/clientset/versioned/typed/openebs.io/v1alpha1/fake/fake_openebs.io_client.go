@@ -36,6 +36,18 @@ func (c *FakeOpenebsV1alpha1) BlockDeviceClaims(namespace string) v1alpha1.Block
 	return &FakeBlockDeviceClaims{c, namespace}
 }
 
+func (c *FakeOpenebsV1alpha1) CStorBackups(namespace string) v1alpha1.CStorBackupInterface {
+	return &FakeCStorBackups{c, namespace}
+}
+
+func (c *FakeOpenebsV1alpha1) CStorCompletedBackups(namespace string) v1alpha1.CStorCompletedBackupInterface {
+	return &FakeCStorCompletedBackups{c, namespace}
+}
+
+func (c *FakeOpenebsV1alpha1) CStorRestores(namespace string) v1alpha1.CStorRestoreInterface {
+	return &FakeCStorRestores{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeOpenebsV1alpha1) RESTClient() rest.Interface {

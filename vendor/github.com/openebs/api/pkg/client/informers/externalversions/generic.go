@@ -72,6 +72,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Openebs().V1alpha1().BlockDevices().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("blockdeviceclaims"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Openebs().V1alpha1().BlockDeviceClaims().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("cstorbackups"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openebs().V1alpha1().CStorBackups().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("cstorcompletedbackups"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openebs().V1alpha1().CStorCompletedBackups().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("cstorrestores"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openebs().V1alpha1().CStorRestores().Informer()}, nil
 
 	}
 

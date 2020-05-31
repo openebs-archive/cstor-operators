@@ -21,12 +21,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/openebs/cstor-operators/pkg/log/alertlog"
 
 	"encoding/json"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	types "github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/api/pkg/util"
@@ -126,36 +128,36 @@ func PoolNameFromCVR(cvr *cstor.CStorVolumeReplica) string {
 
 // ToDo: Move this to backup package
 
-//// PoolNameFromBackup gets the name of cstorpool from cstorvolumereplica label
-//// if not found then gets cstorpoolinstance name from the OPENEBS_IO_POOL_NAME
-//// env
-//func PoolNameFromBackup(bkp *cstor.CStorBackup) string {
-//	poolname := bkp.Labels[CStorPoolUIDKey]
-//	if strings.TrimSpace(poolname) == "" {
-//		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
-//		if strings.TrimSpace(poolname) == "" {
-//			return ""
-//		}
-//	}
-//	return PoolPrefix + poolname
-//
-//}
+// PoolNameFromBackup gets the name of cstorpool from cstorvolumereplica label
+// if not found then gets cstorpoolinstance name from the OPENEBS_IO_POOL_NAME
+// env
+func PoolNameFromBackup(bkp *openebsio.CStorBackup) string {
+	poolname := bkp.Labels[CStorPoolUIDKey]
+	if strings.TrimSpace(poolname) == "" {
+		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
+		if strings.TrimSpace(poolname) == "" {
+			return ""
+		}
+	}
+	return PoolPrefix + poolname
+
+}
 
 // ToDo: Move this to restore package
 
-//// PoolNameFromRestore gets the name of cstorPool from cstorvolumereplica label
-//// if not found then gets cstorPoolInstance name from the OPENEBS_IO_POOL_NAME
-//// env
-//func PoolNameFromRestore(rst *apis.CStorRestore) string {
-//	poolname := rst.Labels[CStorPoolUIDKey]
-//	if strings.TrimSpace(poolname) == "" {
-//		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
-//		if strings.TrimSpace(poolname) == "" {
-//			return ""
-//		}
-//	}
-//	return PoolPrefix + poolname
-//}
+// PoolNameFromRestore gets the name of cstorPool from cstorvolumereplica label
+// if not found then gets cstorPoolInstance name from the OPENEBS_IO_POOL_NAME
+// env
+func PoolNameFromRestore(rst *openebsio.CStorRestore) string {
+	poolname := rst.Labels[CStorPoolUIDKey]
+	if strings.TrimSpace(poolname) == "" {
+		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
+		if strings.TrimSpace(poolname) == "" {
+			return ""
+		}
+	}
+	return PoolPrefix + poolname
+}
 
 // CheckValidVolumeReplica checks for validity of cStor replica resource.
 func CheckValidVolumeReplica(cVR *cstor.CStorVolumeReplica) error {
@@ -325,43 +327,43 @@ func buildVolumeCloneCommand(cStorVolumeReplica *cstor.CStorVolumeReplica, snapN
 
 // ToDo: Move to backup package
 
-//// CreateVolumeBackup sends cStor snapshots to remote location specified by cstorbackup.
-//func CreateVolumeBackup(bkp *apis.CStorBackup) error {
-//	var cmd []string
-//	var retryCount int
-//	var err error
-//	var stdoutStderr []byte
-//
-//	// Parse capacity unit on CVR to support backward compatibility
-//	cmd = buildVolumeBackupCommand(PoolNameFromBackup(bkp), bkp.Spec.VolumeName, bkp.Spec.PrevSnapName, bkp.Spec.SnapName, bkp.Spec.BackupDest)
-//
-//	klog.Infof("Backup Command for volume: %v created, Cmd: %v\n", bkp.Spec.VolumeName, cmd)
-//
-//	for retryCount < MaxBackupRetryCount {
-//		stdoutStderr, err = RunnerVar.RunCombinedOutput("/usr/local/bin/execute.sh", cmd...)
-//		if err != nil {
-//			klog.Errorf("Unable to start backup %s. error : %v retry:%v :%s", bkp.Spec.VolumeName, string(stdoutStderr), retryCount, err.Error())
-//			retryCount++
-//			time.Sleep(BackupRetryDelay * time.Second)
-//			continue
-//		}
-//		break
-//	}
-//	if err != nil {
-//		alertlog.Logger.Errorw("",
-//			"eventcode", "cstor.volume.backup.create.failure",
-//			"msg", "Failed to create backup CStor volume",
-//			"rname", bkp.Spec.VolumeName,
-//		)
-//	} else {
-//		alertlog.Logger.Infow("",
-//			"eventcode", "cstor.volume.backup.create.success",
-//			"msg", "Successfully created backup CStor volume",
-//			"rname", bkp.Spec.VolumeName,
-//		)
-//	}
-//	return err
-//}
+// CreateVolumeBackup sends cStor snapshots to remote location specified by cstorbackup.
+func CreateVolumeBackup(bkp *openebsio.CStorBackup) error {
+	var cmd []string
+	var retryCount int
+	var err error
+	var stdoutStderr []byte
+
+	// Parse capacity unit on CVR to support backward compatibility
+	cmd = buildVolumeBackupCommand(PoolNameFromBackup(bkp), bkp.Spec.VolumeName, bkp.Spec.PrevSnapName, bkp.Spec.SnapName, bkp.Spec.BackupDest)
+
+	klog.Infof("Backup Command for volume: %v created, Cmd: %v\n", bkp.Spec.VolumeName, cmd)
+
+	for retryCount < MaxBackupRetryCount {
+		stdoutStderr, err = RunnerVar.RunCombinedOutput("/usr/local/bin/execute.sh", cmd...)
+		if err != nil {
+			klog.Errorf("Unable to start backup %s. error : %v retry:%v :%s", bkp.Spec.VolumeName, string(stdoutStderr), retryCount, err.Error())
+			retryCount++
+			time.Sleep(BackupRetryDelay * time.Second)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		alertlog.Logger.Errorw("",
+			"eventcode", "cstor.volume.backup.create.failure",
+			"msg", "Failed to create backup CStor volume",
+			"rname", bkp.Spec.VolumeName,
+		)
+	} else {
+		alertlog.Logger.Infow("",
+			"eventcode", "cstor.volume.backup.create.success",
+			"msg", "Successfully created backup CStor volume",
+			"rname", bkp.Spec.VolumeName,
+		)
+	}
+	return err
+}
 
 // ToDo: Move this to backup package
 
@@ -381,42 +383,42 @@ func buildVolumeBackupCommand(poolName, fullVolName, oldSnapName, newSnapName, b
 
 // ToDo: Move this to restore package
 
-//// CreateVolumeRestore receive cStor snapshots from remote location(zfs volumes).
-//func CreateVolumeRestore(rst *apis.CStorRestore) error {
-//	var cmd []string
-//	var retryCount int
-//	var err error
-//	var stdoutStderr []byte
-//
-//	cmd = buildVolumeRestoreCommand(PoolNameFromRestore(rst), rst.Spec.VolumeName, rst.Spec.RestoreSrc)
-//
-//	klog.Infof("Restore Command for volume: %v created, Cmd: %v\n", rst.Spec.VolumeName, cmd)
-//
-//	for retryCount < MaxRestoreRetryCount {
-//		stdoutStderr, err = RunnerVar.RunCombinedOutput("/usr/local/bin/execute.sh", cmd...)
-//		if err != nil {
-//			klog.Errorf("Unable to start restore %s. error : %v.. trying again", rst.Spec.VolumeName, string(stdoutStderr))
-//			time.Sleep(RestoreRetryDelay * time.Second)
-//			retryCount++
-//			continue
-//		}
-//		break
-//	}
-//	if err != nil {
-//		alertlog.Logger.Errorw("",
-//			"eventcode", "cstor.volume.restore.failure",
-//			"msg", "Failed to restore CStor volume",
-//			"rname", rst.Spec.VolumeName,
-//		)
-//	} else {
-//		alertlog.Logger.Errorw("",
-//			"eventcode", "cstor.volume.restore.success",
-//			"msg", "Successfully restored CStor volume",
-//			"rname", rst.Spec.VolumeName,
-//		)
-//	}
-//	return err
-//}
+// CreateVolumeRestore receive cStor snapshots from remote location(zfs volumes).
+func CreateVolumeRestore(rst *openebsio.CStorRestore) error {
+	var cmd []string
+	var retryCount int
+	var err error
+	var stdoutStderr []byte
+
+	cmd = buildVolumeRestoreCommand(PoolNameFromRestore(rst), rst.Spec.VolumeName, rst.Spec.RestoreSrc)
+
+	klog.Infof("Restore Command for volume: %v created, Cmd: %v\n", rst.Spec.VolumeName, cmd)
+
+	for retryCount < MaxRestoreRetryCount {
+		stdoutStderr, err = RunnerVar.RunCombinedOutput("/usr/local/bin/execute.sh", cmd...)
+		if err != nil {
+			klog.Errorf("Unable to start restore %s. error : %v.. trying again", rst.Spec.VolumeName, string(stdoutStderr))
+			time.Sleep(RestoreRetryDelay * time.Second)
+			retryCount++
+			continue
+		}
+		break
+	}
+	if err != nil {
+		alertlog.Logger.Errorw("",
+			"eventcode", "cstor.volume.restore.failure",
+			"msg", "Failed to restore CStor volume",
+			"rname", rst.Spec.VolumeName,
+		)
+	} else {
+		alertlog.Logger.Errorw("",
+			"eventcode", "cstor.volume.restore.success",
+			"msg", "Successfully restored CStor volume",
+			"rname", rst.Spec.VolumeName,
+		)
+	}
+	return err
+}
 
 // ToDo : move this to restore package
 

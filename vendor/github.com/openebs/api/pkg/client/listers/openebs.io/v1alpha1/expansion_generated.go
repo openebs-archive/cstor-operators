@@ -33,3 +33,27 @@ type BlockDeviceClaimListerExpansion interface{}
 // BlockDeviceClaimNamespaceListerExpansion allows custom methods to be added to
 // BlockDeviceClaimNamespaceLister.
 type BlockDeviceClaimNamespaceListerExpansion interface{}
+
+// CStorBackupListerExpansion allows custom methods to be added to
+// CStorBackupLister.
+type CStorBackupListerExpansion interface{}
+
+// CStorBackupNamespaceListerExpansion allows custom methods to be added to
+// CStorBackupNamespaceLister.
+type CStorBackupNamespaceListerExpansion interface{}
+
+// CStorCompletedBackupListerExpansion allows custom methods to be added to
+// CStorCompletedBackupLister.
+type CStorCompletedBackupListerExpansion interface{}
+
+// CStorCompletedBackupNamespaceListerExpansion allows custom methods to be added to
+// CStorCompletedBackupNamespaceLister.
+type CStorCompletedBackupNamespaceListerExpansion interface{}
+
+// CStorRestoreListerExpansion allows custom methods to be added to
+// CStorRestoreLister.
+type CStorRestoreListerExpansion interface{}
+
+// CStorRestoreNamespaceListerExpansion allows custom methods to be added to
+// CStorRestoreNamespaceLister.
+type CStorRestoreNamespaceListerExpansion interface{}

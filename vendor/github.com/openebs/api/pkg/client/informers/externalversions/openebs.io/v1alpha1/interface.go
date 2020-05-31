@@ -28,6 +28,12 @@ type Interface interface {
 	BlockDevices() BlockDeviceInformer
 	// BlockDeviceClaims returns a BlockDeviceClaimInformer.
 	BlockDeviceClaims() BlockDeviceClaimInformer
+	// CStorBackups returns a CStorBackupInformer.
+	CStorBackups() CStorBackupInformer
+	// CStorCompletedBackups returns a CStorCompletedBackupInformer.
+	CStorCompletedBackups() CStorCompletedBackupInformer
+	// CStorRestores returns a CStorRestoreInformer.
+	CStorRestores() CStorRestoreInformer
 }
 
 type version struct {
@@ -49,4 +55,19 @@ func (v *version) BlockDevices() BlockDeviceInformer {
 // BlockDeviceClaims returns a BlockDeviceClaimInformer.
 func (v *version) BlockDeviceClaims() BlockDeviceClaimInformer {
 	return &blockDeviceClaimInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CStorBackups returns a CStorBackupInformer.
+func (v *version) CStorBackups() CStorBackupInformer {
+	return &cStorBackupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CStorCompletedBackups returns a CStorCompletedBackupInformer.
+func (v *version) CStorCompletedBackups() CStorCompletedBackupInformer {
+	return &cStorCompletedBackupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CStorRestores returns a CStorRestoreInformer.
+func (v *version) CStorRestores() CStorRestoreInformer {
+	return &cStorRestoreInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

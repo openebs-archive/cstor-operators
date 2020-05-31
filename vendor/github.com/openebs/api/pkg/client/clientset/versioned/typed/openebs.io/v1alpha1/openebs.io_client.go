@@ -28,6 +28,9 @@ type OpenebsV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	BlockDevicesGetter
 	BlockDeviceClaimsGetter
+	CStorBackupsGetter
+	CStorCompletedBackupsGetter
+	CStorRestoresGetter
 }
 
 // OpenebsV1alpha1Client is used to interact with features provided by the openebs.io group.
@@ -41,6 +44,18 @@ func (c *OpenebsV1alpha1Client) BlockDevices(namespace string) BlockDeviceInterf
 
 func (c *OpenebsV1alpha1Client) BlockDeviceClaims(namespace string) BlockDeviceClaimInterface {
 	return newBlockDeviceClaims(c, namespace)
+}
+
+func (c *OpenebsV1alpha1Client) CStorBackups(namespace string) CStorBackupInterface {
+	return newCStorBackups(c, namespace)
+}
+
+func (c *OpenebsV1alpha1Client) CStorCompletedBackups(namespace string) CStorCompletedBackupInterface {
+	return newCStorCompletedBackups(c, namespace)
+}
+
+func (c *OpenebsV1alpha1Client) CStorRestores(namespace string) CStorRestoreInterface {
+	return newCStorRestores(c, namespace)
 }
 
 // NewForConfig creates a new OpenebsV1alpha1Client for the given config.

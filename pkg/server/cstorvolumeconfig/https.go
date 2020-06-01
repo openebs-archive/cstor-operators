@@ -154,6 +154,10 @@ func NewHTTPServer(cvcServer *CVCServer) (*HTTPServer, error) {
 
 // Shutdown is used to shutdown the HTTP server
 func (s *HTTPServer) Shutdown() {
+	if s != nil {
+		s.logger.Printf("[DEBUG] http: Shutting down http server")
+		s.listener.Close()
+	}
 	s.cvcServer.Shutdown()
 }
 

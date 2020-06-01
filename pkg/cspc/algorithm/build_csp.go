@@ -81,7 +81,7 @@ func (ac *Config) GetCSPISpec() (*cstor.CStorPoolInstance, error) {
 	// check for OpenEBSDisableDependantsReconcileKey annotation which implies
 	// the CSPI should have OpenEBSDisableReconcileLabelKey enabled
 	if ac.CSPC.GetAnnotations()[types.OpenEBSDisableDependantsReconcileKey] == "true" {
-		cspiObj.WithAnnotationsNew(map[string]string{
+		cspiObj.WithAnnotations(map[string]string{
 			types.OpenEBSDisableReconcileLabelKey: "true",
 		})
 	}

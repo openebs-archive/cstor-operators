@@ -59,9 +59,12 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	// existingPoolName denotes the pool name that may be present
 	// from previous version and needs to be imported with new name
 	existingPoolName := cspi.Annotations[types.OpenEBSCStorExistingPoolName]
-
+	if existingPoolName != "" {
+		klog.Infof("Renaming pool %s to %s", existingPoolName, PoolName())
+	}
 	// Import the pool using cachefile
-	// command will looks like: zpool import -c <cachefile_path> -o <cachefile_path> <pool_name>
+	// command will look like: zpool import -c <cachefile_path> -o <cachefile_path> <pool_name>
+	// if existing pool name is present: zpool import -c <cachefile_path> -o <cachefile_path> <existing_pool_name> <pool_name>
 	cmdOut, err = zfs.NewPoolImport().
 		WithCachefile(cacheFile).
 		WithProperty("cachefile", cacheFile).
@@ -79,7 +82,9 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	if !poolImported {
 		// Import the pool without cachefile by scanning the directory
 		// For sparse based pools import command: zpool import -d <parent_dir_sparse_files> -o <cachefile_path> <pool_name>
+		// if existing pool name is present: zpool import -d <parent_dir_sparse_files> -o <cachefile_path> <existing_pool_name> <pool_name>
 		// For device based pools import command: zpool import -o <cachefile_path> <pool_name>(by default it will scan /dev directory)
+		// if existing pool name is present: zpool import -o <cachefile_path> <existing_pool_name> <pool_name>(by default it will scan /dev directory)
 		cmdOut, err = zfs.NewPoolImport().
 			WithDirectory(devID).
 			WithProperty("cachefile", cacheFile).

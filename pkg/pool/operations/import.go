@@ -38,15 +38,23 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	if poolExist := checkIfPoolPresent(PoolName(), oc.zcmdExecutor); poolExist {
 		// If the pool is renamed and imported but the pool-mgmt restarts
 		// for some reason then the annotation should be removed.
-		delete(cspi.Annotations, string(types.OpenEBSCStorExistingPoolName))
+		delete(cspi.Annotations, types.OpenEBSCStorExistingPoolName)
 		return true, nil
+	}
+
+	var poolImported, poolNotImported bool
+
+	_, poolNotImported, _ = oc.checkIfPoolIsImportable(cspi)
+	if poolNotImported {
+		// If the pool is renamed but not imported, remove the
+		// annotation to avoid not found errors.
+		delete(cspi.Annotations, types.OpenEBSCStorExistingPoolName)
 	}
 
 	// Pool is not imported.. Let's update the syncResource
 	var cmdOut []byte
 	var err error
 	common.SyncResources.IsImported = false
-	var poolImported bool
 
 	bdPath, err := oc.getPathForBDev(cspi.Spec.DataRaidGroups[0].CStorPoolInstanceBlockDevices[0].BlockDeviceName)
 	if err != nil {

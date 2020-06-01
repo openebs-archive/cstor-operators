@@ -170,7 +170,10 @@ func checkIfDeviceUsed(path []string, t zpool.Topology) (string, bool) {
 	return usedPath, isUsed
 }
 
-func (oc *OperationsConfig) checkIfPoolNotImported(cspi *cstor.CStorPoolInstance) (string, bool, error) {
+// checkIfPoolIsImportable checks if the pool is imported or not. If the pool
+// is present on the disk but  not imported it returns true as the pool can be
+// imported. It also returns false if pool is not found on the disk.
+func (oc *OperationsConfig) checkIfPoolIsImportable(cspi *cstor.CStorPoolInstance) (string, bool, error) {
 	var cmdOut []byte
 	var err error
 

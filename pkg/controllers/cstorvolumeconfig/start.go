@@ -32,6 +32,7 @@ import (
 	leader "github.com/openebs/api/pkg/kubernetes/leaderelection"
 	server "github.com/openebs/cstor-operators/pkg/server"
 	cvcserver "github.com/openebs/cstor-operators/pkg/server/cstorvolumeconfig"
+	"github.com/openebs/cstor-operators/pkg/snapshot"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -185,7 +186,8 @@ func setupCVCServer(k8sclientset kubernetes.Interface, openebsClientset clientse
 
 	cvcServer := cvcserver.NewCVCServer(config, os.Stdout).
 		WithOpenebsClientSet(openebsClientset).
-		WithKubernetesClientSet(k8sclientset)
+		WithKubernetesClientSet(k8sclientset).
+		WithSnapshoter(&snapshot.SnapClient{})
 
 	// Setup the HTTP server
 	http, err := cvcserver.NewHTTPServer(cvcServer)

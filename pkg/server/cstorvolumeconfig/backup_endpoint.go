@@ -44,6 +44,7 @@ type backupAPIOps struct {
 	resp         http.ResponseWriter
 	k8sclientset kubernetes.Interface
 	clientset    clientset.Interface
+	snapshoter   snapshot.Snapshoter
 }
 
 var (
@@ -58,6 +59,7 @@ func (s *HTTPServer) backupV1alpha1SpecificRequest(resp http.ResponseWriter, req
 		resp:         resp,
 		k8sclientset: s.cvcServer.kubeclientset,
 		clientset:    s.cvcServer.clientset,
+		snapshoter:   s.cvcServer.snapshoter,
 	}
 
 	switch req.Method {
@@ -92,6 +94,7 @@ func (bOps *backupAPIOps) create() (interface{}, error) {
 		VolumeName:   backUp.Spec.VolumeName,
 		SnapshotName: backUp.Spec.SnapName,
 		Namespace:    getOpenEBSNamespace(),
+		SnapClient:   bOps.snapshoter,
 	}
 	snapResp, err := snapshot.CreateSnapshot(bOps.clientset)
 	if err != nil {
@@ -267,6 +270,7 @@ func (bOps *backupAPIOps) deleteBackup(backup, volname, ns, schedule string) err
 		VolumeName:   volname,
 		SnapshotName: backup,
 		Namespace:    ns,
+		SnapClient:   bOps.snapshoter,
 	}
 	// Snapshot Name and backup name are same
 	_, err = snapshot.DeleteSnapshot(bOps.clientset)
@@ -510,7 +514,7 @@ func fetchPoolManagerFromCSPI(k8sclientset kubernetes.Interface, cspiName string
 	if len(podList.Items) != 1 {
 		return nil, errors.Errorf("expected 1 pool manager but got %d pool managers", len(podList.Items))
 	}
-	return nil, errors.Errorf("No pool manager exists for CSPI %s", cspiName)
+	return &podList.Items[0], nil
 }
 
 // TODO: Move below functions into API because there kind of getter methods.

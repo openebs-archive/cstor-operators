@@ -23,6 +23,7 @@ import (
 
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	server "github.com/openebs/cstor-operators/pkg/server"
+	"github.com/openebs/cstor-operators/pkg/snapshot"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -40,6 +41,9 @@ type CVCServer struct {
 
 	// clientset is a openebs custom resource package generated for custom API group.
 	clientset clientset.Interface
+
+	// snapshoter is used to perform snapshot operations on Volumes
+	snapshoter snapshot.Snapshoter
 }
 
 // NewCVCServer is used to create a new CVC server
@@ -63,6 +67,12 @@ func (cs *CVCServer) WithKubernetesClientSet(kubeclientset kubernetes.Interface)
 // WithOpenebsClientSet sets the kubeclientset whith provided argument
 func (cs *CVCServer) WithOpenebsClientSet(openebsClientSet clientset.Interface) *CVCServer {
 	cs.clientset = openebsClientSet
+	return cs
+}
+
+// WithSnapshoter sets the snapshoter with provided argument
+func (cs *CVCServer) WithSnapshoter(snapshoter snapshot.Snapshoter) *CVCServer {
+	cs.snapshoter = snapshoter
 	return cs
 }
 

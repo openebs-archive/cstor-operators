@@ -36,8 +36,17 @@ type CommandStatus struct {
 	Response string `json:"response"`
 }
 
-//CreateSnapshot creates snapshots
-func CreateSnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapCreateResponse, error) {
+// Snapshoter is used to perform snapshot operations on given volume
+type Snapshoter interface {
+	CreateSnapshot(ip, volumeName, namesapce string) (*v1proto.VolumeSnapCreateResponse, error)
+	DestroySnapshot(ip, volumeName, namesapce string) (*v1proto.VolumeSnapDeleteResponse, error)
+}
+
+// SnapClient is used to perform real snap create and snap delete commands
+type SnapClient struct{}
+
+//CreateSnapshot creates snapshot by executing gRPC call
+func (s *SnapClient) CreateSnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapCreateResponse, error) {
 	var conn *grpc.ClientConn
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", ip, VolumeGrpcListenPort), grpc.WithInsecure())
 	if err != nil {
@@ -68,8 +77,8 @@ func CreateSnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapCreateResp
 	return response, nil
 }
 
-//DestroySnapshot destroys snapshots
-func DestroySnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapDeleteResponse, error) {
+//DestroySnapshot destroys snapshots by executing gRPC calls
+func (s *SnapClient) DestroySnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapDeleteResponse, error) {
 	var conn *grpc.ClientConn
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", ip, VolumeGrpcListenPort), grpc.WithInsecure())
 	if err != nil {

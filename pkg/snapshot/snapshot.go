@@ -27,11 +27,16 @@ type Snapshot struct {
 	VolumeName   string
 	SnapshotName string
 	Namespace    string
+	SnapClient   Snapshoter
 }
 
 // CreateSnapshot creates snapshot for provided CStor Volume
 // TODO: Think better name something like CreateSnapshotByFetchingIP
 func (s *Snapshot) CreateSnapshot(clientset clientset.Interface) (*v1proto.VolumeSnapCreateResponse, error) {
+	// If snapshot client is not specified then return error
+	if s.SnapClient == nil {
+		return nil, errors.Errorf("snapshot client is not initilized to perform snapshot operations")
+	}
 	// Fetch IPAddress of snapshot server
 	ipAddr, err := getVolumeIP(s.VolumeName, s.Namespace, clientset)
 	if err != nil {
@@ -40,7 +45,7 @@ func (s *Snapshot) CreateSnapshot(clientset clientset.Interface) (*v1proto.Volum
 
 	klog.Infof("Creating snapshot %s for volume %q", s.SnapshotName, s.VolumeName)
 
-	snapResp, err := CreateSnapshot(ipAddr, s.VolumeName, s.SnapshotName)
+	snapResp, err := s.SnapClient.CreateSnapshot(ipAddr, s.VolumeName, s.SnapshotName)
 	if err != nil {
 		klog.Errorf("Failed to create snapshot:%s error '%s'", s.SnapshotName, err.Error())
 		return nil, errors.Wrapf(err, "failed to create snapshot: %s for volume: %s", s.SnapshotName, s.VolumeName)
@@ -50,6 +55,10 @@ func (s *Snapshot) CreateSnapshot(clientset clientset.Interface) (*v1proto.Volum
 
 // DeleteSnapshot deletes snapshot for provided volume
 func (s *Snapshot) DeleteSnapshot(clientset clientset.Interface) (*v1proto.VolumeSnapDeleteResponse, error) {
+	// If snapshot client is not specified then return error
+	if s.SnapClient == nil {
+		return nil, errors.Errorf("snapshot client is not initilized to perform snapshot operations")
+	}
 	// Fetch IPAddress of snapshot server
 	ipAddr, err := getVolumeIP(s.VolumeName, s.Namespace, clientset)
 	if err != nil {
@@ -58,7 +67,7 @@ func (s *Snapshot) DeleteSnapshot(clientset clientset.Interface) (*v1proto.Volum
 
 	klog.Infof("Deleting snapshot %s for volume %q", s.SnapshotName, s.VolumeName)
 
-	snapResp, err := DestroySnapshot(ipAddr, s.VolumeName, s.SnapshotName)
+	snapResp, err := s.SnapClient.DestroySnapshot(ipAddr, s.VolumeName, s.SnapshotName)
 	if err != nil {
 		klog.Errorf("Failed to delete snapshot:%s error '%s'", s.SnapshotName, err.Error())
 		return nil, errors.Wrapf(err, "failed to delete snapshot: %s for volume: %s", s.SnapshotName, s.VolumeName)

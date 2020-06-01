@@ -42,13 +42,18 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 		return true, nil
 	}
 
-	var poolImported, poolNotImported bool
-
-	_, poolNotImported, _ = oc.checkIfPoolIsImportable(cspi)
-	if poolNotImported {
-		// If the pool is renamed but not imported, remove the
-		// annotation to avoid not found errors.
-		delete(cspi.Annotations, types.OpenEBSCStorExistingPoolName)
+	var poolImported, importable bool
+	// existingPoolName denotes the pool name that may be present
+	// from previous version and needs to be imported with new name
+	existingPoolName := cspi.Annotations[types.OpenEBSCStorExistingPoolName]
+	if existingPoolName != "" {
+		_, importable, _ = oc.checkIfPoolIsImportable(cspi)
+		if importable {
+			// If the pool is renamed but not imported, remove the
+			// annotation to avoid not found errors.
+			existingPoolName = ""
+			delete(cspi.Annotations, types.OpenEBSCStorExistingPoolName)
+		}
 	}
 
 	// Pool is not imported.. Let's update the syncResource
@@ -64,9 +69,7 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	klog.Infof("Importing pool %s %s", string(cspi.GetUID()), PoolName())
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	cacheFile := types.CStorPoolBasePath + types.CacheFileName
-	// existingPoolName denotes the pool name that may be present
-	// from previous version and needs to be imported with new name
-	existingPoolName := cspi.Annotations[types.OpenEBSCStorExistingPoolName]
+
 	if existingPoolName != "" {
 		klog.Infof("Renaming pool %s to %s", existingPoolName, PoolName())
 	}

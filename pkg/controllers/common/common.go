@@ -189,13 +189,13 @@ func PoolNameHandler(cVR *cstor.CStorVolumeReplica, cnt int) bool {
 	for i := 0; ; i++ {
 		poolname, _ := pool.GetPoolName()
 		if reflect.DeepEqual(poolname, []string{}) ||
-			!CheckIfPresent(poolname, volumereplica.PoolNameFromCVR(cVR)) {
+			!CheckIfPresent(poolname, volumereplica.GetPoolName()) {
 			klog.Warningf("Attempt %v: No pool found", i+1)
 			time.Sleep(PoolNameHandlerInterval)
 			if i > cnt {
 				return false
 			}
-		} else if CheckIfPresent(poolname, volumereplica.PoolNameFromCVR(cVR)) {
+		} else if CheckIfPresent(poolname, volumereplica.GetPoolName()) {
 			return true
 		}
 	}

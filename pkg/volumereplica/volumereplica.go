@@ -29,7 +29,7 @@ import (
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
-	types "github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/debug"
@@ -110,44 +110,11 @@ type Stats struct {
 // RunnerVar the runner variable for executing binaries.
 var RunnerVar util.Runner
 
-// PoolNameFromCVR gets the name of cstorpool env
-func PoolNameFromCVR(cvr *cstor.CStorVolumeReplica) string {
+// GetPoolName gets the name of cstorpoolinstance
+func GetPoolName() string {
 	poolname := os.Getenv(string("OPENEBS_IO_POOL_NAME"))
 	if strings.TrimSpace(poolname) == "" {
 		return ""
-	}
-	return PoolPrefix + poolname
-}
-
-// ToDo: Move this to backup package
-
-// PoolNameFromBackup gets the name of cstorpool from cstorvolumereplica label
-// if not found then gets cstorpoolinstance name from the OPENEBS_IO_POOL_NAME
-// env
-func PoolNameFromBackup(bkp *openebsio.CStorBackup) string {
-	poolname := bkp.Labels[types.CStorPoolInstanceUIDLabelKey]
-	if strings.TrimSpace(poolname) == "" {
-		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
-		if strings.TrimSpace(poolname) == "" {
-			return ""
-		}
-	}
-	return PoolPrefix + poolname
-
-}
-
-// ToDo: Move this to restore package
-
-// PoolNameFromRestore gets the name of cstorPool from cstorvolumereplica label
-// if not found then gets cstorPoolInstance name from the OPENEBS_IO_POOL_NAME
-// env
-func PoolNameFromRestore(rst *openebsio.CStorRestore) string {
-	poolname := rst.Labels[types.CStorPoolInstanceUIDLabelKey]
-	if strings.TrimSpace(poolname) == "" {
-		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
-		if strings.TrimSpace(poolname) == "" {
-			return ""
-		}
 	}
 	return PoolPrefix + poolname
 }
@@ -328,7 +295,7 @@ func CreateVolumeBackup(bkp *openebsio.CStorBackup) error {
 	var stdoutStderr []byte
 
 	// Parse capacity unit on CVR to support backward compatibility
-	cmd = buildVolumeBackupCommand(PoolNameFromBackup(bkp), bkp.Spec.VolumeName, bkp.Spec.PrevSnapName, bkp.Spec.SnapName, bkp.Spec.BackupDest)
+	cmd = buildVolumeBackupCommand(GetPoolName(), bkp.Spec.VolumeName, bkp.Spec.PrevSnapName, bkp.Spec.SnapName, bkp.Spec.BackupDest)
 
 	klog.Infof("Backup Command for volume: %v created, Cmd: %v\n", bkp.Spec.VolumeName, cmd)
 
@@ -383,7 +350,7 @@ func CreateVolumeRestore(rst *openebsio.CStorRestore) error {
 	var err error
 	var stdoutStderr []byte
 
-	cmd = buildVolumeRestoreCommand(PoolNameFromRestore(rst), rst.Spec.VolumeName, rst.Spec.RestoreSrc)
+	cmd = buildVolumeRestoreCommand(GetPoolName(), rst.Spec.VolumeName, rst.Spec.RestoreSrc)
 
 	klog.Infof("Restore Command for volume: %v created, Cmd: %v\n", rst.Spec.VolumeName, cmd)
 
@@ -542,7 +509,7 @@ func GetVolumeName(cVR *cstor.CStorVolumeReplica) (string, error) {
 	if cVR.Labels == nil {
 		return "", fmt.Errorf("no labels found on cvr object")
 	}
-	poolname := PoolNameFromCVR(cVR)
+	poolname := GetPoolName()
 	pvName := cVR.Labels[PvNameKey]
 	if strings.TrimSpace(pvName) == "" {
 		return "", fmt.Errorf("pv name not found on cvr label")
@@ -693,7 +660,7 @@ func GetAndUpdateReplicaID(cvr *cstor.CStorVolumeReplica) error {
 func GetAndUpdateSnapshotInfo(
 	clientset clientset.Interface, cvr *cstor.CStorVolumeReplica) error {
 	volName := cvr.GetLabels()[types.PersistentVolumeLabelKey]
-	dsName := PoolNameFromCVR(cvr) + "/" + volName
+	dsName := GetPoolName() + "/" + volName
 
 	snapList, err := GetSnapshotList(dsName)
 	if err != nil {
@@ -839,7 +806,7 @@ func addOrDeleteSnapshotListInfo(
 	var err error
 	var snapInfo cstor.CStorSnapshotInfo
 	volName := cvr.GetLabels()[types.PersistentVolumeLabelKey]
-	dsName := PoolNameFromCVR(cvr) + "/" + volName
+	dsName := GetPoolName() + "/" + volName
 	newSnapshots := []string{}
 	removedSnapshots := []string{}
 

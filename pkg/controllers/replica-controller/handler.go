@@ -200,7 +200,7 @@ func (c *CStorVolumeReplicaController) cVREventHandler(
 
 	// cvr is created at zfs in the form poolname/volname
 	fullVolName :=
-		volumereplica.PoolNameFromCVR(cvrObj) + "/" +
+		volumereplica.GetPoolName() + "/" +
 			cvrObj.Labels["cstorvolume.openebs.io/name"]
 
 	switch operation {

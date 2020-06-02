@@ -19,6 +19,7 @@ package restorecontroller
 import (
 	"fmt"
 	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	corev1 "k8s.io/api/core/v1"
@@ -189,7 +190,7 @@ func IsFailedStatus(rst *apis.CStorRestore) bool {
 
 // IsRightCStorPoolMgmt is to check if the restore request is for particular pod/application.
 func IsRightCStorPoolMgmt(rst *apis.CStorRestore) bool {
-	if os.Getenv(string(common.OpenEBSIOCStorID)) == rst.ObjectMeta.Labels["cstorpool.openebs.io/uid"] {
+	if os.Getenv(string(common.OpenEBSIOCStorID)) == rst.ObjectMeta.Labels[types.CStorPoolInstanceUIDLabelKey] {
 		return true
 	}
 	return false

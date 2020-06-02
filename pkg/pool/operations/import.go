@@ -25,6 +25,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
@@ -36,14 +37,33 @@ import (
 // - If any error occurred during import operation
 func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) {
 	if poolExist := checkIfPoolPresent(PoolName(), oc.zcmdExecutor); poolExist {
+		// If the pool is renamed and imported but the pool-mgmt restarts
+		// for some reason then the annotation should be removed.
+		delete(cspi.Annotations, types.OpenEBSCStorExistingPoolName)
 		return true, nil
+	}
+
+	var poolImported, importable bool
+	var err error
+	// existingPoolName denotes the pool name that may be present
+	// from previous version and needs to be imported with new name
+	existingPoolName := cspi.Annotations[types.OpenEBSCStorExistingPoolName]
+	if existingPoolName != "" {
+		_, importable, err = oc.checkIfPoolIsImportable(cspi)
+		if err != nil {
+			return false, errors.Errorf("failed to verify if pool is importable: %s", err.Error())
+		}
+		if importable {
+			// If the pool is renamed but not imported, remove the
+			// annotation to avoid not found errors.
+			existingPoolName = ""
+			delete(cspi.Annotations, types.OpenEBSCStorExistingPoolName)
+		}
 	}
 
 	// Pool is not imported.. Let's update the syncResource
 	var cmdOut []byte
-	var err error
 	common.SyncResources.IsImported = false
-	var poolImported bool
 
 	bdPath, err := oc.getPathForBDev(cspi.Spec.DataRaidGroups[0].CStorPoolInstanceBlockDevices[0].BlockDeviceName)
 	if err != nil {
@@ -54,12 +74,17 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	devID := pool.GetDevPathIfNotSlashDev(bdPath[0])
 	cacheFile := types.CStorPoolBasePath + types.CacheFileName
 
+	if existingPoolName != "" {
+		klog.Infof("Renaming pool %s to %s", existingPoolName, PoolName())
+	}
 	// Import the pool using cachefile
-	// command will looks like: zpool import -c <cachefile_path> -o <cachefile_path> <pool_name>
+	// command will look like: zpool import -c <cachefile_path> -o <cachefile_path> <pool_name>
+	// if existing pool name is present: zpool import -c <cachefile_path> -o <cachefile_path> <existing_pool_name> <pool_name>
 	cmdOut, err = zfs.NewPoolImport().
 		WithCachefile(cacheFile).
 		WithProperty("cachefile", cacheFile).
-		WithPool(PoolName()).
+		WithPool(existingPoolName).
+		WithNewPool(PoolName()).
 		WithExecutor(oc.zcmdExecutor).
 		Execute()
 	if err == nil {
@@ -72,11 +97,14 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	if !poolImported {
 		// Import the pool without cachefile by scanning the directory
 		// For sparse based pools import command: zpool import -d <parent_dir_sparse_files> -o <cachefile_path> <pool_name>
+		// if existing pool name is present: zpool import -d <parent_dir_sparse_files> -o <cachefile_path> <existing_pool_name> <pool_name>
 		// For device based pools import command: zpool import -o <cachefile_path> <pool_name>(by default it will scan /dev directory)
+		// if existing pool name is present: zpool import -o <cachefile_path> <existing_pool_name> <pool_name>(by default it will scan /dev directory)
 		cmdOut, err = zfs.NewPoolImport().
 			WithDirectory(devID).
 			WithProperty("cachefile", cacheFile).
-			WithPool(PoolName()).
+			WithPool(existingPoolName).
+			WithNewPool(PoolName()).
 			WithExecutor(oc.zcmdExecutor).
 			Execute()
 	}
@@ -86,6 +114,11 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 		klog.Errorf("Failed to import pool by scanning directory: %s : %s", cmdOut, err.Error())
 		return false, err
 	}
+
+	// after successful import of pool the annotation needs to be deleted
+	// to avoid renaming of pool that is already renamed which will cause
+	// pool not found errors
+	delete(cspi.Annotations, types.OpenEBSCStorExistingPoolName)
 
 	common.SyncResources.IsImported = true
 	oc.recorder.Event(cspi,

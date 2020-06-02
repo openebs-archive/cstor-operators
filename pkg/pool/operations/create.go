@@ -30,9 +30,9 @@ func (oc *OperationsConfig) Create(cspi *cstor.CStorPoolInstance) error {
 
 	// Let's check if there is any disk having the pool config
 	// If so then we will not create the pool
-	ret, notImported, err := oc.checkIfPoolNotImported(cspi)
+	ret, notImported, err := oc.checkIfPoolIsImportable(cspi)
 	if err != nil {
-		return errors.Errorf("Failed to check not imported pool %s", err.Error())
+		return errors.Errorf("failed to verify if pool is importable: %s", err.Error())
 	}
 	if notImported {
 		return errors.Errorf("Pool {%s} is in faulty state.. %s", PoolName(), ret)

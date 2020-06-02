@@ -78,6 +78,13 @@ func (ac *Config) GetCSPISpec() (*cstor.CStorPoolInstance, error) {
 		WithFinalizer(types.CSPCFinalizer).
 		WithNewVersion(version.GetVersion()).
 		WithDependentsUpgraded()
+	// check for OpenEBSDisableDependantsReconcileKey annotation which implies
+	// the CSPI should have OpenEBSDisableReconcileLabelKey enabled
+	if ac.CSPC.GetAnnotations()[types.OpenEBSDisableDependantsReconcileKey] == "true" {
+		cspiObj.WithAnnotations(map[string]string{
+			types.OpenEBSDisableReconcileLabelKey: "true",
+		})
+	}
 
 	err = ac.ClaimBDsForNode(GetBDListForNode(*poolSpec))
 	if err != nil {

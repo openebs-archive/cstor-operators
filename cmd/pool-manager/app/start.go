@@ -18,12 +18,14 @@ package app
 
 import (
 	"flag"
-	"github.com/openebs/cstor-operators/pkg/controllers/restore-controller"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 
+	restorecontroller "github.com/openebs/cstor-operators/pkg/controllers/restore-controller"
+
+	backupcontroller "github.com/openebs/cstor-operators/pkg/controllers/backup-controller"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	cspicontroller "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller"
 	replicacontroller "github.com/openebs/cstor-operators/pkg/controllers/replica-controller"
@@ -97,6 +99,10 @@ func Start() error {
 	cStorRestoreController := restorecontroller.NewCStorRestoreController(kubeClient, openebsClient, kubeInformerFactory,
 		openebsInformerFactory)
 
+	// Instantiate the backup controller
+	backupController := backupcontroller.NewCStorBackupController(kubeClient, openebsClient, kubeInformerFactory,
+		openebsInformerFactory)
+
 	go kubeInformerFactory.Start(stopCh)
 	go openebsInformerFactory.Start(stopCh)
 	// Blocking call for checking status of zrepl running in cstor-pool container.
@@ -123,6 +129,15 @@ func Start() error {
 	// Run controller for cStorVolumeReplica.
 	go func() {
 		if err = volumeReplicaController.Run(NumThreads, stopCh); err != nil {
+			klog.Fatalf("Error running CStorVolumeReplica controller: %s", err.Error())
+		}
+		wg.Done()
+	}()
+
+	wg.Add(NumRoutinesThatFollow)
+	// Run backup controller
+	go func() {
+		if err = backupController.Run(NumThreads, stopCh); err != nil {
 			klog.Fatalf("Error running CStorVolumeReplica controller: %s", err.Error())
 		}
 		wg.Done()

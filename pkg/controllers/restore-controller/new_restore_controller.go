@@ -17,6 +17,7 @@ limitations under the License.
 package restorecontroller
 
 import (
+	"github.com/openebs/api/pkg/apis/types"
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
@@ -199,7 +200,7 @@ func (c *RestoreController) handleRSTUpdateEvent(oldrst, newrst *apis.CStorResto
 
 // cleanupOldRestore set fail status to old pending restore
 func (c *RestoreController) cleanupOldRestore(clientset clientset.Interface) {
-	rstlabel := "cstorpool.openebs.io/uid=" + os.Getenv(string(common.OpenEBSIOCStorID))
+	rstlabel := types.CStorPoolInstanceUIDLabelKey + os.Getenv(string(common.OpenEBSIOCStorID))
 	rstlistop := metav1.ListOptions{
 		LabelSelector: rstlabel,
 	}

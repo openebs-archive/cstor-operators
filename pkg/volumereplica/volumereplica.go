@@ -74,8 +74,6 @@ const (
 )
 
 const (
-	// CStorPoolUIDKey is the key for csp object uid which is present in cvr labels.
-	CStorPoolUIDKey = "cstorpool.openebs.io/uid"
 	// PvNameKey is the key for pv object uid which is present in cvr labels.
 	PvNameKey = "cstorvolume.openebs.io/name"
 	// PoolPrefix is the prefix of zpool name.
@@ -116,7 +114,7 @@ var RunnerVar util.Runner
 // if not found then gets cstorpoolinstance name from the OPENEBS_IO_POOL_NAME
 // env
 func PoolNameFromCVR(cvr *cstor.CStorVolumeReplica) string {
-	poolname := cvr.Labels[CStorPoolUIDKey]
+	poolname := cvr.Labels[types.CStorPoolInstanceUIDLabelKey]
 	if strings.TrimSpace(poolname) == "" {
 		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
 		if strings.TrimSpace(poolname) == "" {
@@ -132,7 +130,7 @@ func PoolNameFromCVR(cvr *cstor.CStorVolumeReplica) string {
 // if not found then gets cstorpoolinstance name from the OPENEBS_IO_POOL_NAME
 // env
 func PoolNameFromBackup(bkp *openebsio.CStorBackup) string {
-	poolname := bkp.Labels[CStorPoolUIDKey]
+	poolname := bkp.Labels[types.CStorPoolInstanceUIDLabelKey]
 	if strings.TrimSpace(poolname) == "" {
 		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
 		if strings.TrimSpace(poolname) == "" {
@@ -149,7 +147,7 @@ func PoolNameFromBackup(bkp *openebsio.CStorBackup) string {
 // if not found then gets cstorPoolInstance name from the OPENEBS_IO_POOL_NAME
 // env
 func PoolNameFromRestore(rst *openebsio.CStorRestore) string {
-	poolname := rst.Labels[CStorPoolUIDKey]
+	poolname := rst.Labels[types.CStorPoolInstanceUIDLabelKey]
 	if strings.TrimSpace(poolname) == "" {
 		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
 		if strings.TrimSpace(poolname) == "" {

@@ -110,16 +110,11 @@ type Stats struct {
 // RunnerVar the runner variable for executing binaries.
 var RunnerVar util.Runner
 
-// PoolNameFromCVR gets the name of cstorpool from cstorvolumereplica label
-// if not found then gets cstorpoolinstance name from the OPENEBS_IO_POOL_NAME
-// env
+// PoolNameFromCVR gets the name of cstorpool env
 func PoolNameFromCVR(cvr *cstor.CStorVolumeReplica) string {
-	poolname := cvr.Labels[types.CStorPoolInstanceUIDLabelKey]
+	poolname := os.Getenv(string("OPENEBS_IO_POOL_NAME"))
 	if strings.TrimSpace(poolname) == "" {
-		poolname = os.Getenv(string("OPENEBS_IO_POOL_NAME"))
-		if strings.TrimSpace(poolname) == "" {
-			return ""
-		}
+		return ""
 	}
 	return PoolPrefix + poolname
 }

@@ -36,11 +36,33 @@ func (volumeMocker *VolumeMocker) GetProperty(cmd string) ([]byte, error) {
 		if val == "value," {
 			isProperty = true
 		}
-		if isProperty && strings.Contains(val, "compression") {
-			output = addToOutput(output, "lz4")
+		if isProperty {
+			output = addToOutput(output, getPropertyValues(val))
 		}
 	}
 	return []byte(output), nil
+}
+
+// getPropertyValues returns the values for quaried properties
+func getPropertyValues(command string) string {
+	var values string
+	// If command is to get used space in dataset
+	if strings.Contains(command, "used") {
+		values = addToOutput(values, "69.5K")
+	}
+	// If command is to get available space in dataset
+	if strings.Contains(command, "available") {
+		values = addToOutput(values, "9.94G")
+	}
+	// If command is to get logicalused space in dataset
+	if strings.Contains(command, "logicalused") {
+		values = addToOutput(values, "70K")
+	}
+	// If command is to get compression value
+	if strings.Contains(command, "compression") {
+		values = addToOutput(values, "lz4")
+	}
+	return values
 }
 
 func addToOutput(output, value string) string {

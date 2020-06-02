@@ -25,6 +25,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
@@ -43,11 +44,15 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 	}
 
 	var poolImported, importable bool
+	var err error
 	// existingPoolName denotes the pool name that may be present
 	// from previous version and needs to be imported with new name
 	existingPoolName := cspi.Annotations[types.OpenEBSCStorExistingPoolName]
 	if existingPoolName != "" {
-		_, importable, _ = oc.checkIfPoolIsImportable(cspi)
+		_, importable, err = oc.checkIfPoolIsImportable(cspi)
+		if err != nil {
+			return false, errors.Errorf("failed to verify if pool is importable: %s", err.Error())
+		}
 		if importable {
 			// If the pool is renamed but not imported, remove the
 			// annotation to avoid not found errors.
@@ -58,7 +63,6 @@ func (oc *OperationsConfig) Import(cspi *cstor.CStorPoolInstance) (bool, error) 
 
 	// Pool is not imported.. Let's update the syncResource
 	var cmdOut []byte
-	var err error
 	common.SyncResources.IsImported = false
 
 	bdPath, err := oc.getPathForBDev(cspi.Spec.DataRaidGroups[0].CStorPoolInstanceBlockDevices[0].BlockDeviceName)

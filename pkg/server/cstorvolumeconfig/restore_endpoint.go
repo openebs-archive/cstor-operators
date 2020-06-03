@@ -66,7 +66,7 @@ func (s *HTTPServer) restoreV1alpha1SpecificRequest(
 		klog.Infof("Got restore GET request")
 		return restoreOps.get()
 	}
-	klog.Infof("please add a support for %s method in restore", req.Method)
+	klog.Infof("restore endpoint doesn't support %s", req.Method)
 	return nil, CodedError(405, ErrInvalidMethod)
 }
 

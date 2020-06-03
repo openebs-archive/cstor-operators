@@ -243,8 +243,8 @@ func TestBackupPostEndPoint(t *testing.T) {
 		cspcName string
 		// cstorBackup used to query on backup endpoint
 		cstorBackup *openebsapis.CStorBackup
-		// snapshoter is used to mock snapshot operations on volumes
-		snapshoter *snapshot.FakeSnapshoter
+		// snapshotter is used to mock snapshot operations on volumes
+		snapshotter *snapshot.FakeSnapshotter
 		// cvrStatus creates CVR with provided phase
 		cvrStatus                            cstor.CStorVolumeReplicaPhase
 		isScheduledBackup                    bool
@@ -265,7 +265,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 					SnapName:   "snapshot1",
 				},
 			},
-			snapshoter:                           &snapshot.FakeSnapshoter{},
+			snapshotter:                          &snapshot.FakeSnapshotter{},
 			cvrStatus:                            cstor.CVRStatusOnline,
 			expectedResponseCode:                 http.StatusOK,
 			verifyBackUpStatus:                   verifyExistenceOfPendingBackup,
@@ -284,7 +284,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 					SnapName:   "snapshot",
 				},
 			},
-			snapshoter: &snapshot.FakeSnapshoter{
+			snapshotter: &snapshot.FakeSnapshotter{
 				ShouldReturnFakeError: true,
 			},
 			expectedResponseCode: http.StatusBadRequest,
@@ -302,7 +302,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 					BackupDest: "172.102.29.12:3234",
 				},
 			},
-			snapshoter: &snapshot.FakeSnapshoter{
+			snapshotter: &snapshot.FakeSnapshotter{
 				ShouldReturnFakeError: true,
 			},
 			expectedResponseCode: http.StatusBadRequest,
@@ -322,7 +322,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 					SnapName:   "snapshot",
 				},
 			},
-			snapshoter:           &snapshot.FakeSnapshoter{},
+			snapshotter:          &snapshot.FakeSnapshotter{},
 			expectedResponseCode: http.StatusBadRequest,
 			verifyBackUpStatus:   backupShouldNotExist,
 			cvrStatus:            cstor.CVRStatusOffline,
@@ -340,7 +340,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 					SnapName:   "snapshot4",
 				},
 			},
-			snapshoter:           &snapshot.FakeSnapshoter{},
+			snapshotter:          &snapshot.FakeSnapshotter{},
 			expectedResponseCode: http.StatusOK,
 			verifyBackUpStatus:   backupShouldNotExist,
 			cvrStatus:            cstor.CVRStatusOnline,
@@ -359,7 +359,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 					LocalSnap:  true,
 				},
 			},
-			snapshoter:           &snapshot.FakeSnapshoter{},
+			snapshotter:          &snapshot.FakeSnapshotter{},
 			expectedResponseCode: http.StatusOK,
 			verifyBackUpStatus:   backupShouldNotExist,
 			cvrStatus:            cstor.CVRStatusOffline,
@@ -377,7 +377,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 					LocalSnap:  true,
 				},
 			},
-			snapshoter: &snapshot.FakeSnapshoter{
+			snapshotter: &snapshot.FakeSnapshotter{
 				ShouldReturnFakeError: true,
 			},
 			expectedResponseCode: http.StatusBadRequest,
@@ -405,7 +405,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 				cvcServer: NewCVCServer(server.DefaultServerConfig(), os.Stdout).
 					WithOpenebsClientSet(f.openebsClient).
 					WithKubernetesClientSet(f.k8sClient).
-					WithSnapshoter(test.snapshoter),
+					WithSnapshotter(test.snapshotter),
 				logger: log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds),
 			}
 			//Marshal serializes the value provided into a json document
@@ -532,7 +532,7 @@ func TestBackupGetEndPoint(t *testing.T) {
 				cvcServer: NewCVCServer(server.DefaultServerConfig(), os.Stdout).
 					WithOpenebsClientSet(f.openebsClient).
 					WithKubernetesClientSet(f.k8sClient).
-					WithSnapshoter(&snapshot.FakeSnapshoter{}),
+					WithSnapshotter(&snapshot.FakeSnapshotter{}),
 				logger: log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds),
 			}
 			//Marshal serializes the value provided into a json document

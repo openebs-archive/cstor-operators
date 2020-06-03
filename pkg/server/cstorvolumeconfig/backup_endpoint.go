@@ -44,7 +44,7 @@ type backupAPIOps struct {
 	resp         http.ResponseWriter
 	k8sclientset kubernetes.Interface
 	clientset    clientset.Interface
-	snapshoter   snapshot.Snapshoter
+	snapshotter  snapshot.Snapshotter
 }
 
 var (
@@ -59,7 +59,7 @@ func (s *HTTPServer) backupV1alpha1SpecificRequest(resp http.ResponseWriter, req
 		resp:         resp,
 		k8sclientset: s.cvcServer.kubeclientset,
 		clientset:    s.cvcServer.clientset,
-		snapshoter:   s.cvcServer.snapshoter,
+		snapshotter:  s.cvcServer.snapshotter,
 	}
 
 	switch req.Method {
@@ -87,6 +87,7 @@ func (bOps *backupAPIOps) create() (interface{}, error) {
 	if err := backupCreateRequestValidations(backUp); err != nil {
 		return nil, err
 	}
+	klog.Infof("Requested to create backup for volume %s/%s remoteBackup: %t", backUp.Namespace, backUp.Spec.VolumeName, !backUp.Spec.LocalSnap)
 
 	// TODO: Move this to interface so that we can mock
 	// snapshot calls
@@ -94,7 +95,7 @@ func (bOps *backupAPIOps) create() (interface{}, error) {
 		VolumeName:   backUp.Spec.VolumeName,
 		SnapshotName: backUp.Spec.SnapName,
 		Namespace:    getOpenEBSNamespace(),
-		SnapClient:   bOps.snapshoter,
+		SnapClient:   bOps.snapshotter,
 	}
 	snapResp, err := snapshot.CreateSnapshot(bOps.clientset)
 	if err != nil {
@@ -270,7 +271,7 @@ func (bOps *backupAPIOps) deleteBackup(backup, volname, ns, schedule string) err
 		VolumeName:   volname,
 		SnapshotName: backup,
 		Namespace:    ns,
-		SnapClient:   bOps.snapshoter,
+		SnapClient:   bOps.snapshotter,
 	}
 	// Snapshot Name and backup name are same
 	_, err = snapshot.DeleteSnapshot(bOps.clientset)

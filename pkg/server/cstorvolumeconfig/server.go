@@ -42,8 +42,8 @@ type CVCServer struct {
 	// clientset is a openebs custom resource package generated for custom API group.
 	clientset clientset.Interface
 
-	// snapshoter is used to perform snapshot operations on Volumes
-	snapshoter snapshot.Snapshoter
+	// snapshotter is used to perform snapshot operations on Volumes
+	snapshotter snapshot.Snapshotter
 }
 
 // NewCVCServer is used to create a new CVC server
@@ -70,9 +70,9 @@ func (cs *CVCServer) WithOpenebsClientSet(openebsClientSet clientset.Interface) 
 	return cs
 }
 
-// WithSnapshoter sets the snapshoter with provided argument
-func (cs *CVCServer) WithSnapshoter(snapshoter snapshot.Snapshoter) *CVCServer {
-	cs.snapshoter = snapshoter
+// WithSnapshotter sets the snapshotter with provided argument
+func (cs *CVCServer) WithSnapshotter(snapshotter snapshot.Snapshotter) *CVCServer {
+	cs.snapshotter = snapshotter
 	return cs
 }
 

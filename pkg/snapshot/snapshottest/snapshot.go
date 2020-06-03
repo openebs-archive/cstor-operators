@@ -5,13 +5,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// FakeSnapshoter is used to mock the snapshot operations
-type FakeSnapshoter struct {
+// FakeSnapshotter is used to mock the snapshot operations
+type FakeSnapshotter struct {
 	ShouldReturnFakeError bool
 }
 
 // CreateSnapshot mocks snapshot create operation
-func (fs *FakeSnapshoter) CreateSnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapCreateResponse, error) {
+func (fs *FakeSnapshotter) CreateSnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapCreateResponse, error) {
 	if fs.ShouldReturnFakeError {
 		return nil, errors.Errorf("injected fake errors during snapshot create operation")
 	}
@@ -19,7 +19,7 @@ func (fs *FakeSnapshoter) CreateSnapshot(ip, volName, snapName string) (*v1proto
 }
 
 //DestroySnapshot mocks snapshot delete operation
-func (fs *FakeSnapshoter) DestroySnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapDeleteResponse, error) {
+func (fs *FakeSnapshotter) DestroySnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapDeleteResponse, error) {
 	if fs.ShouldReturnFakeError {
 		return nil, errors.Errorf("injected fake errors during snapshot delete operation")
 	}

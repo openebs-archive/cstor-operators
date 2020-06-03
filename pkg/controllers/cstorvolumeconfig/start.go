@@ -187,7 +187,7 @@ func setupCVCServer(k8sclientset kubernetes.Interface, openebsClientset clientse
 	cvcServer := cvcserver.NewCVCServer(config, os.Stdout).
 		WithOpenebsClientSet(openebsClientset).
 		WithKubernetesClientSet(k8sclientset).
-		WithSnapshoter(&snapshot.SnapClient{})
+		WithSnapshotter(&snapshot.SnapClient{})
 
 	// Setup the HTTP server
 	http, err := cvcserver.NewHTTPServer(cvcServer)

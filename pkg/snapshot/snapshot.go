@@ -27,7 +27,7 @@ type Snapshot struct {
 	VolumeName   string
 	SnapshotName string
 	Namespace    string
-	SnapClient   Snapshoter
+	SnapClient   Snapshotter
 }
 
 // CreateSnapshot creates snapshot for provided CStor Volume

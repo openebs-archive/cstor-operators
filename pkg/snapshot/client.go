@@ -36,8 +36,8 @@ type CommandStatus struct {
 	Response string `json:"response"`
 }
 
-// Snapshoter is used to perform snapshot operations on given volume
-type Snapshoter interface {
+// Snapshotter is used to perform snapshot operations on given volume
+type Snapshotter interface {
 	CreateSnapshot(ip, volumeName, namesapce string) (*v1proto.VolumeSnapCreateResponse, error)
 	DestroySnapshot(ip, volumeName, namesapce string) (*v1proto.VolumeSnapDeleteResponse, error)
 }

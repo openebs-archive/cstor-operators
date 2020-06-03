@@ -312,6 +312,24 @@ func (c *CVCController) getOrCreateCStorVolumeResource(
 	return cvObj, err
 }
 
+func getPolicyBasedPoolList(
+	poolList *apis.CStorPoolInstanceList,
+	poolInfo []apis.ReplicaPoolInfo,
+) *apis.CStorPoolInstanceList {
+	policyBasedList := &apis.CStorPoolInstanceList{}
+	for _, info := range poolInfo {
+		for _, pool := range poolList.Items {
+			if pool.Name == info.PoolName {
+				policyBasedList.Items = append(
+					policyBasedList.Items,
+					pool,
+				)
+			}
+		}
+	}
+	return policyBasedList
+}
+
 // distributeCVRs create cstorvolume replica based on the replicaCount
 // on the available cstor pools created for storagepoolclaim.
 // if pools are less then desired replicaCount its return an error.
@@ -339,6 +357,10 @@ func (c *CVCController) distributeCVRs(
 	poolList, err := c.listCStorPools(cspcName)
 	if err != nil {
 		return err
+	}
+
+	if len(policy.Spec.ReplicaPoolInfo) != 0 {
+		poolList = getPolicyBasedPoolList(poolList, policy.Spec.ReplicaPoolInfo)
 	}
 
 	if claim.Spec.CStorVolumeSource != "" {
@@ -587,11 +609,23 @@ func (c *CVCController) getOrCreatePodDisruptionBudget(cspcName string,
 // status of CVC
 func addReplicaPoolInfo(cvcObj *apis.CStorVolumeConfig, poolNames []string) {
 	for _, poolName := range poolNames {
-		cvcObj.Spec.Policy.ReplicaPoolInfo = append(
-			cvcObj.Spec.Policy.ReplicaPoolInfo,
-			apis.ReplicaPoolInfo{PoolName: poolName})
+		contains := false
+		for _, poolInfo := range cvcObj.Spec.Policy.ReplicaPoolInfo {
+			if poolInfo.PoolName == poolName {
+				contains = true
+			}
+		}
+		if !contains {
+			cvcObj.Spec.Policy.ReplicaPoolInfo = append(
+				cvcObj.Spec.Policy.ReplicaPoolInfo,
+				apis.ReplicaPoolInfo{PoolName: poolName})
+		}
 	}
-	cvcObj.Status.PoolInfo = append(cvcObj.Status.PoolInfo, poolNames...)
+	for _, info := range cvcObj.Spec.Policy.ReplicaPoolInfo {
+		if !util.ContainsString(cvcObj.Status.PoolInfo, info.PoolName) {
+			cvcObj.Status.PoolInfo = append(cvcObj.Status.PoolInfo, info.PoolName)
+		}
+	}
 }
 
 // addPDBLabelOnCVC will add PodDisruptionBudget label on CVC

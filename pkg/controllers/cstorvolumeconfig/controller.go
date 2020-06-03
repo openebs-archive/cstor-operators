@@ -208,18 +208,18 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 		return nil
 	}
 
-	nodeID := cvc.Publish.NodeID
-	if nodeID == "" {
-		// We choose to absorb the error here as the worker would requeue the
-		// resource otherwise. Instead, the next time the resource is updated
-		// the resource will be queued again.
-		runtime.HandleError(fmt.Errorf("cvc must be publish/attached to Node: %+v", cvc))
-		c.recorder.Event(cvc, corev1.EventTypeWarning,
-			Provisioning,
-			fmt.Sprintf(MessageCVCPublished, cvc.Name),
-		)
-		return nil
-	}
+	// nodeID := cvc.Publish.NodeID
+	// if nodeID == "" {
+	// 	// We choose to absorb the error here as the worker would requeue the
+	// 	// resource otherwise. Instead, the next time the resource is updated
+	// 	// the resource will be queued again.
+	// 	runtime.HandleError(fmt.Errorf("cvc must be publish/attached to Node: %+v", cvc))
+	// 	c.recorder.Event(cvc, corev1.EventTypeWarning,
+	// 		Provisioning,
+	// 		fmt.Sprintf(MessageCVCPublished, cvc.Name),
+	// 	)
+	// 	return nil
+	// }
 
 	if cvc.Status.Phase == apis.CStorVolumeConfigPhasePending {
 		klog.V(2).Infof("provisioning cstor volume %+v", cvc)

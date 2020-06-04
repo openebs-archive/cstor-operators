@@ -29,7 +29,7 @@ import (
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
-	"github.com/openebs/api/pkg/apis/types"
+	types "github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/api/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/debug"
@@ -140,7 +140,7 @@ func GetListOfPropertyValues(dataSetName string, propertyList []string, executor
 // RunnerVar the runner variable for executing binaries.
 var RunnerVar util.Runner
 
-// GetPoolName gets the name of cstorpoolinstance
+// GetPoolName gets the name of cstor pool
 func GetPoolName() string {
 	poolname := os.Getenv(string("OPENEBS_IO_POOL_NAME"))
 	if strings.TrimSpace(poolname) == "" {
@@ -332,27 +332,28 @@ func CreateVolumeBackup(bkp *openebsio.CStorBackup) error {
 	for retryCount < MaxBackupRetryCount {
 		stdoutStderr, err = RunnerVar.RunCombinedOutput("/usr/local/bin/execute.sh", cmd...)
 		if err != nil {
-			klog.Errorf("Unable to start backup %s. error : %v retry:%v :%s", bkp.Spec.VolumeName, string(stdoutStderr), retryCount, err.Error())
+			klog.Errorf("Unable to start backup %s error: %v retry: %v :%s", bkp.Spec.VolumeName, string(stdoutStderr), retryCount, err.Error())
 			retryCount++
 			time.Sleep(BackupRetryDelay * time.Second)
 			continue
 		}
 		break
 	}
+	// In case if any error occured then return error
 	if err != nil {
 		alertlog.Logger.Errorw("",
 			"eventcode", "cstor.volume.backup.create.failure",
 			"msg", "Failed to create backup CStor volume",
 			"rname", bkp.Spec.VolumeName,
 		)
-	} else {
-		alertlog.Logger.Infow("",
-			"eventcode", "cstor.volume.backup.create.success",
-			"msg", "Successfully created backup CStor volume",
-			"rname", bkp.Spec.VolumeName,
-		)
+		return errors.Wrapf(err, "error: %s", string(stdoutStderr))
 	}
-	return err
+	alertlog.Logger.Infow("",
+		"eventcode", "cstor.volume.backup.create.success",
+		"msg", "Successfully created backup CStor volume",
+		"rname", bkp.Spec.VolumeName,
+	)
+	return nil
 }
 
 // ToDo: Move this to backup package

@@ -46,6 +46,7 @@ type restoreAPIOps struct {
 	resp         http.ResponseWriter
 	k8sclientset kubernetes.Interface
 	clientset    clientset.Interface
+	namespace    string
 }
 
 // restoreV1alpha1SpecificRequest deals with restore API requests
@@ -56,6 +57,7 @@ func (s *HTTPServer) restoreV1alpha1SpecificRequest(
 		resp:         resp,
 		k8sclientset: s.cvcServer.kubeclientset,
 		clientset:    s.cvcServer.clientset,
+		namespace:    getOpenEBSNamespace(),
 	}
 
 	switch req.Method {
@@ -73,7 +75,6 @@ func (s *HTTPServer) restoreV1alpha1SpecificRequest(
 // Create is http handler which handles restore-create request
 func (rOps *restoreAPIOps) create() (interface{}, error) {
 	var err error
-	namespace := getOpenEBSNamespace()
 	restore := &openebsapis.CStorRestore{}
 	err = decodeBody(rOps.req, restore)
 	if err != nil {
@@ -92,7 +93,7 @@ func (rOps *restoreAPIOps) create() (interface{}, error) {
 	klog.Infof("Restore volume '%v' created successfully ", restore.Spec.VolumeName)
 
 	if restore.Spec.Local {
-		return getISCSIPersistentVolumeSource(restore.Spec.VolumeName, namespace, rOps.clientset)
+		return getISCSIPersistentVolumeSource(restore.Spec.VolumeName, rOps.namespace, rOps.clientset)
 	}
 
 	return createRestoreResource(rOps.clientset, restore)
@@ -146,7 +147,6 @@ func (rOps *restoreAPIOps) get() (interface{}, error) {
 // createVolumeForRestore creates CVC object only if it is local restore request
 // else it will retun error if CVC is not in Bound state else nil will be returned
 func (rOps *restoreAPIOps) createVolumeForRestore(restoreObj *openebsapis.CStorRestore) error {
-	namespace := getOpenEBSNamespace()
 
 	// If the request is to restore local backup then velero-plugin will not create PVC.
 	// So let's create CVC with annotation "openebs.io/created-through" which will be propagated
@@ -167,15 +167,16 @@ func (rOps *restoreAPIOps) createVolumeForRestore(restoreObj *openebsapis.CStorR
 		if err != nil {
 			return errors.Wrapf(err, "failed to build CVC to provision cstor volume")
 		}
-		_, err = rOps.clientset.CstorV1().CStorVolumeConfigs(namespace).Create(cvcObj)
+		_, err = rOps.clientset.CstorV1().CStorVolumeConfigs(rOps.namespace).Create(cvcObj)
 		if err != nil && !k8serror.IsAlreadyExists(err) {
 			return errors.Wrapf(err, "failed to create CVC %s object", cvcObj.Name)
 		}
+		klog.Infof("successfully created cvc %s in namespace %s", cvcObj.Name, cvcObj.Namespace)
 	}
 
 	// In case of CStor CSI volumes, if CVC.Status.Phase is marked as Bound then
 	// all the resources are created.
-	err := waitForCVCBoundState(restoreObj.Spec.VolumeName, namespace, rOps.clientset)
+	err := waitForCVCBoundState(restoreObj.Spec.VolumeName, rOps.namespace, rOps.clientset)
 	if err != nil {
 		return err
 	}
@@ -197,7 +198,7 @@ func (rOps *restoreAPIOps) getRestoreStatus(rst *openebsapis.CStorRestore) (open
 	}
 
 	for _, nr := range rlist.Items {
-		rstStatus = getCVRRestoreStatus(rOps.k8sclientset, nr)
+		rstStatus = getCStorRestoreStatus(rOps.k8sclientset, nr)
 
 		switch rstStatus {
 		case openebsapis.RSTCStorStatusInProgress:
@@ -298,14 +299,15 @@ func waitForCVCBoundState(cvcName, namespace string, clientset clientset.Interfa
 	maxRetries := 5
 	for i := 0; i < maxRetries; i++ {
 		cvcObj, err := clientset.CstorV1().CStorVolumeConfigs(namespace).Get(cvcName, metav1.GetOptions{})
-		if err != nil {
+		// If CVC is not found then wait for it to exist in etcd
+		if err != nil && !k8serror.IsNotFound(err) {
 			return err
 		}
 		if cvcObj.Status.Phase == cstor.CStorVolumeConfigPhaseBound {
 			// Which means all the CStorVolume related resources are created
 			return nil
 		}
-		klog.Errorf("waiting for CVC: %s in namespace: %s to become Bounded", cvcObj.Name, cvcObj.Namespace)
+		klog.Errorf("waiting for CVC: %s in namespace: %s to become Bounded error: %v", cvcObj.Name, cvcObj.Namespace, err)
 		time.Sleep(2 * time.Second)
 	}
 	return errors.Errorf("CVC %s in namespace %s is not in Bound status", cvcName, namespace)
@@ -369,7 +371,7 @@ func (rOps *restoreAPIOps) getNodeID(scObj *storagev1.StorageClass) (string, err
 		labelValue = scObj.AllowedTopologies[0].MatchLabelExpressions[0].Values[0]
 	} else {
 		cspiList, err := rOps.clientset.CstorV1().
-			CStorPoolInstances(getOpenEBSNamespace()).
+			CStorPoolInstances(rOps.namespace).
 			List(metav1.ListOptions{
 				LabelSelector: cstortypes.CStorPoolClusterLabelKey + "=" + cspcName,
 			})
@@ -408,7 +410,7 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 	cvcObj := &cstor.CStorVolumeConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      restoreObj.Spec.VolumeName,
-			Namespace: getOpenEBSNamespace(),
+			Namespace: rOps.namespace,
 			Labels: map[string]string{
 				cstortypes.CStorPoolClusterLabelKey: scObj.Parameters["cstorPoolCluster"],
 				"openebs.io/source-volume":          restoreObj.Spec.VolumeName,
@@ -430,6 +432,7 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 				corev1.ResourceName(corev1.ResourceStorage): restoreObj.Spec.Size,
 			},
 			// If CStorVolumeSource is mentioned then CVC controller treat it as a clone request
+			// CStorVolumeSource contains the source volumeName@snapShotname
 			CStorVolumeSource: restoreObj.Spec.RestoreSrc + "@" + restoreObj.Spec.RestoreName,
 		},
 		Publish: cstor.CStorVolumeConfigPublish{
@@ -442,7 +445,7 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 			Desired: version.Current(),
 		},
 		Status: cstor.CStorVolumeConfigStatus{
-			Phase: cstor.CStorVolumeConfigPhaseBound,
+			Phase: cstor.CStorVolumeConfigPhasePending,
 		},
 	}
 
@@ -469,18 +472,19 @@ func getISCSIPersistentVolumeSource(
 	return iscsiPVSrc, nil
 }
 
-// getCVRRestoreStatus returns the status of Restore. It returns
+// getCStorRestoreStatus returns the status of Restore. It returns
 // restore status as "Failed" if pool manager (or) pool manager pod
 // node is down else it will return same status whatever restore.Status
 // contains
-func getCVRRestoreStatus(k8sClient kubernetes.Interface,
+func getCStorRestoreStatus(k8sClient kubernetes.Interface,
 	rst openebsapis.CStorRestore) openebsapis.CStorRestoreStatus {
+	namespace := getOpenEBSNamespace()
 
 	if rst.Status != openebsapis.RSTCStorStatusDone && rst.Status != openebsapis.RSTCStorStatusFailed {
 		// check if node is running or not
-		bkpNodeDown := checkIfPoolManagerNodeDown(k8sClient, rst.Labels[cstortypes.CStorPoolInstanceNameLabelKey])
+		bkpNodeDown := checkIfPoolManagerNodeDown(k8sClient, rst.Labels[cstortypes.CStorPoolInstanceNameLabelKey], namespace)
 		// check if cstor-pool-mgmt container is running or not
-		bkpPodDown := checkIfPoolManagerDown(k8sClient, rst.Labels[cstortypes.CStorPoolInstanceNameLabelKey])
+		bkpPodDown := checkIfPoolManagerDown(k8sClient, rst.Labels[cstortypes.CStorPoolInstanceNameLabelKey], namespace)
 
 		if bkpNodeDown || bkpPodDown {
 			// Backup is stalled, assume status as failed

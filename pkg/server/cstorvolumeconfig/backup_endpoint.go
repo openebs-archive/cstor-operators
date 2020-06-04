@@ -45,12 +45,27 @@ type backupAPIOps struct {
 	k8sclientset kubernetes.Interface
 	clientset    clientset.Interface
 	snapshotter  snapshot.Snapshotter
+	namespace    string
 }
 
 var (
 	// openebsNamespace is the namespace where openebs is deployed
 	openebsNamespace string
 )
+
+/***************************REST ENDPOINTS**********************************************************************************************
+ * curl on CVC service with port 5757 then it will create backup related resources. We can use below example to execute POST, GET and DELETE methods
+ * POST method curl -XPOST -d '{"metadata":{"namespace":"openebs","creationTimestamp":null},"spec":{"backupName":"testbackup","volumeName":"pvc-185eb80c-f23e-42ea-8136-8863c1c9eb0e","snapName":"backup-snapshot2","prevSnapName":"","backupDest":"172.02.29.12:343132","localSnap":false},"status":""}'  http://10.101.149.30:5757/latest/backups/
+ *
+ **************************************************************************************************************************************
+ * GET method  curl -XGET -d '{"metadata":{"namespace":"openebs","creationTimestamp":null},"spec":{"backupName":"testbackup","volumeName":"pvc-185eb80c-f23e-42ea-8136-8863c1c9eb0e","snapName":"backup-snapshot2","prevSnapName":"","backupDest":"172.02.29.12:343132","localSnap":false},"status":""}'  http://10.101.149.30:5757/latest/backups/
+ *
+ **************************************************************************************************************************************
+ *DELETE method curl -XDELETE http://10.101.149.30:5757/latest/backups/backup-snapshot2?volume=pvc-185eb80c-f23e-42ea-8136-8863c1c9eb0e\&namespace=openebs\&schedule=testbackup
+ *
+ * Here IP address should be CVC-Operator service IP
+ **************************************************************************************************************************************
+ */
 
 // backupV1alpha1SpecificRequest deals with backup API requests
 func (s *HTTPServer) backupV1alpha1SpecificRequest(resp http.ResponseWriter, req *http.Request) (interface{}, error) {
@@ -60,10 +75,12 @@ func (s *HTTPServer) backupV1alpha1SpecificRequest(resp http.ResponseWriter, req
 		k8sclientset: s.cvcServer.kubeclientset,
 		clientset:    s.cvcServer.clientset,
 		snapshotter:  s.cvcServer.snapshotter,
+		namespace:    getOpenEBSNamespace(),
 	}
 
 	switch req.Method {
 	case "POST":
+		klog.Infof("Got backup POST request")
 		return backupOp.create()
 	case "GET":
 		klog.Infof("Got backup GET request")
@@ -77,132 +94,132 @@ func (s *HTTPServer) backupV1alpha1SpecificRequest(resp http.ResponseWriter, req
 
 // Create is http handler which handles backup create request
 func (bOps *backupAPIOps) create() (interface{}, error) {
-	backUp := &openebsapis.CStorBackup{}
+	backup := &openebsapis.CStorBackup{}
 
-	err := decodeBody(bOps.req, backUp)
+	err := decodeBody(bOps.req, backup)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := backupCreateRequestValidations(backUp); err != nil {
+	if err := backupCreateRequestValidations(backup); err != nil {
 		return nil, err
 	}
-	klog.Infof("Requested to create backup for volume %s/%s remoteBackup: %t", backUp.Namespace, backUp.Spec.VolumeName, !backUp.Spec.LocalSnap)
+	klog.Infof("Requested to create backup for volume %s/%s remoteBackup: %t", backup.Namespace, backup.Spec.VolumeName, !backup.Spec.LocalSnap)
 
 	// TODO: Move this to interface so that we can mock
 	// snapshot calls
 	snapshot := snapshot.Snapshot{
-		VolumeName:   backUp.Spec.VolumeName,
-		SnapshotName: backUp.Spec.SnapName,
-		Namespace:    getOpenEBSNamespace(),
+		VolumeName:   backup.Spec.VolumeName,
+		SnapshotName: backup.Spec.SnapName,
+		Namespace:    bOps.namespace,
 		SnapClient:   bOps.snapshotter,
 	}
 	snapResp, err := snapshot.CreateSnapshot(bOps.clientset)
 	if err != nil {
 		return nil, CodedError(400, fmt.Sprintf("Failed to create snapshot '%v'", err))
 	}
-	klog.Infof("Backup snapshot:'%s' created successfully for volume:%s response: %s", backUp.Spec.SnapName, backUp.Spec.VolumeName, snapResp)
+	klog.Infof("Backup snapshot:'%s' created successfully for volume:%s response: %s", backup.Spec.SnapName, backup.Spec.VolumeName, snapResp)
 
 	// In case of local backup no need to create CStorBackup CR
-	if backUp.Spec.LocalSnap {
+	if backup.Spec.LocalSnap {
 		return "", nil
 	}
 
-	backUp.Name = backUp.Spec.SnapName + "-" + backUp.Spec.VolumeName
+	backup.Name = backup.Spec.SnapName + "-" + backup.Spec.VolumeName
 
 	// find healthy CVR which will helps to create backup CR
-	cvr, err := findHealthyCVR(bOps.clientset, backUp.Spec.VolumeName)
+	cvr, err := findHealthyCVR(bOps.clientset, backup.Spec.VolumeName, bOps.namespace)
 	if err != nil {
 		return nil, CodedError(400, fmt.Sprintf("Failed to find healthy replica"))
 	}
 
-	backUp.ObjectMeta.Labels = map[string]string{
+	backup.ObjectMeta.Labels = map[string]string{
 		cstortypes.CStorPoolInstanceUIDLabelKey:  cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceUIDLabelKey],
 		cstortypes.CStorPoolInstanceNameLabelKey: cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
 		cstortypes.PersistentVolumeLabelKey:      cvr.ObjectMeta.Labels[cstortypes.PersistentVolumeLabelKey],
-		"openebs.io/backup":                      backUp.Spec.BackupName,
+		"openebs.io/backup":                      backup.Spec.BackupName,
 	}
 
 	// Find last backup snapshot name
-	lastsnap, err := bOps.getLastBackupSnap(backUp)
+	lastsnap, err := bOps.getLastBackupSnap(backup)
 	if err != nil {
 		return nil, CodedError(400, fmt.Sprintf("Failed create lastbackup"))
 	}
 
 	// Initialize backup status as pending
-	backUp.Status = openebsapis.BKPCStorStatusPending
-	backUp.Spec.PrevSnapName = lastsnap
+	backup.Status = openebsapis.BKPCStorStatusPending
+	backup.Spec.PrevSnapName = lastsnap
 
-	klog.Infof("Creating backup %s for volume %q poolName: %v poolUUID:%v", backUp.Spec.SnapName,
-		backUp.Spec.VolumeName,
-		backUp.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
-		backUp.ObjectMeta.Labels[cstortypes.CStorPoolInstanceUIDLabelKey])
+	klog.Infof("Creating backup %s for volume %q poolName: %v poolUUID:%v", backup.Spec.SnapName,
+		backup.Spec.VolumeName,
+		backup.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
+		backup.ObjectMeta.Labels[cstortypes.CStorPoolInstanceUIDLabelKey])
 
-	_, err = bOps.clientset.OpenebsV1alpha1().CStorBackups(backUp.Namespace).Create(backUp)
+	_, err = bOps.clientset.OpenebsV1alpha1().CStorBackups(backup.Namespace).Create(backup)
 	if err != nil {
 		klog.Errorf("Failed to create backup: error '%s'", err.Error())
 		return nil, CodedError(500, err.Error())
 	}
 
-	klog.Infof("Backup resource:'%s' created successfully", backUp.Name)
+	klog.Infof("Backup resource:'%s' created successfully", backup.Name)
 	return "", nil
 }
 
 // get is http handler which handles backup get request
 // It will get the snapshot created by the given backup if backup is done/failed
 func (bOps *backupAPIOps) get() (interface{}, error) {
-	backUp := &openebsapis.CStorBackup{}
+	backup := &openebsapis.CStorBackup{}
 
-	err := decodeBody(bOps.req, backUp)
+	err := decodeBody(bOps.req, backup)
 	if err != nil {
 		return nil, err
 	}
 
 	// backup name is expected
-	if len(strings.TrimSpace(backUp.Spec.BackupName)) == 0 {
+	if len(strings.TrimSpace(backup.Spec.BackupName)) == 0 {
 		return nil, CodedError(400, fmt.Sprintf("Failed to get backup: missing backup name "))
 	}
 
 	// namespace is expected
-	if len(strings.TrimSpace(backUp.Namespace)) == 0 {
-		return nil, CodedError(400, fmt.Sprintf("Failed to get backup '%v': missing namespace", backUp.Spec.BackupName))
+	if len(strings.TrimSpace(backup.Namespace)) == 0 {
+		return nil, CodedError(400, fmt.Sprintf("Failed to get backup '%v': missing namespace", backup.Spec.BackupName))
 	}
 
 	// volume name is expected
-	if len(strings.TrimSpace(backUp.Spec.VolumeName)) == 0 {
-		return nil, CodedError(400, fmt.Sprintf("Failed to get backup '%v': missing volume name", backUp.Spec.BackupName))
+	if len(strings.TrimSpace(backup.Spec.VolumeName)) == 0 {
+		return nil, CodedError(400, fmt.Sprintf("Failed to get backup '%v': missing volume name", backup.Spec.BackupName))
 	}
 
-	backUp.Name = backUp.Spec.SnapName + "-" + backUp.Spec.VolumeName
-	backUpObj, err := bOps.clientset.OpenebsV1alpha1().
-		CStorBackups(backUp.Namespace).
-		Get(backUp.Name, metav1.GetOptions{})
+	backup.Name = backup.Spec.SnapName + "-" + backup.Spec.VolumeName
+	backupObj, err := bOps.clientset.OpenebsV1alpha1().
+		CStorBackups(backup.Namespace).
+		Get(backup.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, CodedError(400, fmt.Sprintf("Failed to fetch backup error:%v", err))
 	}
 
-	if !isBackupCompleted(backUpObj) {
-		cspiName := backUpObj.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
+	if !isBackupCompleted(backupObj) {
+		cspiName := backupObj.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
 		// check if node is running or not
-		backUpNodeDown := checkIfPoolManagerNodeDown(bOps.k8sclientset, cspiName)
+		backupNodeDown := checkIfPoolManagerNodeDown(bOps.k8sclientset, cspiName, bOps.namespace)
 		// check if cstor-pool-mgmt container is running or not
-		backUpPodDown := checkIfPoolManagerDown(bOps.k8sclientset, cspiName)
+		backupPodDown := checkIfPoolManagerDown(bOps.k8sclientset, cspiName, bOps.namespace)
 
-		if backUpNodeDown || backUpPodDown {
+		if backupNodeDown || backupPodDown {
 			// Backup is stalled, let's find last completed-backup status
-			laststat := findLastBackupStat(bOps.clientset, backUpObj)
+			laststat := findLastBackupStat(bOps.clientset, backupObj)
 			// Update Backup status according to last completed-backup
-			updateBackupStatus(bOps.clientset, backUpObj, laststat)
+			updateBackupStatus(bOps.clientset, backupObj, laststat)
 
 			// Get updated backup object
-			backUpObj, err = bOps.clientset.OpenebsV1alpha1().CStorBackups(backUp.Namespace).Get(backUp.Name, metav1.GetOptions{})
+			backupObj, err = bOps.clientset.OpenebsV1alpha1().CStorBackups(backup.Namespace).Get(backup.Name, metav1.GetOptions{})
 			if err != nil {
 				return nil, CodedError(400, fmt.Sprintf("Failed to fetch backup error:%v", err))
 			}
 		}
 	}
 
-	out, err := json.Marshal(backUpObj)
+	out, err := json.Marshal(backupObj)
 	if err == nil {
 		_, err = bOps.resp.Write(out)
 		if err != nil {
@@ -288,46 +305,32 @@ func (bOps *backupAPIOps) deleteBackup(backup, volname, ns, schedule string) err
 }
 
 // backupCreateRequestValidations validates the backup create request
-func backupCreateRequestValidations(backUp *openebsapis.CStorBackup) error {
+func backupCreateRequestValidations(backup *openebsapis.CStorBackup) error {
 	// backup name is expected
-	if len(strings.TrimSpace(backUp.Spec.BackupName)) == 0 {
+	if len(strings.TrimSpace(backup.Spec.BackupName)) == 0 {
 		return CodedError(400, fmt.Sprintf("Failed to create backup: missing backup name "))
 	}
 
 	// namespace is expected
-	if len(strings.TrimSpace(backUp.Namespace)) == 0 {
-		return CodedError(400, fmt.Sprintf("Failed to create backup '%v': missing namespace", backUp.Spec.BackupName))
+	if len(strings.TrimSpace(backup.Namespace)) == 0 {
+		return CodedError(400, fmt.Sprintf("Failed to create backup '%v': missing namespace", backup.Spec.BackupName))
 	}
 
 	// volume name is expected
-	if len(strings.TrimSpace(backUp.Spec.VolumeName)) == 0 {
-		return CodedError(400, fmt.Sprintf("Failed to create backup '%v': missing volume name", backUp.Spec.BackupName))
+	if len(strings.TrimSpace(backup.Spec.VolumeName)) == 0 {
+		return CodedError(400, fmt.Sprintf("Failed to create backup '%v': missing volume name", backup.Spec.BackupName))
 	}
 
 	// backupIP is expected for remote snapshot
-	if !backUp.Spec.LocalSnap && len(strings.TrimSpace(backUp.Spec.BackupDest)) == 0 {
-		return CodedError(400, fmt.Sprintf("Failed to create backup '%v': missing backupIP", backUp.Spec.BackupName))
+	if !backup.Spec.LocalSnap && len(strings.TrimSpace(backup.Spec.BackupDest)) == 0 {
+		return CodedError(400, fmt.Sprintf("Failed to create backup '%v': missing backupIP", backup.Spec.BackupName))
 	}
 
 	// snapshot name is expected
-	if len(strings.TrimSpace(backUp.Spec.SnapName)) == 0 {
-		return CodedError(400, fmt.Sprintf("Failed to create backup '%v': missing snapName", backUp.Spec.BackupName))
+	if len(strings.TrimSpace(backup.Spec.SnapName)) == 0 {
+		return CodedError(400, fmt.Sprintf("Failed to create backup '%v': missing snapName", backup.Spec.BackupName))
 	}
 	return nil
-}
-
-// getVolumeIP fetches the cstor target service IP Address
-func getVolumeIP(volumeName string, clientset clientset.Interface) (string, error) {
-	namespace := getOpenEBSNamespace()
-
-	// Fetch the corresponding cstorvolume
-	cstorvolume, err := clientset.CstorV1().CStorVolumes(namespace).
-		Get(volumeName, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	return cstorvolume.Spec.TargetIP, nil
 }
 
 // getOpenEBSNamespace returns namespace where
@@ -343,10 +346,9 @@ func getOpenEBSNamespace() string {
 // it will return error
 func findHealthyCVR(
 	openebsClient clientset.Interface,
-	volume string) (*cstorapis.CStorVolumeReplica, error) {
-	namespace := getOpenEBSNamespace()
+	volume, namespace string) (*cstorapis.CStorVolumeReplica, error) {
 	listOptions := metav1.ListOptions{
-		LabelSelector: "openebs.io/persistent-volume=" + volume,
+		LabelSelector: cstortypes.PersistentVolumeLabelKey + "=" + volume,
 	}
 
 	cvrList, err := openebsClient.CstorV1().CStorVolumeReplicas(namespace).List(listOptions)
@@ -365,10 +367,10 @@ func findHealthyCVR(
 }
 
 // getLastBackupSnap will fetch the last successful backup's snapshot name
-func (bOps *backupAPIOps) getLastBackupSnap(backUp *openebsapis.CStorBackup) (string, error) {
-	lastbkpName := backUp.Spec.BackupName + "-" + backUp.Spec.VolumeName
+func (bOps *backupAPIOps) getLastBackupSnap(backup *openebsapis.CStorBackup) (string, error) {
+	lastbkpName := backup.Spec.BackupName + "-" + backup.Spec.VolumeName
 	b, err := bOps.clientset.OpenebsV1alpha1().
-		CStorCompletedBackups(backUp.Namespace).
+		CStorCompletedBackups(backup.Namespace).
 		Get(lastbkpName, metav1.GetOptions{})
 	if err != nil {
 		if k8serror.IsNotFound(err) {
@@ -376,12 +378,12 @@ func (bOps *backupAPIOps) getLastBackupSnap(backUp *openebsapis.CStorBackup) (st
 			bk := &openebsapis.CStorCompletedBackup{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      lastbkpName,
-					Namespace: backUp.Namespace,
-					Labels:    backUp.Labels,
+					Namespace: backup.Namespace,
+					Labels:    backup.Labels,
 				},
 				Spec: openebsapis.CStorBackupSpec{
-					BackupName: backUp.Spec.BackupName,
-					VolumeName: backUp.Spec.VolumeName,
+					BackupName: backup.Spec.BackupName,
+					VolumeName: backup.Spec.VolumeName,
 				},
 			}
 
@@ -401,17 +403,17 @@ func (bOps *backupAPIOps) getLastBackupSnap(backUp *openebsapis.CStorBackup) (st
 }
 
 // checkIfPoolManagerNodeDown will check if CSPI pool manager is in running or not
-func checkIfPoolManagerNodeDown(k8sclient kubernetes.Interface, cspiName string) bool {
+func checkIfPoolManagerNodeDown(k8sclient kubernetes.Interface, cspiName, namespace string) bool {
 	var nodeDown = true
 	var pod *corev1.Pod
 	var err error
 
 	// If cspiName is not empty then fetch the CStor pool pod using CSPI name
 	if cspiName == "" {
-		klog.Errorf("failed to find pool manager empty CSPI is provided")
+		klog.Errorf("failed to find pool manager, empty CSPI is provided")
 		return nodeDown
 	}
-	pod, err = fetchPoolManagerFromCSPI(k8sclient, cspiName)
+	pod, err = fetchPoolManagerFromCSPI(k8sclient, cspiName, namespace)
 	if err != nil {
 		klog.Errorf("Failed to find pool manager for CSPI:%s err:%s", cspiName, err.Error())
 		return nodeDown
@@ -437,17 +439,17 @@ func checkIfPoolManagerNodeDown(k8sclient kubernetes.Interface, cspiName string)
 }
 
 // checkIfPoolManagerDown will check if pool pod is running or not
-func checkIfPoolManagerDown(k8sclient kubernetes.Interface, cspiName string) bool {
+func checkIfPoolManagerDown(k8sclient kubernetes.Interface, cspiName, namespace string) bool {
 	var podDown = true
 	var pod *corev1.Pod
 	var err error
 
 	// If cspiName is not empty then fetch the CStor pool pod using CSPI name
 	if cspiName == "" {
-		klog.Errorf("failed to find pool manager empty CSPI is provided")
+		klog.Errorf("failed to find pool manager, empty CSPI is provided")
 		return podDown
 	}
-	pod, err = fetchPoolManagerFromCSPI(k8sclient, cspiName)
+	pod, err = fetchPoolManagerFromCSPI(k8sclient, cspiName, namespace)
 	if err != nil {
 		klog.Errorf("Failed to find pool manager for CSPI:%s err:%s", cspiName, err.Error())
 		return podDown
@@ -463,9 +465,9 @@ func checkIfPoolManagerDown(k8sclient kubernetes.Interface, cspiName string) boo
 }
 
 // findLastBackupStat will find the status of given backup from last completed-backup
-func findLastBackupStat(clientset clientset.Interface, backUp *openebsapis.CStorBackup) openebsapis.CStorBackupStatus {
-	lastbkpname := backUp.Spec.BackupName + "-" + backUp.Spec.VolumeName
-	lastbkp, err := clientset.OpenebsV1alpha1().CStorCompletedBackups(backUp.Namespace).Get(lastbkpname, metav1.GetOptions{})
+func findLastBackupStat(clientset clientset.Interface, backup *openebsapis.CStorBackup) openebsapis.CStorBackupStatus {
+	lastbkpname := backup.Spec.BackupName + "-" + backup.Spec.VolumeName
+	lastbkp, err := clientset.OpenebsV1alpha1().CStorCompletedBackups(backup.Namespace).Get(lastbkpname, metav1.GetOptions{})
 	if err != nil {
 		// Unable to fetch the last backup, so we will return fail state
 		klog.Errorf("Failed to fetch last completed-backup:%s error:%s", lastbkpname, err.Error())
@@ -474,7 +476,7 @@ func findLastBackupStat(clientset clientset.Interface, backUp *openebsapis.CStor
 
 	// lastbkp stores the last(PrevSnapName) and 2nd last(SnapName) completed snapshot
 	// let's check if last backup's snapname/PrevSnapName  matches with current snapshot name
-	if backUp.Spec.SnapName == lastbkp.Spec.SnapName || backUp.Spec.SnapName == lastbkp.Spec.PrevSnapName {
+	if backup.Spec.SnapName == lastbkp.Spec.SnapName || backup.Spec.SnapName == lastbkp.Spec.PrevSnapName {
 		return openebsapis.BKPCStorStatusDone
 	}
 
@@ -483,25 +485,24 @@ func findLastBackupStat(clientset clientset.Interface, backUp *openebsapis.CStor
 }
 
 // updateBackupStatus will update the backup status to given status
-func updateBackupStatus(clientset clientset.Interface, backUp *openebsapis.CStorBackup, status openebsapis.CStorBackupStatus) {
-	backUp.Status = status
+func updateBackupStatus(clientset clientset.Interface, backup *openebsapis.CStorBackup, status openebsapis.CStorBackupStatus) {
+	backup.Status = status
 
-	_, err := clientset.OpenebsV1alpha1().CStorBackups(backUp.Namespace).Update(backUp)
+	_, err := clientset.OpenebsV1alpha1().CStorBackups(backup.Namespace).Update(backup)
 	if err != nil {
-		klog.Errorf("Failed to update backup:%s with status:%v", backUp.Name, status)
+		klog.Errorf("Failed to update backup:%s with status:%v", backup.Name, status)
 		return
 	}
 }
 
 // fetchPoolManagerFromCSPI returns pool manager pod for provided CSPI
-func fetchPoolManagerFromCSPI(k8sclientset kubernetes.Interface, cspiName string) (*corev1.Pod, error) {
+func fetchPoolManagerFromCSPI(k8sclientset kubernetes.Interface, cspiName, openebsNs string) (*corev1.Pod, error) {
 	cstorPodLabel := "app=cstor-pool"
 	cspiPoolName := cstortypes.CStorPoolInstanceLabelKey + "=" + cspiName
 	podlistops := metav1.ListOptions{
 		LabelSelector: cstorPodLabel + "," + cspiPoolName,
 	}
 
-	openebsNs := getOpenEBSNamespace()
 	if openebsNs == "" {
 		return nil, errors.Errorf("Failed to fetch operator namespace")
 	}
@@ -521,24 +522,24 @@ func fetchPoolManagerFromCSPI(k8sclientset kubernetes.Interface, cspiName string
 // TODO: Move below functions into API because there kind of getter methods.
 
 // isBackupCompleted returns true if backup execution is completed
-func isBackupCompleted(backUp *openebsapis.CStorBackup) bool {
-	if isBackupFailed(backUp) || isBackupSucceeded(backUp) {
+func isBackupCompleted(backup *openebsapis.CStorBackup) bool {
+	if isBackupFailed(backup) || isBackupSucceeded(backup) {
 		return true
 	}
 	return false
 }
 
 // isBackupFailed returns true if backup failed
-func isBackupFailed(backUp *openebsapis.CStorBackup) bool {
-	if backUp.Status == openebsapis.BKPCStorStatusFailed {
+func isBackupFailed(backup *openebsapis.CStorBackup) bool {
+	if backup.Status == openebsapis.BKPCStorStatusFailed {
 		return true
 	}
 	return false
 }
 
 // isBackupSucceeded returns true if backup completed successfully
-func isBackupSucceeded(backUp *openebsapis.CStorBackup) bool {
-	if backUp.Status == openebsapis.BKPCStorStatusDone {
+func isBackupSucceeded(backup *openebsapis.CStorBackup) bool {
+	if backup.Status == openebsapis.BKPCStorStatusDone {
 		return true
 	}
 	return false

@@ -554,7 +554,7 @@ func TestBackupGetEndPoint(t *testing.T) {
 			backupObj, err := f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(backupName, metav1.GetOptions{})
 			if err == nil && test.shouldMarkPoolPodDown {
 				cspiName := backupObj.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
-				poolManager, err := fetchPoolManagerFromCSPI(f.k8sClient, cspiName)
+				poolManager, err := fetchPoolManagerFromCSPI(f.k8sClient, cspiName, namespace)
 				if err == nil {
 					for i, containerstatus := range poolManager.Status.ContainerStatuses {
 						if containerstatus.Name == "cstor-pool-mgmt" {
@@ -567,7 +567,7 @@ func TestBackupGetEndPoint(t *testing.T) {
 			}
 			if err == nil && test.shouldMarkPoolPodNodeDown {
 				cspiName := backupObj.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
-				poolManager, err := fetchPoolManagerFromCSPI(f.k8sClient, cspiName)
+				poolManager, err := fetchPoolManagerFromCSPI(f.k8sClient, cspiName, namespace)
 				if err == nil {
 					node, err := f.k8sClient.CoreV1().Nodes().Get(poolManager.Spec.NodeName, metav1.GetOptions{})
 					if err == nil {

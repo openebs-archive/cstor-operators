@@ -23,12 +23,11 @@ import (
 	"sync"
 	"time"
 
-	restorecontroller "github.com/openebs/cstor-operators/pkg/controllers/restore-controller"
-
 	backupcontroller "github.com/openebs/cstor-operators/pkg/controllers/backup-controller"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	cspicontroller "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller"
 	replicacontroller "github.com/openebs/cstor-operators/pkg/controllers/replica-controller"
+	restorecontroller "github.com/openebs/cstor-operators/pkg/controllers/restore-controller"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/pkg/errors"
 	"k8s.io/klog"

@@ -413,7 +413,7 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 			Namespace: rOps.namespace,
 			Labels: map[string]string{
 				cstortypes.CStorPoolClusterLabelKey: scObj.Parameters["cstorPoolCluster"],
-				"openebs.io/source-volume":          restoreObj.Spec.VolumeName,
+				"openebs.io/source-volume":          restoreObj.Spec.RestoreSrc,
 			},
 			Annotations: map[string]string{
 				"openebs.io/volumeID":      restoreObj.Spec.VolumeName,

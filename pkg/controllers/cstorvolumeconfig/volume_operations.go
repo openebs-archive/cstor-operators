@@ -360,6 +360,12 @@ func (c *CVCController) distributeCVRs(
 	}
 
 	if len(policy.Spec.ReplicaPoolInfo) != 0 {
+		if len(policy.Spec.ReplicaPoolInfo) != claim.Spec.Provision.ReplicaCount {
+			return errors.Errorf("failed to distribute cvrs: incorrect number of pool names in cvc policy: expected %d got %d",
+				claim.Spec.Provision.ReplicaCount,
+				len(policy.Spec.ReplicaPoolInfo),
+			)
+		}
 		poolList = getPolicyBasedPoolList(poolList, policy.Spec.ReplicaPoolInfo)
 	}
 
@@ -379,6 +385,9 @@ func (c *CVCController) distributeCVRs(
 	// prioritized pool instances matched to the given
 	// nodeName in case of replica affinity is enabled via cstor volume policy
 	if c.isReplicaAffinityEnabled(policy) {
+		c.recorder.Eventf(claim, corev1.EventTypeNormal, Provisioning,
+			"replica affinity is enabled, nodeID is "+claim.Publish.NodeID,
+		)
 		usablePoolList = prioritizedPoolList(claim.Publish.NodeID, usablePoolList)
 	}
 

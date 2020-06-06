@@ -324,6 +324,7 @@ func getPolicyBasedPoolList(
 					policyBasedList.Items,
 					pool,
 				)
+				break
 			}
 		}
 	}

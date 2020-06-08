@@ -19,7 +19,6 @@ package v1
 import (
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/api/pkg/util"
@@ -40,11 +39,7 @@ const (
 	CStorVolumeReplicaFinalizer = "cstorvolumereplica.openebs.io/finalizer"
 )
 
-var (
-	// ConfFileMutex is to hold the lock while updating istgt.conf file
-	ConfFileMutex = &sync.Mutex{}
-)
-
+// NewCStorVolumeConfig returns new instance of CStorVolumeConfig
 func NewCStorVolumeConfig() *CStorVolumeConfig {
 	return &CStorVolumeConfig{}
 }
@@ -83,7 +78,7 @@ func (cvc *CStorVolumeConfig) WithAnnotations(annotations map[string]string) *CS
 	return cvc
 }
 
-// WithLacvelsNew sets the Lacvels field of CVC with provided arguments
+// WithLabelsNew sets the Lacvels field of CVC with provided arguments
 func (cvc *CStorVolumeConfig) WithLabelsNew(labels map[string]string) *CStorVolumeConfig {
 	cvc.Labels = make(map[string]string)
 	for key, value := range labels {
@@ -92,7 +87,7 @@ func (cvc *CStorVolumeConfig) WithLabelsNew(labels map[string]string) *CStorVolu
 	return cvc
 }
 
-// WithLacvels appends or overwrites existing Lacvels
+// WithLabels appends or overwrites existing Lacvels
 // values of CVC with provided arguments
 func (cvc *CStorVolumeConfig) WithLabels(labels map[string]string) *CStorVolumeConfig {
 	if cvc.Labels == nil {
@@ -165,6 +160,7 @@ func IsScaleDownInProgress(cv *CStorVolume) bool {
 //
 // **************************************************************************
 
+// NewCStorVolume returns new instance of CStorVolume
 func NewCStorVolume() *CStorVolume {
 	return &CStorVolume{}
 }
@@ -208,7 +204,7 @@ func (cv *CStorVolume) WithAnnotations(annotations map[string]string) *CStorVolu
 	return cv
 }
 
-// WithLacvelsNew sets the Lacvels field of CV with provided arguments
+// WithLabelsNew sets the Lacvels field of CV with provided arguments
 func (cv *CStorVolume) WithLabelsNew(labels map[string]string) *CStorVolume {
 	cv.Labels = make(map[string]string)
 	for key, value := range labels {
@@ -217,7 +213,7 @@ func (cv *CStorVolume) WithLabelsNew(labels map[string]string) *CStorVolume {
 	return cv
 }
 
-// WithLacvels appends or overwrites existing Lacvels
+// WithLabels appends or overwrites existing Lacvels
 // values of CVC with provided arguments
 func (cv *CStorVolume) WithLabels(labels map[string]string) *CStorVolume {
 	if cv.Labels == nil {
@@ -229,7 +225,7 @@ func (cv *CStorVolume) WithLabels(labels map[string]string) *CStorVolume {
 	return cv
 }
 
-// WithFinalizer sets the finalizer field in the CV
+// WithFinalizers sets the finalizer field in the CV
 func (cv *CStorVolume) WithFinalizers(finalizers ...string) *CStorVolume {
 	cv.Finalizers = append(cv.Finalizers, finalizers...)
 	return cv
@@ -324,9 +320,9 @@ func (cv *CStorVolume) RemoveFinalizer(finalizer string) {
 }
 
 // IsResizePending return true if resize is in progress
-func (c *CStorVolume) IsResizePending() bool {
-	curCapacity := c.Status.Capacity
-	desiredCapacity := c.Spec.Capacity
+func (cv *CStorVolume) IsResizePending() bool {
+	curCapacity := cv.Status.Capacity
+	desiredCapacity := cv.Spec.Capacity
 	// Cmp returns 0 if the curCapacity is equal to desiredCapacity,
 	// -1 if the curCapacity is less than desiredCapacity, or 1 if the
 	// curCapacity is greater than desiredCapacity.
@@ -337,12 +333,12 @@ func (c *CStorVolume) IsResizePending() bool {
 // Steps to verify whether drf is required
 // 1. Read DesiredReplicationFactor configurations from istgt conf file
 // 2. Compare the value with spec.DesiredReplicationFactor and return result
-func (c *CStorVolume) IsDRFPending() bool {
+func (cv *CStorVolume) IsDRFPending() bool {
 	fileOperator := util.RealFileOperator{}
-	ConfFileMutex.Lock()
+	types.ConfFileMutex.Lock()
 	//If it has proper config then we will get --> "  DesiredReplicationFactor 3"
 	i, gotConfig, err := fileOperator.GetLineDetails(types.IstgtConfPath, types.DesiredReplicationFactorKey)
-	ConfFileMutex.Unlock()
+	types.ConfFileMutex.Unlock()
 	if err != nil || i == -1 {
 		klog.Infof("failed to get %s config details error: %v",
 			types.DesiredReplicationFactorKey,
@@ -350,21 +346,21 @@ func (c *CStorVolume) IsDRFPending() bool {
 		)
 		return false
 	}
-	drfStringValue := fmt.Sprintf(" %d", c.Spec.DesiredReplicationFactor)
+	drfStringValue := fmt.Sprintf(" %d", cv.Spec.DesiredReplicationFactor)
 	// gotConfig will have "  DesiredReplicationFactor  3" and we will extract
 	// numeric character from output
 	if !strings.HasSuffix(gotConfig, drfStringValue) {
 		return true
 	}
 	// reconciliation check for replica scaledown scenarion
-	return (len(c.Spec.ReplicaDetails.KnownReplicas) <
-		len(c.Status.ReplicaDetails.KnownReplicas))
+	return (len(cv.Spec.ReplicaDetails.KnownReplicas) <
+		len(cv.Status.ReplicaDetails.KnownReplicas))
 }
 
 // GetCVCondition returns corresponding cstorvolume condition based argument passed
-func (c *CStorVolume) GetCVCondition(
+func (cv *CStorVolume) GetCVCondition(
 	condType CStorVolumeConditionType) CStorVolumeCondition {
-	for _, cond := range c.Status.Conditions {
+	for _, cond := range cv.Status.Conditions {
 		if condType == cond.Type {
 			return cond
 		}
@@ -373,8 +369,8 @@ func (c *CStorVolume) GetCVCondition(
 }
 
 // IsConditionPresent returns true if condition is available
-func (c *CStorVolume) IsConditionPresent(condType CStorVolumeConditionType) bool {
-	for _, cond := range c.Status.Conditions {
+func (cv *CStorVolume) IsConditionPresent(condType CStorVolumeConditionType) bool {
+	for _, cond := range cv.Status.Conditions {
 		if condType == cond.Type {
 			return true
 		}
@@ -384,10 +380,10 @@ func (c *CStorVolume) IsConditionPresent(condType CStorVolumeConditionType) bool
 
 // AreSpecReplicasHealthy return true if all the spec replicas are in Healthy
 // state else return false
-func (c *CStorVolume) AreSpecReplicasHealthy(volStatus *CVStatus) bool {
+func (cv *CStorVolume) AreSpecReplicasHealthy(volStatus *CVStatus) bool {
 	var isReplicaExist bool
 	var replicaInfo ReplicaStatus
-	for _, replicaValue := range c.Spec.ReplicaDetails.KnownReplicas {
+	for _, replicaValue := range cv.Spec.ReplicaDetails.KnownReplicas {
 		isReplicaExist = false
 		for _, replicaInfo = range volStatus.ReplicaStatuses {
 			if replicaInfo.ID == replicaValue {
@@ -403,12 +399,12 @@ func (c *CStorVolume) AreSpecReplicasHealthy(volStatus *CVStatus) bool {
 }
 
 // GetRemovingReplicaID return replicaID that present in status but not in spec
-func (c *CStorVolume) GetRemovingReplicaID() string {
-	for repID := range c.Status.ReplicaDetails.KnownReplicas {
+func (cv *CStorVolume) GetRemovingReplicaID() string {
+	for repID := range cv.Status.ReplicaDetails.KnownReplicas {
 		// If known replica is not exist in spec but if it exist in status then
 		// user/operator selected that replica for removal
 		if _, isReplicaExist :=
-			c.Spec.ReplicaDetails.KnownReplicas[repID]; !isReplicaExist {
+			cv.Spec.ReplicaDetails.KnownReplicas[repID]; !isReplicaExist {
 			return string(repID)
 		}
 	}
@@ -416,9 +412,9 @@ func (c *CStorVolume) GetRemovingReplicaID() string {
 }
 
 // BuildScaleDownConfigData build data based on replica that needs to remove
-func (c *CStorVolume) BuildScaleDownConfigData(repID string) map[string]string {
+func (cv *CStorVolume) BuildScaleDownConfigData(repID string) map[string]string {
 	configData := map[string]string{}
-	newReplicationFactor := c.Spec.DesiredReplicationFactor
+	newReplicationFactor := cv.Spec.DesiredReplicationFactor
 	newConsistencyFactor := (newReplicationFactor / 2) + 1
 	key := fmt.Sprintf("  ReplicationFactor")
 	value := fmt.Sprintf("  ReplicationFactor %d", newReplicationFactor)
@@ -428,7 +424,7 @@ func (c *CStorVolume) BuildScaleDownConfigData(repID string) map[string]string {
 	configData[key] = value
 	key = fmt.Sprintf("  DesiredReplicationFactor")
 	value = fmt.Sprintf("  DesiredReplicationFactor %d",
-		c.Spec.DesiredReplicationFactor)
+		cv.Spec.DesiredReplicationFactor)
 	configData[key] = value
 	key = fmt.Sprintf("  Replica %s", repID)
 	value = fmt.Sprintf("")
@@ -486,6 +482,7 @@ func GetResizeCondition() CStorVolumeCondition {
 //
 //
 // ****************************************************************************
+
 // SetErrorStatus sets the message and reason for the error
 func (vs *VersionStatus) SetErrorStatus(msg string, err error) {
 	vs.Message = msg
@@ -516,6 +513,7 @@ func (vd *VersionDetails) SetSuccessStatus() {
 //
 // **************************************************************************
 
+// NewCStorVolumeReplica returns new instance of CStorVolumeReplica
 func NewCStorVolumeReplica() *CStorVolumeReplica {
 	return &CStorVolumeReplica{}
 }
@@ -554,7 +552,7 @@ func (cvr *CStorVolumeReplica) WithAnnotations(annotations map[string]string) *C
 	return cvr
 }
 
-// WithLacvrelsNew sets the Lacvrels field of CV with provided arguments
+// WithLabelsNew sets the Lacvrels field of CV with provided arguments
 func (cvr *CStorVolumeReplica) WithLabelsNew(labels map[string]string) *CStorVolumeReplica {
 	cvr.Labels = make(map[string]string)
 	for key, value := range labels {
@@ -563,7 +561,7 @@ func (cvr *CStorVolumeReplica) WithLabelsNew(labels map[string]string) *CStorVol
 	return cvr
 }
 
-// WithLacvrels appends or overwrites existing Lacvrels
+// WithLabels appends or overwrites existing Lacvrels
 // values of CVC with provided arguments
 func (cvr *CStorVolumeReplica) WithLabels(labels map[string]string) *CStorVolumeReplica {
 	if cvr.Labels == nil {
@@ -575,7 +573,7 @@ func (cvr *CStorVolumeReplica) WithLabels(labels map[string]string) *CStorVolume
 	return cvr
 }
 
-// WithFinalizer sets the finalizer field in the CV
+// WithFinalizers sets the finalizer field in the CV
 func (cvr *CStorVolumeReplica) WithFinalizers(finalizers ...string) *CStorVolumeReplica {
 	cvr.Finalizers = append(cvr.Finalizers, finalizers...)
 	return cvr

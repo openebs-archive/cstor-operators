@@ -44,7 +44,7 @@ github.com/json-iterator/go
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/openebs/api v1.10.0-RC1.0.20200602151240-2b7d2bdbe1ef
+# github.com/openebs/api v1.10.0-RC1.0.20200608150240-08b494f77b77
 github.com/openebs/api/pkg/apis/cstor
 github.com/openebs/api/pkg/apis/cstor/v1
 github.com/openebs/api/pkg/apis/openebs.io

@@ -452,6 +452,11 @@ func (c *CVCController) createCVR(
 		annotations[string(apis.SnapshotNameKey)] = snapName
 		labels[string(apis.CloneEnableKEY)] = isClone
 	}
+	// Set isRestoreVol annotation on CVR if CVC has
+	// "openebs.io/created-through: restore" annotation
+	if value := claim.GetAnnotations()["openebs.io/created-through"]; value == "restore" {
+		annotations["isRestoreVol"] = "true"
+	}
 	cvrObj, err := c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
 		Get(volume.Name+"-"+string(pool.Name), metav1.GetOptions{})
 

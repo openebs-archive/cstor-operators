@@ -115,6 +115,23 @@ spec:
         - name:  OPENEBS_IO_VOLUME_MONITOR_IMAGE
           value: "openebs/m-exporter:ci"
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cvc-operator-service
+  namespace: openebs
+  labels:
+    openebs.io/component-name: cvc-operator-svc
+spec:
+  ports:
+  - name: api
+    port: 5757
+    protocol: TCP
+    targetPort: 5757
+  selector:
+    name: cvc-operator
+  sessionAffinity: None
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

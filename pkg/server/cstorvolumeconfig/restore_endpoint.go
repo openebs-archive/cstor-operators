@@ -361,48 +361,10 @@ func validateStorageClassParameters(scObj *storagev1.StorageClass) error {
 	return nil
 }
 
-// getNodeID returns the node name either from node topology only topology is
-// specified in the storageclass or from pool manager nodes
-func (rOps *restoreAPIOps) getNodeID(scObj *storagev1.StorageClass) (string, error) {
-	var labelKey, labelValue string
-	cspcName := scObj.Parameters["cstorPoolCluster"]
-	if len(scObj.AllowedTopologies) != 0 {
-		labelKey = scObj.AllowedTopologies[0].MatchLabelExpressions[0].Key
-		labelValue = scObj.AllowedTopologies[0].MatchLabelExpressions[0].Values[0]
-	} else {
-		cspiList, err := rOps.clientset.CstorV1().
-			CStorPoolInstances(rOps.namespace).
-			List(metav1.ListOptions{
-				LabelSelector: cstortypes.CStorPoolClusterLabelKey + "=" + cspcName,
-			})
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to list CSPI of CSPC %s", cspcName)
-		}
-		if len(cspiList.Items) == 0 {
-			return "", errors.Errorf("no cspi exists for CSPC %s", cspcName)
-		}
-		labelKey = cstortypes.HostNameLabelKey
-		labelValue = cspiList.Items[0].Spec.HostName
-	}
-
-	nodeList, err := rOps.k8sclientset.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: labelKey + "=" + labelValue})
-	if err != nil {
-		return "", errors.Wrapf(err, "falied to list nodes which has %s:%s label", labelKey, labelValue)
-	}
-	if len(nodeList.Items) == 0 {
-		return "", errors.Errorf("no nodes exists for provided label %s:%s", labelKey, labelValue)
-	}
-	return nodeList.Items[0].Name, nil
-}
-
 // buildCStorVolumeConfig build the CVC from StorageClass and restoreObject
 // NOTE: This function will be called only in case of local restore request
 func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 	scObj *storagev1.StorageClass, restoreObj *openebsapis.CStorRestore) (*cstor.CStorVolumeConfig, error) {
-	nodeID, err := rOps.getNodeID(scObj)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get nodeID")
-	}
 	replicaCount, _ := strconv.Atoi(scObj.Parameters["replicaCount"])
 
 	// Build CStorVolumeConfig
@@ -434,9 +396,6 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 			// If CStorVolumeSource is mentioned then CVC controller treat it as a clone request
 			// CStorVolumeSource contains the source volumeName@snapShotname
 			CStorVolumeSource: restoreObj.Spec.RestoreSrc + "@" + restoreObj.Spec.RestoreName,
-		},
-		Publish: cstor.CStorVolumeConfigPublish{
-			NodeID: nodeID,
 		},
 		VersionDetails: cstor.VersionDetails{
 			Status: cstor.VersionStatus{

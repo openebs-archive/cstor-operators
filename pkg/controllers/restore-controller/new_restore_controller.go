@@ -200,7 +200,7 @@ func (c *RestoreController) handleRSTUpdateEvent(oldrst, newrst *apis.CStorResto
 
 // cleanupOldRestore set fail status to old pending restore
 func (c *RestoreController) cleanupOldRestore(clientset clientset.Interface) {
-	rstlabel := types.CStorPoolInstanceUIDLabelKey + "=" + os.Getenv(string(common.OpenEBSIOCStorID))
+	rstlabel := types.CStorPoolInstanceUIDLabelKey + "=" + os.Getenv(string(common.OpenEBSIOCSPIID))
 	rstlistop := metav1.ListOptions{
 		LabelSelector: rstlabel,
 	}

@@ -139,9 +139,6 @@ type QueueLoad struct {
 type Environment string
 
 const (
-	// OpenEBSIOCStorID is the environment variable specified in pod.
-	OpenEBSIOCStorID Environment = "OPENEBS_IO_CSTOR_ID"
-	// OpenEBSIOCSPIID is cstorpoolinstance name as environment variable
 	// specified in pool instance pods.
 	OpenEBSIOCSPIID Environment = "OPENEBS_IO_CSPI_ID"
 	// OpenEBSIOPoolName is cstorpoolcluster name as environment variable

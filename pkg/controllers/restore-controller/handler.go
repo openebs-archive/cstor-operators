@@ -190,7 +190,7 @@ func IsFailedStatus(rst *apis.CStorRestore) bool {
 
 // IsRightCStorPoolMgmt is to check if the restore request is for particular pod/application.
 func IsRightCStorPoolMgmt(rst *apis.CStorRestore) bool {
-	if os.Getenv(string(common.OpenEBSIOCStorID)) == rst.ObjectMeta.Labels[types.CStorPoolInstanceUIDLabelKey] {
+	if os.Getenv(string(common.OpenEBSIOCSPIID)) == rst.ObjectMeta.Labels[types.CStorPoolInstanceUIDLabelKey] {
 		return true
 	}
 	return false

@@ -467,6 +467,7 @@ func (c *CVCController) createCVR(
 			cvrObj.Name,
 		)
 	}
+	capacity := claim.Spec.Provision.Capacity[corev1.ResourceStorage]
 	if k8serror.IsNotFound(err) {
 		cvrObj = apis.NewCStorVolumeReplica().
 			WithName(volume.Name + "-" + pool.Name).
@@ -476,7 +477,7 @@ func (c *CVCController) createCVR(
 			WithFinalizers(getCVRFinalizer()).
 			WithTargetIP(service.Spec.ClusterIP).
 			WithReplicaID(rInfo.replicaID).
-			WithCapacity(volume.Spec.Capacity.String()).
+			WithCapacity(capacity.String()).
 			WithNewVersion(version.GetVersion()).
 			WithDependentsUpgraded().
 			WithStatusPhase(rInfo.phase)

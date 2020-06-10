@@ -484,10 +484,6 @@ func (c *CStorVolumeReplicaController) getVolumeReplicaResource(
 // IsRightCStorVolumeReplica is to check if the cvr
 // request is for particular pod/application.
 func IsRightCStorVolumeReplica(cVR *apis.CStorVolumeReplica) bool {
-	if strings.TrimSpace(string(cVR.ObjectMeta.Labels["cstorpool.openebs.io/uid"])) != "" {
-		return os.Getenv(string(common.OpenEBSIOCStorID)) ==
-			string(cVR.ObjectMeta.Labels["cstorpool.openebs.io/uid"])
-	}
 	if strings.TrimSpace(string(cVR.ObjectMeta.Labels["cstorpoolinstance.openebs.io/uid"])) != "" {
 		return os.Getenv(string(common.OpenEBSIOCSPIID)) ==
 			string(cVR.ObjectMeta.Labels["cstorpoolinstance.openebs.io/uid"])

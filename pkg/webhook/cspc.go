@@ -41,7 +41,7 @@ import (
 type PoolValidator struct {
 	poolSpec  *cstor.PoolSpec
 	namespace string
-	nodeName  string
+	hostName  string
 	cspcName  string
 	clientset clientset.Interface
 }
@@ -98,7 +98,7 @@ func (b *Builder) withClientset(c clientset.Interface) *Builder {
 // withPoolNodeName sets the node name field of poolValidator with provided
 // values
 func (b *Builder) withPoolNodeName(nodeName string) *Builder {
-	b.object.nodeName = nodeName
+	b.object.hostName = nodeName
 	return b
 }
 
@@ -389,7 +389,7 @@ func (poolValidator *PoolValidator) raidGroupValidation(
 	return true, ""
 }
 
-func validateBlockDevice(bd *openebsapis.BlockDevice, nodeName string) error {
+func validateBlockDevice(bd *openebsapis.BlockDevice, hostName string) error {
 	if bd.Status.State != "Active" {
 		return errors.Errorf(
 			"block device is in not in active state",
@@ -400,11 +400,11 @@ func validateBlockDevice(bd *openebsapis.BlockDevice, nodeName string) error {
 			bd.Spec.FileSystem.Type,
 		)
 	}
-	if bd.Spec.NodeAttributes.NodeName != nodeName {
+	if bd.Labels[types.HostNameLabelKey] != hostName {
 		return errors.Errorf(
 			"block device %s doesn't belongs to node %s",
 			bd.Name,
-			bd.Spec.NodeAttributes.NodeName,
+			bd.Labels[types.HostNameLabelKey],
 		)
 	}
 	return nil
@@ -427,7 +427,7 @@ func (poolValidator *PoolValidator) blockDeviceValidation(
 			err,
 		)
 	}
-	err = validateBlockDevice(bdObj, poolValidator.nodeName)
+	err = validateBlockDevice(bdObj, poolValidator.hostName)
 
 	if err != nil {
 		return false, fmt.Sprintf("%v", err)

@@ -77,6 +77,9 @@ type CVCController struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
+
+	// used for unit testing
+	enqueueCVCConfig func(cvc interface{})
 }
 
 // CVCControllerBuilder is the builder object for controller.

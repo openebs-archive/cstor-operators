@@ -21,4 +21,19 @@ package zfs
 type VolumeMocker struct {
 	PoolName    string
 	Compression string
+	// TestConfig holds the Volume test related information
+	TestConfig TestConfig
+}
+
+// TestConfig holds the the test configuration based on this
+// configuration zfs utility commands will return error
+type TestConfig struct {
+	ZFSCommand ZFSCommandError
+	Replicas   int
+}
+
+// ZfsCommandError used to inject the errors in various ZFS commands
+// It will help to mock the zfs command behaviour
+type ZFSCommandError struct {
+	ZFSStatsError bool
 }

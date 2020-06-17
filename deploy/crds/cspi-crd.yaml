@@ -42,6 +42,14 @@ spec:
       name: ReadOnly
       description: Identifies the pool read only mode
       type: boolean
+    - JSONPath: .status.provisionedReplicas
+      name: ProvisionedReplicas
+      description: Represents no.of replicas present in the pool
+      type: integer
+    - JSONPath: .status.healthyReplicas
+      name: HealthyReplicas
+      description: Represents no.of healthy replicas present in the pool
+      type: integer
     - JSONPath: .spec.poolConfig.dataRaidGroupType
       name: Type
       description: The type of the storage pool

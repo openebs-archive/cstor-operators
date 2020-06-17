@@ -25,7 +25,6 @@ import (
 
 	"github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 )
 
 const (
@@ -133,7 +132,7 @@ func (v *VolumeList) Execute() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	klog.Infof("[DEBUG] %s", v.Command)
+
 	if IsExecutorSet()(v) {
 		out, err = v.Executor.Execute(v.Command)
 	} else {

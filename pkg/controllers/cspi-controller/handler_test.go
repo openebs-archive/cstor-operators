@@ -35,6 +35,7 @@ import (
 	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	"github.com/openebs/cstor-operators/pkg/controllers/testutil"
 	executor "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/executor"
+	zfs "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/zfs"
 	zpool "github.com/openebs/cstor-operators/pkg/controllers/testutil/zcmd/zpool"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
@@ -96,8 +97,10 @@ type testConfig struct {
 	ejectErrorCount int
 	// time interval to trigger reconciliation
 	loopDelay time.Duration
-	// poolInfo will usefull to execute pool commands
+	// poolInfo will usefull to execute zpool commands
 	poolInfo *zpool.PoolMocker
+	// volumeInfo will usefull to execute zfs commands
+	volumeInfo *zfs.VolumeMocker
 	// shouldPoolOperationInProgress it can be set to true only when
 	// errors were injected in ZPOOL commands. If the value is enabled
 	// it will verify whether the pool operations are in porgress or not
@@ -131,14 +134,17 @@ func NoResyncPeriodFunc() time.Duration {
 
 // newCSPIController returns a fake cspi controller
 func (f *fixture) newCSPIController(
-	poolInfo *zpool.PoolMocker) (*CStorPoolInstanceController, openebsinformers.SharedInformerFactory, *record.FakeRecorder, error) {
+	testConfig *testConfig) (*CStorPoolInstanceController, openebsinformers.SharedInformerFactory, *record.FakeRecorder, error) {
 	//// Load kubernetes client set by preloading with k8s objects.
 	//f.k8sClient = fake.NewSimpleClientset(f.k8sObjects...)
-	//
+
 	//// Load openebs client set by preloading with openebs objects.
 	//f.openebsClient = openebsFakeClientset.NewSimpleClientset(f.openebsObjects...)
+	if testConfig.volumeInfo == nil {
+		testConfig.volumeInfo = &zfs.VolumeMocker{}
+	}
 
-	fakeZCMDExecutor := executor.NewFakeZCommandFromPoolMocker(poolInfo)
+	fakeZCMDExecutor := executor.NewFakeZCommandFromMockers(testConfig.poolInfo, testConfig.volumeInfo)
 
 	cspiInformerFactory := openebsinformers.NewSharedInformerFactory(f.openebsClient, NoResyncPeriodFunc())
 	//cspiInformerFactory := informers.NewSharedInformerFactory(openebsClient, getSyncInterval())
@@ -328,7 +334,7 @@ func (f *fixture) replaceBlockDevices(
 	oldToNewBlockDeviceMap map[string]string) error {
 	cspcName := cspi.GetLabels()[string(types.CStorPoolClusterLabelKey)]
 	// Replace old blockdevice with new blockdevice if exist in Data RaidGroup
-	for rgIndex, _ := range cspi.Spec.DataRaidGroups {
+	for rgIndex := range cspi.Spec.DataRaidGroups {
 		for bdIndex, cspiBD := range cspi.Spec.DataRaidGroups[rgIndex].CStorPoolInstanceBlockDevices {
 			if newBDName, ok := oldToNewBlockDeviceMap[cspiBD.BlockDeviceName]; ok {
 				cspi.Spec.DataRaidGroups[rgIndex].
@@ -338,7 +344,7 @@ func (f *fixture) replaceBlockDevices(
 		}
 	}
 	// Replace old blockdevice with new blockdevice if exist in WriteCache RaidGroup
-	for rgIndex, _ := range cspi.Spec.WriteCacheRaidGroups {
+	for rgIndex := range cspi.Spec.WriteCacheRaidGroups {
 		for bdIndex, cspiBD := range cspi.Spec.WriteCacheRaidGroups[rgIndex].CStorPoolInstanceBlockDevices {
 			if newBDName, ok := oldToNewBlockDeviceMap[cspiBD.BlockDeviceName]; ok {
 				cspi.Spec.WriteCacheRaidGroups[rgIndex].
@@ -434,7 +440,7 @@ func (f *fixture) run(cspiName string) {
 		loopDelay: time.Second * 0,
 		poolInfo:  nil,
 	}
-	f.run_(cspiName, true, false, testConfig)
+	f.run_(cspiName, true, false, &testConfig)
 }
 
 // run_ is responsible for executing sync call
@@ -442,10 +448,10 @@ func (f *fixture) run_(
 	cspiName string,
 	startInformers bool,
 	expectError bool,
-	testConfig testConfig) {
+	testConfig *testConfig) {
 	isCSPIUpdated := false
 	ejectErrorCount := testConfig.ejectErrorCount
-	c, informers, recorder, err := f.newCSPIController(testConfig.poolInfo)
+	c, informers, recorder, err := f.newCSPIController(testConfig)
 	if err != nil {
 		f.t.Fatalf("error creating cspi controller: %v", err)
 	}
@@ -469,6 +475,10 @@ func (f *fixture) run_(
 			// Eject all zpool command errors which were inserted during test configuration
 			// time
 			testConfig.poolInfo.TestConfig.ZpoolCommand = zpool.ZpoolCommandError{}
+			// For pool testcases volumeInfo mightnot be initilized
+			if testConfig.volumeInfo != nil {
+				testConfig.volumeInfo.TestConfig.ZFSCommand = zfs.ZFSCommandError{}
+			}
 		}
 
 		err = c.reconcile(cspiName)
@@ -490,7 +500,7 @@ func (f *fixture) run_(
 		if testConfig.isDay2OperationNeedToPerform && !isCSPIUpdated {
 			// Fill the corresponding day2 operations snippet
 
-			err := f.updateCSPIToPerformDay2Operation(cspiName, testConfig)
+			err := f.updateCSPIToPerformDay2Operation(cspiName, *testConfig)
 			if err != nil {
 				// We can do retries also
 				f.t.Errorf("Failed to update CSPI %s to perform day2-operations error: %v", cspiName, err.Error())
@@ -556,7 +566,7 @@ func isAllBlockDevicesMarked(bdMap map[string]bool) (bool, string) {
 // verifyCSPIAutoGeneratedSpec verifies whether cspi is
 // updated with correct device links
 func (f *fixture) verifyCSPIAutoGeneratedSpec(
-	cspi *cstor.CStorPoolInstance, tConfig testConfig) error {
+	cspi *cstor.CStorPoolInstance, tConfig *testConfig) error {
 	newDataBlockDeviceMap := getBlockDeviceMapFromRaidGroups(tConfig.dataRaidGroups)
 	err := f.verifyDeviceLinksInRaidGroups(cspi.Spec.DataRaidGroups, newDataBlockDeviceMap)
 	if err != nil {
@@ -603,7 +613,7 @@ func isStatusConditionMatched(
 // verifyCSPI status verifies whether status of CSPI and returns
 // error if any of the fileds are zero
 func (f *fixture) verifyCSPIStatus(
-	cspi *cstor.CStorPoolInstance, tConfig testConfig) error {
+	cspi *cstor.CStorPoolInstance, tConfig *testConfig) error {
 	if cspi.Status.Phase == "" {
 		return errors.Errorf("CSPI %s phase is empty", cspi.Name)
 	}
@@ -628,7 +638,7 @@ func (f *fixture) verifyCSPIStatus(
 }
 
 // isPoolOperationPending returns true if pool operation is InProgress else return false
-func (f *fixture) isPoolOperationPending(cspiName string, tConfig testConfig) (bool, string) {
+func (f *fixture) isPoolOperationPending(cspiName string, tConfig *testConfig) (bool, string) {
 	ns, name, err := cache.SplitMetaNamespaceKey(cspiName)
 	if err != nil {
 		return false, err.Error()
@@ -802,7 +812,7 @@ func TestCSPIFinalizerRemoval(t *testing.T) {
 			// Create a CSPI to persist it in a fake store
 			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(test.cspi)
 
-			f.run_(testutil.GetKey(test.cspi, t), true, test.expectError, test.testConfig)
+			f.run_(testutil.GetKey(test.cspi, t), true, test.expectError, &test.testConfig)
 
 			cspi, err := f.openebsClient.CstorV1().CStorPoolInstances(test.cspi.Namespace).Get(test.cspi.Name, metav1.GetOptions{})
 			if err != nil {
@@ -844,7 +854,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 		cspi                         *cstor.CStorPoolInstance
 		shouldVerifyCSPIAutoGenerate bool
 		shouldVerifyCSPIStatus       bool
-		testConfig                   testConfig
+		testConfig                   *testConfig
 	}{
 		"Stripe Pool Provisioning Without WriteCache RaidGroup": {
 			cspi: cstor.NewCStorPoolInstance().
@@ -863,7 +873,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
 				poolInfo:  &zpool.PoolMocker{},
@@ -894,7 +904,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
 				poolInfo:  &zpool.PoolMocker{},
@@ -929,7 +939,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
 				poolInfo:  &zpool.PoolMocker{},
@@ -976,7 +986,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
 				poolInfo:  &zpool.PoolMocker{},
@@ -1019,7 +1029,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
 				poolInfo:  &zpool.PoolMocker{},
@@ -1068,7 +1078,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 3,
 				loopDelay: time.Microsecond * 100,
 				poolInfo:  &zpool.PoolMocker{},
@@ -1145,7 +1155,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 		shouldVerifyCSPIAutoGenerate bool
 		shouldVerifyCSPIStatus       bool
 		expectedPoolOperationPending bool
-		testConfig                   testConfig
+		testConfig                   *testConfig
 	}{
 		"Provision Stripe Pool And Expand DataRaidGroup": {
 			cspi: cstor.NewCStorPoolInstance().
@@ -1164,7 +1174,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
 				poolInfo:                     &zpool.PoolMocker{},
@@ -1203,7 +1213,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
 				poolInfo:                     &zpool.PoolMocker{},
@@ -1246,7 +1256,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
 				poolInfo:                     &zpool.PoolMocker{},
@@ -1282,7 +1292,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
 				poolInfo:                     &zpool.PoolMocker{},
@@ -1317,7 +1327,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
 				poolInfo:                     &zpool.PoolMocker{},
@@ -1356,7 +1366,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
 				poolInfo:                     &zpool.PoolMocker{},
@@ -1396,7 +1406,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
 				poolInfo:                     &zpool.PoolMocker{},
@@ -1432,7 +1442,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount:                    4,
 				loopDelay:                    time.Microsecond * 100,
 				poolInfo:                     &zpool.PoolMocker{},
@@ -1464,7 +1474,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 5,
 				// In 4th iteration expanding will be successfull
 				// In 5th iteration device links will be updated
@@ -1505,7 +1515,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			shouldVerifyCSPIAutoGenerate: false,
 			shouldVerifyCSPIStatus:       false,
 			expectedPoolOperationPending: true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 4,
 				// Expansion operation shouldn't be succeeded
 				ejectErrorCount:               5,
@@ -1595,7 +1605,7 @@ func TestCSPIBlockDeviceReplacement(t *testing.T) {
 		shouldVerifyCSPIAutoGenerate bool
 		shouldVerifyCSPIStatus       bool
 		expectedPoolOperationPending bool
-		testConfig                   testConfig
+		testConfig                   *testConfig
 	}{
 		"Provision Mirror Pool And Replace BlockDevice": {
 			cspi: cstor.NewCStorPoolInstance().
@@ -1622,7 +1632,7 @@ func TestCSPIBlockDeviceReplacement(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 4,
 				loopDelay: time.Microsecond * 100,
 				poolInfo: &zpool.PoolMocker{
@@ -1681,7 +1691,7 @@ func TestCSPIBlockDeviceReplacement(t *testing.T) {
 				WithNewVersion(version.GetVersion()),
 			shouldVerifyCSPIAutoGenerate: true,
 			shouldVerifyCSPIStatus:       true,
-			testConfig: testConfig{
+			testConfig: &testConfig{
 				loopCount: 4,
 				loopDelay: time.Microsecond * 100,
 				poolInfo: &zpool.PoolMocker{
@@ -1748,10 +1758,232 @@ func TestCSPIBlockDeviceReplacement(t *testing.T) {
 					t.Errorf("Expected pool operation to be in pending state but %s", msg)
 				}
 			} else {
-				if ok, msg := f.isReplacementMarksExists(test.testConfig); ok {
+				if ok, msg := f.isReplacementMarksExists(*test.testConfig); ok {
 					t.Errorf("Expected not to have any replacement marks but %s", msg)
 				}
 			}
+		})
+	}
+	os.Unsetenv(string(common.OpenEBSIOPoolName))
+	os.Unsetenv(util.Namespace)
+}
+
+/* -------------------------------------------------------------------------------------------------------------
+   |                                                                                                            |
+   |                                                                                                            |
+   |                                   **Test CSPI Status**                                                     |
+   |                                                                                                            |
+   |                                                                                                            |
+   -------------------------------------------------------------------------------------------------------------
+*/
+
+func TestCSPIStatus(t *testing.T) {
+	f := newFixture(t)
+	f.SetFakeClient()
+	f.createFakeBlockDevices(25, "node1")
+	f.fakeNodeCreator("node1")
+	tests := map[string]struct {
+		cspi                  *cstor.CStorPoolInstance
+		testConfig            *testConfig
+		isExpectedEmptyStatus bool
+		isReplicaInfoExpected bool
+	}{
+		"Provision Stripe Pool and Check CSPI status": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-foo-stripe").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-foo-stripe"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("stripe")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-1"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			testConfig: &testConfig{
+				loopCount: 4,
+				loopDelay: time.Microsecond * 100,
+				poolInfo:  &zpool.PoolMocker{},
+				volumeInfo: &zfs.VolumeMocker{
+					TestConfig: zfs.TestConfig{
+						HealthyReplicas:     10,
+						ProvisionedReplicas: 5,
+					},
+				},
+			},
+			isReplicaInfoExpected: true,
+		},
+		"Provision Stripe Pool and return error for zfs list": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-bar-stripe").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-bar-stripe"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("stripe")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-2"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			testConfig: &testConfig{
+				loopCount: 4,
+				loopDelay: time.Microsecond * 100,
+				poolInfo:  &zpool.PoolMocker{},
+				volumeInfo: &zfs.VolumeMocker{
+					TestConfig: zfs.TestConfig{
+						HealthyReplicas:     1,
+						ProvisionedReplicas: 2,
+						ZFSCommand: zfs.ZFSCommandError{
+							ZFSListError: true,
+						},
+					},
+				},
+				ejectErrorCount: 5,
+			},
+			isReplicaInfoExpected: false,
+		},
+		"Provision Stripe Pool and return error for zfs stats": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-foo-1").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-foo1"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("stripe")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-3"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			testConfig: &testConfig{
+				loopCount: 4,
+				loopDelay: time.Microsecond * 100,
+				poolInfo:  &zpool.PoolMocker{},
+				volumeInfo: &zfs.VolumeMocker{
+					TestConfig: zfs.TestConfig{
+						HealthyReplicas:     1,
+						ProvisionedReplicas: 2,
+						ZFSCommand: zfs.ZFSCommandError{
+							ZFSStatsError: true,
+						},
+					},
+				},
+				ejectErrorCount: 5,
+			},
+			isReplicaInfoExpected: false,
+		},
+		"Provision Stripe Pool and eject the fake error in zfs list at 3 iteration": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-foo-2").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-foo2"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("stripe")).
+				WithDataRaidGroups([]cstor.RaidGroup{{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{BlockDeviceName: "blockdevice-4"},
+					},
+				},
+				}).
+				WithNewVersion(version.GetVersion()),
+			testConfig: &testConfig{
+				loopCount: 4,
+				loopDelay: time.Microsecond * 100,
+				poolInfo:  &zpool.PoolMocker{},
+				volumeInfo: &zfs.VolumeMocker{
+					TestConfig: zfs.TestConfig{
+						HealthyReplicas:     1,
+						ProvisionedReplicas: 2,
+						ZFSCommand: zfs.ZFSCommandError{
+							ZFSStatsError: true,
+						},
+					},
+				},
+				// Ejecting error at 3rd reconciliation
+				ejectErrorCount: 3,
+			},
+			isReplicaInfoExpected: true,
+		},
+	}
+
+	os.Setenv(string(common.OpenEBSIOPoolName), "1234")
+	os.Setenv(util.Namespace, "openebs")
+	common.Init()
+	for name, test := range tests {
+		name := name
+		test := test
+		t.Run(name, func(t *testing.T) {
+			provisionedReplicas :=
+				test.testConfig.volumeInfo.TestConfig.ProvisionedReplicas +
+					test.testConfig.volumeInfo.TestConfig.HealthyReplicas
+			healthyReplicas := test.testConfig.volumeInfo.TestConfig.HealthyReplicas
+			test.cspi.Kind = "CStorPoolInstance"
+			// Create a CSPI to persist it in a fake store
+			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(test.cspi)
+			// Create claims for blockdevices exist on cspi
+			err := f.prepareCSPIForDeploying(test.cspi)
+			if err != nil {
+				t.Errorf("Test: %q failed to prepare pools %s", name, err.Error())
+			}
+			f.run_(testutil.GetKey(test.cspi, t), true, false, test.testConfig)
+
+			// CSPI controller is to create pools and manage it using zpool/zfs
+			// command line utility. Since there is no real zrepl process is
+			// running we can cspi status
+			cspi, err := f.openebsClient.
+				CstorV1().
+				CStorPoolInstances(test.cspi.Namespace).
+				Get(test.cspi.Name, metav1.GetOptions{})
+			if err != nil {
+				t.Errorf("error getting cspc %s: %v", cspi.Name, err)
+			}
+			if !test.isExpectedEmptyStatus {
+				err = f.verifyCSPIStatus(cspi, test.testConfig)
+				if err != nil {
+					t.Errorf("Test: %q validation failed %s", name, err.Error())
+				}
+				if test.isReplicaInfoExpected {
+					if cspi.Status.ProvisionedReplicas != int32(provisionedReplicas) {
+						t.Errorf("CSPI %s expected to have %d provisioned replicas but got %d",
+							name,
+							provisionedReplicas,
+							cspi.Status.ProvisionedReplicas,
+						)
+					}
+					if cspi.Status.HealthyReplicas != int32(healthyReplicas) {
+						t.Errorf("CSPI %s expected to have %d healthy replicas but got %d",
+							name,
+							healthyReplicas,
+							cspi.Status.HealthyReplicas,
+						)
+					}
+				} else {
+					if cspi.Status.ProvisionedReplicas != int32(0) {
+						t.Errorf("CSPI %s expected to have %d provisioned replicas but got %d",
+							name,
+							0,
+							cspi.Status.ProvisionedReplicas,
+						)
+					}
+					if cspi.Status.HealthyReplicas != int32(0) {
+						t.Errorf("CSPI %s expected to have %d healthy replicas but got %d",
+							name,
+							0,
+							cspi.Status.HealthyReplicas,
+						)
+					}
+				}
+			}
+
 		})
 	}
 	os.Unsetenv(string(common.OpenEBSIOPoolName))

@@ -25,7 +25,7 @@ import (
 
 var (
 	// Below are possible states reported by zfs
-	replicaStates = []string{"Healthy", "Rebuilding", "Degraded", "Offline", ""}
+	replicaStates = []string{"Rebuilding", "Degraded", "Offline", ""}
 )
 
 // GetStats mocks the zfs stats command and returns the error based on the output
@@ -34,9 +34,14 @@ func (volumeMocker *VolumeMocker) GetStats(cmd string) ([]byte, error) {
 		return []byte("fake error to get values"), errors.Errorf("exit status 1")
 	}
 	zStats := zstats.ZFSStats{}
-	for i := 0; i < volumeMocker.TestConfig.Replicas; i++ {
-		name := fmt.Sprintf("volume-%d", i)
-		zStats.Stats = append(zStats.Stats, zstats.Stats{Name: name, Status: replicaStates[i]})
+	for i := 0; i < volumeMocker.TestConfig.ProvisionedReplicas; i++ {
+		index := i % len(replicaStates)
+		name := fmt.Sprintf("ProvisionedVolume-%d", i)
+		zStats.Stats = append(zStats.Stats, zstats.Stats{Name: name, Status: replicaStates[index]})
+	}
+	for i := 0; i < volumeMocker.TestConfig.HealthyReplicas; i++ {
+		name := fmt.Sprintf("HealthyVolume-%d", i)
+		zStats.Stats = append(zStats.Stats, zstats.Stats{Name: name, Status: "Healthy"})
 	}
 	return json.Marshal(zStats)
 }

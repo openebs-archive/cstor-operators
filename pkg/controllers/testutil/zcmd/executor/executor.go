@@ -40,11 +40,12 @@ func NewFakeZCommand() *FakeZcmd {
 	}
 }
 
-// NewFakeZCommandFromPoolMocker returns new instance of FakeZcmd from MockPoolInfo
-func NewFakeZCommandFromPoolMocker(poolMocker *zpool.PoolMocker) *FakeZcmd {
+// NewFakeZCommandFromMockers returns new instance of FakeZcmd from MockPoolInfo
+func NewFakeZCommandFromMockers(poolMocker *zpool.PoolMocker,
+	volumeMocker *zfs.VolumeMocker) *FakeZcmd {
 	return &FakeZcmd{
 		poolMocker:   poolMocker,
-		volumeMocker: &zfs.VolumeMocker{},
+		volumeMocker: volumeMocker,
 	}
 }
 
@@ -92,6 +93,10 @@ func (f *FakeZcmd) executeVolumeCommands(cmd string) ([]byte, error) {
 	switch values[1] {
 	case "get":
 		return f.volumeMocker.GetProperty(cmd)
+	case "list":
+		return f.volumeMocker.ListProperty(cmd)
+	case "stats":
+		return f.volumeMocker.GetStats(cmd)
 	}
 	return []byte(fmt.Sprintf("Please mock zfs %s command", values[1])), errors.Errorf("exit status 1")
 }

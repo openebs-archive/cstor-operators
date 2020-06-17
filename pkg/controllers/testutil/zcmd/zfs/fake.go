@@ -28,12 +28,15 @@ type VolumeMocker struct {
 // TestConfig holds the the test configuration based on this
 // configuration zfs utility commands will return error
 type TestConfig struct {
-	ZFSCommand ZFSCommandError
-	Replicas   int
+	ZFSCommand          ZFSCommandError
+	HealthyReplicas     int
+	ProvisionedReplicas int
 }
 
 // ZfsCommandError used to inject the errors in various ZFS commands
 // It will help to mock the zfs command behaviour
 type ZFSCommandError struct {
 	ZFSStatsError bool
+	ZFSGetError   bool
+	ZFSListError  bool
 }

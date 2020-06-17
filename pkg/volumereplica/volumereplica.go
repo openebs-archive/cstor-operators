@@ -79,7 +79,7 @@ const (
 	// PoolPrefix is the prefix of zpool name.
 	PoolPrefix = "cstor-"
 	// rebuildClone represents the internal clone of zfs dataset
-	rebuildClone = "_rebuild_clone"
+	rebuildCloneSuffix = "_rebuild_clone"
 )
 
 //TODO: Make sense to convert below functions to method
@@ -144,10 +144,12 @@ func getReplicaDataSets(executor bin.Executor) ([]string, error) {
 	}
 	listOutput := strings.Split(string(ret), "\n")
 	outputList := []string{}
+
 	for _, dataSetName := range listOutput {
 		// Below check will skip the pool name and internal clones
+		// created by zrepl
 		if !strings.Contains(dataSetName, "/") ||
-			strings.Contains(dataSetName, rebuildClone) {
+			strings.Contains(dataSetName, rebuildCloneSuffix) {
 			continue
 		}
 		outputList = append(outputList, dataSetName)

@@ -61,7 +61,7 @@ if [ -n "$TRAVIS_TAG" ]; then
     # Example: v1.10.0-custom maps to 1.10.0-custom
     VERSION="${TRAVIS_TAG#v}"
 else
-    VERSION="ci"
+    VERSION="dev"
 fi
 
 echo "Building for VERSION ${VERSION}"

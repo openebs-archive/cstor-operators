@@ -17,6 +17,16 @@
 # This script builds the application from source for multiple platforms.
 set -e
 
+VERSION_FILE_PATH="$GOPATH/src/github.com/openebs/cstor-operators/VERSION"
+
+on_exit() {
+    ## Delete VERSION file
+    echo "Deleteing VERSION File($VERSION_FILE_PATH) that got generated during build time"
+    rm -f "$VERSION_FILE_PATH"
+}
+
+trap 'on_exit' EXIT
+
 # Get the parent directory of where this script is.
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
@@ -39,7 +49,25 @@ if [[ -n "$TRAVIS_TAG" ]] && [[ $TRAVIS_TAG != *"RC"* ]]; then
 fi
 
 # Get the version details
-VERSION="$(cat $GOPATH/src/github.com/openebs/cstor-operators/VERSION)"
+#VERSION="$(cat $GOPATH/src/github.com/openebs/cstor-operators/VERSION)"
+
+## Populate the version based on release tag
+## If travis tag is set then assign it as VERSION and
+## if travis tag is empty then mark version as ci
+if [ -n "$TRAVIS_TAG" ]; then
+    # Trim the `v` from the TRAVIS_TAG if it exists
+    # Example: v1.10.0 maps to 1.10.0
+    # Example: 1.10.0 maps to 1.10.0
+    # Example: v1.10.0-custom maps to 1.10.0-custom
+    VERSION="${TRAVIS_TAG#v}"
+else
+    VERSION="ci"
+fi
+
+echo "Building for VERSION ${VERSION}"
+## Below line will help to get current version for various binaries
+echo "${VERSION}" > "$VERSION_FILE_PATH"
+
 #VERSION=$(git describe --tags --always --dirty)
 
 # Determine the arch/os combos we're building for

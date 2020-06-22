@@ -71,7 +71,7 @@ script:
   # dependencies.
   - ./ci/sanity/install.sh
   # Run the sanity integration test for cstor-operators
-  - ./ci/sanity/sanity.sh
+  # - ./ci/sanity/sanity.sh
 
 after_success:
   - make deploy-images

@@ -492,6 +492,9 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest, getC
 
 	if ok, msg := pOps.ValidateScaledown(); !ok {
 		err = errors.Errorf("invalid cspc specification: %s", msg)
+		// As scale down validation may take more time than the timeout value set
+		// on webhook having a log will help debug
+		klog.Error(err)
 		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusUnprocessableEntity).AR
 		return response
 	}

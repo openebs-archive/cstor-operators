@@ -27,3 +27,5 @@ type CStorBackupExpansion interface{}
 type CStorCompletedBackupExpansion interface{}
 
 type CStorRestoreExpansion interface{}
+
+type UpgradeTaskExpansion interface{}

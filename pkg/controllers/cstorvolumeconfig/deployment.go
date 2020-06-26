@@ -149,6 +149,16 @@ func getDeployTemplateAffinity() *corev1.Affinity {
 	}
 }
 
+// getTargetTemplateAffinity returns affinities for target deployement
+func getTargetTemplateAffinity(policySpec *apis.CStorVolumePolicySpec) *corev1.Affinity {
+	if policySpec.Target.PodAffinity == nil {
+		return &corev1.Affinity{}
+	}
+	return &corev1.Affinity{
+		PodAffinity: policySpec.Target.PodAffinity,
+	}
+}
+
 // getDeployTolerations returns the array of toleration
 // for target deployement, defaulTolerations will be return if not provided
 func getDeployTolerations(policySpec *apis.CStorVolumePolicySpec) []corev1.Toleration {
@@ -377,8 +387,7 @@ func (c *CVCController) BuildTargetDeployment(
 				WithLabelsNew(getDeployTemplateLabels(vol.Name)).
 				WithAnnotationsNew(getDeployTemplateAnnotations()).
 				WithServiceAccountName(util.GetServiceAccountName()).
-				// TODO use of affinity
-				//WithAffinity(getDeployTemplateAffinity()).
+				WithAffinity(getTargetTemplateAffinity(policySpec)).
 				WithPriorityClassName(getPriorityClass(policySpec)).
 				WithNodeSelectorByValue(policySpec.Target.NodeSelector).
 				WithTolerationsNew(getDeployTolerations(policySpec)...).

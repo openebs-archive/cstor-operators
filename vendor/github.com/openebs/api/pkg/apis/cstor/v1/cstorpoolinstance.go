@@ -106,6 +106,12 @@ type CStorPoolInstanceStatus struct {
 	Capacity CStorPoolInstanceCapacity `json:"capacity"`
 	//ReadOnly if pool is readOnly or not
 	ReadOnly bool `json:"readOnly"`
+	// ProvisionedReplicas describes the total count of Volume Replicas
+	// present in the cstor pool
+	ProvisionedReplicas int32 `json:"provisionedReplicas"`
+	// HealthyReplicas describes the total count of healthy Volume Replicas
+	// in the cstor pool
+	HealthyReplicas int32 `json:"healthyReplicas"`
 }
 
 // CStorPoolInstanceCapacity stores the pool capacity related attributes.

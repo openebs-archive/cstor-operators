@@ -21,6 +21,7 @@ import (
 	vcreate "github.com/openebs/cstor-operators/pkg/zcmd/zfs/create"
 	vdestroy "github.com/openebs/cstor-operators/pkg/zcmd/zfs/destroy"
 	vget "github.com/openebs/cstor-operators/pkg/zcmd/zfs/get"
+	vlist "github.com/openebs/cstor-operators/pkg/zcmd/zfs/list"
 	vlistsnap "github.com/openebs/cstor-operators/pkg/zcmd/zfs/listsnap"
 	vsnapshotrecv "github.com/openebs/cstor-operators/pkg/zcmd/zfs/receive"
 	vrename "github.com/openebs/cstor-operators/pkg/zcmd/zfs/rename"
@@ -28,6 +29,7 @@ import (
 	vsnapshotsend "github.com/openebs/cstor-operators/pkg/zcmd/zfs/send"
 	vset "github.com/openebs/cstor-operators/pkg/zcmd/zfs/set"
 	vsnapshot "github.com/openebs/cstor-operators/pkg/zcmd/zfs/snapshot"
+	vstats "github.com/openebs/cstor-operators/pkg/zcmd/zfs/stats"
 
 	padd "github.com/openebs/cstor-operators/pkg/zcmd/zpool/add"
 	pattach "github.com/openebs/cstor-operators/pkg/zcmd/zpool/attach"
@@ -126,6 +128,16 @@ func NewPoolCreate() *pcreate.PoolCreate {
 // NewVolumeGetProperty returns new instance of object VolumeGetProperty
 func NewVolumeGetProperty() *vget.VolumeGetProperty {
 	return &vget.VolumeGetProperty{}
+}
+
+// NewVolumeList returns new instance of object VolumeList
+func NewVolumeList() *vlist.VolumeList {
+	return &vlist.VolumeList{}
+}
+
+// NewVolumeStats returns new instance of object VolumeStats
+func NewVolumeStats() *vstats.VolumeStats {
+	return &vstats.VolumeStats{}
 }
 
 // NewVolumeListSnapshot returns new instance of object VolumeListSnapshot

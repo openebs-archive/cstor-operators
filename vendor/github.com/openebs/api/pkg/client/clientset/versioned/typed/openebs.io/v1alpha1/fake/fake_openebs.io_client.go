@@ -48,6 +48,10 @@ func (c *FakeOpenebsV1alpha1) CStorRestores(namespace string) v1alpha1.CStorRest
 	return &FakeCStorRestores{c, namespace}
 }
 
+func (c *FakeOpenebsV1alpha1) UpgradeTasks(namespace string) v1alpha1.UpgradeTaskInterface {
+	return &FakeUpgradeTasks{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeOpenebsV1alpha1) RESTClient() rest.Interface {

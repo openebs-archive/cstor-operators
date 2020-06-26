@@ -60,14 +60,14 @@ func (poolMocker *PoolMocker) GetProperty(cmd string) ([]byte, error) {
 		}
 
 		if isProperty {
-			output = addToOutput(output, getPropertyValues(val))
+			output = addToOutput(output, poolMocker.TestConfig.getPropertyValues(val))
 		}
 	}
 	return []byte(output), nil
 }
 
 // getPropertyValues returns the values for quaried properties
-func getPropertyValues(command string) string {
+func (tc *TestConfig) getPropertyValues(command string) string {
 	var values string
 	// If command is to get free space in pool
 	if strings.Contains(command, "free") {

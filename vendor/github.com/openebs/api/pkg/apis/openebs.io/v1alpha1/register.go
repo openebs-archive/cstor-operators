@@ -64,6 +64,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CStorCompletedBackupList{},
 		&CStorRestore{},
 		&CStorRestoreList{},
+		&UpgradeTask{},
+		&UpgradeTaskList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

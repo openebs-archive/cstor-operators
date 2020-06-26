@@ -28,6 +28,7 @@ import (
 	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	zpool "github.com/openebs/cstor-operators/pkg/pool/operations"
 	"github.com/openebs/cstor-operators/pkg/version"
+	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -274,6 +275,14 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 		if valueList[1] == "on" {
 			status.ReadOnly = true
 		}
+	}
+
+	provisionedRepCount, healthyRepCount, err := volumereplica.GetProvisionedAndHealthyReplicaCount(c.zcmdExecutor)
+	if err != nil {
+		klog.Errorf("failed to get provisioned and healthy replica count %s", err.Error())
+	} else {
+		status.ProvisionedReplicas = provisionedRepCount
+		status.HealthyReplicas = healthyRepCount
 	}
 
 	status.Capacity, err = oc.GetCSPICapacity(pool)

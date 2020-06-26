@@ -25,8 +25,6 @@ import (
 
 	"github.com/openebs/cstor-operators/pkg/log/alertlog"
 
-	"encoding/json"
-
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	types "github.com/openebs/api/pkg/apis/types"
@@ -36,6 +34,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/util/hash"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
 	bin "github.com/openebs/cstor-operators/pkg/zcmd/bin"
+	zstats "github.com/openebs/cstor-operators/pkg/zcmd/zfs/stats"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -79,34 +78,17 @@ const (
 	PvNameKey = "cstorvolume.openebs.io/name"
 	// PoolPrefix is the prefix of zpool name.
 	PoolPrefix = "cstor-"
+	// rebuildClone represents the internal clone of zfs dataset
+	rebuildCloneSuffix = "_rebuild_clone"
 )
 
-// CvrStats struct is zfs volume status output JSON contract.
-type CvrStats struct {
-	// Stats is an array which holds zfs volume related stats
-	Stats []Stats `json:"stats"`
-}
-
-// Stats contain the zfs volume related stats.
-type Stats struct {
-	// Name of the zfs volume.
-	Name string `json:"name"`
-	// Status of the zfs volume.
-	Status string `json:"status"`
-	// RebuildStatus of the zfs volume.
-	RebuildStatus             string `json:"rebuildStatus"`
-	IsIOAckSenderCreated      int    `json:"isIOAckSenderCreated"`
-	IsIOReceiverCreated       int    `json:"isIOReceiverCreated"`
-	RunningIONum              int    `json:"runningIONum"`
-	CheckpointedIONum         int    `json:"checkpointedIONum"`
-	DegradedCheckpointedIONum int    `json:"degradedCheckpointedIONum"`
-	CheckpointedTime          int    `json:"checkpointedTime"`
-	RebuildBytes              int    `json:"rebuildBytes"`
-	RebuildCnt                int    `json:"rebuildCnt"`
-	RebuildDoneCnt            int    `json:"rebuildDoneCnt"`
-	RebuildFailedCnt          int    `json:"rebuildFailedCnt"`
-	Quorum                    int    `json:"quorum"`
-}
+//TODO: Make sense to convert below functions to method
+// This file is puerly executing zfs commands since zfs
+// is a filesystem we can have some struct name as
+// type VolumeReplica struct {}
+// So methods will be VolumeReplica.Create(), VolumeReplica.GetListOfPropertyValues(),
+// VolumeReplica.GetPropertyValue(), volumereplica.GetStats()
+// get opinion while review and incorporate it
 
 // GetListOfPropertyValues will return value list for given property list
 // NOTE: It will return the property values in the same order as property list
@@ -126,7 +108,96 @@ func GetListOfPropertyValues(dataSetName string, propertyList []string, executor
 	// will lost the property values
 	outStr := strings.Split(string(ret), "\n")
 	return outStr, nil
+}
 
+// GetStats return stats of all the volume replicas present in the pool
+func GetStats(executor bin.Executor) (*zstats.ZFSStats, error) {
+	// executor can be nil
+	zfsStats, err := zcmd.NewVolumeStats().
+		WithExecutor(executor).
+		Execute()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute zfs stats")
+	}
+	return zfsStats, nil
+}
+
+// getReplicaDataSets executes zfs list command and fetch all the
+// dataset present in the pool
+// Command: zfs list -H -o name
+// Sample Output:
+// zfs  list -H -o name
+// cstor-1234
+// cstor-1234/vol1
+// cstor-1234/vol1_rebuild_clone
+// cstor-1234/vol2
+// cstor-1234/vol3
+// From the above output we are filtering clones and pool dataset
+func getReplicaDataSets(executor bin.Executor) ([]string, error) {
+	ret, err := zcmd.NewVolumeList().
+		WithScriptedMode(true).
+		WithProperty("name").
+		WithExecutor(executor).
+		Execute()
+	if err != nil {
+		return []string{}, errors.Wrapf(err, "failed to get replicas present in the pool")
+	}
+	listOutput := strings.Split(string(ret), "\n")
+	outputList := []string{}
+
+	for _, dataSetName := range listOutput {
+		// Below check will skip the pool name and internal clones
+		// created by zrepl
+		if !strings.Contains(dataSetName, "/") ||
+			strings.Contains(dataSetName, rebuildCloneSuffix) {
+			continue
+		}
+		outputList = append(outputList, dataSetName)
+	}
+	return outputList, nil
+}
+
+// GetProvisionedAndHealthyReplicaCount return the count of
+// provisioned and healthy replicas count
+func GetProvisionedAndHealthyReplicaCount(executor bin.Executor) (int32, int32, error) {
+	var provisionedCnt, healthyCnt int32
+	replicaList, err := getReplicaDataSets(executor)
+	if err != nil {
+		return 0, 0, errors.Wrapf(err, "unable to get replicas in pool")
+	}
+	provisionedCnt = int32(len(replicaList))
+	volumeReplicasStats, err := GetStats(executor)
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "Unable to get stats of volume replicas")
+	}
+	for _, vStats := range volumeReplicasStats.Stats {
+		if vStats.Status == ZfsStatusHealthy {
+			healthyCnt++
+		}
+	}
+	return provisionedCnt, healthyCnt, nil
+}
+
+// Status gives the status of cvr which was extracted and
+// mapped to a set of cvr statuses after getting the zfs
+// volume status
+func Status(volumeName string) (string, error) {
+	volumeStats, err := zcmd.NewVolumeStats().
+		WithDataset(volumeName).
+		Execute()
+	if err != nil {
+		klog.Errorf("Unable to get volume stats: %v", err)
+		return "", fmt.Errorf("Unable to get volume stats for volume %s : %s", volumeName, err.Error())
+	}
+	var volumeStatus string
+	if volumeStats != nil && len(volumeStats.Stats) != 0 {
+		volumeStatus = volumeStats.Stats[0].Status
+	}
+	if strings.TrimSpace(volumeStatus) == "" {
+		klog.Warningf("Empty volume status for volume stats: '%+v'", volumeStats)
+	}
+	cvrStatus := ZfsToCvrStatusMapper(volumeStatus, volumeStats.Stats[0].Quorum)
+	return cvrStatus, nil
 }
 
 /*
@@ -506,31 +577,6 @@ func Capacity(volName string) (*cstor.CStorVolumeReplicaCapacityDetails, error) 
 		return nil, fmt.Errorf("unable to get volume capacity from capacity parser")
 	}
 	return poolCapacity, nil
-}
-
-// Status function gives the status of cvr which extracted and mapped to a set of cvr statuses
-// after getting the zfs volume status
-func Status(volumeName string) (string, error) {
-	statusPoolStr := []string{StatsCmd, volumeName}
-	stdoutStderr, err := RunnerVar.RunCombinedOutput(VolumeReplicaOperator, statusPoolStr...)
-	if err != nil {
-		klog.Errorf("Unable to get volume stats: %v", string(stdoutStderr))
-		return "", fmt.Errorf("Unable to get volume stats: %s", err.Error())
-	}
-	volumeStats := &CvrStats{}
-	err = json.Unmarshal(stdoutStderr, volumeStats)
-	if err != nil {
-		return "", fmt.Errorf("Unable to unmarshal volume stats:%s", err)
-	}
-	var volumeStatus string
-	if volumeStats != nil && len(volumeStats.Stats) != 0 {
-		volumeStatus = volumeStats.Stats[0].Status
-	}
-	if strings.TrimSpace(volumeStatus) == "" {
-		klog.Warningf("Empty volume status for volume stats: '%+v'", volumeStats)
-	}
-	cvrStatus := ZfsToCvrStatusMapper(volumeStatus, volumeStats.Stats[0].Quorum)
-	return cvrStatus, nil
 }
 
 // GetVolumeName finds the zctual zfs volume name for the given cvr.

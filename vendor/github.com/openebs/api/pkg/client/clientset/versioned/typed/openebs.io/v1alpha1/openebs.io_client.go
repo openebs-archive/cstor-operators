@@ -31,6 +31,7 @@ type OpenebsV1alpha1Interface interface {
 	CStorBackupsGetter
 	CStorCompletedBackupsGetter
 	CStorRestoresGetter
+	UpgradeTasksGetter
 }
 
 // OpenebsV1alpha1Client is used to interact with features provided by the openebs.io group.
@@ -56,6 +57,10 @@ func (c *OpenebsV1alpha1Client) CStorCompletedBackups(namespace string) CStorCom
 
 func (c *OpenebsV1alpha1Client) CStorRestores(namespace string) CStorRestoreInterface {
 	return newCStorRestores(c, namespace)
+}
+
+func (c *OpenebsV1alpha1Client) UpgradeTasks(namespace string) UpgradeTaskInterface {
+	return newUpgradeTasks(c, namespace)
 }
 
 // NewForConfig creates a new OpenebsV1alpha1Client for the given config.

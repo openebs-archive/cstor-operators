@@ -34,6 +34,8 @@ type Interface interface {
 	CStorCompletedBackups() CStorCompletedBackupInformer
 	// CStorRestores returns a CStorRestoreInformer.
 	CStorRestores() CStorRestoreInformer
+	// UpgradeTasks returns a UpgradeTaskInformer.
+	UpgradeTasks() UpgradeTaskInformer
 }
 
 type version struct {
@@ -70,4 +72,9 @@ func (v *version) CStorCompletedBackups() CStorCompletedBackupInformer {
 // CStorRestores returns a CStorRestoreInformer.
 func (v *version) CStorRestores() CStorRestoreInformer {
 	return &cStorRestoreInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// UpgradeTasks returns a UpgradeTaskInformer.
+func (v *version) UpgradeTasks() UpgradeTaskInformer {
+	return &upgradeTaskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

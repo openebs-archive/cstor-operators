@@ -540,7 +540,7 @@ func (p *PoolOperations) ValidateScaledown() (bool, string) {
 		}
 	}
 	for _, cspiName := range removedPools {
-		// list cvrs in all namespaces
+		// list cvrs in cspc namespaces
 		cvrList, err := p.clientset.CstorV1().CStorVolumeReplicas(p.OldCSPC.Namespace).List(metav1.ListOptions{
 			LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + cspiName,
 		})

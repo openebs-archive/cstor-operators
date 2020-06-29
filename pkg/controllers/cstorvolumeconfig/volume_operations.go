@@ -61,6 +61,7 @@ const (
 type replicaInfo struct {
 	replicaID string
 	phase     apis.CStorVolumeReplicaPhase
+	ioWorkers string
 }
 
 var (
@@ -347,7 +348,8 @@ func (c *CVCController) distributeCVRs(
 		err            error
 	)
 	rInfo := replicaInfo{
-		phase: apis.CVRStatusEmpty,
+		phase:     apis.CVRStatusEmpty,
+		ioWorkers: policy.Spec.Replica.IOWorkers,
 	}
 
 	cspcName := getCSPC(claim)
@@ -478,6 +480,7 @@ func (c *CVCController) createCVR(
 			WithTargetIP(service.Spec.ClusterIP).
 			WithReplicaID(rInfo.replicaID).
 			WithCapacity(capacity.String()).
+			WithZvolWorkers(rInfo.ioWorkers).
 			WithNewVersion(version.GetVersion()).
 			WithDependentsUpgraded().
 			WithStatusPhase(rInfo.phase)
@@ -839,6 +842,7 @@ func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig,
 		rInfo := replicaInfo{
 			replicaID: hash,
 			phase:     apis.CVRStatusRecreate,
+			ioWorkers: cvc.Spec.Policy.Replica.IOWorkers,
 		}
 		_, err = c.createCVR(svcObj, cvObj, cvc, cspiObj, rInfo)
 		if err != nil {

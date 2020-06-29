@@ -606,6 +606,18 @@ func (cvr *CStorVolumeReplica) WithReplicaID(replicaID string) *CStorVolumeRepli
 	return cvr
 }
 
+// WithZvolWorkers sets the zvolworkers with the provided arguments
+func (cvr *CStorVolumeReplica) WithZvolWorkers(zvolworker string) *CStorVolumeReplica {
+	cvr.Spec.ZvolWorkers = zvolworker
+	return cvr
+}
+
+// WithCWithCompression sets the compression algorithm with the provided arguments
+func (cvr *CStorVolumeReplica) WithCompression(compression string) *CStorVolumeReplica {
+	cvr.Spec.Compression = compression
+	return cvr
+}
+
 // WithStatusPhase sets the Status Phase of CStorVolumeReplica with provided
 //arguments
 func (cvr *CStorVolumeReplica) WithStatusPhase(phase CStorVolumeReplicaPhase) *CStorVolumeReplica {

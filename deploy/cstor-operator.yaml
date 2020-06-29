@@ -172,3 +172,5 @@ spec:
                   fieldPath: metadata.namespace
             - name: ADMISSION_WEBHOOK_NAME
               value: "openebs-cstor-admission-server"
+            - name: ADMISSION_WEBHOOK_FAILURE_POLICY
+              value: "Fail"

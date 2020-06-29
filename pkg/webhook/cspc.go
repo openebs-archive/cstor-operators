@@ -32,6 +32,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog"
 )
 
@@ -488,6 +489,16 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest, getC
 		return response
 	}
 	pOps := NewPoolOperations(wh.kubeClient, wh.clientset).WithNewCSPC(&cspcNew).WithOldCSPC(cspcOld)
+
+	if ok, msg := pOps.ValidateScaledown(); !ok {
+		err = errors.Errorf("invalid cspc specification: %s", msg)
+		// As scale down validation may take more time than the timeout value set
+		// on webhook having a log will help debug
+		klog.Error(err)
+		response = BuildForAPIObject(response).UnSetAllowed().WithResultAsFailure(err, http.StatusUnprocessableEntity).AR
+		return response
+	}
+
 	commonPoolSpec, err := getCommonPoolSpecs(&cspcNew, cspcOld, wh.kubeClient)
 
 	if err != nil {
@@ -502,4 +513,64 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest, getC
 	}
 
 	return response
+}
+
+// ValidateScaledown validates whether any cvr exist on the cspi
+// that is being scaled down
+func (p *PoolOperations) ValidateScaledown() (bool, string) {
+	removedPools := []string{}
+	for _, oldPool := range p.OldCSPC.Spec.Pools {
+		found := false
+		for _, newPool := range p.NewCSPC.Spec.Pools {
+			if reflect.DeepEqual(oldPool.NodeSelector, newPool.NodeSelector) {
+				found = true
+				break
+			}
+		}
+		if !found && p.IsScaledownCase(oldPool) {
+			cspi, err := p.clientset.CstorV1().CStorPoolInstances(p.OldCSPC.Namespace).
+				List(metav1.ListOptions{
+					LabelSelector: labels.SelectorFromSet(oldPool.NodeSelector).String() + "," +
+						types.CStorPoolClusterLabelKey + "=" + p.OldCSPC.Name,
+				})
+			if err != nil {
+				return false, fmt.Sprintf("Could not list cspi for cspc %s: %s", p.OldCSPC.Name, err.Error())
+			}
+			removedPools = append(removedPools, cspi.Items[0].Name)
+		}
+	}
+	for _, cspiName := range removedPools {
+		// list cvrs in cspc namespaces
+		cvrList, err := p.clientset.CstorV1().CStorVolumeReplicas(p.OldCSPC.Namespace).List(metav1.ListOptions{
+			LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + cspiName,
+		})
+		if err != nil {
+			return false, fmt.Sprintf("Could not list cvr for cspi %s: %s", cspiName, err.Error())
+		}
+		if len(cvrList.Items) != 0 {
+			return false, fmt.Sprintf("volume still exists on pool %s", cspiName)
+		}
+	}
+	return true, ""
+}
+
+// IsScaledownCase checks whether it is scale down case or the node selector
+// for an exsiting pool got changed.
+func (p *PoolOperations) IsScaledownCase(oldPool cstor.PoolSpec) bool {
+	bdMap := map[string]int{}
+	for _, newPool := range p.NewCSPC.Spec.Pools {
+		for _, newRg := range append(newPool.DataRaidGroups, newPool.WriteCacheRaidGroups...) {
+			for _, newBD := range newRg.CStorPoolInstanceBlockDevices {
+				bdMap[newBD.BlockDeviceName]++
+			}
+		}
+	}
+	for _, oldRg := range append(oldPool.DataRaidGroups, oldPool.WriteCacheRaidGroups...) {
+		for _, oldBD := range oldRg.CStorPoolInstanceBlockDevices {
+			if bdMap[oldBD.BlockDeviceName] > 0 {
+				return false
+			}
+		}
+	}
+	return true
 }

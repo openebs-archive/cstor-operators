@@ -60,20 +60,11 @@ if [ -n "$TRAVIS_TAG" ]; then
     # Example: v1.10.0-custom maps to 1.10.0-custom
     VERSION="${TRAVIS_TAG#v}"
 else
-    ## Counting dots in CURRENT_BRANCH. If it is
-    ## release branch then it will have more than
-    ## one dot(.) because we are following release
-    ## branch naming convention as v1.10.x, v0.9.x
-    ## v2.0.x, v1.0.x
-
-    ## If we compare with master then local building
-    ## will have unknown version
-    dot_count=$(echo "${CURRENT_BRANCH}" | grep -o "\." | wc -l)
-    if [ "${dot_count}" -gt 1 ]; then
-        VERSION="${CURRENT_BRANCH#v}-dev"
-    else
-        VERSION="dev"
-    fi
+    ## Marking VERSION as current_branch-dev
+    ## Example: master branch maps to master-dev
+    ## Example: v1.11.x-ee branch to 1.11.x-ee-dev
+    ## Example: v1.10.x branch to 1.10.x-dev
+    VERSION="${CURRENT_BRANCH#v}-dev"
 fi
 
 echo "Building for ${VERSION} VERSION"

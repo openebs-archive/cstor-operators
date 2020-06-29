@@ -162,7 +162,13 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 
 	var err error
 
-	cvc, err = c.reconcileVersion(cvc)
+	updatedCVC, err := c.populateVersion(cvc)
+	if err != nil {
+		klog.Errorf("failed to add versionDetails to CVC %s in namesapce %s :{%s}", cvc.Name, cvc.Namespace, err.Error())
+		return nil
+	}
+
+	cvc, err = c.reconcileVersion(updatedCVC)
 	if err != nil {
 		message := fmt.Sprintf("Failed to upgrade cvc to %s version: %s",
 			cvc.VersionDetails.Desired,
@@ -894,6 +900,32 @@ func (c *CVCController) reconcileVersion(cvc *apis.CStorVolumeConfig) (*apis.CSt
 			return cvc, errors.Wrap(err, "failed to update cvc")
 		}
 		return cvcObj, nil
+	}
+	return cvc, nil
+}
+
+// populateVersion assigns VersionDetails for CVC object
+func (c *CVCController) populateVersion(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
+	if cvc.VersionDetails.Status.Current == "" {
+		version := version.Current()
+
+		cvc.VersionDetails.Status.Current = version
+		// For newly created CVC Desired field will also be empty
+		cvc.VersionDetails.Desired = version
+		cvc.VersionDetails.Status.DependentsUpgraded = true
+		obj, err := c.clientset.CstorV1().
+			CStorVolumeConfigs(cvc.Namespace).
+			Update(cvc)
+
+		if err != nil {
+			return nil, errors.Wrapf(
+				err,
+				"failed to update cvc %s while adding versiondetails",
+				cvc.Name,
+			)
+		}
+		klog.Infof("Version %s added on cvc %s", version, cvc.Name)
+		return obj, nil
 	}
 	return cvc, nil
 }

@@ -417,7 +417,7 @@ func getISCSIPersistentVolumeSource(
 	volumeName, namespace string, clientset clientset.Interface) (interface{}, error) {
 	cvObj, err := clientset.CstorV1().CStorVolumes(namespace).Get(volumeName, metav1.GetOptions{})
 	if err != nil {
-		klog.Errorf("Failed to get %s volume details", volumeName)
+		klog.Errorf("Failed to get volume details %s in namespace %s", volumeName, namespace)
 		return nil, err
 	}
 	iscsiPVSrc := &corev1.ISCSIPersistentVolumeSource{

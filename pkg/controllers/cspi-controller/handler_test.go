@@ -134,7 +134,7 @@ func NoResyncPeriodFunc() time.Duration {
 
 // newCSPIController returns a fake cspi controller
 func (f *fixture) newCSPIController(
-	testConfig *testConfig) (*CStorPoolInstanceController, openebsinformers.SharedInformerFactory, *record.FakeRecorder, error) {
+	testConfig *testConfig) (*CStorPoolInstanceController, openebsinformers.SharedInformerFactory, error) {
 	//// Load kubernetes client set by preloading with k8s objects.
 	//f.k8sClient = fake.NewSimpleClientset(f.k8sObjects...)
 
@@ -166,7 +166,7 @@ func (f *fixture) newCSPIController(
 	}
 
 	// returning recorder to print cspi controller events
-	return controller, cspiInformerFactory, recorder, nil
+	return controller, cspiInformerFactory, nil
 }
 
 // CreateFakeBlockDevices creates the fake blockdevices
@@ -451,7 +451,7 @@ func (f *fixture) run_(
 	testConfig *testConfig) {
 	isCSPIUpdated := false
 	ejectErrorCount := testConfig.ejectErrorCount
-	c, informers, recorder, err := f.newCSPIController(testConfig)
+	c, informers, err := f.newCSPIController(testConfig)
 	if err != nil {
 		f.t.Fatalf("error creating cspi controller: %v", err)
 	}
@@ -460,13 +460,14 @@ func (f *fixture) run_(
 		defer close(stopCh)
 		informers.Start(stopCh)
 	}
-	defer func(recorder *record.FakeRecorder) {
+	defer func(recorderInterface record.EventRecorder) {
+		recorder := recorderInterface.(*record.FakeRecorder)
 		close(recorder.Events)
-	}(recorder)
+	}(c.recorder)
 
 	// Waitgroup for starting pool and VolumeReplica controller goroutines.
 	// var wg sync.WaitGroup
-	go printEvent(recorder)
+	go printEvent(c.recorder)
 
 	for i := 0; i < testConfig.loopCount; i++ {
 
@@ -688,7 +689,8 @@ func (f *fixture) isReplacementMarksExists(testConfig testConfig) (bool, string)
 }
 
 // printEvent prints the events reported by controller
-func printEvent(recorder *record.FakeRecorder) {
+func printEvent(recorderInterface record.EventRecorder) {
+	recorder := recorderInterface.(*record.FakeRecorder)
 	rocket := html.UnescapeString("&#128640;")
 	warning := html.UnescapeString("&#10071;")
 	for {

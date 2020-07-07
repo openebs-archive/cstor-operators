@@ -6,7 +6,7 @@ import (
 
 var (
 	validCurrentVersions = map[string]bool{
-		"1.9.0": true, "1.10.0": true,
+		"1.9.0": true, "1.10.0": true, "1.11.0": true,
 	}
 	validDesiredVersion = strings.Split(GetVersion(), "-")[0]
 )

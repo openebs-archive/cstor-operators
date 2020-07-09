@@ -393,7 +393,7 @@ func (poolValidator *PoolValidator) raidGroupValidation(
 func validateBlockDevice(bd *openebsapis.BlockDevice, hostName string) error {
 	if bd.Status.State != "Active" {
 		return errors.Errorf(
-			"block device is in not in active state",
+			"block device %q is in not in active state", bd.Name,
 		)
 	}
 	if bd.Spec.FileSystem.Type != "" {

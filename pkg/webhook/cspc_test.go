@@ -25,6 +25,7 @@ import (
 	openebsapi "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	openebsapifake "github.com/openebs/api/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1/fake"
 	"github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	kubeFakeClient "k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/klog"
 )
 
@@ -1127,6 +1129,7 @@ func TestCSPCScaleDown(t *testing.T) {
 			getCSPCObj:  getCSPCObject,
 		},
 	}
+
 	// Set OPENEBS_NAMESPACE env
 	os.Setenv("OPENEBS_NAMESPACE", "openebs")
 	for name, test := range tests {
@@ -1187,6 +1190,502 @@ func TestCSPCScaleDown(t *testing.T) {
 				)
 			}
 		})
+	}
+
+	// Set OPENEBS_NAMESPACE env
+	os.Unsetenv("OPENEBS_NAMESPACE")
+}
+
+func TestCSPCProvisioning(t *testing.T) {
+	// f := newFixture().withOpenebsObjects().withKubeObjects()
+	// f.fakeNodeCreator(3)
+	// // Each node will have 30 blockdevices
+	// // Since we are not claiming the blockdevices so
+	// // we can reuse the blockdevices
+	// f.fakeBlockDeviceCreator(90, 3)
+	tests := map[string]struct {
+		requestedObj           *cstor.CStorPoolCluster
+		expectedRsp            bool
+		shouldInjectBDGetError bool
+	}{
+		"Stripe pool provisioning": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe1").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-34"),
+								),
+						),
+				),
+			expectedRsp: true,
+		},
+		"Mirror pool provisioning": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-mirror1").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("mirror").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-61"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-62"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-63"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-64"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						),
+				),
+			expectedRsp: true,
+		},
+		"Raidz pool provisioning": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-raidz1").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-61"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-62"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-63"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-64"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-65"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-6"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-7"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-8"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-9"),
+								),
+						),
+				),
+			expectedRsp: true,
+		},
+		"Raidz2 pool provisioning": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-raidz2").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz2")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-61"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-62"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-63"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-64"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-65"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-66"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-67"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-68"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-69"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-70"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz2")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-34"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-35"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-36"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz2")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-6"),
+								),
+						),
+				),
+			expectedRsp: true,
+		},
+		"Invalid Raidz2 pool provisioning": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-raidz2-invalid1").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz2")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-61"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-62"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-63"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-64"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-65"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-66"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-67"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-68"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-69"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz2")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-34"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-35"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz2")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-6"),
+								),
+						),
+				),
+			expectedRsp: false,
+		},
+		"Stripe with multiple raidgroup provisioning": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-34"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+								),
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-6"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+								),
+						),
+				),
+			expectedRsp: false,
+		},
+		"Stripe with repeated blockdevice name": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+								),
+						),
+				),
+			expectedRsp: false,
+		},
+		"Raidz pool provisioning without writecaheraidgroup type but writecache blockdevices": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-raidz1").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-61"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-62"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-63"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-64"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-65"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-66"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-67"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-68"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("raidz")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+								),
+						),
+				),
+			expectedRsp: false,
+		},
+		"Stripe with duplicate node name": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-35"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-36"),
+								),
+						),
+				),
+			expectedRsp: false,
+		},
+		"Stripe pool provisioning with blockdevice get error": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						),
+				),
+			expectedRsp:            false,
+			shouldInjectBDGetError: true,
+		},
+	}
+	// Set OPENEBS_NAMESPACE env
+	os.Setenv("OPENEBS_NAMESPACE", "openebs")
+	for name, test := range tests {
+		name, test := name, test
+		t.Run(name, func(t *testing.T) {
+
+			// TODO: Try to initilize the client only once
+			f := newFixture().withOpenebsObjects().withKubeObjects()
+			f.fakeNodeCreator(3)
+			// Each node will have 30 blockdevices
+			// Since we are not claiming the blockdevices so
+			// we can reuse the blockdevices
+			f.fakeBlockDeviceCreator(90, 3)
+			ar := &v1beta1.AdmissionReview{
+				Request: &v1beta1.AdmissionRequest{
+					Kind: metav1.GroupVersionKind{
+						Kind: "CStorPoolCluster",
+					},
+					Operation: v1beta1.Create,
+					Object: runtime.RawExtension{
+						Raw: serialize(test.requestedObj),
+					},
+				},
+			}
+			f.wh.clientset.OpenebsV1alpha1().(*openebsapifake.FakeOpenebsV1alpha1).PrependReactor("get", "blockdevices", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+
+				// Inject error
+				if test.shouldInjectBDGetError {
+					return true, &openebsapi.BlockDevice{}, errors.New("Injecting fake errors")
+				}
+
+				return false, nil, nil
+			})
+			resp := f.wh.validate(ar)
+			if resp.Allowed != test.expectedRsp {
+				t.Errorf(
+					"%q test case failed expected response: %t but got %t error: %s",
+					name,
+					test.expectedRsp,
+					resp.Allowed,
+					resp.Result.Message,
+				)
+			}
+		})
+		// f.wh.clientset.OpenebsV1alpha1().(*openebsfake.FakeOpenebsV1alpha1).Fake.ReactionChain = nil
 	}
 	// Set OPENEBS_NAMESPACE env
 	os.Unsetenv("OPENEBS_NAMESPACE")

@@ -134,7 +134,7 @@ func NoResyncPeriodFunc() time.Duration {
 
 // newCSPIController returns a fake cspi controller
 func (f *fixture) newCSPIController(
-	testConfig *testConfig) (*CStorPoolInstanceController, openebsinformers.SharedInformerFactory, *record.FakeRecorder, error) {
+	testConfig *testConfig) (*CStorPoolInstanceController, openebsinformers.SharedInformerFactory, error) {
 	//// Load kubernetes client set by preloading with k8s objects.
 	//f.k8sClient = fake.NewSimpleClientset(f.k8sObjects...)
 
@@ -166,7 +166,7 @@ func (f *fixture) newCSPIController(
 	}
 
 	// returning recorder to print cspi controller events
-	return controller, cspiInformerFactory, recorder, nil
+	return controller, cspiInformerFactory, nil
 }
 
 // CreateFakeBlockDevices creates the fake blockdevices
@@ -451,7 +451,7 @@ func (f *fixture) run_(
 	testConfig *testConfig) {
 	isCSPIUpdated := false
 	ejectErrorCount := testConfig.ejectErrorCount
-	c, informers, recorder, err := f.newCSPIController(testConfig)
+	c, informers, err := f.newCSPIController(testConfig)
 	if err != nil {
 		f.t.Fatalf("error creating cspi controller: %v", err)
 	}
@@ -460,13 +460,14 @@ func (f *fixture) run_(
 		defer close(stopCh)
 		informers.Start(stopCh)
 	}
-	defer func(recorder *record.FakeRecorder) {
+	defer func(recorderInterface record.EventRecorder) {
+		recorder := recorderInterface.(*record.FakeRecorder)
 		close(recorder.Events)
-	}(recorder)
+	}(c.recorder)
 
 	// Waitgroup for starting pool and VolumeReplica controller goroutines.
 	// var wg sync.WaitGroup
-	go printEvent(recorder)
+	go printEvent(c.recorder)
 
 	for i := 0; i < testConfig.loopCount; i++ {
 
@@ -688,7 +689,8 @@ func (f *fixture) isReplacementMarksExists(testConfig testConfig) (bool, string)
 }
 
 // printEvent prints the events reported by controller
-func printEvent(recorder *record.FakeRecorder) {
+func printEvent(recorderInterface record.EventRecorder) {
+	recorder := recorderInterface.(*record.FakeRecorder)
 	rocket := html.UnescapeString("&#128640;")
 	warning := html.UnescapeString("&#10071;")
 	for {
@@ -847,7 +849,7 @@ func TestCSPIFinalizerRemoval(t *testing.T) {
 func TestCSPIPoolProvisioning(t *testing.T) {
 	f := newFixture(t)
 	f.SetFakeClient()
-	f.createFakeBlockDevices(50, "node1")
+	f.createFakeBlockDevices(80, "node1")
 	f.fakeNodeCreator("node1")
 
 	tests := map[string]struct {
@@ -1072,6 +1074,121 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
 							{BlockDeviceName: "blockdevice-38"},
 							{BlockDeviceName: "blockdevice-39"},
+						},
+					},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: &testConfig{
+				loopCount: 3,
+				loopDelay: time.Microsecond * 100,
+				poolInfo:  &zpool.PoolMocker{},
+			},
+		},
+		"Raidz Pool With multiple disks in multiple Data RaidGroups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-multiple-raidz1").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-multiple-raidz1"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("raidz").
+					WithWriteCacheGroupType("raidz"),
+				).
+				WithDataRaidGroups([]cstor.RaidGroup{
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-40"},
+							{BlockDeviceName: "blockdevice-41"},
+							{BlockDeviceName: "blockdevice-42"},
+							{BlockDeviceName: "blockdevice-43"},
+							{BlockDeviceName: "blockdevice-44"},
+						},
+					},
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-45"},
+							{BlockDeviceName: "blockdevice-46"},
+							{BlockDeviceName: "blockdevice-47"},
+							{BlockDeviceName: "blockdevice-48"},
+							{BlockDeviceName: "blockdevice-49"},
+						},
+					},
+				}).
+				WithWriteCacheRaidGroups([]cstor.RaidGroup{
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-50"},
+							{BlockDeviceName: "blockdevice-51"},
+							{BlockDeviceName: "blockdevice-52"},
+							{BlockDeviceName: "blockdevice-53"},
+							{BlockDeviceName: "blockdevice-54"},
+						},
+					},
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-55"},
+							{BlockDeviceName: "blockdevice-56"},
+							{BlockDeviceName: "blockdevice-57"},
+							{BlockDeviceName: "blockdevice-58"},
+							{BlockDeviceName: "blockdevice-59"},
+						},
+					},
+				}).
+				WithNewVersion(version.GetVersion()),
+			shouldVerifyCSPIAutoGenerate: true,
+			shouldVerifyCSPIStatus:       true,
+			testConfig: &testConfig{
+				loopCount: 3,
+				loopDelay: time.Microsecond * 100,
+				poolInfo:  &zpool.PoolMocker{},
+			},
+		},
+		"Raidz2 Pool With Multiple disks with multiple Data RaidGroups": {
+			cspi: cstor.NewCStorPoolInstance().
+				WithName("cspi-multiple-raidz2").
+				WithNamespace("openebs").
+				WithLabels(map[string]string{types.CStorPoolClusterLabelKey: "cspc-multiple-raidz2"}).
+				WithNodeName("node1").
+				WithPoolConfig(*cstor.NewPoolConfig().
+					WithDataRaidGroupType("raidz2").
+					WithWriteCacheGroupType("raidz"),
+				).
+				WithDataRaidGroups([]cstor.RaidGroup{
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-60"},
+							{BlockDeviceName: "blockdevice-61"},
+							{BlockDeviceName: "blockdevice-62"},
+							{BlockDeviceName: "blockdevice-63"},
+							{BlockDeviceName: "blockdevice-64"},
+							{BlockDeviceName: "blockdevice-65"},
+						},
+					},
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-66"},
+							{BlockDeviceName: "blockdevice-67"},
+							{BlockDeviceName: "blockdevice-68"},
+							{BlockDeviceName: "blockdevice-69"},
+							{BlockDeviceName: "blockdevice-70"},
+							{BlockDeviceName: "blockdevice-71"},
+							{BlockDeviceName: "blockdevice-72"},
+							{BlockDeviceName: "blockdevice-73"},
+							{BlockDeviceName: "blockdevice-74"},
+							{BlockDeviceName: "blockdevice-75"},
+						},
+					},
+				}).
+				WithWriteCacheRaidGroups([]cstor.RaidGroup{
+					{
+						CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+							{BlockDeviceName: "blockdevice-76"},
+							{BlockDeviceName: "blockdevice-77"},
+							{BlockDeviceName: "blockdevice-78"},
+							{BlockDeviceName: "blockdevice-79"},
+							{BlockDeviceName: "blockdevice-80"},
 						},
 					},
 				}).

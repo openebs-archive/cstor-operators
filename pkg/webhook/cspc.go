@@ -528,12 +528,22 @@ func (p *PoolOperations) ValidateScaledown() (bool, string) {
 				break
 			}
 		}
-
 		if !found && p.IsScaledownCase(oldPool) {
+			var nodeName string
+			if v, ok := oldPool.NodeSelector[types.HostNameLabelKey]; ok {
+				nodeName = v
+			} else {
+				gotNodeName, err := GetHostNameFromLabelSelector(oldPool.NodeSelector, p.kubeClient)
+				if err != nil {
+					return false, fmt.Sprintf("Could not list node for node selectors {%v}", oldPool.NodeSelector)
+				}
+				nodeName = gotNodeName
+			}
+
 			ls := &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					types.CStorPoolClusterLabelKey: p.OldCSPC.Name,
-					types.HostNameLabelKey:         oldPool.NodeSelector[types.HostNameLabelKey],
+					types.HostNameLabelKey:         nodeName,
 				},
 			}
 			cspi, err := p.clientset.CstorV1().CStorPoolInstances(p.OldCSPC.Namespace).

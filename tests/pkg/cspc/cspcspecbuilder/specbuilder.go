@@ -92,8 +92,18 @@ func NewCSPCSpecBuilder(cspcCache *cspccache.CSPCResourceCache, infra *infra.Inf
 	}
 }
 
+type ReplacementTracer struct {
+	OldBD string
+	NewBD string
+	Replaced bool
+}
+
+func NewReplacementTracer() *ReplacementTracer  {
+	return &ReplacementTracer{}
+}
+
 // ReplaceBlockDevice replaces a block device at the provided position in the CSPC
-func (c *CSPCSpecBuilder) ReplaceBlockDevice(poolSpecPos, raidGroupPos, bdPos int) *CSPCSpecBuilder {
+func (c *CSPCSpecBuilder) ReplaceBlockDeviceAtPos(poolSpecPos, raidGroupPos, bdPos int, rt *ReplacementTracer) *CSPCSpecBuilder {
 	oldBD := c.CSPC.Spec.Pools[poolSpecPos].DataRaidGroups[raidGroupPos].CStorPoolInstanceBlockDevices[bdPos].BlockDeviceName
 	nodeName := c.CSPCCache.GetNodeNameFromLabels(c.CSPC.Spec.Pools[poolSpecPos].NodeSelector)
 	bdList := c.CSPCCache.NodeDisk[nodeName]
@@ -111,6 +121,32 @@ func (c *CSPCSpecBuilder) ReplaceBlockDevice(poolSpecPos, raidGroupPos, bdPos in
 	c.CSPC.Spec.Pools[poolSpecPos].DataRaidGroups[raidGroupPos].
 		CStorPoolInstanceBlockDevices[bdPos].BlockDeviceName = newBD
 
+	rt.NewBD = newBD
+	rt.OldBD = oldBD
+	rt.Replaced = true
+
+	c.CSPCSpecData.AddDiskToUsedSet(newBD)
+	c.CSPCSpecData.AddDiskToUnusedSet(oldBD)
+	return c
+}
+
+// ReplaceBlockDevice replaces given oldBd with the given newBD
+func (c *CSPCSpecBuilder) ReplaceBlockDevice(oldBD,newBD string) *CSPCSpecBuilder {
+	replaced:=false
+	for i:=0;i<len(c.CSPC.Spec.Pools);i++{
+		for j:=0;j<len(c.CSPC.Spec.Pools[i].DataRaidGroups);j++{
+			for k:=0;k<len(c.CSPC.Spec.Pools[i].DataRaidGroups[j].CStorPoolInstanceBlockDevices);k++{
+				if c.CSPC.Spec.Pools[i].DataRaidGroups[j].CStorPoolInstanceBlockDevices[k].BlockDeviceName == oldBD{
+					c.CSPC.Spec.Pools[i].DataRaidGroups[j].CStorPoolInstanceBlockDevices[k].BlockDeviceName = newBD
+					replaced=true
+					break
+				}
+			}
+		}
+	}
+	if !replaced{
+		klog.Fatalf("Could not find a %d block device for replacement",oldBD)
+	}
 	c.CSPCSpecData.AddDiskToUsedSet(newBD)
 	c.CSPCSpecData.AddDiskToUnusedSet(oldBD)
 	return c

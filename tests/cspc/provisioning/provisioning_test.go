@@ -97,6 +97,7 @@ func OperationsTest(poolType string, bdCount int) {
 				func() {
 					poolSpecPos := 0
 					updatedSuccessfully := false
+					rt:=cspcspecbuilder.NewReplacementTracer()
 					for i := 0; i < 4; i++ {
 						gotCSPC, err := cspcsuite.
 							client.
@@ -110,8 +111,13 @@ func OperationsTest(poolType string, bdCount int) {
 							continue
 						}
 						specBuilder.SetCSPCSpec(gotCSPC)
+						
+						if rt.Replaced{
+							cspc = specBuilder.ReplaceBlockDevice(rt.OldBD,rt.NewBD).GetCSPCSpec()
+						}else {
+							cspc = specBuilder.ReplaceBlockDeviceAtPos(poolSpecPos, 0, 0,rt).GetCSPCSpec()
+						}
 
-						cspc = specBuilder.ReplaceBlockDevice(poolSpecPos, 0, 0).GetCSPCSpec()
 						_, err = cspcsuite.
 							client.
 							OpenEBSClientSet.
@@ -128,7 +134,9 @@ func OperationsTest(poolType string, bdCount int) {
 					}
 
 					if !updatedSuccessfully {
-						Fail("failed to update cspc")
+						klog.Fatal("could not update the cspc for bd replacment")
+					}else{
+						klog.Info("updated cspc successfully for bd replacment")
 					}
 
 					cspiHostName := cspc.Spec.Pools[poolSpecPos].NodeSelector[types.HostNameLabelKey]

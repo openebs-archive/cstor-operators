@@ -529,14 +529,13 @@ func (p *PoolOperations) ValidateScaledown() (bool, string) {
 			}
 		}
 
-		ls := &metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				types.CStorPoolClusterLabelKey: p.OldCSPC.Name,
-				types.HostNameLabelKey:         oldPool.NodeSelector[types.HostNameLabelKey],
-			},
-		}
-
 		if !found && p.IsScaledownCase(oldPool) {
+			ls := &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					types.CStorPoolClusterLabelKey: p.OldCSPC.Name,
+					types.HostNameLabelKey:         oldPool.NodeSelector[types.HostNameLabelKey],
+				},
+			}
 			cspi, err := p.clientset.CstorV1().CStorPoolInstances(p.OldCSPC.Namespace).
 				List(metav1.ListOptions{
 					LabelSelector: labels.Set(ls.MatchLabels).String(),

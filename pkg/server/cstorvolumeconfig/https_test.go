@@ -19,6 +19,7 @@ package cstorvolumeconfig
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
@@ -40,6 +42,8 @@ import (
 	server "github.com/openebs/cstor-operators/pkg/server"
 	snapshot "github.com/openebs/cstor-operators/pkg/snapshot/snapshottest"
 	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
@@ -136,8 +140,8 @@ func (f *fixture) createFakePoolPod(cspi *cstor.CStorPoolInstance) error {
 			Name:      cspi.Name + "-" + rand.String(6),
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app":                                "cstor-pool",
-				cstortypes.CStorPoolInstanceLabelKey: cspi.Name,
+				"app":                                  "cstor-pool",
+				openebstypes.CStorPoolInstanceLabelKey: cspi.Name,
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -182,11 +186,11 @@ func (f *fixture) createFakeVolumeReplicas(
 			"cstorvolume.openebs.io/name":              volumeName,
 		}
 		cvr := cstor.NewCStorVolumeReplica().
-			WithName(volumeName + "-" + cspiList.Items[0].Name).
+			WithName(volumeName + "-" + cspiList.Items[i].Name).
 			WithLabelsNew(labels).
 			WithStatusPhase(phase)
 		_, err := f.openebsClient.CstorV1().CStorVolumeReplicas(namespace).Create(cvr)
-		if err != nil {
+		if err != nil && !k8serror.IsAlreadyExists(err) {
 			return err
 		}
 	}
@@ -199,12 +203,14 @@ func (f *fixture) createFakeCStorVolume(volumeName string) error {
 		openebstypes.PersistentVolumeLabelKey: volumeName,
 	}
 	cv := cstor.NewCStorVolume().
+		WithNamespace(namespace).
 		WithName(volumeName).
 		WithLabelsNew(labels)
 	_, err := f.openebsClient.CstorV1().CStorVolumes(namespace).Create(cv)
-	if err != nil {
+	if err != nil && !k8serror.IsAlreadyExists(err) {
 		return err
 	}
+
 	return nil
 }
 
@@ -225,6 +231,67 @@ func (f *fixture) createCStorCompletedBackup(backup *openebsapis.CStorBackup, pr
 	}
 	_, err := f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(bk.Namespace).Create(bk)
 	return err
+}
+
+func (f *fixture) fakeCVCRoutine(channel chan int) {
+	fmt.Printf("Fake CVC routine has started")
+	channel <- 1
+	for {
+		cvcList, err := f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			klog.Error(err)
+		}
+
+		for _, cvcObj := range cvcList.Items {
+			if cvcObj.Annotations[openebstypes.OpenEBSDisableReconcileLabelKey] == "true" {
+				klog.Infof("Skipping Reconcilation for CVC %s", cvcObj.Name)
+				continue
+			}
+			if cvcObj.Status.Phase == cstor.CStorVolumeConfigPhasePending {
+				cspcName := cvcObj.Labels[string(openebstypes.CStorPoolClusterLabelKey)]
+				err := f.createFakeVolumeReplicas(cspcName, cvcObj.Name, cvcObj.Spec.Provision.ReplicaCount, cstor.CVRStatusOnline)
+				if err != nil {
+					klog.Error(err)
+					time.Sleep(2 * time.Second)
+					continue
+				}
+				err = f.createFakeCStorVolume(cvcObj.Name)
+				if err != nil {
+					klog.Error(err)
+					time.Sleep(2 * time.Second)
+					continue
+				}
+				cvcObj.Status.Phase = cstor.CStorVolumeConfigPhaseBound
+				_, err = f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).Update(&cvcObj)
+				if err != nil {
+					klog.Error(err)
+				}
+			}
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func executeCreateBackup(
+	httpServer *HTTPServer,
+	backupObj *openebsapis.CStorBackup) (http.HandlerFunc, *http.Request, error) {
+	//Marshal serializes the value provided into a json document
+	jsonValue, _ := json.Marshal(backupObj)
+
+	// Create a request to pass to handler
+	req, _ := http.NewRequest("POST", "/latest/backups/", bytes.NewBuffer(jsonValue))
+	// create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
+	rr := httptest.NewRecorder()
+	req.Header.Add("Content-Type", "application/json")
+	handler := http.HandlerFunc(httpServer.wrap(httpServer.backupV1alpha1SpecificRequest))
+	handler.ServeHTTP(rr, req)
+	// Verify all the required results
+	if rr.Code != http.StatusOK {
+		data, _ := ioutil.ReadAll(rr.Body)
+		return nil, nil, errors.Errorf("failed to create backup for volume %s return code %d error: %s",
+			backupObj.Spec.VolumeName, rr.Code, string(data))
+	}
+	return handler, req, nil
 }
 
 func verifyExistenceOfPendingBackup(name, namespace string, openebsClient clientset.Interface) error {
@@ -430,7 +497,7 @@ func TestBackupPostEndPoint(t *testing.T) {
 				t.Errorf("failed to marshal cstor backup error: %s", err.Error())
 			}
 			// Create a request to pass to our handler
-			req, err := http.NewRequest("POST", "/latest/volumes/", bytes.NewBuffer(jsonValue))
+			req, err := http.NewRequest("POST", "/latest/backups/", bytes.NewBuffer(jsonValue))
 			if err != nil {
 				t.Errorf("failed to build request error: %s", err.Error())
 			}
@@ -551,25 +618,16 @@ func TestBackupGetEndPoint(t *testing.T) {
 					WithSnapshotter(&snapshot.FakeSnapshotter{}),
 				logger: log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds),
 			}
-			//Marshal serializes the value provided into a json document
-			jsonValue, _ := json.Marshal(test.cstorBackup)
-			// Create a request to pass to handler
-			req, _ := http.NewRequest("POST", "/latest/volumes/", bytes.NewBuffer(jsonValue))
-			// create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
-			rr := httptest.NewRecorder()
-			req.Header.Add("Content-Type", "application/json")
-			handler := http.HandlerFunc(httpServer.wrap(httpServer.backupV1alpha1SpecificRequest))
-			handler.ServeHTTP(rr, req)
+			handler, req, err := executeCreateBackup(httpServer, test.cstorBackup)
 			// Verify all the required results
-			if rr.Code != http.StatusOK {
-				data, _ := ioutil.ReadAll(rr.Body)
-				t.Errorf("failed to create backup for volume %s return code %d error: %s",
-					test.cstorBackup.Spec.VolumeName, rr.Code, string(data))
+			if err != nil {
+				t.Errorf("error: %v", err)
 			}
+
 			// ================================= Change according to the test configurations =========================
 			backupObj, err := f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(backupName, metav1.GetOptions{})
 			if err == nil && test.shouldMarkPoolPodDown {
-				cspiName := backupObj.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
+				cspiName := backupObj.Labels[openebstypes.CStorPoolInstanceNameLabelKey]
 				poolManager, err := fetchPoolManagerFromCSPI(f.k8sClient, cspiName, namespace)
 				if err == nil {
 					for i, containerstatus := range poolManager.Status.ContainerStatuses {
@@ -582,7 +640,7 @@ func TestBackupGetEndPoint(t *testing.T) {
 				}
 			}
 			if err == nil && test.shouldMarkPoolPodNodeDown {
-				cspiName := backupObj.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
+				cspiName := backupObj.Labels[openebstypes.CStorPoolInstanceNameLabelKey]
 				poolManager, err := fetchPoolManagerFromCSPI(f.k8sClient, cspiName, namespace)
 				if err == nil {
 					node, err := f.k8sClient.CoreV1().Nodes().Get(poolManager.Spec.NodeName, metav1.GetOptions{})
@@ -597,10 +655,12 @@ func TestBackupGetEndPoint(t *testing.T) {
 			}
 
 			// ==================== Build and Make REST request ========================
-			rr = httptest.NewRecorder()
+			//Marshal serializes the value provided into a json document
+			jsonValue, _ := json.Marshal(backupObj)
+			rr := httptest.NewRecorder()
 			req.Header.Add("Content-Type", "application/json")
 			// Create a request to pass to handler
-			req, err = http.NewRequest("GET", "/latest/volumes/", bytes.NewBuffer(jsonValue))
+			req, err = http.NewRequest("GET", "/latest/backups/", bytes.NewBuffer(jsonValue))
 			if err != nil {
 				t.Errorf("failed to build request error: %s", err.Error())
 			}
@@ -623,4 +683,428 @@ func TestBackupGetEndPoint(t *testing.T) {
 	os.Unsetenv(util.OpenEBSNamespace)
 }
 
-// TODO: Add more test code for DELETE method in backup end point and Restore end point
+func TestBackupDeleteEndPoint(t *testing.T) {
+	f := newFixture(t)
+	f.SetFakeClient()
+	tests := map[string]struct {
+		// cspcName used to create fake cstor pools
+		cspcName string
+		// cstorBackup used to query on backup endpoint
+		cstorBackup                 *openebsapis.CStorBackup
+		cstorCompletedBackup        *openebsapis.CStorCompletedBackup
+		shouldBackupExists          bool
+		shouldCompletedBackupExists bool
+		shouldInjectSnapshotError   bool
+		shouldInjectPayloadError    bool
+		expectedResponseCode        int
+	}{
+		"When delete method is triggered on backup endpoint without any error injection": {
+			cspcName: "cspc-cstor-pool1",
+			cstorBackup: &openebsapis.CStorBackup{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorBackupSpec{
+					BackupName: "backup1",
+					VolumeName: "volume1",
+					BackupDest: "172.102.29.12:3234",
+					SnapName:   "snapshot1",
+				},
+			},
+			shouldBackupExists:          false,
+			shouldCompletedBackupExists: false,
+			expectedResponseCode:        http.StatusOK,
+		},
+		"When delete method is triggered on backup endpoint by injecting error": {
+			cspcName: "cspc-cstor-pool2",
+			cstorBackup: &openebsapis.CStorBackup{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorBackupSpec{
+					BackupName: "backup2",
+					VolumeName: "volume2",
+					BackupDest: "172.102.29.12:3234",
+					SnapName:   "snapshot2",
+				},
+			},
+			shouldBackupExists:          true,
+			shouldCompletedBackupExists: false,
+			shouldInjectSnapshotError:   true,
+			expectedResponseCode:        http.StatusInternalServerError,
+		},
+		"Should not delete cstorcompleted backup": {
+			cspcName: "cspc-cstor-pool3",
+			cstorBackup: &openebsapis.CStorBackup{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorBackupSpec{
+					BackupName: "backup3",
+					VolumeName: "volume3",
+					BackupDest: "172.102.29.12:3234",
+					SnapName:   "snapshot3",
+				},
+			},
+			cstorCompletedBackup: &openebsapis.CStorCompletedBackup{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "backup3" + "-" + "volume3",
+				},
+				Spec: openebsapis.CStorBackupSpec{
+					PrevSnapName: "snapshot2",
+					SnapName:     "snapshot1",
+				},
+			},
+			shouldBackupExists:          false,
+			shouldCompletedBackupExists: true,
+			shouldInjectSnapshotError:   false,
+			expectedResponseCode:        http.StatusOK,
+		},
+		"When required payload is not passed": {
+			cspcName: "cspc-cstor-pool4",
+			cstorBackup: &openebsapis.CStorBackup{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorBackupSpec{
+					BackupName: "backup4",
+					VolumeName: "volume4",
+					BackupDest: "172.102.29.12:3234",
+					SnapName:   "snapshot4",
+				},
+			},
+			shouldInjectPayloadError:    true,
+			shouldBackupExists:          true,
+			shouldCompletedBackupExists: true,
+			shouldInjectSnapshotError:   false,
+			expectedResponseCode:        http.StatusMethodNotAllowed,
+		},
+	}
+	os.Setenv(util.OpenEBSNamespace, "openebs")
+	for name, test := range tests {
+		name := name
+		test := test
+		t.Run(name, func(t *testing.T) {
+			backupName := test.cstorBackup.Spec.SnapName + "-" + test.cstorBackup.Spec.VolumeName
+			lastCompletedBackup := test.cstorBackup.Spec.BackupName + "-" + test.cstorBackup.Spec.VolumeName
+			f.fakeNodeCreator(5)
+			f.fakePoolsCreator(test.cspcName, 5)
+			f.createFakeVolumeReplicas(test.cspcName, test.cstorBackup.Spec.VolumeName, 3, cstor.CVRStatusOnline)
+			f.createFakeCStorVolume(test.cstorBackup.Spec.VolumeName)
+			if test.cstorCompletedBackup != nil {
+				_, err := f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(namespace).Create(test.cstorCompletedBackup)
+				if err != nil {
+					t.Errorf("failed to create completed backup error: %v", err)
+				}
+			}
+			// ================================= Creating Backup Using ENDPOINT ======================================
+			// Create HTTPServer
+			httpServer := &HTTPServer{
+				cvcServer: NewCVCServer(server.DefaultServerConfig(), os.Stdout).
+					WithOpenebsClientSet(f.openebsClient).
+					WithKubernetesClientSet(f.k8sClient).
+					WithSnapshotter(&snapshot.FakeSnapshotter{}),
+				logger: log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds),
+			}
+			handler, req, err := executeCreateBackup(httpServer, test.cstorBackup)
+			// Verify all the required results
+			if err != nil {
+				t.Errorf("error: %v", err)
+			}
+			if test.shouldInjectSnapshotError {
+				httpServer.cvcServer = httpServer.cvcServer.WithSnapshotter(&snapshot.FakeSnapshotter{ShouldReturnFakeError: true})
+			}
+			if test.shouldInjectPayloadError {
+				// Over write the existing payload with empty
+				test.cstorBackup.Spec.BackupName = ""
+			}
+
+			// Delete Backup
+			req, err = http.NewRequest("DELETE", "/latest/backups/"+test.cstorBackup.Spec.SnapName, nil)
+			if err != nil {
+				t.Errorf("failed to create new HTTP request error: %v", err)
+			}
+			q := req.URL.Query()
+			q.Add("volume", test.cstorBackup.Spec.VolumeName)
+			q.Add("namespace", test.cstorBackup.Namespace)
+			q.Add("schedule", test.cstorBackup.Spec.BackupName)
+			req.URL.RawQuery = q.Encode()
+
+			rr := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/json")
+			handler = http.HandlerFunc(httpServer.wrap(httpServer.backupV1alpha1SpecificRequest))
+			handler.ServeHTTP(rr, req)
+			if rr.Code != test.expectedResponseCode {
+				data, _ := ioutil.ReadAll(rr.Body)
+				t.Errorf("failed to delete backup for volume %s expected code %d but got %d error: %s",
+					test.cstorBackup.Spec.VolumeName, test.expectedResponseCode, rr.Code, string(data))
+			}
+
+			// Verifying CStorBackup
+			backupObj, err := f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(backupName, metav1.GetOptions{})
+			if err != nil {
+				if !k8serror.IsNotFound(err) {
+					t.Errorf("failed to get backup of volume %s error %v", test.cstorBackup.Spec.VolumeName, err)
+				}
+				if test.shouldBackupExists {
+					t.Errorf("expected backup to exist but not found")
+				}
+			}
+			if !test.shouldBackupExists && err == nil {
+				t.Errorf("expected backup not to exist but found %s", backupObj.Name)
+			}
+
+			// Verifying CStorCompletedBackup
+			completedBackupObj, err := f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(namespace).Get(lastCompletedBackup, metav1.GetOptions{})
+			if err != nil {
+				if !k8serror.IsNotFound(err) {
+					t.Errorf("failed to get completed backup for volume %s error %v", test.cstorBackup.Spec.VolumeName, err)
+				}
+				if test.shouldCompletedBackupExists {
+					t.Errorf("expected completedbackup to exist but not found")
+				}
+			}
+			if !test.shouldCompletedBackupExists && err == nil {
+				t.Errorf("expected completed backup not to exist but found %s", completedBackupObj.Name)
+			}
+
+		})
+	}
+
+}
+
+func TestRestoreEndPoint(t *testing.T) {
+	f := newFixture(t)
+	f.SetFakeClient()
+	tests := map[string]struct {
+		// cspcName used to create fake cstor pools
+		cspcName string
+		// cstorRestore is used to create restore
+		cstorRestore            *openebsapis.CStorRestore
+		cvcObj                  *cstor.CStorVolumeConfig
+		storageClass            *storagev1.StorageClass
+		verifyCStorRestoreCount bool
+		expectedResponseCode    int
+	}{
+		"When restore is triggered": {
+			cspcName: "cspc-cstor-pool1",
+			cstorRestore: &openebsapis.CStorRestore{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorRestoreSpec{
+					RestoreName: "restore1",
+					VolumeName:  "volume1",
+					RestoreSrc:  "127.0.0.1:3422",
+				},
+			},
+			cvcObj: &cstor.CStorVolumeConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "volume1",
+					Namespace: namespace,
+					Labels: map[string]string{
+						openebstypes.CStorPoolClusterLabelKey: "cspc-cstor-pool1",
+					},
+				},
+				Spec: cstor.CStorVolumeConfigSpec{
+					Provision: cstor.VolumeProvision{
+						ReplicaCount: 3,
+					},
+				},
+				Status: cstor.CStorVolumeConfigStatus{
+					Phase: cstor.CStorVolumeConfigPhasePending,
+				},
+			},
+			expectedResponseCode:    http.StatusOK,
+			verifyCStorRestoreCount: true,
+		},
+		"When restore is triggered but CVC is not marked as bound": {
+			cspcName: "cspc-cstor-pool2",
+			cstorRestore: &openebsapis.CStorRestore{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorRestoreSpec{
+					RestoreName: "restore2",
+					VolumeName:  "volume2",
+					RestoreSrc:  "127.0.0.1:3432",
+				},
+			},
+			cvcObj: &cstor.CStorVolumeConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "volume2",
+					Namespace: namespace,
+					Labels: map[string]string{
+						openebstypes.CStorPoolClusterLabelKey: "cspc-cstor-pool2",
+					},
+					Annotations: map[string]string{
+						openebstypes.OpenEBSDisableReconcileLabelKey: "true",
+					},
+				},
+				Spec: cstor.CStorVolumeConfigSpec{
+					Provision: cstor.VolumeProvision{
+						ReplicaCount: 3,
+					},
+				},
+				Status: cstor.CStorVolumeConfigStatus{
+					Phase: cstor.CStorVolumeConfigPhasePending,
+				},
+			},
+			expectedResponseCode: http.StatusBadRequest,
+		},
+		"When restore source name is empty": {
+			cspcName: "cspc-cstor-pool3",
+			cstorRestore: &openebsapis.CStorRestore{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorRestoreSpec{
+					RestoreName: "restore3",
+					VolumeName:  "volume3",
+				},
+			},
+			expectedResponseCode: http.StatusBadRequest,
+		},
+		"When local restore is triggered": {
+			cspcName: "cspc-cstor-pool4",
+			cstorRestore: &openebsapis.CStorRestore{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorRestoreSpec{
+					RestoreName:  "restore4",
+					VolumeName:   "volume4",
+					RestoreSrc:   "snapshot4",
+					Local:        true,
+					StorageClass: "storage-class4",
+					Size:         resource.MustParse("5G"),
+				},
+			},
+			expectedResponseCode: http.StatusOK,
+			storageClass: &storagev1.StorageClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "storage-class4",
+				},
+				Parameters: map[string]string{
+					"cstorPoolCluster": "cspc-cstor-pool4",
+					"replicaCount":     "3",
+				},
+			},
+		},
+		"When local restore is triggered without creating storageclass": {
+			cspcName: "cspc-cstor-pool5",
+			cstorRestore: &openebsapis.CStorRestore{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorRestoreSpec{
+					RestoreName:  "restore5",
+					VolumeName:   "volume5",
+					RestoreSrc:   "snapshot5",
+					Local:        true,
+					StorageClass: "storage-class5",
+					Size:         resource.MustParse("5G"),
+				},
+			},
+			expectedResponseCode: http.StatusOK,
+			storageClass: &storagev1.StorageClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "storage-class5",
+				},
+				Parameters: map[string]string{
+					"cstorPoolCluster": "cspc-cstor-pool5",
+					"replicaCount":     "3",
+				},
+			},
+		},
+		"When local restore is triggered without passing storageclass": {
+			cspcName: "cspc-cstor-pool6",
+			cstorRestore: &openebsapis.CStorRestore{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorRestoreSpec{
+					RestoreName: "restore6",
+					VolumeName:  "volume6",
+					RestoreSrc:  "snapshot6",
+					Local:       true,
+					Size:        resource.MustParse("5G"),
+				},
+			},
+			expectedResponseCode: http.StatusBadRequest,
+		},
+	}
+	start := make(chan int, 1)
+	defer close(start)
+	go f.fakeCVCRoutine(start)
+	// Started the channel
+	<-start
+
+	os.Setenv(util.OpenEBSNamespace, "openebs")
+	for name, test := range tests {
+		name := name
+		test := test
+		t.Run(name, func(t *testing.T) {
+			var replicaCount int
+			f.fakeNodeCreator(5)
+			f.fakePoolsCreator(test.cspcName, 5)
+			if test.cvcObj != nil {
+				_, err := f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).Create(test.cvcObj)
+				if err != nil {
+					t.Errorf("Failed to create CVC %s", test.cvcObj.Name)
+				}
+				replicaCount = test.cvcObj.Spec.Provision.ReplicaCount
+			}
+			// Create storageclass
+			if test.storageClass != nil {
+				_, err := f.k8sClient.StorageV1().StorageClasses().Create(test.storageClass)
+				if err != nil {
+					t.Errorf("Failed to create SC %s", test.storageClass.Name)
+				}
+				replicaCount, _ = strconv.Atoi(test.storageClass.Parameters["replicaCount"])
+			}
+			// Create HTTPServer
+			httpServer := &HTTPServer{
+				cvcServer: NewCVCServer(server.DefaultServerConfig(), os.Stdout).
+					WithOpenebsClientSet(f.openebsClient).
+					WithKubernetesClientSet(f.k8sClient).
+					WithSnapshotter(&snapshot.FakeSnapshotter{}),
+				logger: log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds),
+			}
+
+			//Marshal serializes the value provided into a json document
+			jsonValue, _ := json.Marshal(test.cstorRestore)
+
+			// Create a request to pass to handler
+			req, _ := http.NewRequest("POST", "/latest/restore/", bytes.NewBuffer(jsonValue))
+			// create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
+			rr := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/json")
+			handler := http.HandlerFunc(httpServer.wrap(httpServer.restoreV1alpha1SpecificRequest))
+			handler.ServeHTTP(rr, req)
+			// Verify all the required results
+			if rr.Code != test.expectedResponseCode {
+				data, _ := ioutil.ReadAll(rr.Body)
+				t.Errorf("failed to create restore for volume %s return code %d error: %s",
+					test.cstorRestore.Spec.RestoreSrc, rr.Code, string(data))
+			}
+			if test.verifyCStorRestoreCount {
+				restoreList, err := f.openebsClient.
+					OpenebsV1alpha1().
+					CStorRestores(namespace).
+					List(metav1.ListOptions{
+						LabelSelector: cstortypes.PersistentVolumeLabelKey + "=" + test.cstorRestore.Spec.VolumeName})
+				if err != nil {
+					t.Errorf("Failed to list cstorRestore of volume %s", test.cvcObj.Name)
+				}
+				if len(restoreList.Items) != replicaCount {
+					t.Errorf(
+						"Expected CStorRestore count %d but got %d",
+						replicaCount,
+						len(restoreList.Items))
+				}
+			}
+		})
+	}
+}

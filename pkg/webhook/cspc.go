@@ -28,7 +28,7 @@ import (
 	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	util "github.com/openebs/api/pkg/util"
+	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -519,6 +519,7 @@ func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest, getC
 // that is being scaled down
 func (p *PoolOperations) ValidateScaledown() (bool, string) {
 	removedPools := []string{}
+
 	for _, oldPool := range p.OldCSPC.Spec.Pools {
 		found := false
 		for _, newPool := range p.NewCSPC.Spec.Pools {
@@ -527,11 +528,18 @@ func (p *PoolOperations) ValidateScaledown() (bool, string) {
 				break
 			}
 		}
+
+		ls := &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				types.CStorPoolClusterLabelKey: p.OldCSPC.Name,
+				types.HostNameLabelKey:         oldPool.NodeSelector[types.HostNameLabelKey],
+			},
+		}
+
 		if !found && p.IsScaledownCase(oldPool) {
 			cspi, err := p.clientset.CstorV1().CStorPoolInstances(p.OldCSPC.Namespace).
 				List(metav1.ListOptions{
-					LabelSelector: labels.SelectorFromSet(oldPool.NodeSelector).String() + "," +
-						types.CStorPoolClusterLabelKey + "=" + p.OldCSPC.Name,
+					LabelSelector: labels.Set(ls.MatchLabels).String(),
 				})
 			if err != nil {
 				return false, fmt.Sprintf("Could not list cspi for cspc %s: %s", p.OldCSPC.Name, err.Error())

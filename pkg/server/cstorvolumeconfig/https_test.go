@@ -190,7 +190,7 @@ func (f *fixture) createFakeVolumeReplicas(
 			WithLabelsNew(labels).
 			WithStatusPhase(phase)
 		_, err := f.openebsClient.CstorV1().CStorVolumeReplicas(namespace).Create(cvr)
-		if err != nil && !k8serror.IsNotFound(err) {
+		if err != nil && !k8serror.IsAlreadyExists(err) {
 			return err
 		}
 	}
@@ -207,7 +207,7 @@ func (f *fixture) createFakeCStorVolume(volumeName string) error {
 		WithName(volumeName).
 		WithLabelsNew(labels)
 	_, err := f.openebsClient.CstorV1().CStorVolumes(namespace).Create(cv)
-	if err != nil && !k8serror.IsNotFound(err) {
+	if err != nil && !k8serror.IsAlreadyExists(err) {
 		return err
 	}
 

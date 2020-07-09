@@ -69,9 +69,9 @@ var _ = Describe("CSPC", func() {
 func OperationsTest(poolType string, bdCount int) {
 	var cspc *cstor.CStorPoolCluster
 	var specBuilder *cspcspecbuilder.CSPCSpecBuilder
-	Describe("Block Device Replacement", func() {
-		Context("Creating cspc", func() {
-			Specify("no error should be returned", func() {
+	Describe(poolType+ " CSPC", func() {
+		Context("Block Device replacment", func() {
+			Specify("creatin the cspc,no error should be returned", func() {
 				specBuilder = cspcspecbuilder.
 					NewCSPCSpecBuilder(cspcsuite.CSPCCache, cspcsuite.infra)
 
@@ -93,7 +93,7 @@ func OperationsTest(poolType string, bdCount int) {
 				Expect(gotHealthyCSPiCount).To(BeNumerically("==", int32(cspcsuite.infra.NodeCount)))
 			})
 
-			Specify("replacing a block device",
+			Specify("replacement of a block device should be successful",
 				func() {
 					poolSpecPos := 0
 					updatedSuccessfully := false

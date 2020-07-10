@@ -112,6 +112,8 @@ WEBHOOK_REPO=webhook
 # Specify the name of the docker repo for arm64
 CVC_OPERATOR_ARM64?=cvc-operator-arm64
 
+# list only the source code directories
+PACKAGES = $(shell go list ./... | grep -v 'vendor\|pkg/client/generated\|tests')
 
 # deps ensures fresh go.mod and go.sum.
 .PHONY: deps
@@ -122,7 +124,7 @@ deps:
 .PHONY: test
 test:
 	go fmt ./...
-	go test ./...
+	go test $(PACKAGES)
 
 .PHONY: build
 build:

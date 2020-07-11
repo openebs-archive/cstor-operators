@@ -76,13 +76,14 @@ var (
 	MgmtContainerName = "cstor-volume-mgmt"
 )
 
-func getDeployLabels(pvName string) map[string]string {
+func getDeployLabels(pvName, pvcName string) map[string]string {
 	return map[string]string{
 		"app":                            "cstor-volume-manager",
 		"openebs.io/target":              "cstor-target",
 		"openebs.io/storage-engine-type": "cstor",
 		"openebs.io/cas-type":            "cstor",
 		"openebs.io/persistent-volume":   pvName,
+		openebsPVC:                       pvcName,
 		"openebs.io/version":             version.GetVersion(),
 	}
 }
@@ -102,12 +103,13 @@ func getDeployMatchLabels(pvName string) map[string]string {
 	}
 }
 
-func getDeployTemplateLabels(pvName string) map[string]string {
+func getDeployTemplateLabels(pvName, pvcName string) map[string]string {
 	return map[string]string{
 		"monitoring":                   "volume_exporter_prometheus",
 		"app":                          "cstor-volume-manager",
 		"openebs.io/target":            "cstor-target",
 		"openebs.io/persistent-volume": pvName,
+		openebsPVC:                     pvcName,
 		"openebs.io/version":           version.GetVersion(),
 	}
 }
@@ -374,7 +376,7 @@ func (c *CVCController) BuildTargetDeployment(
 
 	deployObj := deploy.NewDeployment().
 		WithName(vol.Name + "-target").
-		WithLabelsNew(getDeployLabels(vol.Name)).
+		WithLabelsNew(getDeployLabels(vol.Name, vol.GetLabels()[openebsPVC])).
 		WithAnnotationsNew(getDeployAnnotation()).
 		WithOwnerReferenceNew(getDeployOwnerReference(vol)).
 		WithReplicas(&deployreplicas).
@@ -384,7 +386,7 @@ func (c *CVCController) BuildTargetDeployment(
 		WithSelectorMatchLabelsNew(getDeployMatchLabels(vol.Name)).
 		WithPodTemplateSpec(
 			apicore.NewPodTemplateSpec().
-				WithLabelsNew(getDeployTemplateLabels(vol.Name)).
+				WithLabelsNew(getDeployTemplateLabels(vol.Name, vol.GetLabels()[openebsPVC])).
 				WithAnnotationsNew(getDeployTemplateAnnotations()).
 				WithServiceAccountName(util.GetServiceAccountName()).
 				WithAffinity(getTargetTemplateAffinity(policySpec)).

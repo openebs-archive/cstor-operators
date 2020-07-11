@@ -48,6 +48,8 @@ const (
 	// pvSelector is the selector key for cstorvolumereplica belongs to a cstor
 	// volume
 	pvSelector = "openebs.io/persistent-volume"
+	// openebsPVC represents the persistentvoolumeclaim name
+	openebsPVC = "openebs.io/persistent-volume-claim"
 	// minHAReplicaCount is minimum no.of replicas are required to decide
 	// HighAvailable volume
 	minHAReplicaCount = 3
@@ -167,6 +169,7 @@ func getCVLabels(claim *apis.CStorVolumeConfig) map[string]string {
 	return map[string]string{
 		"openebs.io/persistent-volume": claim.Name,
 		"openebs.io/version":           version.GetVersion(),
+		openebsPVC:                     claim.GetAnnotations()[openebsPVC],
 	}
 }
 

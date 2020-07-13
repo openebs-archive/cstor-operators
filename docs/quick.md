@@ -14,61 +14,59 @@ meets the following prerequisites:
 
 1.  Clone the repository.
     ```bash
-    git clone https://github.com/openebs/cstor-operators.git
+    $ git clone https://github.com/openebs/cstor-operators.git
     ```
     
 2.  Make sure you are at the root directory of the cloned repository.
     ```bash
-    cd cstor-operators
+    $ cd cstor-operators
     ```
 
 3.  Apply RBAC.
     ```bash
-    kubectl create -f deploy/rbac.yaml
+    $ kubectl create -f deploy/rbac.yaml
     ```
 4.  Install node disk manager(NDM).
     ```bash
-    kubectl create -f deploy/ndm-operator.yaml
+    $ kubectl create -f deploy/ndm-operator.yaml
     ```
     Check that NDM daemonset and operator pods are running:
+
     ```bash
-    kubectl get pod -n openebs
-    ```
-    ```
+    $ kubectl get pod -n openebs
     NAME                                    READY   STATUS    RESTARTS   AGE
     openebs-ndm-f4kzc                       1/1     Running   0          37s
     openebs-ndm-operator-796f98fdd7-kvmpn   1/1     Running   0          37s
     openebs-ndm-t65b5                       1/1     Running   0          37s
     openebs-ndm-xztkj                       1/1     Running   0          37s
-
     ```
     Check that blockdevices are created:
-    ```bash
-    kubectl get bd -n openebs
-    ```
-    ```
-     NAME                                           NODENAME           SIZE          CLAIMSTATE   STATUS   AGE
-    blockdevice-01afcdbe3a9c9e3b281c7133b2af1b68    worker3            21474836480   Unclaimed    Active   2m10s
-    blockdevice-10ad9f484c299597ed1e126d7b857967    worker1            21474836480   Unclaimed    Active   2m17s
-    blockdevice-3ec130dc1aa932eb4c5af1db4d73ea1b    worker2            21474836480   Unclaimed    Active   2m12s
 
+    ```bash
+    $ kubectl get bd -n openebs
+    NAME                                           NODENAME           SIZE          CLAIMSTATE   STATUS   AGE
+    blockdevice-01afcdbe3a9c9e3b281c7133b2af1b68   worker3            21474836480   Unclaimed    Active   2m10s
+    blockdevice-10ad9f484c299597ed1e126d7b857967   worker1            21474836480   Unclaimed    Active   2m17s
+    blockdevice-3ec130dc1aa932eb4c5af1db4d73ea1b   worker2            21474836480   Unclaimed    Active   2m12s
     ```
+
     NOTE: 
     1. It can take little while for blockdevices to appear when the application is warming up.
     2. For a blockdevice to appear, you must have disks attached to node.
 
 5.  Install cStor CRDs.
     ```bash
-    kubectl create -f deploy/crds
+    $ kubectl create -f deploy/crds
     ```
 
 6.  Install cStor operators.
     ```bash
-    kubectl create -f deploy/cstor-operator.yaml
+    $ kubectl create -f deploy/cstor-operator.yaml
     ```
     Check that cspc-operator, cvc-operator and admission server pod has came up.
-   
+
     ```bash
+    $ kubectl get pods -n openebs
     NAME                                              READY   STATUS    RESTARTS   AGE
     cspc-operator-874cdcb6b-t4zcs                     1/1     Running   0          25s
     cvc-operator-fbcf99548-swlbg                      1/1     Running   0          25s
@@ -79,11 +77,26 @@ meets the following prerequisites:
     openebs-ndm-xztkj                                 1/1     Running   0          6m5s
     ```
 
+7. Install CStor CSI driver.
+
+   ```bash
+    $ kubectl create -f deploy/csi-operator.yaml
+   ```
+    Check that cstor-csi-controller and cstor-csi-node pods has came up.
+
+   ```bash
+    $ kubectl get pods -n kube-system
+    NAME                                              READY   STATUS    RESTARTS   AGE
+    openebs-cstor-csi-controller-0                    7/7     Running   0          5m22s
+    openebs-cstor-csi-node-86mx9                      2/2     Running   0          5m22s
+   ```
+
+
 8.  Provision a cStor pool. For simplicity, this guide will provision a 
     stripe pool on one node.
     Use the CSPC file from examples/cspc/cspc-single.yaml and modify by performing 
     follwing steps:
-    
+
     i) Modify CSPC to add your node selector for the node where you want to provision the pool.
        List the nodes with labels:
 
@@ -123,7 +136,7 @@ meets the following prerequisites:
        - blockDeviceName: "blockdevice-10ad9f484c299597ed1e126d7b857967"
        ```
        Finally the CSPC YAML looks like the following :
-       ```yml
+       ```yaml
        apiVersion: cstor.openebs.io/v1
        kind: CStorPoolCluster
        metadata:
@@ -132,7 +145,7 @@ meets the following prerequisites:
        spec:
          pools:
            - nodeSelector:
-               kubernetes.io/hostname: "worker1-ashutosh"
+               kubernetes.io/hostname: "worker1"
              dataRaidGroups:
              - blockDevices:
                  - blockDeviceName: "blockdevice-10ad9f484c299597ed1e126d7b857967" 
@@ -164,10 +177,119 @@ meets the following prerequisites:
     NAME               HOSTNAME           ALLOCATED   FREE     CAPACITY   STATUS   AGE
     cspc-stripe-vn92   worker1            260k        19900M   19900M     ONLINE   2m17s
     ```
-11. Once your pool has came online. Follow steps from 
-    [here](https://github.com/openebs/cstor-csi#provision-a-cstor-volume-using-openebs-cstor-csi-driver) to provision a volume and deploy an app.
-    Please note, we already have created a pool using CSPC and we can skip the pool creation step explained there.
-     
+11. Once your pool has came online, we are ready with volume provisioning.
+    Create a Storage Class to dynamically provision volumes using OpenEBS CSI provisioner.
+    A sample storage class looks like:
 
+   ```yaml
+   kind: StorageClass
+   apiVersion: storage.k8s.io/v1
+   metadata:
+     name: cstor-csi-stripe
+   provisioner: cstor.csi.openebs.io
+   allowVolumeExpansion: true
+   parameters:
+     cas-type: cstor
+     cstorPoolCluster: cspc-stripe
+     replicaCount: "1"
+   ```
 
+   Create StorageClass using above example
 
+   ```bash
+    $ kubectl apply -f csi-cstor-sc.yaml
+   ```
+
+   You will need to specify the correct cStor CSPC from your cluster
+   and specify the desired `replicaCount` for the volume. The `replicaCount`
+   should be less than or equal to the max pools available.
+
+12. Create a PVC yaml using above created StorageClass name
+
+    ```yaml
+    kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: demo-cstor-vol
+    spec:
+      storageClassName: cstor-csi-stripe
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi
+     ```
+
+    Apply the above created pvc yaml to dynamically create volume and verify that
+    the PVC has been successfully created and bound to a PersistentVolume(PV)
+
+    ```bash
+    $ kubectl get pvc
+    NAME              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS       AGE
+    demo-cstor-vol    Bound    pvc-52d88903-0518-11ea-b887-42010a80006c   5Gi        RWO            cstor-csi-stripe   10s
+    ```
+
+13. Verify that the all volume specific resources has been created
+    successfully, check cstorvolumeconfig(cvc) should be in `Bound` state.
+
+    ```bash
+    $ kubectl get cstorvolumeconfig -n openebs
+    NAME                                         CAPACITY   STATUS    AGE
+    pvc-52d88903-0518-11ea-b887-42010a80006c2    5Gi        Bound   60s
+    ```
+
+    Verify volume and its replicas are `Healthy` state
+
+    ```bash
+    $ kubectl get cstorvolume -n openebs
+    NAME                                         CAPACITY   STATUS    AGE
+    pvc-52d88903-0518-11ea-b887-42010a80006c2    5Gi        Healthy   60s
+    ```
+
+    ```bash
+    $ kubectl get cstorvolumereplica -n openebs
+    NAME                                                        ALLOCATED   USED    STATUS    AGE
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-vn92   6K          6K      Healthy   60s
+    ```
+
+13. Create an application and use the above created PVC
+
+    ```yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: busybox
+      namespace: default
+    spec:
+      containers:
+      - command:
+           - sh
+           - -c
+           - 'date >> /mnt/openebs-csi/date.txt; hostname >> /mnt/openebs-csi/hostname.txt; sync; sleep 5; sync; tail -f /dev/null;'
+        image: busybox
+        imagePullPolicy: Always
+        name: busybox
+        volumeMounts:
+        - mountPath: /mnt/openebs-csi
+          name: demo-vol
+      volumes:
+      - name: demo-vol
+        persistentVolumeClaim:
+          claimName: demo-cstor-vol
+    ```
+
+    Verify that the pods is running and is able to write the data.
+
+    ```bash
+    $ kubectl get pods
+    NAME      READY   STATUS    RESTARTS   AGE
+    busybox   1/1     Running   0          97s
+    ```
+
+    The example busybox application is instructed to write the date when it starts into the
+    mounted path at `/mnt/openebs-csi/date.txt`
+
+    ```bash
+    $ kubectl exec -it busybox -- cat /mnt/openebs-csi/date.txt
+    Wed Jul 12 07:00:26 UTC 2020
+    ```

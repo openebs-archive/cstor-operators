@@ -135,7 +135,7 @@ func validatePoolListChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) erro
 	// Check the new CVC spec changes with old CVC status(Comparing with status
 	// is more appropriate than comparing with spec)
 	oldCurrentPoolNames := cvcOldObj.Status.PoolInfo
-	newDesiredPoolNames := GetDesiredReplicaPoolNames(cvcNewObj)
+	newDesiredPoolNames := cvcNewObj.GetDesiredReplicaPoolNames()
 	modifiedPoolNames := util.ListDiff(oldCurrentPoolNames, newDesiredPoolNames)
 	// Reject the request if someone perform scaling when CVC is not in Bound
 	// state
@@ -198,7 +198,7 @@ func validateReplicaScaling(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error
 // validatePoolNames returns error if there is repeatition of pool names either
 // under spec or status of cvc
 func validatePoolNames(cvcObj *cstor.CStorVolumeConfig) error {
-	replicaPoolNames := GetDesiredReplicaPoolNames(cvcObj)
+	replicaPoolNames := cvcObj.GetDesiredReplicaPoolNames()
 	// Check repeatition of pool names under Spec of CVC Object
 	if !IsUniqueList(replicaPoolNames) {
 		return errors.Errorf(
@@ -237,13 +237,4 @@ func IsUniqueList(list []string) bool {
 		listMap[str] = true
 	}
 	return true
-}
-
-// GetDesiredReplicaPoolNames returns list of desired pool names
-func GetDesiredReplicaPoolNames(cvc *cstor.CStorVolumeConfig) []string {
-	poolNames := []string{}
-	for _, poolInfo := range cvc.Spec.Policy.ReplicaPoolInfo {
-		poolNames = append(poolNames, poolInfo.PoolName)
-	}
-	return poolNames
 }

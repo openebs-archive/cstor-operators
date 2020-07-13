@@ -17,13 +17,14 @@ limitations under the License.
 package k8sclient
 
 import (
+	"time"
+
 	. "github.com/onsi/gomega"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 const maxRetry = 30

@@ -17,6 +17,8 @@ limitations under the License.
 package provisioning_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
@@ -24,7 +26,6 @@ import (
 	"github.com/openebs/cstor-operators/tests/pkg/cspc/cspcspecbuilder"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-	"time"
 )
 
 /*
@@ -69,13 +70,13 @@ var _ = Describe("CSPC", func() {
 func OperationsTest(poolType string, bdCount int) {
 	var cspc *cstor.CStorPoolCluster
 	var specBuilder *cspcspecbuilder.CSPCSpecBuilder
-	Describe(poolType+ " CSPC", func() {
+	Describe(poolType+" CSPC", func() {
 		Context("Block Device replacment", func() {
 			Specify("creatin the cspc,no error should be returned", func() {
 				specBuilder = cspcspecbuilder.
 					NewCSPCSpecBuilder(cspcsuite.CSPCCache, cspcsuite.infra)
 
-				cspc = specBuilder.BuildCSPC(poolType, bdCount, cspcsuite.infra.NodeCount).GetCSPCSpec()
+				cspc = specBuilder.BuildCSPC("cspc-foo", "openebs", poolType, bdCount, cspcsuite.infra.NodeCount).GetCSPCSpec()
 				_, err := cspcsuite.
 					client.
 					OpenEBSClientSet.
@@ -97,7 +98,7 @@ func OperationsTest(poolType string, bdCount int) {
 				func() {
 					poolSpecPos := 0
 					updatedSuccessfully := false
-					rt:=cspcspecbuilder.NewReplacementTracer()
+					rt := cspcspecbuilder.NewReplacementTracer()
 					for i := 0; i < 4; i++ {
 						gotCSPC, err := cspcsuite.
 							client.
@@ -111,11 +112,11 @@ func OperationsTest(poolType string, bdCount int) {
 							continue
 						}
 						specBuilder.SetCSPCSpec(gotCSPC)
-						
-						if rt.Replaced{
-							cspc = specBuilder.ReplaceBlockDevice(rt.OldBD,rt.NewBD).GetCSPCSpec()
-						}else {
-							cspc = specBuilder.ReplaceBlockDeviceAtPos(poolSpecPos, 0, 0,rt).GetCSPCSpec()
+
+						if rt.Replaced {
+							cspc = specBuilder.ReplaceBlockDevice(rt.OldBD, rt.NewBD).GetCSPCSpec()
+						} else {
+							cspc = specBuilder.ReplaceBlockDeviceAtPos(poolSpecPos, 0, 0, rt).GetCSPCSpec()
 						}
 
 						_, err = cspcsuite.
@@ -135,7 +136,7 @@ func OperationsTest(poolType string, bdCount int) {
 
 					if !updatedSuccessfully {
 						klog.Fatal("could not update the cspc for bd replacment")
-					}else{
+					} else {
 						klog.Info("updated cspc successfully for bd replacment")
 					}
 
@@ -195,7 +196,7 @@ func ProvisioningTest(poolType string, bdCount int) {
 				specBuilder = cspcspecbuilder.
 					NewCSPCSpecBuilder(cspcsuite.CSPCCache, cspcsuite.infra)
 
-				cspc = specBuilder.BuildCSPC(poolType, bdCount, cspcsuite.infra.NodeCount).GetCSPCSpec()
+				cspc = specBuilder.BuildCSPC("cspc-foo", "openebs", poolType, bdCount, cspcsuite.infra.NodeCount).GetCSPCSpec()
 				_, err := cspcsuite.
 					client.
 					OpenEBSClientSet.

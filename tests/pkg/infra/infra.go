@@ -19,15 +19,13 @@ package infra
 import "flag"
 
 var (
-	// KubeConfigPath is the path to
-	// the kubeconfig provided at runtime
+	// NodeCount is number of storage nodes in a k8s cluster
 	NodeCount int
-	// NodeCount is number of nodes in a k8s cluster
 )
 
 // ParseFlags gets the flag values at run time
 func ParseFlags() {
-	flag.IntVar(&NodeCount, "nodecount", 1, "number of nodes to perform testing on")
+	flag.IntVar(&NodeCount, "nodecount", 1, "number of storage nodes to perform testing on")
 }
 
 // Infrastructure holds the details about the k8s

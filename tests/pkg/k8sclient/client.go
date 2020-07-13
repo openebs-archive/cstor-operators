@@ -18,6 +18,8 @@ package k8sclient
 
 import (
 	"flag"
+	"time"
+
 	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
@@ -30,7 +32,8 @@ var (
 	// KubeConfigPath is the path to
 	// the kubeconfig provided at runtime
 	KubeConfigPath string
-	// NodeCount is number of nodes in a k8s cluster
+	// Poll used to process the event particular period of time
+	Poll = 5 * time.Second
 )
 
 // ParseFlags gets the flag values at run time

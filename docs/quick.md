@@ -84,26 +84,19 @@ meets the following prerequisites:
    ```
     Check that cstor-csi-controller and cstor-csi-node pods has came up.
 
-    ```bash
-    $ kubectl get pods -n openebs
+   ```bash
+    $ kubectl get pods -n kube-system
     NAME                                              READY   STATUS    RESTARTS   AGE
-    cspc-operator-874cdcb6b-t4zcs                     1/1     Running   0          25s
-    cvc-operator-fbcf99548-swlbg                      1/1     Running   0          25s
-    openebs-cstor-admission-server-7c89777f8c-bbgwp   1/1     Running   0          25s
-    openebs-ndm-f4kzc                                 1/1     Running   0          6m5s
-    openebs-ndm-operator-796f98fdd7-kvmpn             1/1     Running   1          6m5s
-    openebs-ndm-t65b5                                 1/1     Running   0          6m5s
-    openebs-ndm-xztkj                                 1/1     Running   0          6m5s
     openebs-cstor-csi-controller-0                    7/7     Running   0          5m22s
     openebs-cstor-csi-node-86mx9                      2/2     Running   0          5m22s
-    ```
+   ```
 
 
 8.  Provision a cStor pool. For simplicity, this guide will provision a 
     stripe pool on one node.
     Use the CSPC file from examples/cspc/cspc-single.yaml and modify by performing 
     follwing steps:
-    
+
     i) Modify CSPC to add your node selector for the node where you want to provision the pool.
        List the nodes with labels:
 
@@ -192,7 +185,7 @@ meets the following prerequisites:
    kind: StorageClass
    apiVersion: storage.k8s.io/v1
    metadata:
-     name: openebs-csi-cstor-stripe
+     name: cstor-csi-stripe
    provisioner: cstor.csi.openebs.io
    allowVolumeExpansion: true
    parameters:
@@ -211,7 +204,7 @@ meets the following prerequisites:
    and specify the desired `replicaCount` for the volume. The `replicaCount`
    should be less than or equal to the max pools available.
 
-12. Create a PVC yaml with the StorageClass name
+12. Create a PVC yaml using above created StorageClass name
 
     ```yaml
     kind: PersistentVolumeClaim

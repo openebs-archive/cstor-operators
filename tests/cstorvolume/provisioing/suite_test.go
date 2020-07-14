@@ -84,8 +84,6 @@ func NewCStorTestSuite() *CStorTestSuite {
 	infra := infra.NewInfrastructure()
 	cspcCache := cspccache.NewCSPCCache(k8sClient, infra)
 
-	klog.Infof("In before suite test %+v", k8sClient)
-
 	return &CStorTestSuite{
 		client:       k8sClient,
 		infra:        infra,

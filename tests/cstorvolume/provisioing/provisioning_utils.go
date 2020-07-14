@@ -2,10 +2,12 @@ package provisioning
 
 import (
 	"fmt"
+	"strconv"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
+	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
 	"github.com/openebs/cstor-operators/tests/pkg/cspc/cspcspecbuilder"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -16,6 +18,35 @@ import (
 const (
 	cstorCSIProvisionerName = "cstor.csi.openebs.io"
 )
+
+// ProvisionCSIVolume will provision Volume using CStor-CSI
+func ProvisionCSIVolume(pvcName, pvcNamespace, scName string) {
+	var (
+		// PVC will contains the PersistentVolumeClaim object created for test
+		pvc *corev1.PersistentVolumeClaim
+		// SC will contains the StorageClass object created for test
+		sc *storagev1.StorageClass
+	)
+
+	parameters := map[string]string{
+		"cas-type":         "cstor",
+		"cstorPoolCluster": cspc.Name,
+		"replicaCount":     strconv.Itoa(cstorsuite.ReplicaCount),
+	}
+	sc = createStorageClass(scName, parameters)
+
+	err := cstorsuite.client.CreateNamespace(pvcNamespace)
+	Expect(err).To(BeNil())
+
+	pvc = createPersistentVolumeClaim(pvcName, pvcNamespace, sc.Name)
+
+	err = cstorsuite.client.WaitForPersistentVolumeClaimPhase(
+		pvc.Name, pvc.Namespace, corev1.ClaimBound, k8sclient.Poll, k8sclient.ClaimBindingTimeout)
+	Expect(err).To(BeNil())
+
+	//TODO: Uncomment below code
+	// cvcSpecBuilder.SetCVCSpec(cvc)
+}
 
 // createStorageClass in etcd
 func createStorageClass(scName string, parameters map[string]string) *storagev1.StorageClass {
@@ -108,4 +139,70 @@ func DeProvisionCSPC(cspc *cstorapis.CStorPoolCluster) {
 		client.
 		GetCSPICountEventually(cspc.Name, cspc.Namespace, 0)
 	Expect(gotCSPICount).To(BeNumerically("==", 0))
+}
+
+// DeProvisionVolume will delete the provided PVC from system
+func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
+	// Read the PVC after before deleting the PVC
+	pvc, err := cstorsuite.client.KubeClientSet.
+		CoreV1().
+		PersistentVolumeClaims(pvcNamespace).
+		Get(pvcName, metav1.GetOptions{})
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.KubeClientSet.
+		CoreV1().
+		PersistentVolumeClaims(pvc.Namespace).
+		Delete(pvc.Name, &metav1.DeleteOptions{})
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.KubeClientSet.
+		StorageV1().
+		StorageClasses().
+		Delete(scName, &metav1.DeleteOptions{})
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForCStorVolumeDeleted(
+		pvc.Spec.VolumeName, openebsNamespace, k8sclient.Poll, k8sclient.CVDeletingTimeout)
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForVolumeManagerCountEventually(
+		pvc.Spec.VolumeName, openebsNamespace, 0, k8sclient.Poll, k8sclient.CVCPhaseTimeout)
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForCVRCountEventually(
+		pvc.Spec.VolumeName, openebsNamespace, 0,
+		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForCStorVolumeConfigDeleted(
+		pvc.Spec.VolumeName, openebsNamespace, k8sclient.Poll, k8sclient.CVCDeletingTimeout)
+	Expect(err).To(BeNil())
+}
+
+// VerifyCStorVolumeResourcesStatus will verifies the CStorVolume resources health state
+func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string) {
+	// Read the PVC after bind so that it will contain pv name
+	pvc, err := cstorsuite.client.KubeClientSet.
+		CoreV1().
+		PersistentVolumeClaims(pvcNamespace).
+		Get(pvcName, metav1.GetOptions{})
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForCStorVolumeConfigPhase(
+		pvc.Spec.VolumeName, openebsNamespace, cstorapis.CStorVolumeConfigPhaseBound, k8sclient.Poll, k8sclient.CVCPhaseTimeout)
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForVolumeManagerCountEventually(
+		pvc.Spec.VolumeName, openebsNamespace, 1, k8sclient.Poll, k8sclient.CVCPhaseTimeout)
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForCStorVolumePhase(
+		pvc.Spec.VolumeName, openebsNamespace, cstorapis.CStorVolumePhase("Healthy"), k8sclient.Poll, k8sclient.CVPhaseTimeout)
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForCVRCountEventually(
+		pvc.Spec.VolumeName, openebsNamespace, cstorsuite.ReplicaCount,
+		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
+	Expect(err).To(BeNil())
 }

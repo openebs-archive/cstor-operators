@@ -18,6 +18,7 @@ package provisioning
 
 import (
 	"strconv"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,7 +27,6 @@ import (
 	"github.com/openebs/cstor-operators/tests/pkg/cstorvolumeconfig/cvcspecbuilder"
 	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
 	corev1 "k8s.io/api/core/v1"
-	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -49,6 +49,7 @@ This test file covers following test cases :
 
 var _ = Describe("Volume Provisioning Tests", func() {
 	CSIVolumeProvisioningTest()
+	ProvisionVolumeWithReplicaCountMoreThanAvailablePools()
 })
 
 func CSIVolumeProvisioningTest() {
@@ -96,94 +97,69 @@ func CSIVolumeProvisioningTest() {
 	})
 }
 
-func ProvisionCSIVolume(pvcName, pvcNamespace, scName string) {
-	var (
-		// PVC will contains the PersistentVolumeClaim object created for test
-		pvc *corev1.PersistentVolumeClaim
-		// SC will contains the StorageClass object created for test
-		sc *storagev1.StorageClass
-	)
+// ProvisionVolumeWithReplicaCountMoreThanAvailablePools will create volume replica with more than available pools
+// Negative test case: Expected to fail
+func ProvisionVolumeWithReplicaCountMoreThanAvailablePools() {
+	testNS := "test-provisioning"
+	pvcName := "pvc-with-more-replicas"
+	scName := "sc-with-more-replicas"
+	Describe("Intantiating Volume provisioing test with replica count more than available pools", func() {
+		Context("Provision pools using CSPC", func() {
+			It("should provision pools and pools should be marked as Healthy", func() {
+				ProvisionCSPC("cstor-stripe-more-replicas", openebsNamespace, "stripe", 1)
+			})
+		})
+		Context("Provision CStor-CSI volume", func() {
+			It("Shouldn't provision volume and CVC should be in Pending state", func() {
+				// Build parameters required for provisioning volume
+				scParameters := map[string]string{
+					"cas-type":         "cstor",
+					"cstorPoolCluster": cspc.Name,
+					"replicaCount":     strconv.Itoa(cstorsuite.infra.NodeCount + 1),
+				}
 
-	parameters := map[string]string{
-		"cas-type":         "cstor",
-		"cstorPoolCluster": cspc.Name,
-		"replicaCount":     strconv.Itoa(cstorsuite.ReplicaCount),
-	}
-	sc = createStorageClass(scName, parameters)
+				_ = createStorageClass(scName, scParameters)
 
-	err := cstorsuite.client.CreateNamespace(pvcNamespace)
-	Expect(err).To(BeNil())
+				err := cstorsuite.client.CreateNamespace(testNS)
+				Expect(err).To(BeNil())
 
-	pvc = createPersistentVolumeClaim(pvcName, pvcNamespace, sc.Name)
+				pvc := createPersistentVolumeClaim(pvcName, testNS, scName)
 
-	err = cstorsuite.client.WaitForPersistentVolumeClaimPhase(
-		pvc.Name, pvc.Namespace, corev1.ClaimBound, k8sclient.Poll, k8sclient.ClaimBindingTimeout)
-	Expect(err).To(BeNil())
+				err = cstorsuite.client.WaitForPersistentVolumeClaimPhase(
+					pvc.Name, pvc.Namespace, corev1.ClaimBound, k8sclient.Poll, k8sclient.ClaimBindingTimeout)
+				Expect(err).To(BeNil())
 
-	//TODO: Uncomment below code
-	// cvcSpecBuilder.SetCVCSpec(cvc)
-}
+				// Fetch PVC to use in later
+				pvc, err = cstorsuite.client.KubeClientSet.
+					CoreV1().
+					PersistentVolumeClaims(testNS).
+					Get(pvc.Name, metav1.GetOptions{})
+				Expect(err).To(BeNil())
 
-func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string) {
-	// Read the PVC after bind so that it will contain pv name
-	pvc, err := cstorsuite.client.KubeClientSet.
-		CoreV1().
-		PersistentVolumeClaims(pvcNamespace).
-		Get(pvcName, metav1.GetOptions{})
-	Expect(err).To(BeNil())
+				err = cstorsuite.client.WaitForCStorVolumeConfigPhase(
+					pvc.Spec.VolumeName, openebsNamespace, cstorapis.CStorVolumeConfigPhaseBound, k8sclient.Poll, 30*time.Second)
+				// Error should occur
+				Expect(err).NotTo(BeNil())
+			})
+		})
 
-	err = cstorsuite.client.WaitForCStorVolumeConfigPhase(
-		pvc.Spec.VolumeName, openebsNamespace, cstorapis.CStorVolumeConfigPhaseBound, k8sclient.Poll, k8sclient.CVCPhaseTimeout)
-	Expect(err).To(BeNil())
+		Context("De-Provision CStor volume", func() {
+			Specify("no error should be returned and all the CStor volume resources should be delete", func() {
+				DeProvisionVolume(pvcName, testNS, scName)
+			})
+		})
 
-	err = cstorsuite.client.WaitForVolumeManagerCountEventually(
-		pvc.Spec.VolumeName, openebsNamespace, 1, k8sclient.Poll, k8sclient.CVCPhaseTimeout)
-	Expect(err).To(BeNil())
+		Context("Deleting PVC Namespace", func() {
+			Specify("no error should occur during deletion of namespace", func() {
+				err := cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				Expect(err).To(BeNil())
+			})
+		})
 
-	err = cstorsuite.client.WaitForCStorVolumePhase(
-		pvc.Spec.VolumeName, openebsNamespace, cstorapis.CStorVolumePhase("Healthy"), k8sclient.Poll, k8sclient.CVPhaseTimeout)
-	Expect(err).To(BeNil())
-
-	err = cstorsuite.client.WaitForCVRCountEventually(
-		pvc.Spec.VolumeName, openebsNamespace, cstorsuite.ReplicaCount,
-		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
-	Expect(err).To(BeNil())
-}
-
-func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
-	// Read the PVC after before deleting the PVC
-	pvc, err := cstorsuite.client.KubeClientSet.
-		CoreV1().
-		PersistentVolumeClaims(pvcNamespace).
-		Get(pvcName, metav1.GetOptions{})
-	Expect(err).To(BeNil())
-
-	err = cstorsuite.client.KubeClientSet.
-		CoreV1().
-		PersistentVolumeClaims(pvc.Namespace).
-		Delete(pvc.Name, &metav1.DeleteOptions{})
-	Expect(err).To(BeNil())
-
-	err = cstorsuite.client.KubeClientSet.
-		StorageV1().
-		StorageClasses().
-		Delete(scName, &metav1.DeleteOptions{})
-	Expect(err).To(BeNil())
-
-	err = cstorsuite.client.WaitForCStorVolumeDeleted(
-		pvc.Spec.VolumeName, openebsNamespace, k8sclient.Poll, k8sclient.CVDeletingTimeout)
-	Expect(err).To(BeNil())
-
-	err = cstorsuite.client.WaitForVolumeManagerCountEventually(
-		pvc.Spec.VolumeName, openebsNamespace, 0, k8sclient.Poll, k8sclient.CVCPhaseTimeout)
-	Expect(err).To(BeNil())
-
-	err = cstorsuite.client.WaitForCVRCountEventually(
-		pvc.Spec.VolumeName, openebsNamespace, 0,
-		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
-	Expect(err).To(BeNil())
-
-	err = cstorsuite.client.WaitForCStorVolumeConfigDeleted(
-		pvc.Spec.VolumeName, openebsNamespace, k8sclient.Poll, k8sclient.CVCDeletingTimeout)
-	Expect(err).To(BeNil())
+		Context("Deprovisioning cspc", func() {
+			Specify("no error should be returned during pool deprovisioning", func() {
+				DeProvisionCSPC(cspc)
+			})
+		})
+	})
 }

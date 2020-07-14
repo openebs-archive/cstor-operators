@@ -389,6 +389,8 @@ github.com/opencontainers/runtime-spec v1.0.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/
 github.com/opencontainers/selinux v1.3.1-0.20190929122143-5215b1806f52/go.mod h1:+BLncwf63G4dgOzykXAxcmnFlUaOlkDdmw/CqsW6pjs=
 github.com/openebs/api v1.11.1-0.20200629052954-e52e2bcd8339 h1:T6IuGc8zikB4XG+s8QTyTruJ35s1fm/P41z1AGj2rkI=
 github.com/openebs/api v1.11.1-0.20200629052954-e52e2bcd8339/go.mod h1:TASujm6H1LGdx43MN7Dab1xdAqR7MVU8bsS74Ywop5w=
+github.com/openebs/api v1.11.1-0.20200714130107-dca81641f677 h1:a4MkCCd4QrC+Hun7xIkBkXbJcbF9SU3H/P6vZNxSwwA=
+github.com/openebs/api v1.11.1-0.20200714130107-dca81641f677/go.mod h1:TASujm6H1LGdx43MN7Dab1xdAqR7MVU8bsS74Ywop5w=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/pelletier/go-toml v1.1.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=

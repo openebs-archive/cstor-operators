@@ -17,11 +17,12 @@ limitations under the License.
 package cspcspecbuilder
 
 import (
+	"reflect"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/tests/pkg/cache/cspccache"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
 	"k8s.io/klog"
-	"reflect"
 )
 
 // CSPCSpecBuilder is used to build CSPC spec.
@@ -93,12 +94,12 @@ func NewCSPCSpecBuilder(cspcCache *cspccache.CSPCResourceCache, infra *infra.Inf
 }
 
 type ReplacementTracer struct {
-	OldBD string
-	NewBD string
+	OldBD    string
+	NewBD    string
 	Replaced bool
 }
 
-func NewReplacementTracer() *ReplacementTracer  {
+func NewReplacementTracer() *ReplacementTracer {
 	return &ReplacementTracer{}
 }
 
@@ -131,21 +132,21 @@ func (c *CSPCSpecBuilder) ReplaceBlockDeviceAtPos(poolSpecPos, raidGroupPos, bdP
 }
 
 // ReplaceBlockDevice replaces given oldBd with the given newBD
-func (c *CSPCSpecBuilder) ReplaceBlockDevice(oldBD,newBD string) *CSPCSpecBuilder {
-	replaced:=false
-	for i:=0;i<len(c.CSPC.Spec.Pools);i++{
-		for j:=0;j<len(c.CSPC.Spec.Pools[i].DataRaidGroups);j++{
-			for k:=0;k<len(c.CSPC.Spec.Pools[i].DataRaidGroups[j].CStorPoolInstanceBlockDevices);k++{
-				if c.CSPC.Spec.Pools[i].DataRaidGroups[j].CStorPoolInstanceBlockDevices[k].BlockDeviceName == oldBD{
+func (c *CSPCSpecBuilder) ReplaceBlockDevice(oldBD, newBD string) *CSPCSpecBuilder {
+	replaced := false
+	for i := 0; i < len(c.CSPC.Spec.Pools); i++ {
+		for j := 0; j < len(c.CSPC.Spec.Pools[i].DataRaidGroups); j++ {
+			for k := 0; k < len(c.CSPC.Spec.Pools[i].DataRaidGroups[j].CStorPoolInstanceBlockDevices); k++ {
+				if c.CSPC.Spec.Pools[i].DataRaidGroups[j].CStorPoolInstanceBlockDevices[k].BlockDeviceName == oldBD {
 					c.CSPC.Spec.Pools[i].DataRaidGroups[j].CStorPoolInstanceBlockDevices[k].BlockDeviceName = newBD
-					replaced=true
+					replaced = true
 					break
 				}
 			}
 		}
 	}
-	if !replaced{
-		klog.Fatalf("Could not find a %d block device for replacement",oldBD)
+	if !replaced {
+		klog.Fatalf("Could not find a %s block device for replacement", oldBD)
 	}
 	c.CSPCSpecData.AddDiskToUsedSet(newBD)
 	c.CSPCSpecData.AddDiskToUnusedSet(oldBD)
@@ -184,7 +185,7 @@ func (c *CSPCSpecBuilder) AddPoolSpec(nodeName string, poolType string, bdCount 
 
 	if len(c.CSPCCache.NodeDisk[nodeName]) < bdCount {
 		klog.Fatalf("Not enough block "+
-			"devices available for node %s: want %d,got %d",
+			"devices available for node %s: want %d,got %s",
 			nodeName, bdCount, c.CSPCCache.NodeDisk[nodeName])
 	}
 
@@ -211,10 +212,10 @@ func (c *CSPCSpecBuilder) AddPoolSpec(nodeName string, poolType string, bdCount 
 }
 
 // BuildCSPC builds a CSPC spec in accordance with the provided arguments
-func (c *CSPCSpecBuilder) BuildCSPC(poolType string, bdCount, poolCount int) *CSPCSpecBuilder {
+func (c *CSPCSpecBuilder) BuildCSPC(cspcName, namespace, poolType string, bdCount, poolCount int) *CSPCSpecBuilder {
 	cspc := cstor.NewCStorPoolCluster().
-		WithName("cspc-foo").
-		WithNamespace("openebs")
+		WithName(cspcName).
+		WithNamespace(namespace)
 
 	c.CSPC = cspc
 

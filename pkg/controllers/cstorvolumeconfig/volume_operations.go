@@ -703,7 +703,7 @@ func (c *CVCController) getUpdatePDBForVolume(cvcObj *apis.CStorVolumeConfig) (s
 //    pool names and current replica pool names.
 // Note: Scale up/down of cvc will not work until cvc is in bound state
 func (c *CVCController) isCVCScalePending(cvc *apis.CStorVolumeConfig) bool {
-	desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
+	desiredPoolNames := cvc.GetDesiredReplicaPoolNames()
 	return util.IsChangeInLists(desiredPoolNames, cvc.Status.PoolInfo)
 }
 
@@ -759,7 +759,7 @@ func (c *CVCController) updatePDBForScaledVolume(cvc *apis.CStorVolumeConfig) (*
 func (c *CVCController) updateCVCWithScaledUpInfo(cvc *apis.CStorVolumeConfig,
 	cvObj *apis.CStorVolume) (*apis.CStorVolumeConfig, error) {
 	pvName := cvc.GetAnnotations()[volumeID]
-	desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
+	desiredPoolNames := cvc.GetDesiredReplicaPoolNames()
 	newPoolNames := util.ListDiff(desiredPoolNames, cvc.Status.PoolInfo)
 	replicaPoolMap := map[string]bool{}
 
@@ -797,7 +797,7 @@ func (c *CVCController) updateCVCWithScaledUpInfo(cvc *apis.CStorVolumeConfig,
 // getScaleDownCVR return CVR which belongs to scale down pool
 func getScaleDownCVR(clientset clientset.Interface, cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeReplica, error) {
 	pvName := cvc.GetAnnotations()[volumeID]
-	desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
+	desiredPoolNames := cvc.GetDesiredReplicaPoolNames()
 	removedPoolNames := util.ListDiff(cvc.Status.PoolInfo, desiredPoolNames)
 	cvrName := pvName + "-" + removedPoolNames[0]
 	return clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
@@ -811,7 +811,7 @@ func getScaleDownCVR(clientset clientset.Interface, cvc *apis.CStorVolumeConfig)
 //    CVR already created then do nothing.
 func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig, cvObj *apis.CStorVolume) error {
 	pvName := cvc.GetAnnotations()[volumeID]
-	desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
+	desiredPoolNames := cvc.GetDesiredReplicaPoolNames()
 	newPoolNames := util.ListDiff(desiredPoolNames, cvc.Status.PoolInfo)
 	errs := []error{}
 	var errorMsg string
@@ -934,7 +934,7 @@ func (c *CVCController) scaleDownVolumeReplicas(cvc *apis.CStorVolumeConfig) (*a
 				return cvc, errors.Wrapf(err, "failed to delete cstorvolumereplica %s", cvrObj.Name)
 			}
 		}
-		desiredPoolNames := apis.GetDesiredReplicaPoolNames(cvc)
+		desiredPoolNames := cvc.GetDesiredReplicaPoolNames()
 		cvcCopy := cvc.DeepCopy()
 		cvc.Status.PoolInfo = desiredPoolNames
 		// updatePDBForScaledVolume will handle updating PDB and CVC status
@@ -968,7 +968,7 @@ func GetVolumeReplicaPoolNames(clientset clientset.Interface, pvName, namespace 
 			"failed to list cStorVolumeReplicas related to volume %s",
 			pvName)
 	}
-	return apis.GetPoolNames(cvrList), nil
+	return cvrList.GetPoolNames(), nil
 }
 
 // GetCVRList returns list of volume replicas related to provided volume

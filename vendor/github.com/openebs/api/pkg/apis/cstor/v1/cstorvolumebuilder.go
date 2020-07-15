@@ -138,7 +138,7 @@ func (cvc *CStorVolumeConfig) RemoveFinalizer(finalizer string) {
 }
 
 // GetDesiredReplicaPoolNames returns list of desired pool names
-func GetDesiredReplicaPoolNames(cvc *CStorVolumeConfig) []string {
+func (cvc *CStorVolumeConfig) GetDesiredReplicaPoolNames() []string {
 	poolNames := []string{}
 	for _, poolInfo := range cvc.Spec.Policy.ReplicaPoolInfo {
 		poolNames = append(poolNames, poolInfo.PoolName)
@@ -513,6 +513,44 @@ func (vd *VersionDetails) SetSuccessStatus() {
 //
 // **************************************************************************
 
+// CVRPredicate defines an abstraction to determine conditional checks against the
+// provided CVolumeReplicas
+type CVRPredicate func(*CStorVolumeReplica) bool
+
+// +k8s:deepcopy-gen=false
+
+// CVRPredicateList holds the list of Predicates
+type CVRPredicateList []CVRPredicate
+
+// all returns true if all the predicates succeed against the provided list.
+func (l CVRPredicateList) all(cvr *CStorVolumeReplica) bool {
+	for _, pred := range l {
+		if !pred(cvr) {
+			return false
+		}
+	}
+	return true
+}
+
+// Filter will filter the CVRs if all the predicates succeed
+// against that CVRs
+func (cvrList *CStorVolumeReplicaList) Filter(p ...CVRPredicate) *CStorVolumeReplicaList {
+	var plist CVRPredicateList
+	plist = append(plist, p...)
+	if len(plist) == 0 {
+		return cvrList
+	}
+
+	filtered := &CStorVolumeReplicaList{}
+	for _, cvr := range cvrList.Items {
+		cvr := cvr // pin it
+		if plist.all(&cvr) {
+			filtered.Items = append(filtered.Items, cvr)
+		}
+	}
+	return filtered
+}
+
 // NewCStorVolumeReplica returns new instance of CStorVolumeReplica
 func NewCStorVolumeReplica() *CStorVolumeReplica {
 	return &CStorVolumeReplica{}
@@ -651,10 +689,26 @@ func (cvr *CStorVolumeReplica) RemoveFinalizer(finalizer string) {
 }
 
 // GetPoolNames returns list of pool names from cStor volume replcia list
-func GetPoolNames(cvrList *CStorVolumeReplicaList) []string {
+func (cvrList *CStorVolumeReplicaList) GetPoolNames() []string {
 	poolNames := []string{}
 	for _, cvrObj := range cvrList.Items {
 		poolNames = append(poolNames, cvrObj.Labels[string(types.CStorPoolInstanceNameLabelKey)])
 	}
 	return poolNames
+}
+
+// IsCVRHealthy returns true if CVR phase is Healthy
+func IsCVRHealthy(cvr *CStorVolumeReplica) bool {
+	return cvr.Status.Phase == CVRStatusOnline
+}
+
+// IsReplicaNonQuorum returns true if CVR phase is
+// either NewReplicaDegraded or ReconstructingNewReplica
+func IsReplicaNonQuorum(cvr *CStorVolumeReplica) bool {
+	if cvr.Status.Phase == CVRStatusNewReplicaDegraded {
+		return true
+	} else if cvr.Status.Phase == CVRStatusReconstructingNewReplica {
+		return true
+	}
+	return false
 }

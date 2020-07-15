@@ -737,9 +737,8 @@ spec:
             - name: OPENEBS_CSI_ENDPOINT
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
             - name: OPENEBS_CSI_API_URL
-              value: https://api.openebs.com/
-            - name: OPENEBS_MAPI_SVC
-              value: maya-apiserver-service
+              value: https://openebs.io
+              # OpenEBS namespace where the openebs cstor operator components
             - name: OPENEBS_NAMESPACE
               value: openebs
           args :
@@ -942,8 +941,8 @@ spec:
               value: unix:///plugin/csi.sock
             - name: OPENEBS_NODE_DRIVER
               value: node
-            - name: OPENEBS_API_URL
-              value: https://api.openebs.com/
+            - name: OPENEBS_CSI_API_URL
+              value: https://openebs.io
             - name: OPENEBS_MAPI_SVC
               value: maya-apiserver-service
             - name: OPENEBS_NAMESPACE

@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
 	"github.com/openebs/cstor-operators/tests/pkg/cspc/cspcspecbuilder"
+	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -89,13 +89,13 @@ func createPersistentVolumeClaim(pvcName, pvcNamespace, scName string) *corev1.P
 			},
 		},
 	}
-	
+
 	pvc, err = cstorsuite.client.KubeClientSet.
 		CoreV1().
 		PersistentVolumeClaims(pvcNamespace).
 		Create(pvc)
 	Expect(err).To(BeNil())
-	
+
 	return pvc
 }
 
@@ -117,7 +117,7 @@ func ProvisionCSPC(cspcName, namespace, poolType string, bdCount int) {
 		client.
 		GetOnlineCSPICountEventually(cspc.Name, cspc.Namespace, cstorsuite.infra.NodeCount)
 	Expect(gotHealthyCSPiCount).To(BeNumerically("==", int32(cstorsuite.infra.NodeCount)))
-	
+
 	// TODO: Uncoment the below code
 	// cvcSpecBuilder = cvcspecbuilder.NewCVCSpecBuilder(cstorsuite.infra, []string{})
 

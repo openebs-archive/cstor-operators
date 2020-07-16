@@ -1,4 +1,4 @@
-# cStor Pool Resource Organisation
+# cStor Pool Resource Organization
 
 ## Introduction
 
@@ -64,15 +64,16 @@ For example consider following scenarios :
 from each node.
 
 **NOTES:**
-1. Consider following statements : 
-    1.1 Create cStor pools.
-    1.2 Create cStor pool cluster.
-    In common discussion both could mean the same thing but a cStor user always creates a cStor pool cluster and that 
-    cStor pool cluster can have minimum 1 cStor pool in order to finally create a volume. Users can decide how many
-    cStor pools they want to be there in a cStor pool cluster.
+Consider following statements: 
+- Create cStor pools.
+- Create cStor pool cluster.
+
+In common discussion both the above statements could mean the same thing but a cStor user always creates a cStor pool cluster and that 
+cStor pool cluster can have minimum 1 cStor pool in order to finally create a volume. Users can decide how many
+cStor pools they want to be there in a cStor pool cluster.
 
 To create cStor pool cluster, CSPC custom resource (API) can be used. One need to put the details in a CSPC YAML file, for example nodes and associated 
-disks they want to select with other relevant information and then do a `kubectl apply -f <cspc-yaml-file` to create a cStor pool cluster.
+disks they want to select with other relevant information and then do a `kubectl apply -f <cspc-yaml-file>` to create a cStor pool cluster.
 To learn more about how to create pool cluster using CSPC, follow this link. (TODO)
 
 
@@ -183,6 +184,6 @@ For more details on how to use CSPC please follow this link.
 
 ```
 
-To understand cStor volume resource organisation, please follow this link.
+To understand cStor volume resource organization, please follow this link.
 
 *CSPC is an declarative API that enables you to create a group of cStor pool(s) on Kubernetes nodes as well as allow you to do other pool operations e.g. disk replacement, pool expansion etc in a Kubectl native way. CSPC API also supports GitOps model.*

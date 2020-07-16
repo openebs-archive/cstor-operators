@@ -15,7 +15,7 @@ OpenEBS uses the standard GitHub pull requests process to review and accept cont
 * If you are a first-time contributor, please see [Steps to Contribute](#steps-to-contribute).
 * If you have documentation improvement ideas, go ahead and create a pull request. See [Pull Request checklist](#pull-request-checklist).
 * If you would like to make code contributions, please start with [Setting up the Development Environment](#setting-up-your-development-environment).
-* If you would like to work on something more involved, please connect with the OpenEBS Contributors. ( See [communicate](#communicate) ) 
+* If you would like to work on something more involved, please connect with the OpenEBS Contributors. ( See [communicate](#communicate) )
 
 ## Steps to Contribute
 
@@ -67,8 +67,8 @@ For setting up a Development environment on your local host, see the detailed in
 ## Communicate
 
 Reach out to OpenEBS [slack] to communicate with contributors.
-Also feel free to reach out to @sonasingh46 @mittachaitu @prateekpandey14 
+Also feel free to reach out to @sonasingh46 @mittachaitu @prateekpandey14
 who are the owners for cstor-operators repository.
 
 
-[slack]: https://openebs-community.slack.com
+[slack]: (https://kubernetes.slack.com/messages/openebs/)

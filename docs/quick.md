@@ -16,7 +16,7 @@ meets the following prerequisites:
     ```bash
     $ git clone https://github.com/openebs/cstor-operators.git
     ```
-    
+
 2.  Make sure you are at the root directory of the cloned repository.
     ```bash
     $ cd cstor-operators
@@ -50,7 +50,7 @@ meets the following prerequisites:
     blockdevice-3ec130dc1aa932eb4c5af1db4d73ea1b   worker2            21474836480   Unclaimed    Active   2m12s
     ```
 
-    NOTE: 
+    NOTE:
     1. It can take little while for blockdevices to appear when the application is warming up.
     2. For a blockdevice to appear, you must have disks attached to node.
 
@@ -77,7 +77,18 @@ meets the following prerequisites:
     openebs-ndm-xztkj                                 1/1     Running   0          6m5s
     ```
 
-7. Install CStor CSI driver.
+7. Install CStor CSI driver. Apply the file that corresponds to your OS.
+
+    |       Operating System         |              csi-operator.yaml             |
+    |--------------------------------|--------------------------------------------|
+    | Ubuntu 16.04, CentOS 7 & 8     |         [deploy/csi-operator.yaml](1)      |
+    | Ubuntu 18.04+                  | [deploy/csi-operator-ubuntu-18.04.yaml](2) |
+
+    **Known Limitations**
+    * The CSI-Operators are currently unavailable for CoreOS
+
+    *Note*: These operators **may** work for other operating systems, we look forward to your feedback & contribution
+            in testing and doccumenting the same.
 
    ```bash
     $ kubectl create -f deploy/csi-operator.yaml
@@ -91,17 +102,16 @@ meets the following prerequisites:
     openebs-cstor-csi-node-86mx9                      2/2     Running   0          5m22s
    ```
 
-
-8.  Provision a cStor pool. For simplicity, this guide will provision a 
+8.  Provision a cStor pool. For simplicity, this guide will provision a
     stripe pool on one node.
-    Use the CSPC file from examples/cspc/cspc-single.yaml and modify by performing 
+    Use the CSPC file from [examples/cspc/cspc-single.yaml](/examples/cspc/cspc-single.yaml) and modify by performing
     follwing steps:
 
     i) Modify CSPC to add your node selector for the node where you want to provision the pool.
        List the nodes with labels:
 
        ```bash
-       kubectl get node --show labels
+       kubectl get node --show-labels
 
        ```
        ```bash
@@ -118,7 +128,7 @@ meets the following prerequisites:
        In this guide, worker1 is picked. Modify the CSPC yaml to use this worker.
        (Note: Use the value from labels kubernetes.io/hostname=worker1 as this label value and node name could be different in some platforms)
 
-       ```bash
+       ```yml
        kubernetes.io/hostname: "worker1"
        ```
 
@@ -132,7 +142,7 @@ meets the following prerequisites:
         blockdevice-10ad9f484c299597ed1e126d7b857967    worker1            21474836480   Unclaimed    Active   2m17s
         blockdevice-3ec130dc1aa932eb4c5af1db4d73ea1b    worker2            21474836480   Unclaimed    Active   2m12s
        ```
-       ```bash
+       ```yml
        - blockDeviceName: "blockdevice-10ad9f484c299597ed1e126d7b857967"
        ```
        Finally the CSPC YAML looks like the following :
@@ -148,7 +158,7 @@ meets the following prerequisites:
                kubernetes.io/hostname: "worker1"
              dataRaidGroups:
              - blockDevices:
-                 - blockDeviceName: "blockdevice-10ad9f484c299597ed1e126d7b857967" 
+                 - blockDeviceName: "blockdevice-10ad9f484c299597ed1e126d7b857967"
              poolConfig:
                dataRaidGroupType: "stripe"
        ```
@@ -158,11 +168,11 @@ meets the following prerequisites:
     kubectl apply -f examples/cspc/cspc-single.yaml
     ```
 10. Check if the pool has came online.
-    
+
     ```bash
     kubectl get cspc -n openebs
     ```
-   
+
     ```bash
     NAME          HEALTHYINSTANCES   PROVISIONEDINSTANCES   DESIREDINSTANCES   AGE
     cspc-stripe   1                  1                      1                  2m2s
@@ -293,3 +303,6 @@ meets the following prerequisites:
     $ kubectl exec -it busybox -- cat /mnt/openebs-csi/date.txt
     Wed Jul 12 07:00:26 UTC 2020
     ```
+
+[1]: /deploy/csi-operator.yaml
+[2]: /deploy/csi-operator-ubuntu-18.04.yaml

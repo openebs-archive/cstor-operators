@@ -14,19 +14,17 @@
 
 ### Clone fork to local host
 
-Place openebs/cstor-operators' code on your `GOPATH` using the following cloning procedure.
+Place openebs/cstor-operators' code on your local machine using the following cloning procedure.
 Create your clone:
 
+Move to the directory where you want to place the clone.
+
 ```sh
-
-mkdir -p $GOPATH/src/github.com/openebs
-cd $GOPATH/src/github.com/openebs
-
 # Note: Here $user is your GitHub profile name
 git clone https://github.com/$user/cstor-operators.git
 
 # Configure remote upstream
-cd $GOPATH/src/github.com/openebs/cstor-operators
+cd cstor-operators
 git remote add upstream https://github.com/openebs/cstor-operators.git
 
 # Never push to upstream master
@@ -43,7 +41,7 @@ git remote -v
 Open a terminal on your local host. Change directory to the cstor-operators-fork root.
 
 ```sh
-$ cd $GOPATH/src/github.com/openebs/cstor-operators
+$ cd cstor-operators
 ```
 
  Checkout the master branch.
@@ -133,16 +131,16 @@ $ cd $GOPATH/src/github.com/openebs/cstor-operators
 ### Test your changes
 After you are done with your changes, run the unit tests.
  ```sh
- cd $GOPATH/src/github.com/openebs/cstor-operators
+ cd cstor-operators
 
  # Run every unit test
  make test
  ```
 
 ### Build the images
-You can build amd64 images by following command. 
+You can build amd64 images by following command.
  ```sh
- cd $GOPATH/src/github.com/openebs/cstor-operators
+ cd cstor-operators
  make all.amd64
  ```
 

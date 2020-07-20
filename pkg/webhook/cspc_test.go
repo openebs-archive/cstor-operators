@@ -952,6 +952,9 @@ func TestCSPCScaleDown(t *testing.T) {
 	f := newFixture().withOpenebsObjects().withKubeObjects()
 	f.fakeNodeCreator(3)
 	// Each node will have 20 blockdevices
+	// This will attach first 1-20 blockdevices to node1;
+	// 21-40 blockdevices to node2 and 41-60 blockdevices to
+	// node3
 	f.fakeBlockDeviceCreator(60, 3)
 	tests := map[string]struct {
 		// existingObj is object existing in etcd via fake client
@@ -983,8 +986,8 @@ func TestCSPCScaleDown(t *testing.T) {
 							WithDataRaidGroupType("mirror")).
 						WithDataRaidGroups(*cstor.NewRaidGroup().
 							WithCStorPoolInstanceBlockDevices(
-								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
-								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-23"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-24"),
 							),
 						),
 				),
@@ -1071,8 +1074,8 @@ func TestCSPCScaleDown(t *testing.T) {
 							WithDataRaidGroupType("mirror")).
 						WithDataRaidGroups(*cstor.NewRaidGroup().
 							WithCStorPoolInstanceBlockDevices(
-								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-7"),
-								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-8"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-27"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-28"),
 							),
 						),
 				),
@@ -1121,6 +1124,72 @@ func TestCSPCScaleDown(t *testing.T) {
 						Labels: map[string]string{
 							types.HostNameLabelKey:              "worker-1",
 							types.CStorPoolInstanceNameLabelKey: "cspc-bar-mirror-1",
+						},
+					},
+				},
+			},
+			expectedRsp: true,
+			getCSPCObj:  getCSPCObject,
+		},
+		"Scale down when node doesn't exist in cluster": {
+			existingObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-bar-mirror-2").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-not-exist"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-6"),
+							),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-27"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-28"),
+							),
+						),
+				),
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-bar-mirror-2").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-27"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-28"),
+							),
+						),
+				),
+			existingCSPIs: []*cstor.CStorPoolInstance{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cspc-bar-mirror-2-cspi-1",
+						Namespace: "openebs",
+						Labels: map[string]string{
+							types.HostNameLabelKey:         "worker-not-exist",
+							types.CStorPoolClusterLabelKey: "cspc-bar-mirror-2",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cspc-bar-mirror-2-cspi-2",
+						Namespace: "openebs",
+						Labels: map[string]string{
+							types.HostNameLabelKey:         "worker-2",
+							types.CStorPoolClusterLabelKey: "cspc-bar-mirror-2",
 						},
 					},
 				},

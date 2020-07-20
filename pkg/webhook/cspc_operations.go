@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 )
 
 const (
@@ -118,31 +119,83 @@ func GetHostNameFromLabelSelector(labels map[string]string, kubeClient kubernete
 }
 
 // getCommonPoolSpecs get the same pool specs from old persisted CSPC and the new CSPC after modification
-// which is not persisted yet.
+// which is not persisted yet. It figures out common pool spec using following ways
+// 1. If node exist in cluster for current node selector then common pool
+//    spec will be figured out using nodeselector.
+// 2. If node doesn't exist in cluster for current node selector then
+//    common pool spec will be figured using data raid groups blockdevices.
+// NOTE: First check is more priority to avoid blockdevice replacement in case of stripe pool
+// TODO: Fix cases where node and blockdevice were replaced at a time
 func getCommonPoolSpecs(cspcNew, cspcOld *cstor.CStorPoolCluster, kubeClient kubernetes.Interface) (*poolspecs, error) {
 	commonPoolSpecs := &poolspecs{
 		oldSpec: []cstor.PoolSpec{},
 		newSpec: []cstor.PoolSpec{},
 	}
-	for _, oldPool := range cspcOld.Spec.Pools {
-		oldNodeName, err := GetHostNameFromLabelSelector(oldPool.NodeSelector, kubeClient)
+	for _, oldPoolSpec := range cspcOld.Spec.Pools {
+		// isNodeExist helps to get common pool spec based on nodeSelector
+		isNodeExist := true
+
+		var oldNodeName string
+		nodeList, err := kubeClient.CoreV1().
+			Nodes().
+			List(metav1.ListOptions{LabelSelector: getLabelSelectorString(oldPoolSpec.NodeSelector)})
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get node list from the node selector")
+		}
+		// If more than one node exist for given node selector
+		if len(nodeList.Items) > 1 {
+			return nil, errors.Errorf(
+				"invalid no.of nodes %d from the given node selectors: %v",
+				len(nodeList.Items), oldPoolSpec.NodeSelector)
+		} else if len(nodeList.Items) == 0 {
+			klog.Warningf("node doesn't exist for given nodeselector: %v", oldPoolSpec.NodeSelector)
+			isNodeExist = false
+		} else {
+			oldNodeName = nodeList.Items[0].Name
 		}
 
-		for _, newPool := range cspcNew.Spec.Pools {
-			newNodeName, err := GetHostNameFromLabelSelector(newPool.NodeSelector, kubeClient)
-			if err != nil {
-				return nil, err
-			}
-			if oldNodeName == newNodeName {
-				commonPoolSpecs.oldSpec = append(commonPoolSpecs.oldSpec, oldPool)
-				commonPoolSpecs.newSpec = append(commonPoolSpecs.newSpec, newPool)
-				break
+		for _, newPoolSpec := range cspcNew.Spec.Pools {
+			if isNodeExist {
+				newNodeName, err := GetHostNameFromLabelSelector(newPoolSpec.NodeSelector, kubeClient)
+				if err != nil {
+					return nil, err
+				}
+				if oldNodeName == newNodeName {
+					commonPoolSpecs.oldSpec = append(commonPoolSpecs.oldSpec, oldPoolSpec)
+					commonPoolSpecs.newSpec = append(commonPoolSpecs.newSpec, newPoolSpec)
+					break
+				}
+			} else {
+				// add into spec even if one blockdevice matches
+				if hasCommonDataBlockDevicce(oldPoolSpec, newPoolSpec) {
+					commonPoolSpecs.oldSpec = append(commonPoolSpecs.oldSpec, oldPoolSpec)
+					commonPoolSpecs.newSpec = append(commonPoolSpecs.newSpec, newPoolSpec)
+					break
+				}
 			}
 		}
 	}
 	return commonPoolSpecs, nil
+}
+
+// hasCommonDataBlockDevice will return true if old and new pool spec has
+// atleast one common data blockdevice
+func hasCommonDataBlockDevicce(oldPoolSpec, newPoolSpec cstor.PoolSpec) bool {
+	bdMap := map[string]bool{}
+	for _, oldRG := range oldPoolSpec.DataRaidGroups {
+		for _, cspiBD := range oldRG.CStorPoolInstanceBlockDevices {
+			bdMap[cspiBD.BlockDeviceName] = true
+		}
+	}
+
+	for _, newRG := range newPoolSpec.DataRaidGroups {
+		for _, cspiBD := range newRG.CStorPoolInstanceBlockDevices {
+			if bdMap[cspiBD.BlockDeviceName] {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // validateRaidGroupChanges returns error when user removes or add block

@@ -1,4 +1,125 @@
-* # Changelog
+# Changelog
+
+
+## [v1.12.0](https://github.com/openebs/cstor-operators/tree/v1.12.0) (2020-07-15)
+
+**Merged pull requests:**
+
+- refact\(cvc\): add pvc label in volume target deployments [\#125](https://github.com/openebs/cstor-operators/pull/125) ([kmova](https://github.com/kmova))
+- fix(webhook): fix cspi node selector label in scale down operation [\#123](https://github.com/openebs/cstor-operators/pull/123) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(version\): split version string to segregate version from tags [\#120](https://github.com/openebs/cstor-operators/pull/120) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(webhook\): make webhook config failure policy configurable [\#110](https://github.com/openebs/cstor-operators/pull/110) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(cvp\): initialize cvr zvolworkers based on policy [\#109](https://github.com/openebs/cstor-operators/pull/109) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(cvc\): user policy based target podAffinity for target deployment [\#107](https://github.com/openebs/cstor-operators/pull/107) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(VERSION\): omit generation of VERSION file [\#106](https://github.com/openebs/cstor-operators/pull/106) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(VERSION\): delete VERSION file from repo [\#104](https://github.com/openebs/cstor-operators/pull/104) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): add cstor csi volume feature related docs [\#103](https://github.com/openebs/cstor-operators/pull/103) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(webhook\): add cspc scaledown validations [\#101](https://github.com/openebs/cstor-operators/pull/101) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(cspi\): add provisioned and healthy replica count in CSPI status [\#99](https://github.com/openebs/cstor-operators/pull/99) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(migration\): add rbac rules for snapshot migration [\#98](https://github.com/openebs/cstor-operators/pull/98) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(webhook\): check for hostname instead of nodename for bd validations [\#94](https://github.com/openebs/cstor-operators/pull/94) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(cvc\): add cvc-controller fake client mock tests [\#93](https://github.com/openebs/cstor-operators/pull/93) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(restore\_controller\): use the latest env for cspi uid [\#92](https://github.com/openebs/cstor-operators/pull/92) ([sonasingh46](https://github.com/sonasingh46))
+
+
+## [v1.12.0-RC2](https://github.com/openebs/cstor-operators/tree/v1.12.0-RC2) (2020-07-11)
+
+**Merged pull requests:**
+
+- refact\(cvc\): add pvc label in volume target deployments [\#125](https://github.com/openebs/cstor-operators/pull/125) ([kmova](https://github.com/kmova))
+- fix(webhook): fix cspi node selector label in scale down operation [\#123](https://github.com/openebs/cstor-operators/pull/123) ([sonasingh46](https://github.com/sonasingh46))
+
+## [v1.12.0-RC1](https://github.com/openebs/cstor-operators/tree/v1.12.0-RC1) (2020-07-08)
+
+**Merged pull requests:**
+
+- fix\(version\): split version string to segregate version from tags [\#120](https://github.com/openebs/cstor-operators/pull/120) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(webhook\): make webhook config failure policy configurable [\#110](https://github.com/openebs/cstor-operators/pull/110) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(cvp\): initialize cvr zvolworkers based on policy [\#109](https://github.com/openebs/cstor-operators/pull/109) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(cvc\): user policy based target podAffinity for target deployment [\#107](https://github.com/openebs/cstor-operators/pull/107) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(VERSION\): omit generation of VERSION file [\#106](https://github.com/openebs/cstor-operators/pull/106) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(VERSION\): delete VERSION file from repo [\#104](https://github.com/openebs/cstor-operators/pull/104) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): add cstor csi volume feature related docs [\#103](https://github.com/openebs/cstor-operators/pull/103) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(webhook\): add cspc scaledown validations [\#101](https://github.com/openebs/cstor-operators/pull/101) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(cspi\): add provisioned and healthy replica count in CSPI status [\#99](https://github.com/openebs/cstor-operators/pull/99) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(migration\): add rbac rules for snapshot migration [\#98](https://github.com/openebs/cstor-operators/pull/98) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(webhook\): check for hostname instead of nodename for bd validations [\#94](https://github.com/openebs/cstor-operators/pull/94) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(cvc\): add cvc-controller fake client mock tests [\#93](https://github.com/openebs/cstor-operators/pull/93) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(restore\_controller\): use the latest env for cspi uid [\#92](https://github.com/openebs/cstor-operators/pull/92) ([sonasingh46](https://github.com/sonasingh46))
+
+
+## [v1.11.0](https://github.com/openebs/cstor-operators/tree/v1.11.0) (2020-06-15)
+
+**Merged pull requests:**
+
+- fix\(webhook\): check for hostname instead of nodename for bd validations \(\#94\) [\#96](https://github.com/openebs/cstor-operators/pull/96) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix(restore_controller): use the latest env for cspi uid [\#92](https://github.com/openebs/cstor-operators/pull/95) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(cvc\): change cvr capacity to provisioned capacity \(\#90\) [\#91](https://github.com/openebs/cstor-operators/pull/91) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(cvc\): change cvr capacity to provisioned capacity [\#90](https://github.com/openebs/cstor-operators/pull/90) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(cvc-operator\): update cvc controller for migration [\#89](https://github.com/openebs/cstor-operators/pull/89) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(backup-controller\): add suport for backup controller [\#88](https://github.com/openebs/cstor-operators/pull/88) ([mittachaitu](https://github.com/mittachaitu))
+- feat\(restore-controller\): add suport for restore controller [\#87](https://github.com/openebs/cstor-operators/pull/87) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(api-update\): add backup and restore api dependencies [\#86](https://github.com/openebs/cstor-operators/pull/86) ([sonasingh46](https://github.com/sonasingh46))
+- refactor\(build\): remove hardcoded docker org \(\#84\) [\#85](https://github.com/openebs/cstor-operators/pull/85) ([kmova](https://github.com/kmova))
+- feat\(REST, CVC\): add a support for rest service in CVC Operator [\#83](https://github.com/openebs/cstor-operators/pull/83) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(webhook\): fix blockdevice replacement validation [\#82](https://github.com/openebs/cstor-operators/pull/82) ([mittachaitu](https://github.com/mittachaitu))
+- refact\(cspc\): add migration support for spc to cspc [\#79](https://github.com/openebs/cstor-operators/pull/79) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(cspi\): import pool without cachefile [\#77](https://github.com/openebs/cstor-operators/pull/77) ([mittachaitu](https://github.com/mittachaitu))
+- Add restore controller to pool manager in accordance to v1 api changes. [\#76](https://github.com/openebs/cstor-operators/issues/76)
+- fix\(cspi\): update the Capacity fields of CStorPoolInstance [\#75](https://github.com/openebs/cstor-operators/pull/75) ([mittachaitu](https://github.com/mittachaitu))
+- cspi status should show usable pool capacity [\#74](https://github.com/openebs/cstor-operators/issues/74)
+- chore\(docs\): add changelog for v1.10.0 release [\#73](https://github.com/openebs/cstor-operators/pull/73) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(cspi\): remove finalizer on claim of blockdevice which underwent replacement [\#71](https://github.com/openebs/cstor-operators/pull/71) ([mittachaitu](https://github.com/mittachaitu))
+- feat\(docs\): auto generate api docs using Makefile target [\#70](https://github.com/openebs/cstor-operators/pull/70) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(log\): add cspc information in error event [\#68](https://github.com/openebs/cstor-operators/pull/68) ([mittachaitu](https://github.com/mittachaitu))
+- add repo documentation [\#67](https://github.com/openebs/cstor-operators/pull/67) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(ci\): fast fail travis script in case of error [\#66](https://github.com/openebs/cstor-operators/pull/66) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(refactor\): add fake controller testing for cspi-controller [\#65](https://github.com/openebs/cstor-operators/pull/65) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(Makefile\): update the expression to trim 'v' from tag [\#64](https://github.com/openebs/cstor-operators/pull/64) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(build\): fix cstor base image tag [\#61](https://github.com/openebs/cstor-operators/pull/61) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(upgrade\): add upgrade framework in controllers [\#60](https://github.com/openebs/cstor-operators/pull/60) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Velero Plugin for CSI volumes based on CSPC based pools [\#39](https://github.com/openebs/cstor-operators/issues/39)
+- Backup/Restore for CSI based volumes using CSPC pools with V1 APIs [\#40](https://github.com/openebs/cstor-operators/issues/40)
+
+
+
+## [v1.11.0-RC2](https://github.com/openebs/cstor-operators/tree/v1.11.0-RC2) (2020-06-11)
+
+**Merged pull requests:**
+
+- fix\(webhook\): check for hostname instead of nodename for bd validations \(\#94\) [\#96](https://github.com/openebs/cstor-operators/pull/96) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix(restore_controller): use the latest env for cspi uid [\#92](https://github.com/openebs/cstor-operators/pull/95) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(cvc\): change cvr capacity to provisioned capacity \(\#90\) [\#91](https://github.com/openebs/cstor-operators/pull/91) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+## [v1.11.0-RC1](https://github.com/openebs/cstor-operators/tree/v1.11.0-RC1) (2020-06-09)
+
+**Merged pull requests:**
+
+- fix\(cvc\): change cvr capacity to provisioned capacity [\#90](https://github.com/openebs/cstor-operators/pull/90) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(cvc-operator\): update cvc controller for migration [\#89](https://github.com/openebs/cstor-operators/pull/89) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(backup-controller\): add suport for backup controller [\#88](https://github.com/openebs/cstor-operators/pull/88) ([mittachaitu](https://github.com/mittachaitu))
+- feat\(restore-controller\): add suport for restore controller [\#87](https://github.com/openebs/cstor-operators/pull/87) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(api-update\): add backup and restore api dependencies [\#86](https://github.com/openebs/cstor-operators/pull/86) ([sonasingh46](https://github.com/sonasingh46))
+- refactor\(build\): remove hardcoded docker org \(\#84\) [\#85](https://github.com/openebs/cstor-operators/pull/85) ([kmova](https://github.com/kmova))
+- feat\(REST, CVC\): add a support for rest service in CVC Operator [\#83](https://github.com/openebs/cstor-operators/pull/83) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(webhook\): fix blockdevice replacement validation [\#82](https://github.com/openebs/cstor-operators/pull/82) ([mittachaitu](https://github.com/mittachaitu))
+- refact\(cspc\): add migration support for spc to cspc [\#79](https://github.com/openebs/cstor-operators/pull/79) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(cspi\): import pool without cachefile [\#77](https://github.com/openebs/cstor-operators/pull/77) ([mittachaitu](https://github.com/mittachaitu))
+- Add restore controller to pool manager in accordance to v1 api changes. [\#76](https://github.com/openebs/cstor-operators/issues/76)
+- fix\(cspi\): update the Capacity fields of CStorPoolInstance [\#75](https://github.com/openebs/cstor-operators/pull/75) ([mittachaitu](https://github.com/mittachaitu))
+- cspi status should show usable pool capacity [\#74](https://github.com/openebs/cstor-operators/issues/74)
+- chore\(docs\): add changelog for v1.10.0 release [\#73](https://github.com/openebs/cstor-operators/pull/73) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(cspi\): remove finalizer on claim of blockdevice which underwent replacement [\#71](https://github.com/openebs/cstor-operators/pull/71) ([mittachaitu](https://github.com/mittachaitu))
+- feat\(docs\): auto generate api docs using Makefile target [\#70](https://github.com/openebs/cstor-operators/pull/70) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(log\): add cspc information in error event [\#68](https://github.com/openebs/cstor-operators/pull/68) ([mittachaitu](https://github.com/mittachaitu))
+- add repo documentation [\#67](https://github.com/openebs/cstor-operators/pull/67) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(ci\): fast fail travis script in case of error [\#66](https://github.com/openebs/cstor-operators/pull/66) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(refactor\): add fake controller testing for cspi-controller [\#65](https://github.com/openebs/cstor-operators/pull/65) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(Makefile\): update the expression to trim 'v' from tag [\#64](https://github.com/openebs/cstor-operators/pull/64) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(build\): fix cstor base image tag [\#61](https://github.com/openebs/cstor-operators/pull/61) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(upgrade\): add upgrade framework in controllers [\#60](https://github.com/openebs/cstor-operators/pull/60) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Velero Plugin for CSI volumes based on CSPC based pools [\#39](https://github.com/openebs/cstor-operators/issues/39)
+- Backup/Restore for CSI based volumes using CSPC pools with V1 APIs [\#40](https://github.com/openebs/cstor-operators/issues/40)
 
 ## [v1.10.0](https://github.com/openebs/cstor-operators/tree/v1.10.0) (2020-05-15)
 
@@ -118,3 +239,6 @@
 - feat\(cvc\): add cstorvolumeclaim operator using new apis [\#2](https://github.com/openebs/cstor-operators/pull/2) ([prateekpandey14](https://github.com/prateekpandey14))
 - feat\(cspc\): add cspc-operator using new apis  [\#1](https://github.com/openebs/cstor-operators/pull/1) ([sonasingh46](https://github.com/sonasingh46))
 
+
+
+\* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*

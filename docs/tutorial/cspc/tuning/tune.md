@@ -3,9 +3,9 @@
 ## Introduction 
 
 CStor pool(s) can be tuned via CSPC and is the recommended way to do it. Following are list of tunables that can be applied:
-- Resource and limit for pool manager containers to ensure quality of service.
+- Resource requests and limits for pool manager containers to ensure quality of service.
 - Toleration for pool manager pod to ensure scheduling of pool pods on tainted nodes. 
-- Priority class for pool manager pod to specify prirority levels as required. 
+- Priority class for pool manager pod to specify priority levels as required. 
 - Setting compression for cStor pools.
 - Specifying read only threshold for cStor pools.
 
@@ -199,7 +199,12 @@ spec:
 Priority Class are also applied in a similar manner like `resources` and `auxResources`.
 The following is a sample CSPC YAML that has priority class specified. For `worker-node-1` and `worker-node-2` priority class are applied form @spec.priorityClassName but for `worker-node-3` it is applied from @spec.pools[2].poolConfig.priorityClassName
 
-*NOTE:* Priority class needs to be created before hand. In this case, `high-priority` and `ultra-priority` priority classes should exist.
+Please visit this [link](https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass) for more information on priority class
+ 
+
+*NOTE:* 
+1. Priority class needs to be created before hand. In this case, `high-priority` and `ultra-priority` priority classes should exist.
+2. The index starts form 0 for @.spec.pools list. 
 
 ```yml
 apiVersion: cstor.openebs.io/v1

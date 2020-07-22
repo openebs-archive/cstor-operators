@@ -29,22 +29,22 @@ list all the block devices attached to the nodes.
 |                       |              |                       |               |                       |
 ++----------------------+              ++----------------------+               ++----------------------+
  |     +---------------+                |     +---------------+                 |     +---------------+
- |     | node-1-disk-1 |                |     | node-2-disk-1 |                 |     | node-3-disk-1 |
+ |     | disk-1(n1)    |                |     | disk-1(n2)    |                 |     | disk-1(n3)    |
  +----->               |                +----->               |                 +----->               |
  |     +---------------+                |     +---------------+                 |     +---------------+
  |                                      |                                       |
  |     +---------------+                |     +---------------+                 |     +---------------+
- |     | node-1-disk-2 |                |     | node-2-disk-2 |                 |     | node-3-disk-2 |
+ |     | disk-2(n1)    |                |     | disk-2(n2)    |                 |     | disk-2(n3)    |
  +----->               |                +----->               |                 +----->               |
  |     +---------------+                |     +---------------+                 |     +---------------+
  |                                      |                                       |
  |     +---------------+                |     +---------------+                 |     +---------------+
- |     | node-1-disk-3 |                |     | node-2-disk-3 |                 |     | node-3-disk-3 |
+ |     | disk-3(n1)    |                |     | disk-3(n2)    |                 |     | disk-3(n3)    |
  +----->               |                +----->               |                 +----->               |
  |     +---------------+                |     +---------------+                 |     +---------------+
  |                                      |                                       |
  |     +---------------+                |     +---------------+                 |     +---------------+
- |     | node-1-disk-4 |                |     | node-2-disk-4 |                 |     | node-3-disk-4 |
+ |     | disk-4(n1)    |                |     | disk-4(n2)    |                 |     | disk-4(n3)    |
  +----->               |                +----->               |                 +----->               |
  |     +---------------+                |     +---------------+                 |     +---------------+
  |                                      |                                       |
@@ -58,8 +58,8 @@ In cStor, you can only create cStor pool cluster and a cStor pool cluster can ha
 
 For example consider following scenarios : 
 
-1. A cStor pool cluster can be created to have a cStor pool on `Worker-Node-1` by using disk `node-1-disk-1` only.
-2. A cStor pool cluster can be created to have a cStor pool on `Worker-Node-1` by using disk `node-1-disk-1` and `node-1-disk-2`.
+1. A cStor pool cluster can be created to have a cStor pool on `Worker-Node-1` by using disk `disk-1(n1)` only.
+2. A cStor pool cluster can be created to have a cStor pool on `Worker-Node-1` by using disk `disk-1(n1)` and `disk-2(n1)`.
 3. A cStor pool cluster can be created to have  cStor pools on `Worker-Node-1`, `Worker-Node-2` and `Worker-Node-3` by taking 2 disks
 from each node.
 

@@ -1228,7 +1228,7 @@ func TestCSPCScaleDown(t *testing.T) {
 			expectedRsp: true,
 			getCSPCObj:  getCSPCObject,
 		},
-		"Scale down when node doesn't exist in cluster": {
+		"Positive scale down pool when node doesn't exist in cluster": {
 			existingObj: cstor.NewCStorPoolCluster().
 				WithName("cspc-bar-mirror-2").
 				WithNamespace("openebs").
@@ -1291,7 +1291,107 @@ func TestCSPCScaleDown(t *testing.T) {
 					},
 				},
 			},
+			existingCVRs: []*cstor.CStorVolumeReplica{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cvr1-cspc-bar-mirror-2",
+						Namespace: "openebs",
+						Labels: map[string]string{
+							types.HostNameLabelKey:              "worker-2",
+							types.CStorPoolInstanceNameLabelKey: "cspc-bar-mirror-2-cspi-2",
+						},
+					},
+				},
+			},
 			expectedRsp: true,
+			getCSPCObj:  getCSPCObject,
+		},
+		"Negative scale down pool when node doesn't exist in cluster but pool has CVRs": {
+			existingObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-bar-mirror-3").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-not-exist"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-6"),
+							),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-27"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-28"),
+							),
+						),
+				),
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-bar-mirror-3").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-27"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-28"),
+							),
+						),
+				),
+			existingCSPIs: []*cstor.CStorPoolInstance{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cspc-bar-mirror-3-cspi-1",
+						Namespace: "openebs",
+						Labels: map[string]string{
+							types.HostNameLabelKey:         "worker-not-exist",
+							types.CStorPoolClusterLabelKey: "cspc-bar-mirror-3",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cspc-bar-mirror-3-cspi-2",
+						Namespace: "openebs",
+						Labels: map[string]string{
+							types.HostNameLabelKey:         "worker-2",
+							types.CStorPoolClusterLabelKey: "cspc-bar-mirror-3",
+						},
+					},
+				},
+			},
+			existingCVRs: []*cstor.CStorVolumeReplica{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cvr1-cspc-bar-mirror-3",
+						Namespace: "openebs",
+						Labels: map[string]string{
+							types.HostNameLabelKey:              "worker-not-exist",
+							types.CStorPoolInstanceNameLabelKey: "cspc-bar-mirror-3-cspi-1",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cvr2-cspc-bar-mirror-3",
+						Namespace: "openebs",
+						Labels: map[string]string{
+							types.HostNameLabelKey:              "worker-2",
+							types.CStorPoolInstanceNameLabelKey: "cspc-bar-mirror-3-cspi-2",
+						},
+					},
+				},
+			},
+			expectedRsp: false,
 			getCSPCObj:  getCSPCObject,
 		},
 	}

@@ -1,7 +1,7 @@
 ## CStor Volume Policies:
 
 CStor Volumes can be provisioned based on different policy configurations. CStorVolumePolicy has to be created prior to StorageClass 
-and we have to mention the `CStorVolumePolicy` name in StorageClass parameters to configured any policy-related changes.
+and we have to mention the `CStorVolumePolicy` name in StorageClass parameters to provision cStor volume based on configured policy.
 
 Following are list of policies that can be configured based on the requirements.
 
@@ -9,7 +9,7 @@ Following are list of policies that can be configured based on the requirements.
 - [Volume Target Pod Affinity](#volume-target-pod-affinity)
 - [Volume Tunable](#volume-tunable)
 - [Memory and CPU Resources QOS](#resource-request-and-limits) 
-- [Toleration for target pod to ensure scheduling of pool pods on tainted nodes](#target-pod-toleration)
+- [Toleration for target pod to ensure scheduling of target pods on tainted nodes](#target-pod-toleration)
 - [Priority class for volume target deployment](#priority-class)
 
 Below StorageClass example contains `cstorVolumePolicy` parameter having `csi-volume-policy` name set to configured the custom policy.
@@ -30,8 +30,8 @@ parameters:
 
 ```
 
-If the volume policy is not created before volume provisioning and later we want to change any of the available policy it can be 
-change by editing the CStorVolumeConfig(CVC) resource as per volume bases which will be reconciled by the volume policy controller
+If the volume policy is not created before volume provisioning and later want to change any of the policy it can be change
+by editing the CStorVolumeConfig(CVC) resource as per volume bases which will be reconciled by the CVC controller
 to the respected volume resources.
 
 Each PVC create request will create a CStorVolumeConfig(cvc) resource which can be used to manage volume, its policies and any supported
@@ -194,13 +194,13 @@ metadata:
 
 ### Volume Tunable:
 
-Allow users to set available performance tunings in Volume Policy based on their workload. Below are the tunings that can be configured
+Volume Policy allow users to set available performance tunings based on their workload. Below are the tunings that can be configured
 
 - `queueDepth`:
-cStor target `queueDepth`, This limits the ongoing IO count from client. Default is 32.
+cStor target `queueDepth`, This limits the ongoing IO count from iscsi client on Node to cStor target pod. Default value is 32.
 
 - `luworkers`
-cStor target worker IO threads, sets the number of threads that are working on above queue.
+cStor target IO worker threads, sets the number of threads that are working on `QueueDepth` queue.
 Default value is `6`. In case of better number of cores and RAM, this value can be `16`. 
 This means 16 threads will be running for each volume.
 
@@ -223,7 +223,7 @@ spec:
     queueDepth: "32"
 ```
 
-Note: These configuration can be changed once the volume get provisioned by editing the CStorVolumeConfig resource on per volume bases.
+Note: These Policy tunable configurations can be changed for already provisioned volumes by editing the corresponding volume CStorVolumeConfig resources.
 
 ### Resource Request and Limits:
 

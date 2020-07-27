@@ -38,14 +38,12 @@ Consider an example where you have following nodes in a Kubernetes cluster with 
 
     **Kubernetes Version**: 1.15.0
 
-    **OpenEBS Version**: 1.12.0(Deployed OpenEBS by enabling 
-    
-    **feature-gates="GPTBasedUUID"** since EBS volumes in EKS are virtual and some mechanisam is reuired to identify the disks uniquely).
+    **OpenEBS Version**: 1.12.0(Deployed OpenEBS by enabling **feature-gates="GPTBasedUUID"** since EBS volumes in EKS are virtual and some mechanisam is reuired to identify the disks uniquely).
     
     **Node OS**: Ubuntu 18.04
 
 ## Instalation of cStor setup
-  Created CStor pools using CSPC API by following [doc](../../quick.md) and then created cStor-CSI volume on top of cStor pools. 
+  Created CStor pools using CSPC API by following [doc](../quick.md) and then created cStor-CSI volume on top of cStor pools. 
 
 ### OpenEBS setup
 
@@ -189,7 +187,7 @@ $ kubectl edit validatingwebhookconfiguration openebs-cstor-validation-webhook
 
 This step is required to skip the validations performed by cStor admission server when CSPC spec is updated with new node details.
 ```sh
-$kubectl scale deploy openebs-cstor-admission-server -n openebs --replicas=0
+$ kubectl scale deploy openebs-cstor-admission-server -n openebs --replicas=0
 deployment.extensions/openebs-cstor-admission-server scaled
 ```
 

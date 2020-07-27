@@ -22,4 +22,4 @@ On a high level, this tutorial covers following:
 
 ## FAQ and Troubleshooting
 
-1. My nodes in Kubernetes cluster were replaced and the cStor pools are pending. How can I fix this? See [Node Replacement](./troubleshooting/migrate_pool_by_migrating_disks.md).
+1. My nodes in Kubernetes cluster were replaced and the cStor pools are pending. How can I fix this? See [Node Replacement](../troubleshooting/migrate_pool_by_migrating_disks.md).

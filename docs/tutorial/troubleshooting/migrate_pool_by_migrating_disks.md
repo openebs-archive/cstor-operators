@@ -1,35 +1,35 @@
 # Pool Migration when underlying disks were migrated to different node
 
 ## Intro
-- There can be situations where your Kubernetes cluster scales down and scales up again(To save cost). This can cause nodes to come with a different hostName and node name than the previous existing nodes, meaning the nodes that have come up are new nodes and not the same as previous nodes that earlier existed.
+- There can be situations where your Kubernetes cluster scales down and scales up again(to save cost). This can cause nodes to come with a different hostName and node name than the previous existing nodes, meaning the nodes that have come up are new nodes and not the same as previous nodes that earlier existed.
 - When the new nodes come up, the disks that were attached to the older nodes now get attached to the newer nodes.
 
-Consider and example where you have following nodes in a Kubernetes cluster with disks attached it:
+Consider an example where you have following nodes in a Kubernetes cluster with disks attached it:
  
-    Worker-1 (bd-1w1, bd-2w1 are attached to worker1) 
+    Worker-1 (bd-1(w1), bd-2(w1) are attached to worker1)
   
-    Worker-2 (bd-1w2, bd-2w2 are attached to worker 1)
+    Worker-2 (bd-1(w2), bd-2(w2) are attached to worker 2)
   
-    Worker-3 (bd-3w3, bd-3w2 are attached to worker 1)
+    Worker-3 (bd-1(w3), bd-2(w3) are attached to worker 3)
 
 **NOTE**: Disks attached to a node are represented by a blockdevice(bd) in OpenEBS installed cluster. A block device is of the form `bd-<some-hash>`.
-      For example, bd-1w1, bd-3w2 etc are BD resources. For illustration purpose hash is not included in BD name, e.g. `bd-1w1` represents a block device attached to worker-1.
+      For example, bd-1(w1), bd-3(w2) etc are BD resources. For illustration purpose hash is not included in BD name, e.g. `bd-1(w1)` represents a block device attached to worker-1.
 
 ## What happens if Node Replacement Occurs?
   If node replacement occurs in your Kubernetes cluster then cStor pool manager pods will be in pending state and the pools and volumes will go offline. Workloads using those cStor volumes will not be able to perform read and write operations on the volume.
 
 ## How can this be fixed?
-  We can perform a few manual [steps](#steps-to-bring-cstor-pool-back-online) to recover from this situation. But before we do this tutorial will illustrate a Node Replacement situation. So essentially we are trying to do the following: 
+  We can perform a few manual [steps](#steps-to-bring-cstor-pool-back-online) to recover from this situation. But before we do this, the tutorial will illustrate a Node Replacement situation. So essentially we are trying to do the following:
 
 **__Migrate CStorPool when nodes where replaced with new nodes but same disks were reattached to the new nodes__**
 
 ## Reproduce the Node Replacement situation?
 
 #### In cloud environment
-  Able to replace the nodes by deleting the node from the K8s cluster managed autoscale groups(ASG).
+  Able to replace the nodes by deleting the node from the K8s cluster managed by autoscale groups(ASG). Experimented in EKS, GCP managed kubernetes cluster.
 
 #### On-Premise
-  Detach the disk from the node where the pool is running and attach to the different node where corresponding CSPC pool managers are not running(This might be case where resources got exhausted on the node and node was unable to perform operations).
+  Detach the disk from the node where the pool is running and attach to the different node then corresponding CSPC pool managers will get restarted from every 5 minutes due to livenessfailure(migrating disk to different node might be case where resources got exhausted on the node and pods were evicted and not able to schedule back on the node).
 
 ## Infrastructure details
   Following are infrastructure details where node replacements are performed
@@ -158,7 +158,7 @@ cstor-cspc-xs4b-85dbbbb59b-wvhmr   0/3     Pending   0          18m
 ```
 In the above output **HEALTHYINSTANCES** were **0** and all the pool pods were in pending state because nodes were replaced with new nodes and still CSPC spec and cStor pool manager is pointing to old nodes.
 
-**NOTE**: Please make sure that PROVISIONEDINSTANCES and DesiredInstances count should match before performing steps.
+**NOTE**: Please make sure that PROVISIONEDINSTANCES and DESIREDINSTANCES count should match before performing steps.
 
 ## Steps to bring cStor pool back online
 
@@ -256,7 +256,7 @@ spec:
      ...
      ...
 ```
-Get the node details on which the **blockdevice-c783e51a80bc51065402e5473c52d185** was attached and fter fetching node details update hostName, nodeSelector values and kubernetes.io/hostname values in lables of CSPI with new details.
+Get the node details on which the **blockdevice-c783e51a80bc51065402e5473c52d185** was attached and after fetching node details update hostName, nodeSelector values and kubernetes.io/hostname values in lables of CSPI with new details.
 ```sh
 apiVersion: cstor.openebs.io/v1
 kind: CStorPoolInstance
@@ -309,6 +309,4 @@ $ kubectl edit validatingwebhookconfiguration openebs-cstor-validation-webhook
 validatingwebhookconfiguration.admissionregistration.k8s.io/openebs-cstor-validation-webhook edited
 ```
 
-## NOTE: In upcoming release we need to perform only [STEP3](#step3-update-the-cspc-spec-nodeselector) (No need of performing other steps).
-
-
+## NOTE: To track scenario in automated way please refer to [this](https://github.com/openebs/cstor-operators/issues/100) issue.

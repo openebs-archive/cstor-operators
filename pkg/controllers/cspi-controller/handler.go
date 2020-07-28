@@ -18,6 +18,7 @@ package cspicontroller
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
@@ -524,6 +525,30 @@ func (c *CStorPoolInstanceController) reconcileVersion(cspi *cstor.CStorPoolInst
 		return cspiObj, nil
 	}
 	return cspi, nil
+}
+
+// markCSPIStatusToOffline will fetch all the CSPI resources present
+// in etcd and mark it's own CSPI.Status to Offline
+func (c *CStorPoolInstanceController) markCSPIStatusToOffline() {
+	cspiList, err := c.clientset.CstorV1().CStorPoolInstances("").List(metav1.ListOptions{})
+	if err != nil {
+		klog.Errorf("Failed to fetch CSPI list error: %v", err)
+	}
+	// Fetch CSPI UUID of this pool-manager
+	cspiID := os.Getenv(OpenEBSIOCSPIID)
+	for _, cspi := range cspiList.Items {
+		if string(cspi.GetUID()) == cspiID {
+			cspi.Status.Phase = cstor.CStorPoolStatusOffline
+			// There will be one-to-one mapping between CSPI and pool-manager
+			// So after finding good to break
+			_, err = c.clientset.CstorV1().CStorPoolInstances(cspi.Namespace).Update(&cspi)
+			if err != nil {
+				klog.Errorf("Failed to update CSPI: %s status to %s", cspi.Name, cstor.CStorPoolStatusOffline)
+			}
+			klog.Infof("Status marked %s for CSPI: %s", cstor.CStorPoolStatusOffline, cspi.Name)
+			break
+		}
+	}
 }
 
 // validateCSPI returns error if CSPI spec validation fails otherwise nil

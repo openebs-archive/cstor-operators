@@ -2106,3 +2106,135 @@ func TestCSPIStatus(t *testing.T) {
 	os.Unsetenv(string(common.OpenEBSIOPoolName))
 	os.Unsetenv(util.Namespace)
 }
+
+func filterInformerActions(actions []core.Action) []core.Action {
+	ret := []core.Action{}
+	for _, action := range actions {
+		if action.Matches("create", "cstorpoolinstances") {
+			continue
+		}
+		ret = append(ret, action)
+	}
+	return ret
+}
+
+// TestRun will test whether it is able to handle signal correctly
+func TestRun(t *testing.T) {
+	tests := map[string]struct {
+		cspiList            *cstor.CStorPoolInstanceList
+		updatedCSPIName     string
+		stopChan            chan struct{}
+		expectedActionCount int
+	}{
+		"When corresponding pool-manager CSPI exist in the system": {
+			cspiList: &cstor.CStorPoolInstanceList{
+				Items: []cstor.CStorPoolInstance{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-1-cspi-1",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("1234"),
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-1-cspi-2",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("123456"),
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-1-cspi-3",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("ADSA123456"),
+						},
+					},
+				},
+			},
+			updatedCSPIName:     "test-1-cspi-1",
+			stopChan:            make(chan struct{}),
+			expectedActionCount: 2,
+		},
+		"When corresponding pool-manager CSPI doesn't exist in the system": {
+			cspiList: &cstor.CStorPoolInstanceList{
+				Items: []cstor.CStorPoolInstance{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-2-cspi-1",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("1234ABC"),
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-2-cspi-2",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("123456"),
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-2-cspi-3",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("ADSA123456"),
+						},
+					},
+				},
+			},
+			updatedCSPIName:     "",
+			stopChan:            make(chan struct{}),
+			expectedActionCount: 1,
+		},
+	}
+	os.Setenv(string(common.OpenEBSIOCSPIID), "1234")
+	for name, test := range tests {
+		name := name
+		test := test
+		t.Run(name, func(t *testing.T) {
+			// Creating clientset for each test to verify no.of etcd calls are going
+			f := newFixture(t)
+			f.SetFakeClient()
+			testConfig := &testConfig{}
+			c, _, err := f.newCSPIController(testConfig)
+			if err != nil {
+				t.Fatalf("Failed to instantiate fake controller")
+			}
+
+			// Create fake objects in etcd
+			for _, cspiObj := range test.cspiList.Items {
+				_, _ = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Create(&cspiObj)
+			}
+
+			done := make(chan bool)
+			go func(chan bool) {
+				// close the channel so that Run will return
+				close(test.stopChan)
+				c.Run(1, test.stopChan)
+				done <- true
+			}(done)
+			// Waiting for run to complete
+			<-done
+
+			actions := filterInformerActions(f.openebsClient.Actions())
+			if len(actions) != test.expectedActionCount {
+				t.Errorf("expected %d count of actions but got %d", test.expectedActionCount, len(actions))
+			}
+
+			for _, cspiObj := range test.cspiList.Items {
+				updatedCSPIObj, _ := c.clientset.CstorV1().
+					CStorPoolInstances(cspiObj.Namespace).
+					Get(cspiObj.Name, metav1.GetOptions{})
+				if updatedCSPIObj.Name == test.updatedCSPIName &&
+					updatedCSPIObj.Status.Phase != cstor.CStorPoolStatusOffline {
+					t.Errorf("expected CSPI %s status to be updated to %s but got %s",
+						updatedCSPIObj.Name,
+						cstor.CStorPoolStatusOffline,
+						updatedCSPIObj.Status.Phase,
+					)
+				}
+			}
+		})
+	}
+	os.Unsetenv(string(common.OpenEBSIOCSPIID))
+}

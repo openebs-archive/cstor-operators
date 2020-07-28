@@ -86,18 +86,7 @@ meets the following prerequisites:
     openebs-ndm-xztkj                                 1/1     Running   0          6m5s
     ```
 
-7. Install CStor CSI driver. Apply the file that corresponds to your OS.
-
-    |       Operating System         |              csi-operator.yaml             |
-    |--------------------------------|--------------------------------------------|
-    | Ubuntu 16.04, CentOS 7 & 8     |         [deploy/csi-operator.yaml](1)      |
-    | Ubuntu 18.04+                  | [deploy/csi-operator-ubuntu-18.04.yaml](2) |
-
-    **Known Limitations**
-    * The CSI-Operators are currently unavailable for CoreOS
-
-    *Note*: These operators **may** work for other operating systems, we look forward to your feedback & contribution
-            in testing and doccumenting the same.
+7. Install CStor CSI driver. Apply the csi-operator yaml file and verify the csi pods are in running state.
 
    ```bash
     $ kubectl create -f deploy/csi-operator.yaml

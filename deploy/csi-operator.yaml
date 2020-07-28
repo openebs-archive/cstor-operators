@@ -1,13 +1,7 @@
 # This manifest deploys the OpenEBS CSI control plane components,
 # with associated CRs & RBAC rules. This manifest has been verified
-# only with Ubuntu 16.04 and CentOS hosts, due to dependencies on
-# kernel components of iSCSI protocol.  For other ubuntu flavours and
-# linux distros, this needs to be modified.
-#
-# Instructions to modify:
-# Ubuntu-18.04 and above: https://github.com/openebs/cstor-csi/blob/master/deploy/iscsiadm-ubuntu-18.04-and-above-deps.yaml
-# SUSE Linux Enterprise Server 12:  https://github.com/openebs/cstor-csi/blob/master/deploy/iscsiadm-suse-enterprise-server-12-deps.yaml
-# SUSE Linux Enterprise Server 15:  https://github.com/openebs/cstor-csi/blob/master/deploy/iscsiadm-suse-enterprise-server-15-deps.yaml
+# only with different linux flavours and
+# linux distros.
 #
 # For supporting a differnet OS other than the above,
 # 1) Get the list of shared object files required for iscsiadm binary in that OS version.
@@ -862,6 +856,27 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: openebs-cstor-csi-iscsiadm
+  namespace: kube-system
+data:
+  iscsiadm: |
+    #!/bin/sh
+    if [ -x /host/sbin/iscsiadm ]; then
+      chroot /host /sbin/iscsiadm "$@"
+    elif [ -x /host/usr/local/sbin/iscsiadm ]; then
+      chroot /host /usr/local/sbin/iscsiadm "$@"
+    elif [ -x /host/bin/iscsiadm ]; then
+      chroot /host /bin/iscsiadm "$@"
+    elif [ -x /host/usr/local/bin/iscsiadm ]; then
+      chroot /host /usr/local/bin/iscsiadm "$@"
+    else
+      chroot /host iscsiadm "$@"
+    fi
+
+---
 
 kind: DaemonSet
 apiVersion: apps/v1
@@ -962,8 +977,12 @@ spec:
               # needed so that any mounts setup inside this container are
               # propagated back to the host machine.
               mountPropagation: "Bidirectional"
-            - name: iscsiadm-bin
+            - name: host-root
+              mountPath: /host
+              mountPropagation: "HostToContainer"
+            - name: chroot-iscsiadm
               mountPath: /sbin/iscsiadm
+              subPath: iscsiadm
       volumes:
         - name: device-dir
           hostPath:
@@ -981,7 +1000,12 @@ spec:
           hostPath:
             path: /var/lib/kubelet/
             type: Directory
-        - name: iscsiadm-bin
+        - name: chroot-iscsiadm
+          configMap:
+            defaultMode: 0755
+            name: openebs-cstor-csi-iscsiadm
+        - name: host-root
           hostPath:
-            path: /sbin/iscsiadm
-            type: File
+            path: /
+            type: Directory
+---

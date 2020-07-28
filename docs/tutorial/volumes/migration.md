@@ -73,6 +73,8 @@ There are 2 steps required for this operation:
 - Scale the CStorVolumeReplica to the desired node.
 - Scale down the CStorVolumeReplicas from unwanted node.
 
+### **Note**: Scale down of CStorVolumeReplicas will be allowed only if corresponding CStorVolume is in Healthy state.
+
 #### 1: Scale the CStorVolumeReplicas to Desired Node
 
 Firstly we have to get cStor pool name which doesn’t have corresponding volume CVR created on it.

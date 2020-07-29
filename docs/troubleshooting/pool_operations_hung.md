@@ -5,7 +5,7 @@ restart.
 
 Pool is always imported before creation. For the first time, when the pool creation happens, all of the 
 devices are scanned and as there is not a existing pool, a fresh pool is created. Now, when the pool is created the 
-particiapting devices are chached for faster import of the pool (in case the pool manager pod restarts.) Now if the 
+particiapting devices are chached for faster import of the pool (in case the pool manager pod restarts). Now if the 
 import happens by using the cache then this problem will not occur but there is a chance of import without cache (when 
 pool is being created for the first time)
 

@@ -25,8 +25,7 @@ Now there could be two different situations :
 then see [Block Device Replacement](../tutorial/cspc/tuning/tune.md) in this tutorial. This tutorial is for
 `mirror` RAID but similar approach can be followed for other RAID configurations like `raidz1` and `raidz2`. 
 
-**Note:** Block device replacement is not supported for `stripe` raid configuration. Please visit this [link]
-(migrate_cstor_pools.md) for some use cases and solutions around this.
+**Note:** Block device replacement is not supported for `stripe` raid configuration. Please visit this [link](migrate_cstor_volume.md) for some use cases and solutions around this.
 
 2. The device that has gone bad is not part of the cStor pool on the node. in this case, perform the following steps
 to recover from this situation:

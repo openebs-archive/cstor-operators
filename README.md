@@ -35,6 +35,7 @@ Table of contents:
 - [High level overview](#overview)
 - [CStor Resource Organisation](docs/developer-guide/cstor-pool-docs.md)
 - [Issues and PRs](#issues-and-prs)
+- [FAQ and Troubleshooting](docs/troubleshooting/troubleshooting.md)
 - [Contributing](#contributing)
 - [Code of conduct](#code-of-conduct)
 

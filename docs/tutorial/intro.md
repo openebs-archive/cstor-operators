@@ -19,7 +19,3 @@ On a high level, this tutorial covers following:
 2. This [link](./volumes/snapshot.md) explains the volume snapshot related operations.
 3. This [link](./volumes/resize.md) explains the volume resize related operations.
 4. This [link](./volumes/migration.md) explains the volume migration related operations across k8s nodes.
-
-## FAQ and Troubleshooting
-
-1. My nodes in Kubernetes cluster were replaced and the cStor pools are pending. How can I fix this? See [Node Replacement](../troubleshooting/migrate_pool_by_migrating_disks.md).

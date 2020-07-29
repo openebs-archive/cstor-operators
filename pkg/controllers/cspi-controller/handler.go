@@ -544,6 +544,7 @@ func (c *CStorPoolInstanceController) markCSPIStatusToOffline() {
 			_, err = c.clientset.CstorV1().CStorPoolInstances(cspi.Namespace).Update(&cspi)
 			if err != nil {
 				klog.Errorf("Failed to update CSPI: %s status to %s", cspi.Name, cstor.CStorPoolStatusOffline)
+				return
 			}
 			klog.Infof("Status marked %s for CSPI: %s", cstor.CStorPoolStatusOffline, cspi.Name)
 			break

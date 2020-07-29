@@ -22,7 +22,7 @@ waitForChildProcessToFinish(){
 }
 
 rm /usr/local/bin/zrepl
-exec /usr/local/bin/pool-manager start &
+/usr/local/bin/pool-manager start &
 pool_manager_pid=$!
 
 #exec service ssh start

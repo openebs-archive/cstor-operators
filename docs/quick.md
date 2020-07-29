@@ -5,8 +5,8 @@
 Before setting up cStor operators make sure your Kubernetes Cluster
 meets the following prerequisites:
 
-1. You will need to have Kubernetes version 1.14 or higher
-2. iSCSI initiator utils installed on all the worker nodes
+1. You will need to have Kubernetes version 1.14 or higher.
+2. iSCSI initiator utils installed on all the worker nodes(If you are using rancher based cluster perform [these](troubleshooting/rancher_prerequisite.md) steps).
 3. You have access to install RBAC components into kube-system namespace.
 4. You have disks attached to nodes to provision storage.
 

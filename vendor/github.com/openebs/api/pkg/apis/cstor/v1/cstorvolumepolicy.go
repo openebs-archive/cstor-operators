@@ -23,34 +23,35 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:openapi-gen=true
 
 // CStorVolumePolicy describes a configuration required for cstor volume
 // resources
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced,shortName=cvp
 type CStorVolumePolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	// Spec defines a configuration info of a cstor volume required
 	// to provisione cstor volume resources
 	Spec   CStorVolumePolicySpec   `json:"spec"`
-	Status CStorVolumePolicyStatus `json:"status"`
+	Status CStorVolumePolicyStatus `json:"status,omitempty"`
 }
 
 // CStorVolumePolicySpec ...
 type CStorVolumePolicySpec struct {
 	// replicaAffinity is set to true then volume replica resources need to be
 	// distributed across the pool instances
-	Provision Provision `json:"provision"`
+	Provision Provision `json:"provision,omitempty"`
 
 	// TargetSpec represents configuration related to cstor target and its resources
-	Target TargetSpec `json:"target"`
+	Target TargetSpec `json:"target,omitempty"`
 
 	// ReplicaSpec represents configuration related to replicas resources
-	Replica ReplicaSpec `json:"replica"`
+	Replica ReplicaSpec `json:"replica,omitempty"`
 
 	// ReplicaPoolInfo holds the pool information of volume replicas.
 	// Ex: If volume is provisioned on which CStor pool volume replicas exist
-	ReplicaPoolInfo []ReplicaPoolInfo `json:"replicaPoolInfo"`
+	ReplicaPoolInfo []ReplicaPoolInfo `json:"replicaPoolInfo,omitempty"`
 }
 
 // TargetSpec represents configuration related to cstor target and its resources
@@ -151,11 +152,10 @@ type ReplicaPoolInfo struct {
 
 // CStorVolumePolicyStatus is for handling status of CstorVolumePolicy
 type CStorVolumePolicyStatus struct {
-	Phase string `json:"phase"`
+	Phase string `json:"phase,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:openapi-gen=true
 
 // CStorVolumePolicyList is a list of CStorVolumePolicy resources
 type CStorVolumePolicyList struct {

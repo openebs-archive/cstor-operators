@@ -22,29 +22,30 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 type VersionDetails struct {
 	// If AutoUpgrade is set to true then the resource is
 	// upgraded automatically without any manual steps
-	AutoUpgrade bool `json:"autoUpgrade"`
+	AutoUpgrade bool `json:"autoUpgrade,omitempty"`
 	// Desired is the version that we want to
 	// upgrade or the control plane version
-	Desired string `json:"desired"`
+	Desired string `json:"desired,omitempty"`
 	// Status gives the status of reconciliation triggered
 	// when the desired and current version are not same
-	Status VersionStatus `json:"status"`
+	Status VersionStatus `json:"status,omitempty"`
 }
 
 // VersionStatus is the status of the reconciliation of versions
 type VersionStatus struct {
 	// DependentsUpgraded gives the details whether all children
 	// of a resource are upgraded to desired version or not
-	DependentsUpgraded bool `json:"dependentsUpgraded"`
+	DependentsUpgraded bool `json:"dependentsUpgraded,omitempty"`
 	// Current is the version of resource
-	Current string `json:"current"`
+	Current string `json:"current,omitempty"`
 	// State is the state of reconciliation
-	State VersionState `json:"state"`
+	State VersionState `json:"state,omitempty"`
 	// Message is a human readable message if some error occurs
 	Message string `json:"message,omitempty"`
 	// Reason is the actual reason for the error state
 	Reason string `json:"reason,omitempty"`
 	// LastUpdateTime is the time the status was last  updated
+	// +nullable
 	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
 }
 

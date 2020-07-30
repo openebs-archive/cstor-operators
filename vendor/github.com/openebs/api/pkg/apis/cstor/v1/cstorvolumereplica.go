@@ -41,34 +41,40 @@ const (
 // +resource:path=cstorvolumereplica
 
 // CStorVolumeReplica describes a cstor volume resource created as custom resource
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced,shortName=cvr
+// +kubebuilder:printcolumn:name="Allocated",type=string,JSONPath=`.status.capacity.total`,description="The amount of disk space consumed by a dataset and all its descendents"
+// +kubebuilder:printcolumn:name="Used",type=string,JSONPath=`.status.capacity.used`,description="The amount of space that is logically consumed by this dataset"
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.phase`,description="Identifies the current state of the replicas"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="Age of CStorVolumeReplica"
 type CStorVolumeReplica struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              CStorVolumeReplicaSpec   `json:"spec"`
-	Status            CStorVolumeReplicaStatus `json:"status"`
-	VersionDetails    VersionDetails           `json:"versionDetails"`
+	Status            CStorVolumeReplicaStatus `json:"status,omitempty"`
+	VersionDetails    VersionDetails           `json:"versionDetails,omitempty"`
 }
 
 // CStorVolumeReplicaSpec is the spec for a CStorVolumeReplica resource
 type CStorVolumeReplicaSpec struct {
 	// TargetIP represents iscsi target IP through which replica cummunicates
 	// IO workloads and other volume operations like snapshot and resize requests
-	TargetIP string `json:"targetIP"`
+	TargetIP string `json:"targetIP,omitempty"`
 	//Represents the actual capacity of the underlying volume
-	Capacity string `json:"capacity"`
+	Capacity string `json:"capacity,omitempty"`
 	// ZvolWorkers represents number of threads that executes client IOs
-	ZvolWorkers string `json:"zvolWorkers"`
+	ZvolWorkers string `json:"zvolWorkers,omitempty"`
 	// ReplicaID is unique number to identify the replica
-	ReplicaID string `json:"replicaid"`
+	ReplicaID string `json:"replicaid,omitempty"`
 	// Controls the compression algorithm used for this volumes
 	// examples: on|off|gzip|gzip-N|lz4|lzjb|zle
-	Compression string `json:"compression"`
+	Compression string `json:"compression,omitempty"`
 	// BlockSize is the logical block size in multiple of 512 bytes
 	// BlockSize specifies the block size of the volume. The blocksize
 	// cannot be changed once the volume has been written, so it should be
 	// set at volume creation time. The default blocksize for volumes is 4 Kbytes.
 	// Any power of 2 from 512 bytes to 128 Kbytes is valid.
-	BlockSize uint32 `json:"blockSize"`
+	BlockSize uint32 `json:"blockSize,omitempty"`
 }
 
 // CStorVolumeReplicaPhase is to hold result of action.
@@ -131,15 +137,17 @@ const (
 // CStorVolumeReplicaStatus is for handling status of cvr.
 type CStorVolumeReplicaStatus struct {
 	// CStorVolumeReplicaPhase is to holds different phases of replica
-	Phase CStorVolumeReplicaPhase `json:"phase"`
+	Phase CStorVolumeReplicaPhase `json:"phase,omitempty"`
 
 	// CStorVolumeCapacityDetails represents capacity info of replica
-	Capacity CStorVolumeReplicaCapacityDetails `json:"capacity"`
+	Capacity CStorVolumeReplicaCapacityDetails `json:"capacity,omitempty"`
 
 	// LastTransitionTime refers to the time when the phase changes
+	// +nullable
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 
 	// The last updated time
+	// +nullable
 	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
 
 	// A human readable message indicating details about the transition.

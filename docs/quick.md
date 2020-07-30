@@ -94,7 +94,7 @@ meets the following prerequisites:
     Check that cstor-csi-controller and cstor-csi-node pods has came up.
 
    ```bash
-    $ kubectl get pods -n kube-system
+    $ kubectl get pods -n openebs
     NAME                                              READY   STATUS    RESTARTS   AGE
     openebs-cstor-csi-controller-0                    7/7     Running   0          5m22s
     openebs-cstor-csi-node-86mx9                      2/2     Running   0          5m22s

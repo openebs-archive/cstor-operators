@@ -40,7 +40,7 @@ sleep 5
 
 echo "Verify CSI installation"
 
-kubectl get pods -n kube-system -l role=openebs-csi
+kubectl get pods -n openebs -l role=openebs-cstor-csi
 
 echo "Verify cstor-operators installation"
 

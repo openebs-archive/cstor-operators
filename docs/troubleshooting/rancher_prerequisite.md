@@ -31,7 +31,7 @@ Below commands are required to verify and install iscsi services on nodes
 
 | OPERATING SYSTEM | ISCSI PACKAGE         | COMMANDS                                                 |
 | ---------------- | --------------------- | -------------------------------------------------------- |
-| RHEL/CentOS      | iscsi-initiator-utils | <ul><li>yum install iscsi-initiator-utils -y</li><li>sudo systemctl enable --now iscsid</li><li>modprobe iscsi_tcp</li><li>echo iscsi_tcp >/etc/modules-load.d/iscsi-tcp.conf</li></ul> |
+| RHEL/CentOS      | iscsi-initiator-utils | <ul><li>sudo yum install iscsi-initiator-utils -y</li><li>sudo systemctl enable --now iscsid</li><li>modprobe iscsi_tcp</li><li>echo iscsi_tcp >/etc/modules-load.d/iscsi-tcp.conf</li></ul> |
 | Ununtu/ Debian   | open-iscsi            |  <ul><li>sudo apt install open-iscsi</li><li>sudo systemctl enable --now iscsid</li><li>modprobe iscsi_tcp</li><li>echo iscsi_tcp >/etc/modules-load.d/iscsi-tcp.conf</li></ui>|
 
 #### Step2: Add extra_binds under kubelet service in cluster YAML

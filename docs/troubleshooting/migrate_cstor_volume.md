@@ -228,7 +228,7 @@ pvc-81746e7a-a29d-423b-a048-76edab0b0826-cstor-cspc-zdvk   6K     6K          He
 ```sh
 $ kubectl get cspi -n openebs
 NAME              HOSTNAME            ALLOCATED  FREE   CAPACITY  READONLY  PROVISIONEDREPLICAS  HEALTHYREPLICAS  TYPE    STATUS  AGE
-cstor-cspc-bf9h  ip-192-168-49-174  230k       9630M  9630230k  false     1                    1                stripe  ONLINE  66s
+cstor-cspc-bf9h  ip-192-168-49-174    230k       9630M  9630230k  false     1                    1                stripe  ONLINE  66s
 cstor-cspc-xnxx   ip-192-168-79-76    101k       9630M  9630101k  false     1                    1                stripe  ONLINE  4m25s
 cstor-cspc-zdvk   ip-192-168-29-217   98k        9630M  9630098k  false     1                    1                stripe  ONLINE  4m25s
 ```

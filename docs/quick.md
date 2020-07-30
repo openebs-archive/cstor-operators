@@ -6,9 +6,24 @@ Before setting up cStor operators make sure your Kubernetes Cluster
 meets the following prerequisites:
 
 1. You will need to have Kubernetes version 1.14 or higher.
-2. iSCSI initiator utils installed on all the worker nodes(If you are using rancher based cluster perform [these](troubleshooting/rancher_prerequisite.md) steps).
+2. iSCSI initiator utils installed on all the worker nodes(If you are using rancher based cluster perform steps mentioned [here](troubleshooting/rancher_prerequisite.md)).
 3. You have access to install RBAC components into kube-system namespace.
 4. You have disks attached to nodes to provision storage.
+
+#### Install iSCSI initiator and load iSCSI modules
+
+| OPERATING SYSTEM | ISCSI PACKAGE         | COMMANDS                                                 |
+| ---------------- | --------------------- | -------------------------------------------------------- |
+| RHEL/CentOS      | iscsi-initiator-utils | <ul><li>sudo yum install iscsi-initiator-utils -y</li><li>sudo systemctl enable --now iscsid</li><li>modprobe iscsi_tcp</li><li>echo iscsi_tcp >/etc/modules-load.d/iscsi-tcp.conf</li></ul> |
+| Ununtu/ Debian   | open-iscsi            |  <ul><li>sudo apt install open-iscsi</li><li>sudo systemctl enable --now iscsid</li><li>modprobe iscsi_tcp</li><li>echo iscsi_tcp >/etc/modules-load.d/iscsi-tcp.conf</li></ui>|
+| RancherOS        | open-iscsi            |  <ul><li>sudo ros s enable open-iscsi</li><li>sudo ros s up open-iscsi</li></ui>|
+
+- Verification of iscsi service:
+
+```sh
+  sudo systemctl status iscsid.service
+```
+**NOTE**: Above command will vary depends on the OS.
 
 ### Insallation
 

@@ -138,7 +138,7 @@ func getfakeNodeSpec(name string) *corev1.Node {
 	}
 }
 
-func (f *fixture) fakeBlockDeviceCreator(totalDisk, totalNodeCount int) {
+func (f *fixture) fakeBlockDeviceCreator(totalDisk, totalNodeCount int, fsType string) {
 	// Create some fake block device objects over nodes.
 	var key, diskLabel string
 
@@ -176,6 +176,9 @@ func (f *fixture) fakeBlockDeviceCreator(totalDisk, totalNodeCount int) {
 				},
 				NodeAttributes: openebsapi.NodeAttribute{
 					NodeName: "worker-" + strconv.Itoa(nodeIdentifer),
+				},
+				FileSystem: openebsapi.FileSystemInfo{
+					Type: fsType,
 				},
 			},
 			Status: openebsapi.DeviceStatus{
@@ -759,7 +762,7 @@ func TestBlockDeviceReplacement(t *testing.T) {
 	f := newFixture().withOpenebsObjects().withKubeObjects()
 	f.fakeNodeCreator(3)
 	// Each node will have 20 blockdevices
-	f.fakeBlockDeviceCreator(60, 3)
+	f.fakeBlockDeviceCreator(60, 3, "")
 	tests := map[string]struct {
 		// existingObj is object existing in etcd via fake client
 		existingObj                      *cstor.CStorPoolCluster
@@ -1052,7 +1055,7 @@ func TestCSPCScaleDown(t *testing.T) {
 	// This will attach first 1-20 blockdevices to node1;
 	// 21-40 blockdevices to node2 and 41-60 blockdevices to
 	// node3
-	f.fakeBlockDeviceCreator(60, 3)
+	f.fakeBlockDeviceCreator(60, 3, "")
 	tests := map[string]struct {
 		// existingObj is object existing in etcd via fake client
 		existingObj   *cstor.CStorPoolCluster
@@ -1468,11 +1471,14 @@ func TestCSPCProvisioning(t *testing.T) {
 	// // Each node will have 30 blockdevices
 	// // Since we are not claiming the blockdevices so
 	// // we can reuse the blockdevices
-	// f.fakeBlockDeviceCreator(90, 3)
+	// f.fakeBlockDeviceCreator(90, 3, "")
 	tests := map[string]struct {
 		requestedObj           *cstor.CStorPoolCluster
 		expectedRsp            bool
 		shouldInjectBDGetError bool
+		// fsType will be propogated to blockdevice CR
+		// By default it will be ""
+		fsType string
 	}{
 		"Stripe pool provisioning": {
 			requestedObj: cstor.NewCStorPoolCluster().
@@ -1906,6 +1912,104 @@ func TestCSPCProvisioning(t *testing.T) {
 			expectedRsp:            false,
 			shouldInjectBDGetError: true,
 		},
+		"Stripe pool provisioning with ext4 FS type": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe2").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-34"),
+								),
+						),
+				),
+			expectedRsp: false,
+			fsType:      "ext4",
+		},
+		"Stripe pool provisioning with zfs_member FS type": {
+			requestedObj: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe3").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+								),
+						),
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(
+							*cstor.NewPoolConfig().
+								WithDataRaidGroupType("stripe").
+								WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-34"),
+								),
+						),
+				),
+			expectedRsp: true,
+			fsType:      "zfs_member",
+		},
 	}
 	// Set OPENEBS_NAMESPACE env
 	os.Setenv("OPENEBS_NAMESPACE", "openebs")
@@ -1919,7 +2023,7 @@ func TestCSPCProvisioning(t *testing.T) {
 			// Each node will have 30 blockdevices
 			// Since we are not claiming the blockdevices so
 			// we can reuse the blockdevices
-			f.fakeBlockDeviceCreator(90, 3)
+			f.fakeBlockDeviceCreator(90, 3, test.fsType)
 			ar := &v1beta1.AdmissionReview{
 				Request: &v1beta1.AdmissionRequest{
 					Kind: metav1.GroupVersionKind{

@@ -33,7 +33,7 @@ Table of contents:
 - [Quickly deploy it on K8s and get started](docs/quick.md)
 - [Pool Operations Tutorial](docs/tutorial/intro.md)
 - [High level overview](#overview)
-- [CStor Resource Organisation](docs/developer-guide/cstor-pool-docs.md)
+- [CStor Resource Organisation](docs/developer-guide/cstor-pool.md)
 - [Issues and PRs](#issues-and-prs)
 - [FAQ and Troubleshooting](docs/troubleshooting/troubleshooting.md)
 - [Contributing](#contributing)

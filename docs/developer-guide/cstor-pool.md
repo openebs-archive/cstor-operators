@@ -184,6 +184,6 @@ For more details on how to use CSPC please follow this link.
 
 ```
 
-To understand cStor volume resource organization, please follow this link.
+To understand cStor volume resource organization, please follow this [link](cstor-volume.md).
 
 *CSPC is an declarative API that enables you to create a group of cStor pool(s) on Kubernetes nodes as well as allow you to do other pool operations e.g. disk replacement, pool expansion etc in a Kubectl native way. CSPC API also supports GitOps model.*

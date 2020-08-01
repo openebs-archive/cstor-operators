@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog"
 
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policy "k8s.io/api/policy/v1beta1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -422,17 +423,26 @@ func (c *CVCController) patchTargetDeploymentSpec(cvc *apis.CStorVolumeConfig) e
 		return errors.Wrapf(err, "failed to build target deployment {%v}", vol.Name)
 	}
 
-	twoWayPatchData, orignalDeployObjInBytes, err := getPatchData(orignalDeployObj, newDeployObj)
+	oldData, err := json.Marshal(orignalDeployObj)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to marshal original deployment %s", orignalDeployObj.Name)
 	}
 
-	strategicPatchData, err := strategicpatch.StrategicMergePatch(orignalDeployObjInBytes, twoWayPatchData, orignalDeployObj)
+	newData, err := json.Marshal(newDeployObj)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal updated deployment %s", newDeployObj.Name)
+	}
+
+	// CreateTwoWayMergePatch creates a patch that can be passed to StrategicMergePatch from an original
+	// document and a modified document, which are passed to the method as json encoded content. It will
+	// return a patch that yields the modified document when applied to the original document, or an error
+	// if either of the two documents is invalid.
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, appsv1.Deployment{})
 	if err != nil {
 		return errors.Wrap(err, "failed to create strategic merge patch data")
 	}
 
-	_, err = c.kubeclientset.AppsV1().Deployments(cvc.Namespace).Patch(orignalDeployObj.Name, types.StrategicMergePatchType, strategicPatchData)
+	_, err = c.kubeclientset.AppsV1().Deployments(cvc.Namespace).Patch(orignalDeployObj.Name, types.StrategicMergePatchType, patchBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to patch volume target deployment")
 	}

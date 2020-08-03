@@ -311,7 +311,10 @@ func getContainerPort(port int32) []corev1.ContainerPort {
 func getResourceRequirementForCStorTarget(policySpec *apis.CStorVolumePolicySpec) *corev1.ResourceRequirements {
 	var resourceRequirements *corev1.ResourceRequirements
 	if policySpec.Target.Resources == nil {
-		resourceRequirements = &corev1.ResourceRequirements{}
+		resourceRequirements = &corev1.ResourceRequirements{
+			Limits:   nil,
+			Requests: nil,
+		}
 	} else {
 		resourceRequirements = policySpec.Target.Resources
 	}
@@ -323,7 +326,10 @@ func getResourceRequirementForCStorTarget(policySpec *apis.CStorVolumePolicySpec
 func getAuxResourceRequirement(policySpec *apis.CStorVolumePolicySpec) *corev1.ResourceRequirements {
 	var auxResourceRequirements *corev1.ResourceRequirements
 	if policySpec.Target.AuxResources == nil {
-		auxResourceRequirements = &corev1.ResourceRequirements{}
+		auxResourceRequirements = &corev1.ResourceRequirements{
+			Limits:   nil,
+			Requests: nil,
+		}
 	} else {
 		auxResourceRequirements = policySpec.Target.AuxResources
 	}

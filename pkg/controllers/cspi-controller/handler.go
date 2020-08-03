@@ -186,6 +186,16 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 	common.SyncResources.Mux.Unlock()
 	// This case is possible incase of ephemeral disks
 	if !cspi.IsEmptyStatus() && !cspi.IsPendingStatus() {
+		// This scenario will occur when the zpool command hung due to same/someother
+		// bad disk existence in the system (or) when the underlying pool disk is lost.
+
+		// NOTE: If zpool command hung cstor-pool container in pool manager will restart
+		// because of due liveness on the pool. If cstor-pool container is killed then
+		// zpool commands will error out and fall into this scenario
+		c.recorder.Event(cspi, corev1.EventTypeWarning,
+			string(common.FailedSynced),
+			fmt.Sprintf("Unable to import a pool may be due to underlying pool disk might be lost or bad disk might be attached to the node"),
+		)
 		// Set Pool Lost condition to true
 		condition := cspiutil.NewCSPICondition(
 			cstor.CSPIPoolLost,
@@ -538,6 +548,13 @@ func (c *CStorPoolInstanceController) markCSPIStatusToOffline() {
 	cspiID := os.Getenv(OpenEBSIOCSPIID)
 	for _, cspi := range cspiList.Items {
 		if string(cspi.GetUID()) == cspiID {
+			// If pool-manager container restarts or pod is deleted
+			// before even creating a pool then updating status to
+			// Offline will never create a pool in subsequent reconciliations
+			// until CSPI Phase is updated to "" or pending
+			if cspi.Status.Phase == "" || cspi.Status.Phase == cstor.CStorPoolStatusPending {
+				return
+			}
 			cspi.Status.Phase = cstor.CStorPoolStatusOffline
 			// There will be one-to-one mapping between CSPI and pool-manager
 			// So after finding good to break

@@ -2135,6 +2135,9 @@ func TestRun(t *testing.T) {
 							Namespace: "openebs",
 							UID:       k8stypes.UID("1234"),
 						},
+						Status: cstor.CStorPoolInstanceStatus{
+							Phase: "OFFLINE",
+						},
 					},
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -2178,6 +2181,79 @@ func TestRun(t *testing.T) {
 							Name:      "test-2-cspi-3",
 							Namespace: "openebs",
 							UID:       k8stypes.UID("ADSA123456"),
+						},
+					},
+				},
+			},
+			updatedCSPIName:     "",
+			stopChan:            make(chan struct{}),
+			expectedActionCount: 1,
+		},
+		"When pool is not created but pool-manager restarted": {
+			cspiList: &cstor.CStorPoolInstanceList{
+				Items: []cstor.CStorPoolInstance{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-3-cspi-1",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("1234"),
+						},
+						Status: cstor.CStorPoolInstanceStatus{
+							Phase: "",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-3-cspi-2",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("1234ABC"),
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-3-cspi-3",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("123456"),
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-3-cspi-4",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("ADSA123456"),
+						},
+					},
+				},
+			},
+			updatedCSPIName:     "",
+			stopChan:            make(chan struct{}),
+			expectedActionCount: 1,
+		},
+		"When users are trying to recreate a pool manually": {
+			cspiList: &cstor.CStorPoolInstanceList{
+				Items: []cstor.CStorPoolInstance{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-4-cspi-1",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("1234"),
+						},
+						Status: cstor.CStorPoolInstanceStatus{
+							Phase: cstor.CStorPoolStatusPending,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-4-cspi-2",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("1234ABC"),
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-4-cspi-3",
+							Namespace: "openebs",
+							UID:       k8stypes.UID("123456"),
 						},
 					},
 				},

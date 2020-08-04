@@ -149,3 +149,13 @@ kubectl apply -f ./ci/artifacts/busybox-csi-cstor-sparse.yaml
 
 IsPVCBound csi-claim 30
 IsPodRunning busybox 30
+
+echo "Deleting BusyBox pod and check for the iscsi session cleaned properly..."
+kubectl delete -f ./ci/artifacts/busybox-csi-cstor-sparse.yaml
+
+kubectl wait --for=delete pod -l app=busybox --timeout=600s
+sessionCount=$(sudo iscsiadm -m session | wc -l)
+if [ $sessionCount -ne 0 ]; then
+    echo "iSCSI session not cleaned up successfully"
+    exit 1
+fi

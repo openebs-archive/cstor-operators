@@ -34,13 +34,13 @@ kubectl apply -f ./deploy/cstor-operator.yaml
 
 echo "Install CSI"
 
-kubectl apply -f ./deploy/csi-operator-ubuntu-18.04.yaml
+kubectl apply -f ./deploy/csi-operator.yaml
 
 sleep 5
 
 echo "Verify CSI installation"
 
-kubectl get pods -n kube-system -l role=openebs-csi
+kubectl get pods -n openebs -l role=openebs-cstor-csi
 
 echo "Verify cstor-operators installation"
 

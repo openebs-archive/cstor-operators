@@ -23,11 +23,15 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:openapi-gen=true
 
 // CStorVolumeConfig describes a cstor volume config resource created as
 // custom resource. CStorVolumeConfig is a request for creating cstor volume
 // related resources like deployment, svc etc.
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced,shortName=cvc
+// +kubebuilder:printcolumn:name="Capacity",type=string,JSONPath=`.status.capacity.storage`,description="Identifies the volume capacity"
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.phase`,description="Identifies the volume provisioning status"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="Age of CStorVolumeReplica"
 type CStorVolumeConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -103,10 +107,10 @@ const (
 // defines the observed state of CStorVolumeConfig
 type CStorVolumeConfigStatus struct {
 	// Phase represents the current phase of CStorVolumeConfig.
-	Phase CStorVolumeConfigPhase `json:"phase"`
+	Phase CStorVolumeConfigPhase `json:"phase,omitempty"`
 
 	// PoolInfo represents current pool names where volume replicas exists
-	PoolInfo []string `json:"poolInfo"`
+	PoolInfo []string `json:"poolInfo,omitempty"`
 
 	// Capacity the actual resources of the underlying volume.
 	Capacity corev1.ResourceList `json:"capacity,omitempty"`

@@ -39,40 +39,48 @@ const (
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:openapi-gen=true
 // +resource:path=cstorpoolcluster
 
 // CStorPoolCluster describes a CStorPoolCluster custom resource.
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced,shortName=cspc
+// +kubebuilder:printcolumn:name="HealthyInstances",type=integer,JSONPath=`.status.healthyInstances`,description="The number of healthy cStorPoolInstances"
+// +kubebuilder:printcolumn:name="ProvisionedInstances",type=integer,JSONPath=`.status.provisionedInstances`,description="The number of provisioned cStorPoolInstances"
+// +kubebuilder:printcolumn:name="DesiredInstances",type=integer,JSONPath=`.status.desiredInstances`,description="The number of desired cStorPoolInstances"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="Age of CStorPoolCluster"
 type CStorPoolCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              CStorPoolClusterSpec   `json:"spec"`
-	Status            CStorPoolClusterStatus `json:"status"`
-	VersionDetails    VersionDetails         `json:"versionDetails"`
+	Status            CStorPoolClusterStatus `json:"status,omitempty"`
+	VersionDetails    VersionDetails         `json:"versionDetails,omitempty"`
 }
 
 // CStorPoolClusterSpec is the spec for a CStorPoolClusterSpec resource
 type CStorPoolClusterSpec struct {
 	// Pools is the spec for pools for various nodes
 	// where it should be created.
-	Pools []PoolSpec `json:"pools"`
+	Pools []PoolSpec `json:"pools,omitempty"`
 	// DefaultResources are the compute resources required by the cstor-pool
 	// container.
 	// If the resources at PoolConfig is not specified, this is written
 	// to CSPI PoolConfig.
-	DefaultResources *corev1.ResourceRequirements `json:"resources"`
+	// +nullable
+	DefaultResources *corev1.ResourceRequirements `json:"resources,omitempty"`
 	// AuxResources are the compute resources required by the cstor-pool pod
 	// side car containers.
-	DefaultAuxResources *corev1.ResourceRequirements `json:"auxResources"`
+	// +nullable
+	DefaultAuxResources *corev1.ResourceRequirements `json:"auxResources,omitempty"`
 	// Tolerations, if specified, are the pool pod's tolerations
 	// If tolerations at PoolConfig is empty, this is written to
 	// CSPI PoolConfig.
-	Tolerations []corev1.Toleration `json:"tolerations"`
+	// +nullable
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
 	// DefaultPriorityClassName if specified applies to all the pool pods
 	// in the pool spec if the priorityClass at the pool level is
 	// not specified.
-	DefaultPriorityClassName string `json:"priorityClassName"`
+	DefaultPriorityClassName string `json:"priorityClassName,omitempty"`
 }
 
 //PoolSpec is the spec for pool on node where it should be created.
@@ -84,10 +92,11 @@ type PoolSpec struct {
 	// DataRaidGroups is the raid group configuration for the given pool.
 	DataRaidGroups []RaidGroup `json:"dataRaidGroups"`
 	// WriteCacheRaidGroups is the write cache raid group.
-	WriteCacheRaidGroups []RaidGroup `json:"writeCacheRaidGroups"`
+	// +nullable
+	WriteCacheRaidGroups []RaidGroup `json:"writeCacheRaidGroups,omitempty"`
 	// PoolConfig is the default pool config that applies to the
 	// pool on node.
-	PoolConfig PoolConfig `json:"poolConfig"`
+	PoolConfig PoolConfig `json:"poolConfig,omitempty"`
 }
 
 // PoolConfig is the default pool config that applies to the
@@ -97,29 +106,33 @@ type PoolConfig struct {
 	DataRaidGroupType string `json:"dataRaidGroupType"`
 
 	// WriteCacheGroupType is the write cache raid type.
-	WriteCacheGroupType string `json:"writeCacheGroupType"`
+	WriteCacheGroupType string `json:"writeCacheGroupType,omitempty"`
 
 	// ThickProvision to enable thick provisioning
 	// Optional -- defaults to false
-	ThickProvision bool `json:"thickProvision"`
+	ThickProvision bool `json:"thickProvision,omitempty"`
 	// Compression to enable compression
 	// Optional -- defaults to off
 	// Possible values : lz, off
-	Compression string `json:"compression"`
+	Compression string `json:"compression,omitempty"`
 	// Resources are the compute resources required by the cstor-pool
 	// container.
-	Resources *corev1.ResourceRequirements `json:"resources"`
+	// +nullable
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 	// AuxResources are the compute resources required by the cstor-pool pod
 	// side car containers.
-	AuxResources *corev1.ResourceRequirements `json:"auxResources"`
+	// +nullable
+	AuxResources *corev1.ResourceRequirements `json:"auxResources,omitempty"`
 	// Tolerations, if specified, the pool pod's tolerations.
-	Tolerations []corev1.Toleration `json:"tolerations"`
+	// +nullable
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
 	// PriorityClassName if specified applies to this pool pod
 	// If left empty, DefaultPriorityClassName is applied.
 	// (See CStorPoolClusterSpec.DefaultPriorityClassName)
 	// If both are empty, not priority class is applied.
-	PriorityClassName *string `json:"priorityClassName"`
+	// +nullable
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 
 	// ROThresholdLimit is threshold(percentage base) limit
 	// for pool read only mode. If ROThresholdLimit(%) amount
@@ -128,7 +141,9 @@ type PoolConfig struct {
 	// 1. If ROThresholdLimit is set to 100 then entire
 	//    pool storage will be used by default it will be set to 85%.
 	// 2. ROThresholdLimit value will be 0 <= ROThresholdLimit <= 100.
-	ROThresholdLimit *int `json:"roThresholdLimit"` //optional
+	// +kubebuilder:validation:Optional
+	// +nullable
+	ROThresholdLimit *int `json:"roThresholdLimit,omitempty"` //optional
 }
 
 // RaidGroup contains the details of a raid group for the pool
@@ -143,24 +158,28 @@ type CStorPoolInstanceBlockDevice struct {
 	BlockDeviceName string `json:"blockDeviceName"`
 	// Capacity is the capacity of the block device.
 	// It is system generated
-	Capacity uint64 `json:"capacity"`
+	Capacity uint64 `json:"capacity,omitempty"`
 	// DevLink is the dev link for block devices
-	DevLink string `json:"devLink"`
+	DevLink string `json:"devLink,omitempty"`
 }
 
 // CStorPoolClusterStatus represents the latest available observations of a CSPC's current state.
 type CStorPoolClusterStatus struct {
 	// ProvisionedInstances is the the number of CSPI present at the current state.
-	ProvisionedInstances int32 `json:"provisionedInstances"`
+	// +nullable
+	ProvisionedInstances int32 `json:"provisionedInstances,omitempty"`
 
 	// DesiredInstances is the number of CSPI(s) that should be provisioned.
-	DesiredInstances int32 `json:"desiredInstances"`
+	// +nullable
+	DesiredInstances int32 `json:"desiredInstances,omitempty"`
 
 	// HealthyInstances is the number of CSPI(s) that are healthy.
-	HealthyInstances int32 `json:"healthyInstances"`
+	// +nullable
+	HealthyInstances int32 `json:"healthyInstances,omitempty"`
 
 	// Current state of CSPC.
-	Conditions []CStorPoolClusterCondition `json:"conditions"`
+	// +nullable
+	Conditions []CStorPoolClusterCondition `json:"conditions,omitempty"`
 }
 
 type CSPCConditionType string

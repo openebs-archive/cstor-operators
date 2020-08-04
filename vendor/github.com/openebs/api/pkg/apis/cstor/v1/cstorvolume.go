@@ -26,43 +26,48 @@ import (
 // +resource:path=cstorvolume
 
 // CStorVolume describes a cstor volume resource created as custom resource
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced,shortName=cv
+// +kubebuilder:printcolumn:name="Capacity",type=string,JSONPath=`.status.capacity`,description="Current volume capacity"
+// +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.phase`,description="Identifies the current health of the volume"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="Age of CStorVolume"
 type CStorVolume struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              CStorVolumeSpec   `json:"spec"`
-	Status            CStorVolumeStatus `json:"status"`
-	VersionDetails    VersionDetails    `json:"versionDetails"`
+	Status            CStorVolumeStatus `json:"status,omitempty"`
+	VersionDetails    VersionDetails    `json:"versionDetails,omitempty"`
 }
 
 // CStorVolumeSpec is the spec for a CStorVolume resource
 type CStorVolumeSpec struct {
 	// Capacity represents the desired size of the underlying volume.
-	Capacity resource.Quantity `json:"capacity"`
+	Capacity resource.Quantity `json:"capacity,omitempty"`
 
 	// TargetIP IP of the iSCSI target service
-	TargetIP string `json:"targetIP"`
+	TargetIP string `json:"targetIP,omitempty"`
 
 	// iSCSI Target Port typically TCP ports 3260
-	TargetPort string `json:"targetPort"`
+	TargetPort string `json:"targetPort,omitempty"`
 
 	// Target iSCSI Qualified Name.combination of nodeBase
-	Iqn string `json:"iqn"`
+	Iqn string `json:"iqn,omitempty"`
 
 	// iSCSI Target Portal. The Portal is combination of IP:port (typically TCP ports 3260)
-	TargetPortal string `json:"targetPortal"`
+	TargetPortal string `json:"targetPortal,omitempty"`
 
 	// ReplicationFactor represents number of volume replica created during volume
 	// provisioning connect to the target
-	ReplicationFactor int `json:"replicationFactor"`
+	ReplicationFactor int `json:"replicationFactor,omitempty"`
 
 	// ConsistencyFactor is minimum number of volume replicas i.e. `RF/2 + 1`
 	// has to be connected to the target for write operations. Basically more then
 	// 50% of replica has to be connected to target.
-	ConsistencyFactor int `json:"consistencyFactor"`
+	ConsistencyFactor int `json:"consistencyFactor,omitempty"`
 
 	// DesiredReplicationFactor represents maximum number of replicas
 	// that are allowed to connect to the target. Required for scale operations
-	DesiredReplicationFactor int `json:"desiredReplicationFactor"`
+	DesiredReplicationFactor int `json:"desiredReplicationFactor,omitempty"`
 
 	//ReplicaDetails refers to the trusty replica information
 	ReplicaDetails CStorVolumeReplicaDetails `json:"replicaDetails,omitempty"`
@@ -76,14 +81,16 @@ type CStorVolumePhase string
 
 // CStorVolumeStatus is for handling status of cvr.
 type CStorVolumeStatus struct {
-	Phase           CStorVolumePhase `json:"phase"`
+	Phase           CStorVolumePhase `json:"phase,omitempty"`
 	ReplicaStatuses []ReplicaStatus  `json:"replicaStatuses,omitempty"`
 	// Represents the actual capacity of the underlying volume.
 	Capacity resource.Quantity `json:"capacity,omitempty"`
 	// LastTransitionTime refers to the time when the phase changes
+	// +nullable
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 	// LastUpdateTime refers to the time when last status updated due to any
 	// operations
+	// +nullable
 	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
 	// A human-readable message indicating details about why the volume is in this state.
 	Message string `json:"message,omitempty"`

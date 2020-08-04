@@ -166,7 +166,6 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 	err = cstorsuite.client.WaitForPersistentVolumeClaimDeletion(pvcName, pvcNamespace, k8sclient.Poll, k8sclient.ClaimDeletingTimeout)
 	Expect(err).To(BeNil())
 
-
 	err = cstorsuite.client.KubeClientSet.
 		StorageV1().
 		StorageClasses().

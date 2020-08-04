@@ -78,15 +78,33 @@ func (cd *CVCSpecData) GetUnusedPoolNames() []string {
 	return unUsedPoolNames
 }
 
-// SetCVCSpec sets the CVC spec in spec builder.
+// SetCVCSpec sets the CVC spec in spec builder
+// Usually this function will be called after verifying the
+// CStorVolume resource successfull creation
 func (c *CVCSpecBuilder) SetCVCSpec(cvc *cstorapis.CStorVolumeConfig) {
 	c.addVolumeReplicaPoolsToUsedSet(cvc)
 	c.CVC = cvc
 }
 
+// UnsetCVCSpec will unset the pool names and CVC
+// This function will be called after deprovisioning the cStor volume
+func (c *CVCSpecBuilder) UnsetCVCSpec() {
+	c.addVolumeReplicaPoolsToUnusedSet(c.CVC)
+	c.CVC = nil
+}
+
 // GetCVCSpec sets the CVC spec in spec builder.
 func (c *CVCSpecBuilder) GetCVCSpec() *cstorapis.CStorVolumeConfig {
 	return c.CVC
+}
+
+// addVolumeReplicaPoolsToUnusedSet will adds the list of used pools into Unused set
+func (c *CVCSpecBuilder) addVolumeReplicaPoolsToUnusedSet(cvc *cstorapis.CStorVolumeConfig) {
+	for _, replicaInfo := range cvc.Spec.Policy.ReplicaPoolInfo {
+		if c.CVCSpecData.UsedPools[replicaInfo.PoolName] {
+			c.CVCSpecData.AddPoolToUnusedSet(replicaInfo.PoolName)
+		}
+	}
 }
 
 // addVolumeReplicaPoolsToUsedSet will adds the list of used pools into used set
@@ -114,9 +132,39 @@ func (c *CVCSpecBuilder) ScaleupCVC(poolNames []string) *CVCSpecBuilder {
 	return c
 }
 
-// SetResourceLimits sets the resource limits for target deployment
-func (c *CVCSpecBuilder) SetResourceLimits(auxResourceLimits, resourceLimits *corev1.ResourceRequirements) *CVCSpecBuilder {
+// SetResourceLimits sets the resource limits on CVC
+func (c *CVCSpecBuilder) SetResourceLimits(resourceLimits, auxResourceLimits *corev1.ResourceRequirements) *CVCSpecBuilder {
 	c.CVC.Spec.Policy.Target.AuxResources = auxResourceLimits
 	c.CVC.Spec.Policy.Target.Resources = resourceLimits
+	return c
+}
+
+// SetTolerations will set tolerations on CVC
+func (c *CVCSpecBuilder) SetTolerations(tolerations []corev1.Toleration) *CVCSpecBuilder {
+	c.CVC.Spec.Policy.Target.Tolerations = tolerations
+	return c
+}
+
+// SetPriorityClass name sets the priority class name on CVC
+func (c *CVCSpecBuilder) SetPriorityClass(priorityClassName string) *CVCSpecBuilder {
+	c.CVC.Spec.Policy.Target.PriorityClassName = priorityClassName
+	return c
+}
+
+// SetLuWorkers sets the luworkers value on CVC
+func (c *CVCSpecBuilder) SetLuWorkers(luWorkers int) *CVCSpecBuilder {
+	c.CVC.Spec.Policy.Target.IOWorkers = int64(luWorkers)
+	return c
+}
+
+// SetQueueDepth sets the queue depth value on CVC
+func (c *CVCSpecBuilder) SetQueueDepth(depth string) *CVCSpecBuilder {
+	c.CVC.Spec.Policy.Target.QueueDepth = depth
+	return c
+}
+
+// SetNodeSelector sets the node selector value on CVC
+func (c *CVCSpecBuilder) SetNodeSelector(nodeLabels map[string]string) *CVCSpecBuilder {
+	c.CVC.Spec.Policy.Target.NodeSelector = nodeLabels
 	return c
 }

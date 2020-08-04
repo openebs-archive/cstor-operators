@@ -18,6 +18,7 @@ package k8sclient
 
 import (
 	"reflect"
+	"strconv"
 	"time"
 
 	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
@@ -34,8 +35,10 @@ var (
 	CVPhaseTimeout = 5 * time.Minute
 	// VolumeManagerPhaseTimeout is how long volume manger to reach particular state
 	VolumeManagerPhaseTimeout = 5 * time.Minute
-	// CVDeletingTimeout is How log CV have to become deleted.
+	// CVDeletingTimeout is How long CV have to become deleted.
 	CVDeletingTimeout = 5 * time.Minute
+	// VolumeMangerConfigTimeout is How long volume manager will take reach specified configuration changes
+	VolumeMangerConfigTimeout = 5 * time.Minute
 )
 
 // WaitForCStorVolumePhase waits for a CStorVolume to
@@ -72,7 +75,8 @@ func (client *Client) WaitForCStorVolumeDeleted(cvName, cvNamespace string, poll
 }
 
 // WaitForVolumeManagerCountEventually gets the volume-manager deployment count based on cv
-func (client *Client) WaitForVolumeManagerCountEventually(name, namespace string, expectedCount int, poll, timeout time.Duration) error {
+func (client *Client) WaitForVolumeManagerCountEventually(
+	name, namespace string, expectedCount int, poll, timeout time.Duration) error {
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
 		vList, err := client.GetVolumeManagerList(name, namespace)
 		if err != nil {
@@ -83,38 +87,237 @@ func (client *Client) WaitForVolumeManagerCountEventually(name, namespace string
 		}
 		klog.Infof("Volme manager %s found and count=%d (%v)", name, len(vList.Items), time.Since(start))
 	}
-	return errors.Errorf("VolumeManager of %s not in expected count %d", name, expectedCount)
+	return errors.Errorf("Volume manager of %s not in expected count %d", name, expectedCount)
 }
 
-// WaitForVolumeManagerResourceLimits verifies whether resource limits are reconciled or not
-func (client *Client) WaitForVolumeManagerResourceLimits(
-	name, namespace string, resourceLimits, auxresourceLimits *corev1.ResourceRequirements, timeout, pool time.Duration) error {
-	for start := time.Now(); time.Since(start) < timeout; time.Sleep(pool) {
-		matchedCount := 0
-		targetPod, err := client.KubeClientSet.CoreV1().
-			Pods(namespace).
-			Get(name, metav1.GetOptions{})
+// WaitForVolumeManagerTolerations will wait for volume manager to have
+// tolerations or untill timeout occurs, which ever comes first
+func (client *Client) WaitForVolumeManagerTolerations(
+	name, namespace string, tolerations []corev1.Toleration, timeout, poll time.Duration) error {
+	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
+		vDeploymentList, err := client.KubeClientSet.AppsV1().Deployments(namespace).
+			List(metav1.ListOptions{LabelSelector: openebstypes.PersistentVolumeLabelKey + "=" + name})
 		if err != nil {
 			return err
 		}
+		if len(vDeploymentList.Items) != 1 {
+			return errors.Errorf("found %d no.of deployments", len(vDeploymentList.Items))
+		}
+		areTolerationsExist := false
+		for _, toleration := range tolerations {
+			isExist := false
+			for _, deployTolerations := range vDeploymentList.Items[0].Spec.Template.Spec.Tolerations {
+				if reflect.DeepEqual(toleration, deployTolerations) {
+					isExist = true
+					break
+				}
+			}
+			if !isExist {
+				areTolerationsExist = false
+				break
+			}
+			areTolerationsExist = true
+		}
+		// In case if custom tolerations are removed by default CVC-Operator is adding 4 tolerations
+		// Ref: https://github.com/openebs/cstor-operators/blob/9e7d5b7c64bdfafd0d3127f044706072da7c78d6/pkg/controllers/cstorvolumeconfig/deployment.go#L164
+		if len(tolerations) == 0 && len(vDeploymentList.Items[0].Spec.Template.Spec.Tolerations) == 4 {
+			areTolerationsExist = true
+		}
+
+		if areTolerationsExist {
+			return nil
+		}
+
+		klog.Infof("Waiting for tolerations to propogate to volume manager deployment %s since (%v)", name, time.Since(start))
+	}
+	return errors.Errorf("Volume manager deployment %s doesn't specified tolerations", name)
+}
+
+// WaitForVolumeManagerPriorityClass will wait for volume manager to have
+// priorityclass name or untill timeout occurs, whichever comes first
+func (client *Client) WaitForVolumeManagerPriorityClass(
+	name, namespace, priorityClassName string, timeout, poll time.Duration) error {
+	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
+		vList, err := client.GetVolumeManagerList(name, namespace)
+		if err != nil && !k8serror.IsNotFound(err) {
+			return err
+		}
+		// Pod might me deleted and created back due to changes in
+		// deployment
+		if k8serror.IsNotFound(err) {
+			continue
+		}
+		for _, targetPod := range vList.Items {
+			if !targetPod.DeletionTimestamp.IsZero() {
+				continue
+			}
+			if targetPod.Spec.PriorityClassName == priorityClassName {
+				return nil
+			}
+		}
+		klog.Infof("Waiting for priority class name to propogated to volume manager %s since (%v)", name, time.Since(start))
+	}
+	return errors.Errorf("Volume manager %s doesn't have specified prority class name", name)
+}
+
+// WaitForVolumeManagerNodeSelector will wait for volume manager to have
+// node selector changes or untill timeout occurs, whichever comes first
+func (client *Client) WaitForVolumeManagerNodeSelector(
+	name, namespace string, nodeLabels map[string]string, timeout, poll time.Duration) error {
+	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
+		vList, err := client.GetVolumeManagerList(name, namespace)
+		if err != nil && !k8serror.IsNotFound(err) {
+			return err
+		}
+		// Pod might me deleted and created back due to changes in
+		// deployment
+		if k8serror.IsNotFound(err) {
+			continue
+		}
+		for _, targetPod := range vList.Items {
+			if !targetPod.DeletionTimestamp.IsZero() {
+				continue
+			}
+			if reflect.DeepEqual(targetPod.Spec.NodeSelector, nodeLabels) {
+				return nil
+			}
+		}
+		klog.Infof("Waiting for node selector to be propogated to volume manager %s since (%v)", name, time.Since(start))
+	}
+	return errors.Errorf("Volume manager %s doesn't have specified node selector values", name)
+}
+
+// WaitForVolumeManagerResourceLimits waits for volume manager to have
+// resource limits or untill timeout occurs, whichever comes first
+func (client *Client) WaitForVolumeManagerResourceLimits(
+	name, namespace string, resourceLimits, auxresourceLimits corev1.ResourceRequirements, timeout, poll time.Duration) error {
+	// auxresource will be present in both side car so doubling the count of auxulary resources
+	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
+		isResourceRequirmentsMatched := true
+		// isVisited will be marked true if it iterated over containers
+		isVisited := false
+
+		vList, err := client.GetVolumeManagerList(name, namespace)
+		if err != nil && !k8serror.IsNotFound(err) {
+			return err
+		}
+		// Pod might me deleted and created back due to changes in
+		// deployment
+		if k8serror.IsNotFound(err) {
+			continue
+		}
+
 		// In target pod there were three containers and
 		// cstor-istgt is the main container
-		for _, container := range targetPod.Spec.Containers {
-			if container.Name == "cstor-istgt" {
-				if reflect.DeepEqual(container.Resources, resourceLimits) {
-					matchedCount++
-				}
-			} else {
-				if reflect.DeepEqual(container.Resources, auxresourceLimits) {
-					matchedCount++
+		for _, targetPod := range vList.Items {
+			if !targetPod.DeletionTimestamp.IsZero() {
+				continue
+			}
+			isVisited = true
+			for _, container := range targetPod.Spec.Containers {
+				if container.Name == "cstor-istgt" {
+					// Checking for resource limits
+					isMatched := isResourceListsMatched(container.Resources.Limits, resourceLimits.Limits)
+					if !isMatched {
+						isResourceRequirmentsMatched = false
+					}
+
+					// Checking for resource requests
+					isMatched = isResourceListsMatched(container.Resources.Requests, resourceLimits.Requests)
+					if !isMatched {
+						isResourceRequirmentsMatched = false
+					}
+				} else {
+					isMatched := isResourceListsMatched(container.Resources.Limits, auxresourceLimits.Limits)
+					if !isMatched {
+						isResourceRequirmentsMatched = false
+					}
+					isMatched = isResourceListsMatched(container.Resources.Requests, auxresourceLimits.Requests)
+					if !isMatched {
+						isResourceRequirmentsMatched = false
+					}
 				}
 			}
 		}
-		if matchedCount == 3 {
+		if isVisited && isResourceRequirmentsMatched {
 			return nil
 		}
+		klog.Infof("Waiting for resource limits to propogate to volume manager %s since (%v)",
+			name, time.Since(start))
 	}
-	return errors.Errorf("VolumeManager of %s not has resource limits", name)
+	return errors.Errorf("Volume manager %s doesn't not have resource limits", name)
+}
+
+// WaitForVolumeManagerTunables will wait for volume manager to have
+// specified tunables or untill timeout occurs, whichever comes first
+func (client *Client) WaitForVolumeManagerTunables(
+	name, namespace string, luWorkers int64, queueDepth string, timeout, poll time.Duration) error {
+	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
+		vList, err := client.GetVolumeManagerList(name, namespace)
+		if err != nil && !k8serror.IsNotFound(err) {
+			return err
+		}
+		// Pod might me deleted and created back due to changes in
+		// deployment
+		if k8serror.IsNotFound(err) {
+			continue
+		}
+		isMatched := false
+		for _, targetPod := range vList.Items {
+			if !targetPod.DeletionTimestamp.IsZero() {
+				continue
+			}
+			for _, container := range targetPod.Spec.Containers {
+				if container.Name == "cstor-istgt" {
+					for _, envVar := range container.Env {
+						if envVar.Name == "Luworkers" {
+							existingVal, err := strconv.Atoi(envVar.Value)
+							if err != nil {
+								errors.Wrapf(err, "failed to parse %s value of luworkers", envVar.Value)
+							}
+							if int64(existingVal) != luWorkers {
+								isMatched = false
+								break
+							}
+							isMatched = true
+						}
+						if envVar.Name == "QueDeepth" {
+							if envVar.Value != queueDepth {
+								isMatched = false
+								break
+							}
+							isMatched = true
+						}
+					}
+				}
+			}
+		}
+		if isMatched {
+			return nil
+		}
+		klog.Infof("Waiting for tunables to propogated to volume manager %s since (%v)", name, time.Since(start))
+	}
+	return errors.Errorf("Volume manager %s doesn't have specified tunables", name)
+}
+
+// isResourceListsMatched returns true if provided resource are matched else false
+func isResourceListsMatched(resourceListOne, resourceListTwo corev1.ResourceList) bool {
+	isMatched := true
+
+	for resourceName, existingQuantity := range resourceListOne {
+		expectedQuantity := resourceListTwo[resourceName]
+		if expectedQuantity.Cmp(existingQuantity) != 0 {
+			isMatched = false
+		}
+	}
+
+	for resourceName, existingQuantity := range resourceListTwo {
+		expectedQuantity := resourceListOne[resourceName]
+		if expectedQuantity.Cmp(existingQuantity) != 0 {
+			isMatched = false
+		}
+	}
+	return isMatched
 }
 
 // GetCV will fetch the CV from etcd

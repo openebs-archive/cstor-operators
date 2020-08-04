@@ -8,11 +8,14 @@ import (
 	. "github.com/onsi/gomega"
 	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/tests/pkg/cspc/cspcspecbuilder"
+	"github.com/openebs/cstor-operators/tests/pkg/cstorvolumeconfig/cvcspecbuilder"
 	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 const (
@@ -44,8 +47,6 @@ func ProvisionCSIVolume(pvcName, pvcNamespace, scName string) {
 		pvc.Name, pvc.Namespace, corev1.ClaimBound, k8sclient.Poll, k8sclient.ClaimBindingTimeout)
 	Expect(err).To(BeNil())
 
-	//TODO: Uncomment below code
-	// cvcSpecBuilder.SetCVCSpec(cvc)
 }
 
 // createStorageClass in etcd
@@ -101,10 +102,10 @@ func createPersistentVolumeClaim(pvcName, pvcNamespace, scName string) *corev1.P
 
 // ProvisionCSPC will create CSPC based cStor pools
 func ProvisionCSPC(cspcName, namespace, poolType string, bdCount int) {
-	specBuilder = cspcspecbuilder.
+	cspcSpecBuilder = cspcspecbuilder.
 		NewCSPCSpecBuilder(cstorsuite.CSPCCache, cstorsuite.infra)
 
-	cspc = specBuilder.BuildCSPC(cspcName, namespace, poolType, bdCount, cstorsuite.infra.NodeCount).GetCSPCSpec()
+	cspc = cspcSpecBuilder.BuildCSPC(cspcName, namespace, poolType, bdCount, cstorsuite.infra.NodeCount).GetCSPCSpec()
 	_, err := cstorsuite.
 		client.
 		OpenEBSClientSet.
@@ -118,9 +119,11 @@ func ProvisionCSPC(cspcName, namespace, poolType string, bdCount int) {
 		GetOnlineCSPICountEventually(cspc.Name, cspc.Namespace, cstorsuite.infra.NodeCount)
 	Expect(gotHealthyCSPiCount).To(BeNumerically("==", int32(cstorsuite.infra.NodeCount)))
 
-	// TODO: Uncoment the below code
-	// cvcSpecBuilder = cvcspecbuilder.NewCVCSpecBuilder(cstorsuite.infra, []string{})
+	poolList, err := cstorsuite.client.GetCStorPoolInstanceNames(cspc.Name, cspc.Namespace)
+	Expect(err).To(BeNil())
 
+	//Intantiating CVCSpecBuilder to reduce etcd calls later
+	cvcSpecBuilder = cvcspecbuilder.NewCVCSpecBuilder(cstorsuite.infra, poolList)
 }
 
 // DeProvisionCSPC will de-provision CSPC based cStor pools
@@ -133,7 +136,7 @@ func DeProvisionCSPC(cspc *cstorapis.CStorPoolCluster) {
 		Delete(cspc.Name, &metav1.DeleteOptions{})
 	Expect(err).To(BeNil())
 
-	specBuilder.ResetCSPCSpecData()
+	cspcSpecBuilder.ResetCSPCSpecData()
 
 	gotCSPICount := cstorsuite.
 		client.
@@ -148,19 +151,30 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 		CoreV1().
 		PersistentVolumeClaims(pvcNamespace).
 		Get(pvcName, metav1.GetOptions{})
-	Expect(err).To(BeNil())
+	if err != nil && !k8serror.IsNotFound(err) {
+		Expect(err).To(BeNil())
+	}
 
 	err = cstorsuite.client.KubeClientSet.
 		CoreV1().
-		PersistentVolumeClaims(pvc.Namespace).
-		Delete(pvc.Name, &metav1.DeleteOptions{})
-	Expect(err).To(BeNil())
+		PersistentVolumeClaims(pvcNamespace).
+		Delete(pvcName, &metav1.DeleteOptions{})
+	if err != nil && !k8serror.IsNotFound(err) {
+		Expect(err).To(BeNil())
+	}
 
 	err = cstorsuite.client.KubeClientSet.
 		StorageV1().
 		StorageClasses().
 		Delete(scName, &metav1.DeleteOptions{})
-	Expect(err).To(BeNil())
+	if err != nil && !k8serror.IsNotFound(err) {
+		Expect(err).To(BeNil())
+	}
+
+	if pvc.Spec.VolumeName == "" {
+		klog.Errorf("PVC %s in %s namespace is not in Bound to PV", pvcName, pvcNamespace)
+		return
+	}
 
 	err = cstorsuite.client.WaitForCStorVolumeDeleted(
 		pvc.Spec.VolumeName, openebsNamespace, k8sclient.Poll, k8sclient.CVDeletingTimeout)
@@ -178,10 +192,19 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 	err = cstorsuite.client.WaitForCStorVolumeConfigDeleted(
 		pvc.Spec.VolumeName, openebsNamespace, k8sclient.Poll, k8sclient.CVCDeletingTimeout)
 	Expect(err).To(BeNil())
+
+	// Might be case where CVC is not marked as bound
+	if cvcSpecBuilder.CVC != nil {
+		cvcSpecBuilder.UnsetCVCSpec()
+	}
 }
 
 // VerifyCStorVolumeResourcesStatus will verifies the CStorVolume resources health state
 func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string) {
+	err := cstorsuite.client.WaitForPersistentVolumeClaimPhase(
+		pvcName, pvcNamespace, corev1.ClaimBound, k8sclient.Poll, k8sclient.ClaimBindingTimeout)
+	Expect(err).To(BeNil())
+
 	// Read the PVC after bind so that it will contain pv name
 	pvc, err := cstorsuite.client.KubeClientSet.
 		CoreV1().
@@ -205,4 +228,11 @@ func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string) {
 		pvc.Spec.VolumeName, openebsNamespace, cstorsuite.ReplicaCount,
 		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
 	Expect(err).To(BeNil())
+
+	cvc, err := cstorsuite.client.GetCVC(pvc.Spec.VolumeName, openebsNamespace)
+	Expect(err).To(BeNil())
+
+	Expect(cvcSpecBuilder).NotTo(BeNil(), "cvcSpecBuilder is not initilized")
+	// SetCVCSpec will hold CVC object inmemory to perform further actions
+	cvcSpecBuilder.SetCVCSpec(cvc)
 }

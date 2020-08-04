@@ -17,6 +17,7 @@ limitations under the License.
 package k8sclient
 
 import (
+	"encoding/json"
 	"time"
 
 	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
@@ -24,6 +25,8 @@ import (
 	"github.com/pkg/errors"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/klog"
 )
 
@@ -93,4 +96,51 @@ func (client *Client) GetCVC(cvcName, cvcNamespace string) (*cstorapis.CStorVolu
 	return client.OpenEBSClientSet.CstorV1().
 		CStorVolumeConfigs(cvcNamespace).
 		Get(cvcName, metav1.GetOptions{})
+}
+
+// PatchCVCSpec patch the cvc object by fetching from etcd
+func (client *Client) PatchCVCSpec(cvcName, cvcNamespace string,
+	cvcSpec cstorapis.CStorVolumeConfigSpec) (*cstorapis.CStorVolumeConfig, error) {
+	existingCVCObj, err := client.GetCVC(cvcName, cvcNamespace)
+	if err != nil {
+		return nil, err
+	}
+	cloneCVC := existingCVCObj.DeepCopy()
+	cloneCVC.Spec = cvcSpec
+	patchBytes, _, err := getPatchData(existingCVCObj, cloneCVC)
+	if err != nil {
+		return nil, err
+	}
+	return client.OpenEBSClientSet.CstorV1().CStorVolumeConfigs(existingCVCObj.Namespace).
+		Patch(existingCVCObj.Name, k8stypes.MergePatchType, patchBytes)
+}
+
+// PatchCVC patch the cvc object by fetching from etcd
+func (client *Client) PatchCVC(newCVCObj *cstorapis.CStorVolumeConfig) (*cstorapis.CStorVolumeConfig, error) {
+	existingCVCObj, err := client.GetCVC(newCVCObj.Name, newCVCObj.Namespace)
+	if err != nil {
+		return nil, err
+	}
+	patchBytes, _, err := getPatchData(existingCVCObj, newCVCObj)
+	if err != nil {
+		return nil, err
+	}
+	return client.OpenEBSClientSet.CstorV1().CStorVolumeConfigs(existingCVCObj.Namespace).
+		Patch(existingCVCObj.Name, k8stypes.MergePatchType, patchBytes)
+}
+
+func getPatchData(oldObj, newObj interface{}) ([]byte, []byte, error) {
+	oldData, err := json.Marshal(oldObj)
+	if err != nil {
+		return nil, nil, errors.Errorf("marshal old object failed: %v", err)
+	}
+	newData, err := json.Marshal(newObj)
+	if err != nil {
+		return nil, nil, errors.Errorf("mashal new object failed: %v", err)
+	}
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, oldObj)
+	if err != nil {
+		return nil, nil, errors.Errorf("CreateTwoWayMergePatch failed: %v", err)
+	}
+	return patchBytes, oldData, nil
 }

@@ -23,6 +23,7 @@ import (
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,7 +36,8 @@ func (client *Client) GetOnlineCSPICountEventually(cspcName, cspcNamespace strin
 	// as cspi deletion takes more time now for cleanup of its resources
 	// for reconciled cspi to come up it can take additional time.
 	for i := 0; i < (maxRetry + 100); i++ {
-		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		cspiList, err := client.GetCSPIList(cspcName, cspcNamespace)
+		Expect(err).To(BeNil())
 		filteredList := cspiList.Filter(cstor.IsOnline())
 		cspiCount = len(filteredList.Items)
 		if cspiCount == expectedCSPICount {
@@ -50,7 +52,8 @@ func (client *Client) GetOnlineCSPICountEventually(cspcName, cspcNamespace strin
 func (client *Client) GetCSPICountEventually(cspcName, cspcNamespace string, expectedCSPICount int) int {
 	var cspiCount int
 	for i := 0; i < (maxRetry + 100); i++ {
-		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		cspiList, err := client.GetCSPIList(cspcName, cspcNamespace)
+		Expect(err).To(BeNil())
 		cspiCount = len(cspiList.Items)
 		if cspiCount == expectedCSPICount {
 			return cspiCount
@@ -104,6 +107,19 @@ func (client *Client) GetProvisionedInstancesStatusOnCSPC(cspcName, cspcNamespac
 	return gotProvisionedInstances
 }
 
+// GetCStorPoolInstanceNames will return list of cStor pool instance names belongs to provided CSPC
+func (client *Client) GetCStorPoolInstanceNames(cspcName, cspcNamespace string) ([]string, error) {
+	cspiList, err := client.GetCSPIList(cspcName, cspcNamespace)
+	if err != nil {
+		return []string{}, errors.Wrapf(err, "failed to list pool instances belongs to %s", cspcName)
+	}
+	poolNames := make([]string, len(cspiList.Items))
+	for _, cspiObj := range cspiList.Items {
+		poolNames = append(poolNames, cspiObj.Name)
+	}
+	return poolNames, nil
+}
+
 // GetHealthyInstancesStatusOnCSPC gets healthy instances count based on cspc name
 // and namespace.
 func (client *Client) GetHealthyInstancesStatusOnCSPC(cspcName, cspcNamespace string,
@@ -137,12 +153,10 @@ func (client *Client) GetDesiredInstancesStatusOnCSPC(cspcName, cspcNamespace st
 }
 
 // GetCSPIList gets the list of all cspi(s) based on cspc name and namespace.
-func (client *Client) GetCSPIList(cspcName, cspcNamespace string) *cstor.CStorPoolInstanceList {
-	cspiList, err := client.OpenEBSClientSet.CstorV1().
+func (client *Client) GetCSPIList(cspcName, cspcNamespace string) (*cstor.CStorPoolInstanceList, error) {
+	return client.OpenEBSClientSet.CstorV1().
 		CStorPoolInstances(cspcNamespace).
 		List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
-	Expect(err).To(BeNil())
-	return cspiList
 }
 
 // GetPoolManagerList gets the list of all pool-manger deployments based on cspc name and namespace.

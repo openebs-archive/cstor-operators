@@ -62,7 +62,7 @@ func (client *Client) WaitForPersistentVolumeClaimPhase(
 		if pvcObj.Status.Phase == expectedPhase {
 			return nil
 		}
-		klog.Infof("PersistentVolumeClaim %s found and phase=%s (%v)", pvcName, expectedPhase, time.Since(start))
+		klog.Infof("PersistentVolumeClaim %s found and phase=%s (%v)", pvcName, pvcObj.Status.Phase, time.Since(start))
 	}
 	return errors.Errorf("PersistentVolumeClaim %s not at all in phase %s", pvcName, expectedPhase)
 }

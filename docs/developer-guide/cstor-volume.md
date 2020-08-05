@@ -94,7 +94,7 @@ Admin/User/SRE               X               X                |                 
 `cstor-csi-plugin` (of controller plugin pod). This method is `CreateVolume`.
 
 3. The `cstor-csi-plugin` (as part of CreateVolume) creates a CStorVolumeConfig(CVC) custom resource that is reconciled 
-by CVC-Operator. It should be noted that CVC-Operator is deployed as part of installing cStor. 
+by CVC-Operator. It should be noted that CVC-Operator is deployed as part of cstor-operators installation.
 
 ```
                                                                     +------------------+
@@ -118,7 +118,8 @@ by CVC-Operator. It should be noted that CVC-Operator is deployed as part of ins
 
 4. Now the CVC-Operator creates following resources as part of CVC reconciliation:
 - A `CStorVolume` (CV) (custom resource).  
-- `k` number of `CStorVolumeReplica` (CVR) (custom resource) where `k` is the replica count specified in the storage class.
+- `k` number of `CStorVolumeReplica` (CVR) (custom resource) where `k` is the replica count specified in the 
+StorageClass parameters.
 - A deployment known as `cStor target`.
 - A service. 
 

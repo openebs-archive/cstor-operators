@@ -125,9 +125,8 @@ StorageClass parameters.
 
 5. `CStorVolume` replica is reconciled by the corresponding `cStor target` that got created.
 
-6. The created `CStorVolumeReplicas` are placed on `CStorPoolInstances`. Now two `CStorVolumeReplicas` for the given PVC
-will be placed on the same `CStorPoolInstance`(CSPI). (The CVR is labelled with a CSPI UUID -- ths is what placement
-means)
+6. The CVR is labelled with a CSPI UUID , that means replicas will be distributed across the pools. No two 
+CStorVolumeReplicas for the given PVC will be placed on the same CStorPoolInstance(CSPI).
 
 7. Now, pool manager pod have a replica controller running which reconciles for the CVR and executes the `ZFS` 
 commands after reading the configuration from the CVR.

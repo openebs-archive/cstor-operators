@@ -194,7 +194,7 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 		// zpool commands will error out and fall into this scenario
 		c.recorder.Event(cspi, corev1.EventTypeWarning,
 			string(common.FailedSynced),
-			fmt.Sprintf("Unable to import a pool may be due to underlying pool disk might be lost or bad disk might be attached to the node"),
+			fmt.Sprintf("Failed to import the pool as the underlying pool might be lost or the disk(s) has gone bad"),
 		)
 		// Set Pool Lost condition to true
 		condition := cspiutil.NewCSPICondition(

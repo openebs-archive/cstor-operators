@@ -50,6 +50,18 @@ func (c *CStorPoolInstanceController) Run(threadiness int, stopCh <-chan struct{
 
 	klog.Info("Started CStorPoolInstance workers")
 	<-stopCh
+
+	klog.Info("changing the CSPI state to offline before shutting down")
+	// TODO: Should we mark CSPI.Status.Phase to Unknown(decide before merging PR)?
+
+	// Changing the state of corresponding CSPI to Offline before shutting down.
+	// Similar as when pod is running and if you stopped kubelet it will make
+	// pod status unknown.
+	// NOTE: CSPI status will be updated to OFFLINE even cStor pool-manager
+	// container alone get restarted but in this case pool will be still in
+	// running state. This inconsistency will be resolved in subsequent reconciliations
+	c.markCSPIStatusToOffline()
+
 	klog.Info("Shutting down CStorPoolInstance workers")
 
 	return nil

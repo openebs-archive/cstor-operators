@@ -396,7 +396,12 @@ func validateBlockDevice(bd *openebsapis.BlockDevice, hostName string) error {
 			"block device %q is in not in active state", bd.Name,
 		)
 	}
-	if bd.Spec.FileSystem.Type != "" {
+	// In case of migration from SPC to CSPC there might be chances of blockdevice
+	// CR having FSType as "zfs_member" if devices are consumed by cStor. This FSType
+	// will present only if cStor is created on top of partitioned blockdevice.
+	// TODO: Check type of FS if blockdevice is consuming by ZFS LOCALPV. This case
+	// will be covered when we will check for blockdevice tag
+	if bd.Spec.FileSystem.Type != "" && bd.Spec.FileSystem.Type != "zfs_member" {
 		return errors.Errorf("block device has file system {%s}",
 			bd.Spec.FileSystem.Type,
 		)

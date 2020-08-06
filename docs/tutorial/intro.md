@@ -19,3 +19,4 @@ On a high level, this tutorial covers following:
 2. This [link](./volumes/snapshot.md) explains the volume snapshot related operations.
 3. This [link](./volumes/resize.md) explains the volume resize related operations.
 4. This [link](./volumes/migration.md) explains the volume migration related operations across k8s nodes.
+5. This [link](./volumes/block_volume.md) explains how to use cstor raw block volumes.

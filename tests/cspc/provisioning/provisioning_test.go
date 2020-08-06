@@ -17,6 +17,7 @@ limitations under the License.
 package provisioning_test
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -24,6 +25,7 @@ import (
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/cstor-operators/tests/pkg/cspc/cspcspecbuilder"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -65,7 +67,32 @@ var _ = Describe("CSPC", func() {
 	OperationsTest("raidz", 5)
 	OperationsTest("raidz2", 6)
 
+	TunablesTest("stripe", 1)
+
 })
+
+func NewResourceLimit() *corev1.ResourceRequirements {
+	return &corev1.ResourceRequirements{
+		Limits: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    resource.MustParse("500m"),
+			corev1.ResourceMemory: resource.MustParse("2Gi"),
+		},
+		Requests: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    resource.MustParse("250m"),
+			corev1.ResourceMemory: resource.MustParse("1Gi"),
+		},
+	}
+}
+
+func NewTolerations() []corev1.Toleration {
+	return []corev1.Toleration{
+		{
+			Key:    "openebs.io/integration-test",
+			Value:  "",
+			Effect: corev1.TaintEffectNoExecute,
+		},
+	}
+}
 
 func OperationsTest(poolType string, bdCount int) {
 	var cspc *cstor.CStorPoolCluster
@@ -380,6 +407,143 @@ func ProvisioningTest(poolType string, bdCount int) {
 				Expect(gotCount).To(BeNumerically("==", 0))
 
 			})
+		})
+	})
+}
+
+func TunablesTest(poolType string, bdCount int) {
+	var cspc *cstor.CStorPoolCluster
+	var specBuilder *cspcspecbuilder.CSPCSpecBuilder
+	priorityClassName := "integration-test-priority"
+	compression := "lz"
+	roThreshold := 70
+	Describe(poolType+" CSPC", func() {
+		Context("Pass resource and limit via CSPC", func() {
+			Specify("creating the cspc,no error should be returned", func() {
+				specBuilder = cspcspecbuilder.
+					NewCSPCSpecBuilder(cspcsuite.CSPCCache, cspcsuite.infra)
+
+				cspc = specBuilder.
+					BuildCSPC("cspc-foo", "openebs", poolType, bdCount, cspcsuite.infra.NodeCount).
+					AddResourceLimits(NewResourceLimit()).
+					AddTolerations(NewTolerations()).
+					AddPriorityClass(&priorityClassName).
+					AddCompression(compression).
+					AddRoThreshold(&roThreshold).
+					GetCSPCSpec()
+
+				_, err := cspcsuite.
+					client.
+					OpenEBSClientSet.
+					CstorV1().
+					CStorPoolClusters(cspc.Namespace).
+					Create(cspc)
+				Expect(err).To(BeNil())
+
+			})
+			// Here we are only checking for CSPI creation as passing
+			// parameters like priority class, tolerations can cause the pool
+			// manager pod to be in pending state.
+			// The intent of the tests here is to only check whether the tunables are
+			// passed or not.
+			Specify("Expected number of CSPI should be created", func() {
+				gotHealthyCSPiCount := cspcsuite.
+					client.
+					GetCSPICountEventually(cspc.Name, cspc.Namespace, cspcsuite.infra.NodeCount)
+				Expect(gotHealthyCSPiCount).To(BeNumerically("==", int32(cspcsuite.infra.NodeCount)))
+			})
+
+			Specify("Expected number of pool manager deployments should be created", func() {
+				gotHealthyCSPiCount := cspcsuite.
+					client.
+					GetPoolManagerCountEventually(cspc.Name, cspc.Namespace, cspcsuite.infra.NodeCount)
+				Expect(gotHealthyCSPiCount).To(BeNumerically("==", int32(cspcsuite.infra.NodeCount)))
+			})
+
+			Specify("Resource limits should be passed to the CSPI", func() {
+				resoureLimitMatches := cspcsuite.
+					client.HasResourceLimitOnCSPIEventually(cspc.Name, cspc.Namespace, NewResourceLimit())
+				Expect(resoureLimitMatches).To(BeTrue())
+			})
+
+			Specify("Resource limits should be passed to the cstor-pool container", func() {
+				resoureLimitMatches := cspcsuite.
+					client.HasResourceLimitOnPoolManagerEventually(cspc.Name, cspc.Namespace, NewResourceLimit())
+				Expect(resoureLimitMatches).To(BeTrue())
+			})
+
+			Specify("Tolerations should be passed to the CSPI", func() {
+				resoureLimitMatches := cspcsuite.
+					client.HasTolerationsOnCSPIEventually(cspc.Name, cspc.Namespace, NewTolerations())
+				Expect(resoureLimitMatches).To(BeTrue())
+			})
+
+			Specify("Tolerations should be passed to the pool manager deployments", func() {
+				resoureLimitMatches := cspcsuite.
+					client.HasTolerationsOnPoolManagerEventually(cspc.Name, cspc.Namespace, NewTolerations())
+				Expect(resoureLimitMatches).To(BeTrue())
+			})
+
+			Specify("Priority class should be passed to the CSPI", func() {
+				resoureLimitMatches := cspcsuite.
+					client.HasPriorityClassOnCSPIEventually(cspc.Name, cspc.Namespace, &priorityClassName)
+				Expect(resoureLimitMatches).To(BeTrue())
+			})
+
+			Specify("Priority class should be passed to the pool manager deployments", func() {
+				resoureLimitMatches := cspcsuite.
+					client.HasPriorityClassOnPoolManagerEventually(cspc.Name, cspc.Namespace, &priorityClassName)
+				Expect(resoureLimitMatches).To(BeTrue())
+			})
+
+			Specify("Compression should be passed to the CSPI", func() {
+				resoureLimitMatches := cspcsuite.
+					client.HasCompressionOnCSPIEventually(cspc.Name, cspc.Namespace, compression)
+				Expect(resoureLimitMatches).To(BeTrue())
+			})
+
+			Specify("RO threshold should be passed to the CSPI", func() {
+				resoureLimitMatches := cspcsuite.
+					client.HasROThresholdOnCSPIEventually(cspc.Name, cspc.Namespace, &roThreshold)
+				Expect(resoureLimitMatches).To(BeTrue())
+			})
+
+			Context("Deleting the cspc", func() {
+
+				It("No error should be returned", func() {
+					err := cspcsuite.
+						client.
+						OpenEBSClientSet.
+						CstorV1().
+						CStorPoolClusters(cspc.Namespace).
+						Delete(cspc.Name, &metav1.DeleteOptions{})
+					Expect(err).To(BeNil())
+					// The CSPCSpecData should be cleared
+					specBuilder.ResetCSPCSpecData()
+				})
+
+				It("No corresponding cspi(s) should be present", func() {
+					gotCSPICount := cspcsuite.
+						client.
+						GetCSPICountEventually(cspc.Name, cspc.Namespace, 0)
+					Expect(gotCSPICount).To(BeNumerically("==", 0))
+				})
+
+				It("No corresponding pool-manger deployments should be present", func() {
+					gotPoolMangerCount := cspcsuite.
+						client.
+						GetPoolManagerCountEventually(cspc.Name, cspc.Namespace, 0)
+					Expect(gotPoolMangerCount).To(BeNumerically("==", 0))
+				})
+
+				It("the bdc(s) created by cstor-operator should get deleted", func() {
+					gotCount := cspcsuite.
+						client.
+						GetBDCCountEventually(cspc.Name, cspc.Namespace, 0)
+					Expect(gotCount).To(BeNumerically("==", 0))
+				})
+			})
+
 		})
 	})
 }

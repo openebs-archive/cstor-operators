@@ -22,6 +22,7 @@ import (
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/tests/pkg/cache/cspccache"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
@@ -101,6 +102,101 @@ type ReplacementTracer struct {
 
 func NewReplacementTracer() *ReplacementTracer {
 	return &ReplacementTracer{}
+}
+
+// AddResourceLimits adds resource limits to all the pools of the CSPC
+func (c *CSPCSpecBuilder) AddResourceLimits(resources *corev1.ResourceRequirements) *CSPCSpecBuilder {
+	for i := 0; i < len(c.CSPC.Spec.Pools); i++ {
+		c.AddResourceLimitsAtPos(resources, i)
+	}
+	return c
+}
+
+// AddResourceLimitsAtPos adds resource limits to the CSPC at a given position
+func (c *CSPCSpecBuilder) AddResourceLimitsAtPos(resources *corev1.ResourceRequirements, atPoolPos int) *CSPCSpecBuilder {
+	if atPoolPos >= len(c.CSPC.Spec.Pools) {
+		klog.Warningf("Could not add resource and limit to pool spec"+
+			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+		return c
+	}
+	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.WithResources(resources)
+	return c
+}
+
+// AddTolerations adds tolerations to all the pools of the CSPC
+func (c *CSPCSpecBuilder) AddTolerations(tolerations []corev1.Toleration) *CSPCSpecBuilder {
+	for i := 0; i < len(c.CSPC.Spec.Pools); i++ {
+		c.AddTolerationsAtPos(tolerations, i)
+	}
+	return c
+}
+
+// AddTolerationsAtPos adds tolerations to the CSPC at a given position
+func (c *CSPCSpecBuilder) AddTolerationsAtPos(tolerations []corev1.Toleration, atPoolPos int) *CSPCSpecBuilder {
+	if atPoolPos >= len(c.CSPC.Spec.Pools) {
+		klog.Warningf("Could not add tolerations to pool spec"+
+			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+		return c
+	}
+	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.WithTolerations(tolerations)
+	return c
+}
+
+// AddPriorityClass adds priority class to all the pools of the CSPC
+func (c *CSPCSpecBuilder) AddPriorityClass(priorityClass *string) *CSPCSpecBuilder {
+	for i := 0; i < len(c.CSPC.Spec.Pools); i++ {
+		c.AddPriorityClassAtPos(priorityClass, i)
+	}
+	return c
+}
+
+// AddPriorityClassAtPos adds priority class to the CSPC at a given position
+func (c *CSPCSpecBuilder) AddPriorityClassAtPos(priorityClass *string, atPoolPos int) *CSPCSpecBuilder {
+	if atPoolPos >= len(c.CSPC.Spec.Pools) {
+		klog.Warningf("Could not add priority class to pool spec"+
+			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+		return c
+	}
+	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.WithPriorityClassName(priorityClass)
+	return c
+}
+
+// AddCompression adds compression to all the pool of the CSPC
+func (c *CSPCSpecBuilder) AddCompression(compression string) *CSPCSpecBuilder {
+	for i := 0; i < len(c.CSPC.Spec.Pools); i++ {
+		c.AddCompressionAtPos(compression, i)
+	}
+	return c
+}
+
+// AddCompressionAtPos adds compression to the CSPC at a given position
+func (c *CSPCSpecBuilder) AddCompressionAtPos(compression string, atPoolPos int) *CSPCSpecBuilder {
+	if atPoolPos >= len(c.CSPC.Spec.Pools) {
+		klog.Warningf("Could not add compression to pool spec"+
+			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+		return c
+	}
+	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.Compression = compression
+	return c
+}
+
+// AddRoThreshold adds Read only threshold to all the pools of the CSPC
+func (c *CSPCSpecBuilder) AddRoThreshold(roLimit *int) *CSPCSpecBuilder {
+	for i := 0; i < len(c.CSPC.Spec.Pools); i++ {
+		c.AddRoThresholdAtPos(roLimit, i)
+	}
+	return c
+}
+
+// AddRoThresholdAtPos adds Read only threshold to the CSPC at a given position
+func (c *CSPCSpecBuilder) AddRoThresholdAtPos(roLimit *int, atPoolPos int) *CSPCSpecBuilder {
+	if atPoolPos >= len(c.CSPC.Spec.Pools) {
+		klog.Warningf("Could not add RO threshold to pool spec"+
+			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+		return c
+	}
+	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.WithROThresholdLimit(roLimit)
+	return c
 }
 
 // ReplaceBlockDevice replaces a block device at the provided position in the CSPC

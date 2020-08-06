@@ -28,8 +28,7 @@ Following are the list of native Kubernetes resources that enables the cStor CSI
 
 OpenEBS cStor CSI driver(or plugin) follows a cetralized plugin architecture. In centralized plugin architeture, two 
 componenets are deployed in following manner:
-1. **Controller Plugin:** It is deployed as a deployment controller and scheduled to run on the master node of 
-Kubernetes.
+1. **Controller Plugin:** It is deployed as a deployment controller.
 
 2. **Node Plugin:** It is deployed as a daemonset controller. 
 
@@ -123,7 +122,7 @@ StorageClass parameters.
 - A deployment known as `cStor target`.
 - A service. 
 
-5. `CStorVolume` replica is reconciled by the corresponding `cStor target` that got created.
+5. `CStorVolume` resource is reconciled by the corresponding `cStor target` that got created.
 
 6. The CVR is labelled with a CSPI UUID , that means replicas will be distributed across the pools. No two 
 CStorVolumeReplicas for the given PVC will be placed on the same CStorPoolInstance(CSPI).

@@ -35,6 +35,8 @@ var (
 	CVCPhaseTimeout = 3 * time.Minute
 	// CVCDeletingTimeout is How long claims have to become deleted.
 	CVCDeletingTimeout = 3 * time.Minute
+	// CVCScaleTimeout is how long CVC requires to change the replica pools list
+	CVCScaleTimeout = 3 * time.Minute
 )
 
 // WaitForCStorVolumeConfigPhase waits for a CStorVolumeConfig to
@@ -66,11 +68,11 @@ func (client *Client) WaitForCStorVolumeReplicaPools(
 			return err
 		}
 		desiredPoolNames := cvcObj.GetDesiredReplicaPoolNames()
-		if util.IsChangeInLists(desiredPoolNames, cvcObj.Status.PoolInfo) {
+		if !util.IsChangeInLists(desiredPoolNames, cvcObj.Status.PoolInfo) {
 			return nil
 		}
 		klog.Infof(
-			"CStorVolumeConfig %s found and desired pools=%v current pools=%v (%v)",
+			"Waiting for CStorVolumeConfig %s to match desired pools=%v and current pools=%v (%v)",
 			cvcName, desiredPoolNames, cvcObj.Status.PoolInfo, time.Since(start))
 	}
 	return errors.Errorf("CStorVolumeConfig %s replicas are not yet present in desired pools", cvcName)

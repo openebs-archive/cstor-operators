@@ -23,6 +23,7 @@ import (
 
 	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebstypes "github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -39,14 +40,16 @@ var (
 	CVDeletingTimeout = 5 * time.Minute
 	// VolumeMangerConfigTimeout is How long volume manager will take reach specified configuration changes
 	VolumeMangerConfigTimeout = 5 * time.Minute
+	// CVReplicaConnectionTimeout is How long CV have to wait for replicas to register
+	CVReplicaConnectionTimeout = 5 * time.Minute
 )
 
 // WaitForCStorVolumePhase waits for a CStorVolume to
 // be in a specific phase or until timeout occurs, whichever comes first
 func (client *Client) WaitForCStorVolumePhase(
-	cvcName, cvcNamespace string, expectedPhase cstorapis.CStorVolumePhase, poll, timeout time.Duration) error {
+	cvName, cvNamespace string, expectedPhase cstorapis.CStorVolumePhase, poll, timeout time.Duration) error {
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
-		cvcObj, err := client.GetCV(cvcName, cvcNamespace)
+		cvcObj, err := client.GetCV(cvName, cvNamespace)
 		if err != nil {
 			// Currently we are returning error but based on the requirment we can retry to get CV
 			return err
@@ -54,9 +57,44 @@ func (client *Client) WaitForCStorVolumePhase(
 		if cvcObj.Status.Phase == expectedPhase {
 			return nil
 		}
-		klog.Infof("CStorVolume %s found and phase=%s (%v)", cvcName, cvcObj.Status.Phase, time.Since(start))
+		klog.Infof("CStorVolume %s found and phase=%s (%v)", cvName, cvcObj.Status.Phase, time.Since(start))
 	}
-	return errors.Errorf("CStorVolume %s not at all in phase %s", cvcName, expectedPhase)
+	return errors.Errorf("CStorVolume %s not at all in phase %s", cvName, expectedPhase)
+}
+
+// WaitForDesiredReplicaConnections waits for a desired replicas
+// to connect to CStorVolume or until timeout occurs, whichever comes first
+func (client *Client) WaitForDesiredReplicaConnections(
+	cvName, cvNamespace string, desiredReplicaIDs []string, poll, timeout time.Duration) error {
+	replicationFactor := len(desiredReplicaIDs)
+	consistencyFactor := replicationFactor/2 + 1
+	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
+		cvObj, err := client.GetCV(cvName, cvNamespace)
+		if err != nil {
+			// Currently we are returning error but based on the requirment we can retry to get CV
+			return err
+		}
+		if len(desiredReplicaIDs) != len(cvObj.Status.ReplicaDetails.KnownReplicas) {
+			klog.Infof("Waiting for replica ids to available on CStorVolume %s", cvObj.Name)
+			continue
+		}
+		currentReplicaIds := []string{}
+		for replicaID := range cvObj.Status.ReplicaDetails.KnownReplicas {
+			currentReplicaIds = append(currentReplicaIds, string(replicaID))
+		}
+		if util.IsChangeInLists(desiredReplicaIDs, currentReplicaIds) {
+			return errors.Errorf("CStorVolume doesn't has specified replica IDs")
+		}
+		if replicationFactor != cvObj.Spec.ReplicationFactor {
+			return errors.Errorf("CStorVolume RF %d is not matching with expected RF %d",
+				replicationFactor, cvObj.Spec.ReplicationFactor)
+		}
+		if consistencyFactor != cvObj.Spec.ConsistencyFactor {
+			return errors.Errorf("CStorVolume CF %d is not matching with expected CF %d",
+				consistencyFactor, cvObj.Spec.ConsistencyFactor)
+		}
+	}
+	return errors.Errorf("CStorVolume %s doesn't have desired replica IDs timeout occured", cvName)
 }
 
 // WaitForCStorVolumeDeletion waits for a CStorVolume
@@ -321,10 +359,10 @@ func isResourceListsMatched(resourceListOne, resourceListTwo corev1.ResourceList
 }
 
 // GetCV will fetch the CV from etcd
-func (client *Client) GetCV(cvcName, cvcNamespace string) (*cstorapis.CStorVolume, error) {
+func (client *Client) GetCV(cvName, cvNamespace string) (*cstorapis.CStorVolume, error) {
 	return client.OpenEBSClientSet.CstorV1().
-		CStorVolumes(cvcNamespace).
-		Get(cvcName, metav1.GetOptions{})
+		CStorVolumes(cvNamespace).
+		Get(cvName, metav1.GetOptions{})
 }
 
 // GetVolumeManagerList will fetch volume manager list based on provided arguments from etcd

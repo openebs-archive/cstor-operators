@@ -53,13 +53,25 @@ func (client *Client) WaitForCVRCountEventually(
 func (client *Client) VerifyCVRPoolNames(name, namespace string, poolNames []string) error {
 	cvrList, err := client.GetCVRList(name, namespace)
 	if err != nil {
-		// Currently we are returning error but based on the requirment we can retry to get PVC
 		return err
 	}
 	if util.IsChangeInLists(poolNames, cvrList.GetPoolNames()) {
 		return errors.Errorf("One/more CStorVolumeReplicas are not in pool names %v", poolNames)
 	}
 	return nil
+}
+
+// GetCVRReplicaIDs return list of replicaIDs of replicas of provided Volume
+func (client *Client) GetCVRReplicaIDs(name, namespace string) ([]string, error) {
+	cvrList, err := client.GetCVRList(name, namespace)
+	if err != nil {
+		return nil, err
+	}
+	replicaIDs := make([]string, len(cvrList.Items))
+	for _, cvrObj := range cvrList.Items {
+		replicaIDs = append(replicaIDs, cvrObj.Spec.ReplicaID)
+	}
+	return replicaIDs, nil
 }
 
 // GetCVRList will fetch the CVRList from etcd

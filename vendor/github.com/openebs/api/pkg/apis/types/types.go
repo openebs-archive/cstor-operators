@@ -58,6 +58,11 @@ const (
 	// PersistentVolumeLabelKey label key set in all cstorvolume replicas of a
 	// given volume
 	PersistentVolumeLabelKey = "openebs.io/persistent-volume"
+
+	// BlockDeviceTagLabelKey is the key to fetch tag of a block
+	// device.
+	// For more info : https://github.com/openebs/node-disk-manager/pull/400
+	BlockDeviceTagLabelKey = "openebs.io/block-device-tag"
 )
 
 const (

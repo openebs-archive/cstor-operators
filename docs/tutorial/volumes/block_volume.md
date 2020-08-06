@@ -107,9 +107,9 @@ spec:
       volumes:
         - name: my-db-data
           persistentVolumeClaim:
-            claimname: block-claim
+            claimName: block-claim
         - name: my-nginx-data
           persistentVolumeClaim:
-            claimname: fs-claim
+            claimName: fs-claim
 ```
 

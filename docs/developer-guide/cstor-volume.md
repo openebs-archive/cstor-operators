@@ -28,7 +28,7 @@ Following are the list of native Kubernetes resources that enables the cStor CSI
 
 OpenEBS cStor CSI driver(or plugin) follows a cetralized plugin architecture. In centralized plugin architeture, two 
 componenets are deployed in following manner:
-1. **Controller Plugin:** It is deployed as a deployment controller.
+1. **Controller Plugin:** It is deployed as a sidecar container in statefulset with other CSI specific containers.
 
 2. **Node Plugin:** It is deployed as a daemonset controller. 
 

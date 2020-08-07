@@ -155,9 +155,6 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 		Expect(err).To(BeNil())
 	}
 
-	err = cstorsuite.client.WaitForPersistentVolumeClaimDeletion(pvcName, pvcNamespace, k8sclient.Poll, k8sclient.ClaimDeletingTimeout)
-	Expect(err).To(BeNil())
-
 	err = cstorsuite.client.KubeClientSet.
 		CoreV1().
 		PersistentVolumeClaims(pvcNamespace).
@@ -248,7 +245,18 @@ func scaleupCStorVolume(poolCount int) {
 	poolNames := cvcSpecBuilder.CVCSpecData.GetUnusedPoolNames()
 	Expect(len(poolNames)).To(BeNumerically(">=", poolCount))
 
-	cvcSpecBuilder = cvcSpecBuilder.ScaleupCVC(poolNames[:poolCount])
+	addPoolNames := []string{}
+	for _, poolName := range poolNames {
+		if poolName != "" {
+			addPoolNames = append(addPoolNames, poolName)
+			if len(addPoolNames) == poolCount {
+				break
+			}
+		}
+	}
+
+	klog.Infof("Scaling CStorVolume in %v pool(s)", addPoolNames)
+	cvcSpecBuilder = cvcSpecBuilder.ScaleupCVC(addPoolNames)
 
 	updatedCVC, err := cstorsuite.client.PatchCVCSpec(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace, cvcSpecBuilder.CVC.Spec)
 	Expect(err).To(BeNil(), "failed to patch cvc with new pool name details")

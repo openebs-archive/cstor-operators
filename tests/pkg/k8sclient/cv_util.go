@@ -75,7 +75,9 @@ func (client *Client) WaitForDesiredReplicaConnections(
 			return err
 		}
 		if len(desiredReplicaIDs) != len(cvObj.Status.ReplicaDetails.KnownReplicas) {
-			klog.Infof("Waiting for replica ids to available on CStorVolume %s", cvObj.Name)
+			klog.Infof("Waiting for %d replicas to available on CStorVolume %s but got %d",
+				len(desiredReplicaIDs), cvObj.Name,
+				len(cvObj.Status.ReplicaDetails.KnownReplicas))
 			continue
 		}
 		currentReplicaIds := []string{}
@@ -93,6 +95,7 @@ func (client *Client) WaitForDesiredReplicaConnections(
 			return errors.Errorf("CStorVolume CF %d is not matching with expected CF %d",
 				consistencyFactor, cvObj.Spec.ConsistencyFactor)
 		}
+		return nil
 	}
 	return errors.Errorf("CStorVolume %s doesn't have desired replica IDs timeout occured", cvName)
 }

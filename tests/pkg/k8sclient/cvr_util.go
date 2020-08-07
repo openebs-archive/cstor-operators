@@ -24,6 +24,7 @@ import (
 	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 var (
@@ -45,6 +46,7 @@ func (client *Client) WaitForCVRCountEventually(
 		if len(filteredList.Items) == expectedCount {
 			return nil
 		}
+		klog.Infof("Waiting for %d CStorVolumeReplias to exist in expected state but got %d", expectedCount, len(filteredList.Items))
 	}
 	return errors.Errorf("Expected count %d of CStorVolumeReplicas are not availbe for volume %s", expectedCount, name)
 }
@@ -68,8 +70,8 @@ func (client *Client) GetCVRReplicaIDs(name, namespace string) ([]string, error)
 		return nil, err
 	}
 	replicaIDs := make([]string, len(cvrList.Items))
-	for _, cvrObj := range cvrList.Items {
-		replicaIDs = append(replicaIDs, cvrObj.Spec.ReplicaID)
+	for i, cvrObj := range cvrList.Items {
+		replicaIDs[i] = cvrObj.Spec.ReplicaID
 	}
 	return replicaIDs, nil
 }

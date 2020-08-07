@@ -57,6 +57,8 @@ var _ = Describe("Volume Provisioning Tests", func() {
 	CSIVolumeProvisioningTestWithTolerations()
 	ProvisionVolumeWithPriorityClass()
 	ProvisionVolumeAndUpdateTunables()
+	NegativeScaleupAndScaleDownCStorVolume()
+	ScaleupAndScaleDownCStorVolume()
 })
 
 func CSIVolumeProvisioningTest() {
@@ -494,7 +496,8 @@ func ScaleupAndScaleDownCStorVolume() {
 				verifyScaledCStorVolume(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace)
 
 				// Scaledown to 2 replicas
-				cvcSpecBuilder.RemovePoolsFromCVCSpec(cvcSpecBuilder.CVC.Status.PoolInfo[1:])
+				klog.Infof("Scaling down the CStorVolume from %s", cvcSpecBuilder.CVC.Status.PoolInfo[1])
+				cvcSpecBuilder.RemovePoolsFromCVCSpec([]string{cvcSpecBuilder.CVC.Status.PoolInfo[1]})
 				updatedCVC, err := cstorsuite.client.PatchCVCSpec(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace, cvcSpecBuilder.CVC.Spec)
 				Expect(err).To(BeNil(), "failed to scale down the CVC")
 				replicaCount--
@@ -502,10 +505,19 @@ func ScaleupAndScaleDownCStorVolume() {
 				verifyScaledCStorVolume(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace)
 
 				// Scaledown to 1 replica
-				cvcSpecBuilder.RemovePoolsFromCVCSpec(cvcSpecBuilder.CVC.Status.PoolInfo[1:])
+				klog.Infof("Scaling down the CStorVolume from %s", cvcSpecBuilder.CVC.Status.PoolInfo[1])
+				cvcSpecBuilder.RemovePoolsFromCVCSpec([]string{cvcSpecBuilder.CVC.Status.PoolInfo[1]})
 				updatedCVC, err = cstorsuite.client.PatchCVCSpec(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace, cvcSpecBuilder.CVC.Spec)
 				Expect(err).To(BeNil(), "failed to scale down the CVC")
+				replicaCount--
 				cvcSpecBuilder.SetCVCSpec(updatedCVC)
+				verifyScaledCStorVolume(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace)
+
+				//Scaling up when already scaleup is in progress
+				replicaCount++
+				scaleupCStorVolume(replicaCount)
+				replicaCount++
+				scaleupCStorVolume(replicaCount)
 				verifyScaledCStorVolume(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace)
 
 				DeProvisionVolume(pvcName, testNS, scName)
@@ -524,6 +536,84 @@ func ScaleupAndScaleDownCStorVolume() {
 			})
 		})
 
+	})
+}
+
+func NegativeScaleupAndScaleDownCStorVolume() {
+	testNS := "test-cstorvolume-negative-scaling"
+	pvcName := "pvc-vol-negative-scaling"
+	scName := "cstor-provision-sc-negative-scaling"
+
+	Describe("Provisioning cStor Volume and perform negative test cases on scaleup and scaledown of CStorVolume", func() {
+		Context("Provision pools using CSPC", func() {
+			It("should provision pools and pools should be marked as Healthy", func() {
+				ProvisionCSPC("cstor-stripe-negative-scaling", openebsNamespace, "stripe", 1)
+			})
+		})
+		Context("Provision CStor-CSI volume and negative test cases on scaleup and scaledown of CStorVolume", func() {
+			It("Should able to perform scaleup and scaledown", func() {
+
+				Expect(cspc).NotTo(BeNil(), "Specified CStor pools are not in healthy state")
+				Expect(cvcSpecBuilder).NotTo(BeNil(), "cvcspec builder is not initilized")
+
+				// Provision cStor CSI volume
+				ProvisionCSIVolume(pvcName, testNS, scName, cstorsuite.infra.NodeCount)
+				// Verify whether all the cStor volumes created
+				VerifyCStorVolumeResourcesStatus(pvcName, testNS, cstorsuite.infra.NodeCount)
+
+				// Below sinppet will scale the CStorVolume in unavailable CStorPoolInstance
+				klog.Info("Scaling up CStorVolume in unavailable CStorPoolInstance")
+
+				cvcCopy := cvcSpecBuilder.CVC.DeepCopy()
+				cvcCopy.Spec.Policy.ReplicaPoolInfo = append(
+					cvcCopy.Spec.Policy.ReplicaPoolInfo, cstorapis.ReplicaPoolInfo{PoolName: "cstor-pool-instance-unavailable"})
+				_, err := cstorsuite.client.PatchCVCSpec(
+					cvcCopy.Name, cvcCopy.Namespace, cvcCopy.Spec)
+				Expect(err).To(BeNil(), "failed to patch cvc with new with unavailable pool name details")
+				err = cstorsuite.client.WaitForCStorVolumeReplicaPools(
+					cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace, k8sclient.Poll, time.Second*1)
+				Expect(err).NotTo(BeNil(), "CVC scaled in not existing pool")
+
+				// //Bring CVC Spec to original
+				// cvcSpecBuilder.RemovePoolsFromCVCSpec([]string{"cstor-pool-instance-unavailable"})
+				// updatedCVC, err := cstorsuite.client.PatchCVCSpec(
+				// 	cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace, cvcSpecBuilder.CVC.Spec)
+				// Expect(err).To(BeNil(), "failed to remove unavailable pool name from cvc")
+				// cvcSpecBuilder.SetCVCSpec(updatedCVC)
+
+				// Below snippet will scale the CStorVolume in pool where already replica exist
+				existingPoolName := cvcSpecBuilder.CVC.Status.PoolInfo[0]
+				cvcCopy = cvcSpecBuilder.CVC.DeepCopy()
+				cvcCopy.Spec.Policy.ReplicaPoolInfo = append(
+					cvcCopy.Spec.Policy.ReplicaPoolInfo, cstorapis.ReplicaPoolInfo{PoolName: existingPoolName})
+				_, err = cstorsuite.client.PatchCVCSpec(
+					cvcCopy.Name, cvcCopy.Namespace, cvcCopy.Spec)
+				Expect(err).NotTo(BeNil(), "Scaling in same pool should error out")
+
+				if cstorsuite.infra.NodeCount > 1 {
+					// Below snippet will remove multiple replicas at a time
+					klog.Infof("Scaling down CStorVolume more than one replica at a time")
+					cvcCopy = cvcSpecBuilder.CVC.DeepCopy()
+					cvcCopy.Spec.Policy.ReplicaPoolInfo = []cstorapis.ReplicaPoolInfo{cvcSpecBuilder.CVC.Spec.Policy.ReplicaPoolInfo[0]}
+					_, err = cstorsuite.client.PatchCVCSpec(
+						cvcCopy.Name, cvcCopy.Namespace, cvcCopy.Spec)
+					Expect(err).NotTo(BeNil(), "Scaling down CStorVolume more than one shouldn't be allowed")
+				}
+
+				DeProvisionVolume(pvcName, testNS, scName)
+
+				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				Expect(err).To(BeNil())
+			})
+		})
+		Context("Deprovisioning cspc", func() {
+			Specify("no error should be returned during pool deprovisioning", func() {
+				if cspc == nil {
+					return
+				}
+				DeProvisionCSPC(cspc)
+			})
+		})
 	})
 }
 

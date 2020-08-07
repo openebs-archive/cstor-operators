@@ -83,6 +83,7 @@ func (client *Client) WaitForPersistentVolumeClaimDeletion(pvcName, pvcNamespace
 			}
 			return err
 		}
+		klog.Infof("Waiting for %s pvc in %s namespace to be deleted since(%v)", pvcName, pvcNamespace, time.Since(start))
 	}
 	return errors.Errorf("PersistentVolumeClaim %s is not removed from the system within %v", pvcName, timeout)
 }

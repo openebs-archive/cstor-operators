@@ -83,6 +83,7 @@ func (cd *CVCSpecData) GetUnusedPoolNames() []string {
 func (c *CVCSpecBuilder) RemovePoolsFromCVCSpec(poolNames []string) {
 	replicaPoolCount := len(c.CVC.Spec.Policy.ReplicaPoolInfo) - len(poolNames)
 	newReplicaPoolsList := make([]cstorapis.ReplicaPoolInfo, replicaPoolCount)
+	index := 0
 	for _, replicaPoolInfo := range c.CVC.Spec.Policy.ReplicaPoolInfo {
 		isRemoved := false
 		for _, poolName := range poolNames {
@@ -93,7 +94,8 @@ func (c *CVCSpecBuilder) RemovePoolsFromCVCSpec(poolNames []string) {
 			}
 		}
 		if !isRemoved {
-			newReplicaPoolsList = append(newReplicaPoolsList, replicaPoolInfo)
+			newReplicaPoolsList[index] = replicaPoolInfo
+			index++
 		}
 	}
 	c.CVC.Spec.Policy.ReplicaPoolInfo = newReplicaPoolsList

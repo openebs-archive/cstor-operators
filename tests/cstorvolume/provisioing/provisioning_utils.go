@@ -155,6 +155,9 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 		Expect(err).To(BeNil())
 	}
 
+	err = cstorsuite.client.WaitForPersistentVolumeClaimDeletion(pvcName, pvcNamespace, k8sclient.Poll, k8sclient.ClaimDeletingTimeout)
+	Expect(err).To(BeNil())
+
 	err = cstorsuite.client.KubeClientSet.
 		CoreV1().
 		PersistentVolumeClaims(pvcNamespace).

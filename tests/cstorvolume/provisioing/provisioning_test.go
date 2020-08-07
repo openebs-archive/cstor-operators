@@ -491,8 +491,8 @@ func ScaleupAndScaleDownCStorVolume() {
 				VerifyCStorVolumeResourcesStatus(pvcName, testNS, replicaCount)
 
 				// Since scaled up the replicas increasing the count to 1
+				scaleupCStorVolume(2)
 				replicaCount += 2
-				scaleupCStorVolume(replicaCount)
 				verifyScaledCStorVolume(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace)
 
 				// Scaledown to 2 replicas
@@ -514,10 +514,10 @@ func ScaleupAndScaleDownCStorVolume() {
 				verifyScaledCStorVolume(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace)
 
 				//Scaling up when already scaleup is in progress
+				scaleupCStorVolume(1)
 				replicaCount++
-				scaleupCStorVolume(replicaCount)
+				scaleupCStorVolume(1)
 				replicaCount++
-				scaleupCStorVolume(replicaCount)
 				verifyScaledCStorVolume(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace)
 
 				DeProvisionVolume(pvcName, testNS, scName)

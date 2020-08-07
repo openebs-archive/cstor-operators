@@ -59,9 +59,9 @@ func (client *Client) WaitForCStorVolumePhase(
 	return errors.Errorf("CStorVolume %s not at all in phase %s", cvcName, expectedPhase)
 }
 
-// WaitForCStorVolumeDeleted waits for a CStorVolume
+// WaitForCStorVolumeDeletion waits for a CStorVolume
 // to be removed from the system until timeout occurs, whichever comes first
-func (client *Client) WaitForCStorVolumeDeleted(cvName, cvNamespace string, poll, timeout time.Duration) error {
+func (client *Client) WaitForCStorVolumeDeletion(cvName, cvNamespace string, poll, timeout time.Duration) error {
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
 		_, err := client.GetCV(cvName, cvNamespace)
 		if err != nil {

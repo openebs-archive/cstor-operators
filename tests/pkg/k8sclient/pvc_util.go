@@ -72,9 +72,9 @@ func (client *Client) GetPVC(pvcName, pvcNamespace string) (*corev1.PersistentVo
 	return client.KubeClientSet.CoreV1().PersistentVolumeClaims(pvcNamespace).Get(pvcName, metav1.GetOptions{})
 }
 
-// WaitForPersistentVolumeClaimDeleted waits for a PersistentVolumeClaim
+// WaitForPersistentVolumeClaimDeletion waits for a PersistentVolumeClaim
 // to be removed from the system until timeout occurs, whichever comes first
-func (client *Client) WaitForPersistentVolumeClaimDeleted(pvcName, pvcNamespace string, poll, timeout time.Duration) error {
+func (client *Client) WaitForPersistentVolumeClaimDeletion(pvcName, pvcNamespace string, poll, timeout time.Duration) error {
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
 		_, err := client.GetPVC(pvcName, pvcNamespace)
 		if err != nil {

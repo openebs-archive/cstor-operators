@@ -76,9 +76,9 @@ func (client *Client) WaitForCStorVolumeReplicaPools(
 	return errors.Errorf("CStorVolumeConfig %s replicas are not yet present in desired pools", cvcName)
 }
 
-// WaitForCStorVolumeConfigDeleted waits for a CStorVolumeConfig
+// WaitForCStorVolumeConfigDeletion waits for a CStorVolumeConfig
 // to be removed from the system until timeout occurs, whichever comes first
-func (client *Client) WaitForCStorVolumeConfigDeleted(cvcName, cvcNamespace string, poll, timeout time.Duration) error {
+func (client *Client) WaitForCStorVolumeConfigDeletion(cvcName, cvcNamespace string, poll, timeout time.Duration) error {
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
 		_, err := client.GetCVC(cvcName, cvcNamespace)
 		if err != nil {

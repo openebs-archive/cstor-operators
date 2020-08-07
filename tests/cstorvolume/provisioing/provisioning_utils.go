@@ -163,6 +163,10 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 		Expect(err).To(BeNil())
 	}
 
+	err = cstorsuite.client.WaitForPersistentVolumeClaimDeletion(pvcName, pvcNamespace, k8sclient.Poll, k8sclient.ClaimDeletingTimeout)
+	Expect(err).To(BeNil())
+
+
 	err = cstorsuite.client.KubeClientSet.
 		StorageV1().
 		StorageClasses().
@@ -176,7 +180,7 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 		return
 	}
 
-	err = cstorsuite.client.WaitForCStorVolumeDeleted(
+	err = cstorsuite.client.WaitForCStorVolumeDeletion(
 		pvc.Spec.VolumeName, openebsNamespace, k8sclient.Poll, k8sclient.CVDeletingTimeout)
 	Expect(err).To(BeNil())
 
@@ -186,10 +190,10 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 
 	err = cstorsuite.client.WaitForCVRCountEventually(
 		pvc.Spec.VolumeName, openebsNamespace, 0,
-		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
+		k8sclient.Poll, k8sclient.CVRPhaseTimeout)
 	Expect(err).To(BeNil())
 
-	err = cstorsuite.client.WaitForCStorVolumeConfigDeleted(
+	err = cstorsuite.client.WaitForCStorVolumeConfigDeletion(
 		pvc.Spec.VolumeName, openebsNamespace, k8sclient.Poll, k8sclient.CVCDeletingTimeout)
 	Expect(err).To(BeNil())
 

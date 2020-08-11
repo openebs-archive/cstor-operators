@@ -1,6 +1,7 @@
 # Quickstart
 
-### Prerequisites
+Prerequisites
+--------------
 
 Before setting up cStor operators make sure your Kubernetes Cluster
 meets the following prerequisites:
@@ -19,7 +20,15 @@ meets the following prerequisites:
 3. You have access to install RBAC components into kube-system namespace.
 4. You have disks attached to nodes to provision storage.
 
-### Insallation
+Installation:
+-------------
+
+Note:
+------
+
+It's always a better idea to install latest tag [release](https://github.com/openebs/cstor-operators/releases) yamls, unless we build the images locally. The latest release specific yamls of cstor-operators,
+csi-operators and ndm-operators, can be fetched and apply directly from [release pages](https://github.com/openebs/charts/tree/gh-pages).
+Since below mentioned resources are already created as part of release yamls, we can skip 1-7 steps and continue from step 8 onwards.
 
 1.  Clone the repository.
     ```bash
@@ -301,6 +310,3 @@ meets the following prerequisites:
     $ kubectl exec -it busybox -- cat /mnt/openebs-csi/date.txt
     Wed Jul 12 07:00:26 UTC 2020
     ```
-
-[1]: /deploy/csi-operator.yaml
-[2]: /deploy/csi-operator-ubuntu-18.04.yaml

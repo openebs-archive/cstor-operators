@@ -31,9 +31,10 @@ We are actively working on the following additional tasks for the beta release:
 Table of contents:
 ==================
 - [Quickly deploy it on K8s and get started](docs/quick.md)
-- [Pool Operations Tutorial](docs/tutorial/intro.md)
+- [Pool and Volume Operations Tutorial](docs/tutorial/intro.md)
 - [High level overview](#overview)
-- [CStor Resource Organisation](docs/developer-guide/cstor-pool.md)
+- [CStorPool Resource Organisation](docs/developer-guide/cstor-pool.md)
+- [CStorVolume Resource Organisation](docs/developer-guide/cstor-volume.md)
 - [Issues and PRs](#issues-and-prs)
 - [FAQ and Troubleshooting](docs/troubleshooting/troubleshooting.md)
 - [Contributing](#contributing)
@@ -62,6 +63,12 @@ perform pool operations e.g pool provisioning.
 
 **Note:** It is not recommended to modify the CSPI CR and pool-manager in the running cluster unless you know what you are 
 trying to do. CSPC should be the only point of interaction.
+
+Once the CStor pool get provisioned successfully, admin/user can create PVC to provision csi CStor volumes, when a user
+creates PVC, CStor CSI driver creates CStorVolumeConfig(CVC) resource, managed and reconcile by the **cvc-controller** which creates
+different volume specific resources for each persistent volume, later managed by their respective controllers, more info
+can be found [here](docs/developer-guide/cstor-volume.md).
+
 
 ## Issues And PRs
 We consider issues also as a part of contribution to the project.

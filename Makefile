@@ -228,3 +228,24 @@ license-check:
        fi
 	@echo "--> Done checking license."
 	@echo
+# If there are any external tools need to be used, they can be added by defining a EXTERNAL_TOOLS variable 
+# Bootstrap the build by downloading additional tools
+.PHONY: bootstrap
+bootstrap:
+	@for tool in  $(EXTERNAL_TOOLS) ; do \
+		echo "Installing $$tool" ; \
+		go get -u $$tool; \
+	done
+
+.PHONY: clean
+clean: 
+	@echo '--> Cleaning directory...'
+	rm -rf bin
+	rm -rf ${GOPATH}/bin/${UPGRADE}
+	rm -rf ${GOPATH}/bin/${MIGRATE}
+	rm -rf Dockerfile.upgarde
+	rm -rf Dockerfile.migrate
+	@echo '--> Done cleaning.'
+	@echo
+
+include Makefile.buildx.mk

@@ -7,7 +7,7 @@
 #libraries - zpool, zfs, zrepl
 #FROM openebs/cstor-base:ci
 ARG BASE_IMAGE
-FROM golang:1.14 as build
+FROM golang:1.13.6 as build
 
 ARG TARGETPLATFORM
 

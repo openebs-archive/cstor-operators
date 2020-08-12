@@ -85,18 +85,6 @@ elif [ "$UNAME" = "Linux" ] ; then
   XC_OS="linux"
 fi
 
-if [ "${ARCH}" = "i686" ] ; then
-    XC_ARCH='386'
-elif [ "${ARCH}" = "x86_64" ] ; then
-    XC_ARCH='amd64'
-elif [ "${ARCH}" = "aarch64" ] ; then
-    XC_ARCH='arm64'
-else
-    echo "Unusable architecture: ${ARCH}"
-    exit 1
-fi
-
-
 if [ -z "${PNAME}" ];
 then
     echo "Project name not defined"

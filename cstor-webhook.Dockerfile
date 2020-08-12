@@ -1,4 +1,4 @@
-FROM golang:1.14 as build
+FROM golang:1.13.6 as build
 
 ARG TARGETPLATFORM
 

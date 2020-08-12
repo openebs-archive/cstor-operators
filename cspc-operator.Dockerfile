@@ -2,7 +2,7 @@
 # This Dockerfile builds a recent cspc-operator using the latest binary from
 # cspc-operator  releases.
 #
-FROM golang:1.14 as build
+FROM golang:1.13.6 as build
 
 ARG TARGETPLATFORM
 

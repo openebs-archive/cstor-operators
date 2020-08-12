@@ -157,9 +157,9 @@ docker.buildx.cstor-webhook:
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_CSTOR_WEBHOOK)"
 	@echo
 
-.PHONY: buildx.push.pool-manager
-buildx.push.pool-manager:
-	BUILDX=true DIMAGE=${IMAGE_ORG}/pool-manager ./build/push
+.PHONY: buildx.push.cspc-operator
+buildx.push.cspc-operator:
+	BUILDX=true DIMAGE=${IMAGE_ORG}/cspc-operator ./build/push
 
 .PHONY: buildx.push.cvc-operator
 buildx.push.cvc-operator:

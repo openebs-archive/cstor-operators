@@ -31,13 +31,13 @@ import (
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced,shortName=cspi
 // +kubebuilder:printcolumn:name="HostName",type=string,JSONPath=`.spec.hostName`,description="Host name where cstorpool instances scheduled"
-// +kubebuilder:printcolumn:name="Allocated",type=string,JSONPath=`.status.capacity.used`,description="The amount of storage space within the pool that has been physically allocated"
+// +kubebuilder:printcolumn:name="Allocated",type=string,JSONPath=`.status.capacity.used`,description="The amount of storage space within the pool that has been physically allocated",priority=1
 // +kubebuilder:printcolumn:name="Free",type=string,JSONPath=`.status.capacity.free`,description="The amount of usable free space available in the pool"
 // +kubebuilder:printcolumn:name="Capacity",type=string,JSONPath=`.status.capacity.total`,description="Total amount of usable space in pool"
 // +kubebuilder:printcolumn:name="ReadOnly",type=boolean,JSONPath=`.status.readOnly`,description="Identifies the pool read only mode"
 // +kubebuilder:printcolumn:name="ProvisionedReplicas",type=integer,JSONPath=`.status.provisionedReplicas`,description="Represents no.of replicas present in the pool"
 // +kubebuilder:printcolumn:name="HealthyReplicas",type=integer,JSONPath=`.status.healthyReplicas`,description="Represents no.of healthy replicas present in the pool"
-// +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.poolConfig.dataRaidGroupType`,description="Represents the type of the storage pool"
+// +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.poolConfig.dataRaidGroupType`,description="Represents the type of the storage pool",priority=1
 // +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.phase`,description="Identifies the current health of the pool"
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`,description="Age of CStorPoolInstance"
 type CStorPoolInstance struct {
@@ -117,13 +117,13 @@ type CStorPoolInstanceStatus struct {
 	// Capacity describes the capacity details of a cstor pool
 	Capacity CStorPoolInstanceCapacity `json:"capacity,omitempty"`
 	//ReadOnly if pool is readOnly or not
-	ReadOnly bool `json:"readOnly,omitempty"`
+	ReadOnly bool `json:"readOnly"`
 	// ProvisionedReplicas describes the total count of Volume Replicas
 	// present in the cstor pool
-	ProvisionedReplicas int32 `json:"provisionedReplicas,omitempty"`
+	ProvisionedReplicas int32 `json:"provisionedReplicas"`
 	// HealthyReplicas describes the total count of healthy Volume Replicas
 	// in the cstor pool
-	HealthyReplicas int32 `json:"healthyReplicas,omitempty"`
+	HealthyReplicas int32 `json:"healthyReplicas"`
 }
 
 // CStorPoolInstanceCapacity stores the pool capacity related attributes.

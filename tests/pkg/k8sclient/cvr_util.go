@@ -24,6 +24,7 @@ import (
 	"github.com/openebs/api/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 var (
@@ -45,6 +46,7 @@ func (client *Client) WaitForCVRCountEventually(
 		if len(filteredList.Items) == expectedCount {
 			return nil
 		}
+		klog.Infof("Waiting for %d CStorVolumeReplias to exist in expected state but got %d", expectedCount, len(filteredList.Items))
 	}
 	return errors.Errorf("Expected count %d of CStorVolumeReplicas are not availbe for volume %s", expectedCount, name)
 }
@@ -53,13 +55,25 @@ func (client *Client) WaitForCVRCountEventually(
 func (client *Client) VerifyCVRPoolNames(name, namespace string, poolNames []string) error {
 	cvrList, err := client.GetCVRList(name, namespace)
 	if err != nil {
-		// Currently we are returning error but based on the requirment we can retry to get PVC
 		return err
 	}
 	if util.IsChangeInLists(poolNames, cvrList.GetPoolNames()) {
 		return errors.Errorf("One/more CStorVolumeReplicas are not in pool names %v", poolNames)
 	}
 	return nil
+}
+
+// GetCVRReplicaIDs return list of replicaIDs of replicas of provided Volume
+func (client *Client) GetCVRReplicaIDs(name, namespace string) ([]string, error) {
+	cvrList, err := client.GetCVRList(name, namespace)
+	if err != nil {
+		return nil, err
+	}
+	replicaIDs := make([]string, len(cvrList.Items))
+	for i, cvrObj := range cvrList.Items {
+		replicaIDs[i] = cvrObj.Spec.ReplicaID
+	}
+	return replicaIDs, nil
 }
 
 // GetCVRList will fetch the CVRList from etcd

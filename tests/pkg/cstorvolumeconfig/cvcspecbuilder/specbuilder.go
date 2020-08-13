@@ -78,6 +78,29 @@ func (cd *CVCSpecData) GetUnusedPoolNames() []string {
 	return unUsedPoolNames
 }
 
+// RemovePoolsFromCVCSpec removes the pool names from spec and add
+// them to used set
+func (c *CVCSpecBuilder) RemovePoolsFromCVCSpec(poolNames []string) {
+	replicaPoolCount := len(c.CVC.Spec.Policy.ReplicaPoolInfo) - len(poolNames)
+	newReplicaPoolsList := make([]cstorapis.ReplicaPoolInfo, replicaPoolCount)
+	index := 0
+	for _, replicaPoolInfo := range c.CVC.Spec.Policy.ReplicaPoolInfo {
+		isRemoved := false
+		for _, poolName := range poolNames {
+			if replicaPoolInfo.PoolName == poolName {
+				c.CVCSpecData.AddPoolToUnusedSet(poolName)
+				isRemoved = true
+				break
+			}
+		}
+		if !isRemoved {
+			newReplicaPoolsList[index] = replicaPoolInfo
+			index++
+		}
+	}
+	c.CVC.Spec.Policy.ReplicaPoolInfo = newReplicaPoolsList
+}
+
 // SetCVCSpec sets the CVC spec in spec builder
 // Usually this function will be called after verifying the
 // CStorVolume resource successfull creation
@@ -123,6 +146,10 @@ func (c *CVCSpecBuilder) ScaleupCVC(poolNames []string) *CVCSpecBuilder {
 	}
 
 	for _, poolName := range poolNames {
+		if !c.CVCSpecData.UnUsedPools[poolName] {
+			klog.Warningf("%s Pool is not present in unused list of %s volume", poolName, c.CVC.Name)
+			continue
+		}
 		if c.CVCSpecData.UnUsedPools[poolName] {
 			c.CVCSpecData.AddPoolToUsedSet(poolName)
 			c.CVC.Spec.Policy.ReplicaPoolInfo = append(

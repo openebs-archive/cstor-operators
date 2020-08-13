@@ -23,7 +23,7 @@ const (
 )
 
 // ProvisionCSIVolume will provision Volume using CStor-CSI
-func ProvisionCSIVolume(pvcName, pvcNamespace, scName string) {
+func ProvisionCSIVolume(pvcName, pvcNamespace, scName string, replicaCount int) {
 	var (
 		// PVC will contains the PersistentVolumeClaim object created for test
 		pvc *corev1.PersistentVolumeClaim
@@ -34,7 +34,7 @@ func ProvisionCSIVolume(pvcName, pvcNamespace, scName string) {
 	parameters := map[string]string{
 		"cas-type":         "cstor",
 		"cstorPoolCluster": cspc.Name,
-		"replicaCount":     strconv.Itoa(cstorsuite.ReplicaCount),
+		"replicaCount":     strconv.Itoa(replicaCount),
 	}
 	sc = createStorageClass(scName, parameters)
 
@@ -166,7 +166,6 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 	err = cstorsuite.client.WaitForPersistentVolumeClaimDeletion(pvcName, pvcNamespace, k8sclient.Poll, k8sclient.ClaimDeletingTimeout)
 	Expect(err).To(BeNil())
 
-
 	err = cstorsuite.client.KubeClientSet.
 		StorageV1().
 		StorageClasses().
@@ -204,7 +203,7 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 }
 
 // VerifyCStorVolumeResourcesStatus will verifies the CStorVolume resources health state
-func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string) {
+func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string, replicaCount int) {
 	err := cstorsuite.client.WaitForPersistentVolumeClaimPhase(
 		pvcName, pvcNamespace, corev1.ClaimBound, k8sclient.Poll, k8sclient.ClaimBindingTimeout)
 	Expect(err).To(BeNil())
@@ -229,7 +228,7 @@ func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string) {
 	Expect(err).To(BeNil())
 
 	err = cstorsuite.client.WaitForCVRCountEventually(
-		pvc.Spec.VolumeName, openebsNamespace, cstorsuite.ReplicaCount,
+		pvc.Spec.VolumeName, openebsNamespace, replicaCount,
 		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
 	Expect(err).To(BeNil())
 
@@ -239,4 +238,55 @@ func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string) {
 	Expect(cvcSpecBuilder).NotTo(BeNil(), "cvcSpecBuilder is not initilized")
 	// SetCVCSpec will hold CVC object inmemory to perform further actions
 	cvcSpecBuilder.SetCVCSpec(cvc)
+}
+
+// scaleupCStorVolume add pool names under the spc of CVC
+func scaleupCStorVolume(poolCount int) {
+	poolNames := cvcSpecBuilder.CVCSpecData.GetUnusedPoolNames()
+	Expect(len(poolNames)).To(BeNumerically(">=", poolCount))
+
+	addPoolNames := []string{}
+	for _, poolName := range poolNames {
+		if poolName != "" {
+			addPoolNames = append(addPoolNames, poolName)
+			if len(addPoolNames) == poolCount {
+				break
+			}
+		}
+	}
+
+	klog.Infof("Scaling CStorVolume in %v pool(s)", addPoolNames)
+	cvcSpecBuilder = cvcSpecBuilder.ScaleupCVC(addPoolNames)
+
+	updatedCVC, err := cstorsuite.client.PatchCVCSpec(cvcSpecBuilder.CVC.Name, cvcSpecBuilder.CVC.Namespace, cvcSpecBuilder.CVC.Spec)
+	Expect(err).To(BeNil(), "failed to patch cvc with new pool name details")
+
+	cvcSpecBuilder.SetCVCSpec(updatedCVC)
+}
+
+func verifyScaledCStorVolume(volName, volNamespace string) {
+
+	err := cstorsuite.client.WaitForCStorVolumeReplicaPools(
+	volName, volNamespace, k8sclient.Poll, k8sclient.CVCScaleTimeout)
+	Expect(err).To(BeNil(), "CVC doesn't have desired replica pool names")
+
+	updatedCVC, err := cstorsuite.client.GetCVC(volName, volNamespace)
+	Expect(err).To(BeNil(), "Failed to fetch CVC")
+	cvcSpecBuilder.SetCVCSpec(updatedCVC)
+	
+	// Verify whether newely created CVR's are in Healthy state
+	err = cstorsuite.client.WaitForCVRCountEventually(
+		volName, volNamespace, len(updatedCVC.Spec.Policy.ReplicaPoolInfo),
+		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
+	Expect(err).To(BeNil())
+	
+	err = cstorsuite.client.VerifyCVRPoolNames(volName, volNamespace, cvcSpecBuilder.CVC.Status.PoolInfo)
+	Expect(err).To(BeNil())
+	
+	replicaIDs, err := cstorsuite.client.GetCVRReplicaIDs(volName, volNamespace)
+	Expect(err).To(BeNil())
+
+	err = cstorsuite.client.WaitForDesiredReplicaConnections(cvcSpecBuilder.CVC.Name,
+		cvcSpecBuilder.CVC.Namespace, replicaIDs, k8sclient.Poll, k8sclient.CVReplicaConnectionTimeout)
+	Expect(err).To(BeNil())
 }

@@ -114,8 +114,8 @@ func (client *Client) GetCStorPoolInstanceNames(cspcName, cspcNamespace string) 
 		return []string{}, errors.Wrapf(err, "failed to list pool instances belongs to %s", cspcName)
 	}
 	poolNames := make([]string, len(cspiList.Items))
-	for _, cspiObj := range cspiList.Items {
-		poolNames = append(poolNames, cspiObj.Name)
+	for i, cspiObj := range cspiList.Items {
+		poolNames[i] = cspiObj.Name
 	}
 	return poolNames, nil
 }

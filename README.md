@@ -64,7 +64,7 @@ perform pool operations e.g pool provisioning.
 **Note:** It is not recommended to modify the CSPI CR and pool-manager in the running cluster unless you know what you are 
 trying to do. CSPC should be the only point of interaction.
 
-Once the CStor pool get provisioned successfully, admin/user can create PVC to provision csi CStor volumes, when a user
+Once the CStor pool(s) get provisioned successfully after creating CSPC, admin/user can create PVC to provision csi CStor volumes. When a user
 creates PVC, CStor CSI driver creates CStorVolumeConfig(CVC) resource, managed and reconcile by the **cvc-controller** which creates
 different volume specific resources for each persistent volume, later managed by their respective controllers, more info
 can be found [here](docs/developer-guide/cstor-volume.md).
@@ -86,7 +86,7 @@ Please read the contributing guidelines [here](./CONTRIBUTING.md).
 
 ## Code of conduct
 
-Pleae read the community code of conduct [here](./CODE_OF_CONDUCT.md).
+Please read the community code of conduct [here](./CODE_OF_CONDUCT.md).
 
 [Docker environment]: https://docs.docker.com/engine
 [Go environment]: https://golang.org/doc/install

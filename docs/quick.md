@@ -27,8 +27,8 @@ Note:
 ------
 
 It's always a better idea to install latest tag [release](https://github.com/openebs/cstor-operators/releases) yamls, unless we build the images locally. The latest release specific yamls of cstor-operators,
-csi-operators and ndm-operators, can be fetched and apply directly from [release pages](https://github.com/openebs/charts/tree/gh-pages).
-Since below mentioned resources are already created as part of release yamls, we can skip 1-7 steps and continue from step 8 onwards.
+csi-operators and ndm-operators, can be fetched and applied directly from [release pages](https://github.com/openebs/charts/tree/gh-pages).
+Since the below mentioned resources are already created as part of release yamls, we can skip 1-7 steps and continue from step 8 onwards.
 
 1.  Clone the repository.
     ```bash

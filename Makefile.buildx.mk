@@ -72,7 +72,7 @@ docker.buildx.cspc-operator:
 		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
 	fi
 	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_CSPC_OPERATOR)" ${DBUILD_ARGS} -f cspc-operator.Dockerfile \
+		-t "$(DOCKERX_IMAGE_CSPC_OPERATOR)" ${DBUILD_ARGS} -f $(PWD)/build/$(CSPC_OPERATOR)/cspc-operator.Dockerfile \
 		. ${PUSH_ARG}
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_CSPC_OPERATOR)"
 	@echo
@@ -92,7 +92,7 @@ docker.buildx.cvc-operator:
 		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
 	fi
 	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_CVC_OPERATOR)" ${DBUILD_ARGS} -f cvc-operator.Dockerfile \
+		-t "$(DOCKERX_IMAGE_CVC_OPERATOR)" ${DBUILD_ARGS} -f $(PWD)/build/$(CVC_OPERATOR)/cvc-operator.Dockerfile \
 		. ${PUSH_ARG}
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_CVC_OPERATOR)"
 	@echo
@@ -112,7 +112,7 @@ docker.buildx.pool-manager:
 		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
 	fi
 	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_POOL_MANAGER)" --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} ${DBUILD_ARGS} -f pool-manager.Dockerfile \
+		-t "$(DOCKERX_IMAGE_POOL_MANAGER)" --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} ${DBUILD_ARGS} -f $(PWD)/build/$(POOL_MANAGER)/pool-manager.Dockerfile \
 		. ${PUSH_ARG}
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_POOL_MANAGER)"
 	@echo
@@ -132,7 +132,7 @@ docker.buildx.volume-manager:
 		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
 	fi
 	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_VOLUME_MANAGER)" ${DBUILD_ARGS} -f volume-manager.Dockerfile \
+		-t "$(DOCKERX_IMAGE_VOLUME_MANAGER)" ${DBUILD_ARGS} -f $(PWD)/build/$(VOLUME_MANAGER)/volume-manager.Dockerfile \
 		. ${PUSH_ARG}
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_VOLUME_MANAGER)"
 	@echo
@@ -152,7 +152,7 @@ docker.buildx.cstor-webhook:
 		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
 	fi
 	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_CSTOR_WEBHOOK)" ${DBUILD_ARGS} -f cstor-webhook.Dockerfile \
+		-t "$(DOCKERX_IMAGE_CSTOR_WEBHOOK)" ${DBUILD_ARGS} -f $(PWD)/build/$(CSTOR_WEBHOOK)/cstor-webhook.Dockerfile \
 		. ${PUSH_ARG}
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_CSTOR_WEBHOOK)"
 	@echo

@@ -1,5 +1,75 @@
 # Changelog
 
+## [v2.0.0](https://github.com/openebs/cstor-operators/tree/v2.0.0) (2020-08-13)
+
+**Merged pull requests:**
+
+- refact\(vendor\): sync with openebs apis changes [\#157](https://github.com/openebs/cstor-operators/pull/157) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(version\): update upgrade matrix with valid current versions [\#153](https://github.com/openebs/cstor-operators/pull/153) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- docs\(volume\): add raw block volume docs with a usecase [\#149](https://github.com/openebs/cstor-operators/pull/149) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(validations\): add check for BD tag presence [\#147](https://github.com/openebs/cstor-operators/pull/147) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(reconciliation\): update deployment with specified values in cvc policy [\#146](https://github.com/openebs/cstor-operators/pull/146) ([mittachaitu](https://github.com/mittachaitu))
+- docs\(cstorvolume\): add cStor volume resource organisation document. [\#145](https://github.com/openebs/cstor-operators/pull/145) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(admission server\): allow CRUD operations on CSPC if disk has zfs filesystem [\#144](https://github.com/openebs/cstor-operators/pull/144) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(crds\): add openAPIV3 based CStor CRDs [\#143](https://github.com/openebs/cstor-operators/pull/143) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(docs\): add prerequisite to install CStor-CSI on rancher based cluster [\#142](https://github.com/openebs/cstor-operators/pull/142) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(status\): update CSPI status when corresponding cStor pool-manager terminated [\#141](https://github.com/openebs/cstor-operators/pull/141) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(yaml\): add generic CSI operator yaml with root mount [\#140](https://github.com/openebs/cstor-operators/pull/140) ([prateekpandey14](https://github.com/prateekpandey14))
+- docs\(bad\_disk\): add troubleshooting document to recover stuck pool pod [\#139](https://github.com/openebs/cstor-operators/pull/139) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(docs\): add troubleshooting steps to migrate cStor volume from lost pool to new pool [\#138](https://github.com/openebs/cstor-operators/pull/138) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): add troubleshoot steps to bring cStor pools online after performing node replacement [\#137](https://github.com/openebs/cstor-operators/pull/137) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): add volume policy docs with example configurations [\#136](https://github.com/openebs/cstor-operators/pull/136) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(cstor-webhook\): allow scale down of pools when node doesn't exist in cluster [\#135](https://github.com/openebs/cstor-operators/pull/135) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): add cspc tunables docs [\#132](https://github.com/openebs/cstor-operators/pull/132) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(docs\): add cStor pool resource organization docs [\#131](https://github.com/openebs/cstor-operators/pull/131) ([sonasingh46](https://github.com/sonasingh46))
+- Update docs for setup & quickstart [\#130](https://github.com/openebs/cstor-operators/pull/130) ([vaniisgh](https://github.com/vaniisgh))
+- feat\(tests\): add integration test framework for CStor Volumes and volume test cases [\#129](https://github.com/openebs/cstor-operators/pull/129) ([mittachaitu](https://github.com/mittachaitu))
+- refact\(cvc\): add pvc label in volume target deployments [\#124](https://github.com/openebs/cstor-operators/pull/124) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(cstor-webhook\): fixes pool scaledown bug [\#122](https://github.com/openebs/cstor-operators/pull/122) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(version\): split version string to segregate version from tags [\#121](https://github.com/openebs/cstor-operators/pull/121) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(operator\): add generic csi-operator yaml [\#119](https://github.com/openebs/cstor-operators/pull/119) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(integration\_tests\): add integration test framework and test cases [\#118](https://github.com/openebs/cstor-operators/pull/118) ([sonasingh46](https://github.com/sonasingh46))
+- test\(unit test\): add test cases for cstor pool provisioning [\#117](https://github.com/openebs/cstor-operators/pull/117) ([mittachaitu](https://github.com/mittachaitu))
+- test\(restore\): add mock test for restore endpoint [\#114](https://github.com/openebs/cstor-operators/pull/114) ([mittachaitu](https://github.com/mittachaitu))
+
+
+## [v2.0.0-RC2](https://github.com/openebs/cstor-operators/tree/v2.0.0-RC2) (2020-08-13)
+
+**Merged pull requests:**
+
+- refact\(vendor\): sync with openebs apis changes [\#157](https://github.com/openebs/cstor-operators/pull/157) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(version\): update upgrade matrix with valid current versions [\#153](https://github.com/openebs/cstor-operators/pull/153) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+## [v2.0.0-RC1](https://github.com/openebs/cstor-operators/tree/v2.0.0-RC1) (2020-08-06)
+
+**Merged pull requests:**
+
+- docs\(volume\): add raw block volume docs with a usecase [\#149](https://github.com/openebs/cstor-operators/pull/149) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(validations\): add check for BD tag presence [\#147](https://github.com/openebs/cstor-operators/pull/147) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(reconciliation\): update deployment with specified values in cvc policy [\#146](https://github.com/openebs/cstor-operators/pull/146) ([mittachaitu](https://github.com/mittachaitu))
+- docs\(cstorvolume\): add cStor volume resource organisation document. [\#145](https://github.com/openebs/cstor-operators/pull/145) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(admission server\): allow CRUD operations on CSPC if disk has zfs filesystem [\#144](https://github.com/openebs/cstor-operators/pull/144) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(crds\): add openAPIV3 based CStor CRDs [\#143](https://github.com/openebs/cstor-operators/pull/143) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(docs\): add prerequisite to install CStor-CSI on rancher based cluster [\#142](https://github.com/openebs/cstor-operators/pull/142) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(status\): update CSPI status when corresponding cStor pool-manager terminated [\#141](https://github.com/openebs/cstor-operators/pull/141) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(yaml\): add generic CSI operator yaml with root mount [\#140](https://github.com/openebs/cstor-operators/pull/140) ([prateekpandey14](https://github.com/prateekpandey14))
+- docs\(bad\_disk\): add troubleshooting document to recover stuck pool pod [\#139](https://github.com/openebs/cstor-operators/pull/139) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(docs\): add troubleshooting steps to migrate cStor volume from lost pool to new pool [\#138](https://github.com/openebs/cstor-operators/pull/138) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): add troubleshoot steps to bring cStor pools online after performing node replacement [\#137](https://github.com/openebs/cstor-operators/pull/137) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): add volume policy docs with example configurations [\#136](https://github.com/openebs/cstor-operators/pull/136) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(cstor-webhook\): allow scale down of pools when node doesn't exist in cluster [\#135](https://github.com/openebs/cstor-operators/pull/135) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): add cspc tunables docs [\#132](https://github.com/openebs/cstor-operators/pull/132) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(docs\): add cStor pool resource organization docs [\#131](https://github.com/openebs/cstor-operators/pull/131) ([sonasingh46](https://github.com/sonasingh46))
+- Update docs for setup & quickstart [\#130](https://github.com/openebs/cstor-operators/pull/130) ([vaniisgh](https://github.com/vaniisgh))
+- feat\(tests\): add integration test framework for CStor Volumes and volume test cases [\#129](https://github.com/openebs/cstor-operators/pull/129) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(changelog\): add 1.12.0 release CHANGELOG [\#127](https://github.com/openebs/cstor-operators/pull/127) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(cvc\): add pvc label in volume target deployments [\#124](https://github.com/openebs/cstor-operators/pull/124) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(cstor-webhook\): fixes pool scaledown bug [\#122](https://github.com/openebs/cstor-operators/pull/122) ([sonasingh46](https://github.com/sonasingh46))
+- fix\(version\): split version string to segregate version from tags [\#121](https://github.com/openebs/cstor-operators/pull/121) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(operator\): add generic csi-operator yaml [\#119](https://github.com/openebs/cstor-operators/pull/119) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(integration\_tests\): add integration test framework and test cases [\#118](https://github.com/openebs/cstor-operators/pull/118) ([sonasingh46](https://github.com/sonasingh46))
+- test\(unit test\): add test cases for cstor pool provisioning [\#117](https://github.com/openebs/cstor-operators/pull/117) ([mittachaitu](https://github.com/mittachaitu))
+- test\(restore\): add mock test for restore endpoint [\#114](https://github.com/openebs/cstor-operators/pull/114) ([mittachaitu](https://github.com/mittachaitu))
 
 ## [v1.12.0](https://github.com/openebs/cstor-operators/tree/v1.12.0) (2020-07-15)
 
@@ -238,7 +308,6 @@
 - chore\(build\): add license in build scripts [\#3](https://github.com/openebs/cstor-operators/pull/3) ([prateekpandey14](https://github.com/prateekpandey14))
 - feat\(cvc\): add cstorvolumeclaim operator using new apis [\#2](https://github.com/openebs/cstor-operators/pull/2) ([prateekpandey14](https://github.com/prateekpandey14))
 - feat\(cspc\): add cspc-operator using new apis  [\#1](https://github.com/openebs/cstor-operators/pull/1) ([sonasingh46](https://github.com/sonasingh46))
-
 
 
 \* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*

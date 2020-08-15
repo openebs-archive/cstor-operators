@@ -26,19 +26,19 @@ metadata:
 spec:
   resources:
     requests:
-      memory: "64Mi"
+      memory: "2Gi"
       cpu: "250m"
     limits:
-      memory: "128Mi"
+      memory: "4Gi"
       cpu: "500m"
 
   auxResources:
     requests:
-      memory: "50Mi"
-      cpu: "400m"
+      memory: "500Mi"
+      cpu: "100m"
     limits:
-      memory: "100Mi"
-      cpu: "400m"
+      memory: "1Gi"
+      cpu: "200m"
   pools:
     - nodeSelector:
         kubernetes.io/hostname: worker-node-1

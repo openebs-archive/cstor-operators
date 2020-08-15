@@ -1,46 +1,35 @@
 # cstor-operators
 [![Go](https://github.com/openebs/cstor-operators/workflows/Go/badge.svg)](https://github.com/openebs/cstor-operators/actions)
 [![Build Status](https://travis-ci.org/openebs/cstor-operators.svg?branch=master)](https://travis-ci.org/openebs/cstor-operators)
-[![Slack](https://img.shields.io/badge/JOIN-SLACK-blue)](https://slack.cncf.io)
+[![Slack](https://img.shields.io/badge/JOIN-SLACK-blue)](https://kubernetes.slack.com/messages/openebs/)
 
 <img width="300" align="right" alt="OpenEBS Logo" src="https://raw.githubusercontent.com/cncf/artwork/master/projects/openebs/stacked/color/openebs-stacked-color.png" xmlns="http://www.w3.org/1999/html">
 
-Collection of enhanced Operators for OpenEBS cStor Data Engine.
+Collection of enhanced Kubernetes Operators for managing OpenEBS cStor Data Engine.
 
-## Project Status
+## Project Status: Beta
 
-This project is under active development and is considered to be in alpha state.
+The cStor operators works in conjunction with the [cStor CSI driver](https://github.com/openebs/cstor-csi) to
+provide a cStor volumes for stateful workloads.
 
-The data engine operators works in conjunction with the [cStor CSI driver](https://github.com/openebs/cstor-csi) to finally
-provide a consumable volume for stateful workloads.
-
-The current implementation supports the following Operations on cStor pools and volumes:
+The new cStor Operators supports the following Operations on cStor pools and volumes:
 1. Provisioning and De-provisioning of cStor pools.
 2. Pool expansion by adding disk.
 3. Disk replacement by removing a disk.
 4. Volume replica scale up and scale down.
 5. Volume resize.
-
-We are actively working on the following additional tasks for the beta release:
-
-6. Reactor the Velero-plugin to work with cStor CSI abstractions
-7. Support migration from old cStor operators to new operators backed by CSI. 
-8. Seamless upgrades
+6. Backup and Restore via Velero-plugin.
+7. Seamless upgrades of cStor Pools and Volumes
+8. Support migration from old cStor operators (using SPC) to new cStor operators using CSPC and CSI Driver. 
 
 
-Table of contents:
-==================
+## Usage
+
 - [Quickly deploy it on K8s and get started](docs/quick.md)
 - [Pool and Volume Operations Tutorial](docs/tutorial/intro.md)
-- [High level overview](#overview)
-- [CStorPool Resource Organisation](docs/developer-guide/cstor-pool.md)
-- [CStorVolume Resource Organisation](docs/developer-guide/cstor-volume.md)
-- [Issues and PRs](#issues-and-prs)
 - [FAQ and Troubleshooting](docs/troubleshooting/troubleshooting.md)
-- [Contributing](#contributing)
-- [Code of conduct](#code-of-conduct)
 
-## Overview
+## Operators Overview
 
 At a high-level, cstor operators consists of following components.
 - cspc-operator
@@ -61,6 +50,8 @@ Once a CSPC is created, cspc-operator provision CSPI CR and **pool-manager** dep
 be created. The pool-manager deployment watches for its corresponding CSPI on the node and finally execute commands to
 perform pool operations e.g pool provisioning.
 
+More info on cStor Pool CRs can be found [here](docs/developer-guide/cstor-pool.md).
+
 **Note:** It is not recommended to modify the CSPI CR and pool-manager in the running cluster unless you know what you are 
 trying to do. CSPC should be the only point of interaction.
 
@@ -70,17 +61,14 @@ different volume specific resources for each persistent volume, later managed by
 can be found [here](docs/developer-guide/cstor-volume.md).
 
 
-## Issues And PRs
-We consider issues also as a part of contribution to the project.
+## Raising Issues And PRs
+
 If you want to raise any issue for cstor-operators please do that at [openebs/openebs].
-We are tracking issues for all the OpenEBS components at the same place.
-If you are unsure about how to proceed, do not hesitate in communicating in 
-OpenEBS community slack [channel]. 
-
-See [contributing](#contributing) section to learn more about how to contribute to cstor-operators.
-
 
 ## Contributing
+
+If you would like to contribute to code and are unsure about how to proceed, 
+please get in touch with maintainers in Kubernetes Slack #openebs [channel]. 
 
 Please read the contributing guidelines [here](./CONTRIBUTING.md).
 
@@ -91,4 +79,4 @@ Please read the community code of conduct [here](./CODE_OF_CONDUCT.md).
 [Docker environment]: https://docs.docker.com/engine
 [Go environment]: https://golang.org/doc/install
 [openebs/openebs]: https://github.com/openebs/openebs
-[channel]: https://openebs-community.slack.com
+[channel]: https://kubernetes.slack.com/messages/openebs/

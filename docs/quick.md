@@ -6,7 +6,7 @@ Prerequisites
 Before setting up cStor operators make sure your Kubernetes Cluster
 meets the following prerequisites:
 
-1. You will need to have Kubernetes version 1.14 or higher.
+1. You will need to have Kubernetes version 1.17 or higher.
 2. iSCSI initiator utils installed on all the worker nodes(If you are using rancher based cluster perform steps mentioned [here](troubleshooting/rancher_prerequisite.md)).
 
 
@@ -95,7 +95,7 @@ Since the below mentioned resources are already created as part of release yamls
     openebs-ndm-xztkj                                 1/1     Running   0          6m5s
     ```
 
-7. Install CStor CSI driver. Apply the csi-operator yaml file and verify the csi pods are in running state.
+7. Install CStor CSI driver. Apply the csi-operator yaml file and verify the csi pods are in running state. *Note: If running on K8s version lesser than 1.17, you will need to comment the `priorityClassName: system-cluster-critical` in the csi-operator.yaml*. 
 
    ```bash
     $ kubectl create -f deploy/csi-operator.yaml

@@ -466,6 +466,7 @@ https://github.com/openebs/api/tree/master/design/cstor/v1
 ToDo: Offload this defaulting mechanism to mutating webhook server.
 */
 func defaultPoolConfig(cspi *cstor.CStorPoolInstance, cspc *cstor.CStorPoolCluster) {
+	defaultROThresholdLimit := 85
 	if cspi.Spec.PoolConfig.Resources == nil {
 		cspi.Spec.PoolConfig.Resources = cspc.Spec.DefaultResources
 	}
@@ -479,6 +480,10 @@ func defaultPoolConfig(cspi *cstor.CStorPoolInstance, cspc *cstor.CStorPoolClust
 	if cspi.Spec.PoolConfig.PriorityClassName == nil {
 		priorityClassName := cspc.Spec.DefaultPriorityClassName
 		cspi.Spec.PoolConfig.PriorityClassName = &priorityClassName
+	}
+
+	if cspi.Spec.PoolConfig.ROThresholdLimit == nil {
+		cspi.Spec.PoolConfig.ROThresholdLimit = &defaultROThresholdLimit
 	}
 }
 

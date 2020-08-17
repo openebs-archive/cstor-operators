@@ -17,15 +17,16 @@ limitations under the License.
 package k8sclient
 
 import (
-	"time"
-
 	. "github.com/onsi/gomega"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"reflect"
+	"time"
 )
 
 const maxRetry = 30
@@ -182,4 +183,160 @@ func (client *Client) GetCSPC(cspcName, cspcNamespace string) *cstor.CStorPoolCl
 	cspc, err := client.OpenEBSClientSet.CstorV1().CStorPoolClusters(cspcNamespace).Get(cspcName, metav1.GetOptions{})
 	Expect(err).To(BeNil())
 	return cspc
+}
+
+// HasResourceLimitOnCSPIEventually ...
+func (client *Client) HasResourceLimitOnCSPIEventually(
+	cspcName, cspcNamespace string, expectedResource *corev1.ResourceRequirements) bool {
+	for i := 0; i < (maxRetry + 100); i++ {
+		resourceLimitMatches := true
+		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		for _, v := range cspiList.Items {
+			if !reflect.DeepEqual(v.Spec.PoolConfig.Resources, expectedResource) {
+				resourceLimitMatches = false
+			}
+		}
+		if resourceLimitMatches {
+			return resourceLimitMatches
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}
+
+// HasResourceLimitOnPoolManagerEventually ...
+func (client *Client) HasResourceLimitOnPoolManagerEventually(
+	cspcName, cspcNamespace string, expectedResource *corev1.ResourceRequirements) bool {
+	for i := 0; i < (maxRetry + 100); i++ {
+		resourceLimitMatches := true
+		pmList := client.GetPoolManagerList(cspcName, cspcNamespace)
+		for _, pm := range pmList.Items {
+			for _, container := range pm.Spec.Template.Spec.Containers {
+				if container.Name == "cstor-pool" {
+					if !reflect.DeepEqual(container.Resources, *expectedResource) {
+						resourceLimitMatches = false
+					}
+				}
+			}
+		}
+		if resourceLimitMatches {
+			return resourceLimitMatches
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}
+
+// HasTolerationsOnCSPIEventually ...
+func (client *Client) HasTolerationsOnCSPIEventually(
+	cspcName, cspcNamespace string, tolerations []corev1.Toleration) bool {
+	for i := 0; i < (maxRetry + 100); i++ {
+		tolerationsMatches := true
+		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		for _, v := range cspiList.Items {
+			if !reflect.DeepEqual(v.Spec.PoolConfig.Tolerations, tolerations) {
+				tolerationsMatches = false
+			}
+		}
+		if tolerationsMatches {
+			return tolerationsMatches
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}
+
+// HasTolerationsOnPoolManagerEventually ...
+func (client *Client) HasTolerationsOnPoolManagerEventually(
+	cspcName, cspcNamespace string, tolerations []corev1.Toleration) bool {
+	for i := 0; i < (maxRetry + 100); i++ {
+		tolerationsMatches := true
+		pmList := client.GetPoolManagerList(cspcName, cspcNamespace)
+		for _, pm := range pmList.Items {
+			if !reflect.DeepEqual(pm.Spec.Template.Spec.Tolerations, tolerations) {
+				tolerationsMatches = false
+			}
+		}
+		if tolerationsMatches {
+			return tolerationsMatches
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}
+
+// HasPriorityClassOnCSPIEventually ...
+func (client *Client) HasPriorityClassOnCSPIEventually(
+	cspcName, cspcNamespace string, priorityClass *string) bool {
+	for i := 0; i < (maxRetry + 100); i++ {
+		priorityClassMatches := true
+		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		for _, v := range cspiList.Items {
+			if !reflect.DeepEqual(v.Spec.PoolConfig.PriorityClassName, priorityClass) {
+				priorityClassMatches = false
+			}
+		}
+		if priorityClassMatches {
+			return priorityClassMatches
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}
+
+// HasPriorityClassOnPoolManagerEventually ...
+func (client *Client) HasPriorityClassOnPoolManagerEventually(
+	cspcName, cspcNamespace string, priorityClass *string) bool {
+	for i := 0; i < (maxRetry + 100); i++ {
+		priorityClassMatches := true
+		pmList := client.GetPoolManagerList(cspcName, cspcNamespace)
+		for _, pm := range pmList.Items {
+			if !reflect.DeepEqual(pm.Spec.Template.Spec.PriorityClassName, *priorityClass) {
+				priorityClassMatches = false
+			}
+		}
+		if priorityClassMatches {
+			return priorityClassMatches
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}
+
+// HasCompressionOnCSPIEventually ...
+func (client *Client) HasCompressionOnCSPIEventually(
+	cspcName, cspcNamespace string, compression string) bool {
+	for i := 0; i < (maxRetry + 100); i++ {
+		compressionMatches := true
+		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		for _, v := range cspiList.Items {
+			if v.Spec.PoolConfig.Compression != compression {
+				compressionMatches = false
+			}
+		}
+		if compressionMatches {
+			return compressionMatches
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}
+
+// HasROThresholdOnCSPIEventually ...
+func (client *Client) HasROThresholdOnCSPIEventually(
+	cspcName, cspcNamespace string, roThreshold *int) bool {
+	for i := 0; i < (maxRetry + 100); i++ {
+		roThresholdMatches := true
+		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		for _, v := range cspiList.Items {
+			if !reflect.DeepEqual(v.Spec.PoolConfig.ROThresholdLimit, roThreshold) {
+				roThresholdMatches = false
+			}
+		}
+		if roThresholdMatches {
+			return roThresholdMatches
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
 }

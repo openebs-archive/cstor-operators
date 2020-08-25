@@ -1435,7 +1435,6 @@ func TestPoolPoolExpansion(t *testing.T) {
 						" got %d for cspi %s", test.TestName, test.wantBlockDeviceCountInCSPI, bdCount, cspi.Name)
 				}
 			}
-
 			err = fixture.verifyBlockDevicesOfCSPCClaimState(test.CSPC)
 			if err != nil {
 				t.Errorf("[Test Case: %s] failed error: %v", test.TestName, err)

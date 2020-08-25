@@ -47,6 +47,9 @@ type upgradeFunc func(u *upgradeParams) (*cstor.CStorPoolCluster, error)
 
 var (
 	upgradeMap = map[string]upgradeFunc{}
+	// defaultROThresholdLimit is the default
+	// value in form of percentage for ROThreshold limit
+	defaultROThresholdLimit = 85
 )
 
 func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoolInstanceList) error {
@@ -466,7 +469,6 @@ https://github.com/openebs/api/tree/master/design/cstor/v1
 ToDo: Offload this defaulting mechanism to mutating webhook server.
 */
 func defaultPoolConfig(cspi *cstor.CStorPoolInstance, cspc *cstor.CStorPoolCluster) {
-	defaultROThresholdLimit := 85
 	if cspi.Spec.PoolConfig.Resources == nil {
 		cspi.Spec.PoolConfig.Resources = cspc.Spec.DefaultResources
 	}

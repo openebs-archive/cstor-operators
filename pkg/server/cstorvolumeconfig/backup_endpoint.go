@@ -287,7 +287,7 @@ func (bOps *backupAPIOps) deleteBackup(backup, volname, ns, schedule string) err
 	snapshot := snapshot.Snapshot{
 		VolumeName:   volname,
 		SnapshotName: backup,
-		Namespace:    ns,
+		Namespace:    bOps.namespace,
 		SnapClient:   bOps.snapshotter,
 	}
 	// Snapshot Name and backup name are same

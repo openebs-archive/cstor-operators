@@ -47,6 +47,9 @@ type upgradeFunc func(u *upgradeParams) (*cstor.CStorPoolCluster, error)
 
 var (
 	upgradeMap = map[string]upgradeFunc{}
+	// defaultROThresholdLimit is the default
+	// value in form of percentage for ROThreshold limit
+	defaultROThresholdLimit = 85
 )
 
 func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoolInstanceList) error {
@@ -479,6 +482,10 @@ func defaultPoolConfig(cspi *cstor.CStorPoolInstance, cspc *cstor.CStorPoolClust
 	if cspi.Spec.PoolConfig.PriorityClassName == nil {
 		priorityClassName := cspc.Spec.DefaultPriorityClassName
 		cspi.Spec.PoolConfig.PriorityClassName = &priorityClassName
+	}
+
+	if cspi.Spec.PoolConfig.ROThresholdLimit == nil {
+		cspi.Spec.PoolConfig.ROThresholdLimit = &defaultROThresholdLimit
 	}
 }
 

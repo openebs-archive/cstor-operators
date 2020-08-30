@@ -267,22 +267,22 @@ func scaleupCStorVolume(poolCount int) {
 func verifyScaledCStorVolume(volName, volNamespace string) {
 
 	err := cstorsuite.client.WaitForCStorVolumeReplicaPools(
-	volName, volNamespace, k8sclient.Poll, k8sclient.CVCScaleTimeout)
+		volName, volNamespace, k8sclient.Poll, k8sclient.CVCScaleTimeout)
 	Expect(err).To(BeNil(), "CVC doesn't have desired replica pool names")
 
 	updatedCVC, err := cstorsuite.client.GetCVC(volName, volNamespace)
 	Expect(err).To(BeNil(), "Failed to fetch CVC")
 	cvcSpecBuilder.SetCVCSpec(updatedCVC)
-	
+
 	// Verify whether newely created CVR's are in Healthy state
 	err = cstorsuite.client.WaitForCVRCountEventually(
 		volName, volNamespace, len(updatedCVC.Spec.Policy.ReplicaPoolInfo),
 		k8sclient.Poll, k8sclient.CVRPhaseTimeout, cstorapis.IsCVRHealthy)
 	Expect(err).To(BeNil())
-	
+
 	err = cstorsuite.client.VerifyCVRPoolNames(volName, volNamespace, cvcSpecBuilder.CVC.Status.PoolInfo)
 	Expect(err).To(BeNil())
-	
+
 	replicaIDs, err := cstorsuite.client.GetCVRReplicaIDs(volName, volNamespace)
 	Expect(err).To(BeNil())
 

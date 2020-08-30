@@ -105,7 +105,7 @@ func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 // GetBDListForNode returns a list of BD from the pool spec.
 func GetBDListForNode(pool cstor.PoolSpec) []string {
 	var BDList []string
-	for _, group := range pool.DataRaidGroups {
+	for _, group := range append(pool.DataRaidGroups, pool.WriteCacheRaidGroups...) {
 		for _, bd := range group.CStorPoolInstanceBlockDevices {
 			BDList = append(BDList, bd.BlockDeviceName)
 		}

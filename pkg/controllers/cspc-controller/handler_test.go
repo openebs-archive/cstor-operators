@@ -27,6 +27,7 @@ import (
 	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
 	openebsinformers "github.com/openebs/api/pkg/client/informers/externalversions"
 	"github.com/openebs/cstor-operators/pkg/controllers/testutil"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -202,6 +203,29 @@ func (f *fixture) fakeNDMRoutine() {
 		}
 		time.Sleep(2 * time.Second)
 	}
+}
+
+// verifyBlockDevicesOfCSPCClaimState will verify status of blockdevices present on CSPC
+// if blockdevices were not claimed then it will return error
+func (f *fixture) verifyBlockDevicesOfCSPCClaimState(cspc *cstor.CStorPoolCluster) error {
+	for _, poolSpec := range cspc.Spec.Pools {
+		for _, rg := range append(poolSpec.DataRaidGroups, poolSpec.WriteCacheRaidGroups...) {
+			for _, cspiBD := range rg.CStorPoolInstanceBlockDevices {
+				bdObj, err := f.openebsClient.OpenebsV1alpha1().
+					BlockDevices(cspc.Namespace).
+					Get(cspiBD.BlockDeviceName, metav1.GetOptions{})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get blcodkevice name %s", bdObj.Name)
+				}
+				if bdObj.Status.ClaimState != openebscore.BlockDeviceClaimed {
+					return errors.Errorf(
+						"expected blockdevice %s should be in %s state but got %s",
+						bdObj.Name, openebscore.BlockDeviceClaimed, bdObj.Status.ClaimState)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (f *fixture) getCSPICount(cspcName, cspcNamespace string) int {
@@ -470,6 +494,58 @@ func TestCSPCProvisionSingleNode(t *testing.T) {
 			wantPoolManagerCount:       1,
 			wantBlockDeviceCountInCSPI: 6,
 		},
+		"One node stripe pool provision with writecache raidgroup": {
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe-writecache").
+				WithNamespace("openebs").
+				WithPoolSpecs(*cstor.NewPoolSpec().
+					WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+					WithPoolConfig(*cstor.NewPoolConfig().
+						WithDataRaidGroupType("stripe").
+						WithWriteCacheGroupType("stripe")).
+					WithDataRaidGroups(*cstor.NewRaidGroup().
+						WithCStorPoolInstanceBlockDevices(*cstor.NewCStorPoolInstanceBlockDevice().
+							WithName("blockdevice-13"))).
+					WithWriteCacheRaidGroups(*cstor.NewRaidGroup().
+						WithCStorPoolInstanceBlockDevices(
+							*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-14"),
+						))),
+			wantCSPICount:              1,
+			wantPoolManagerCount:       1,
+			wantBlockDeviceCountInCSPI: 1,
+		},
+		"One node mirror pool provision with multiple data and writecache raidgroup": {
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-mirror-writecache").
+				WithNamespace("openebs").
+				WithPoolSpecs(*cstor.NewPoolSpec().
+					WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+					WithPoolConfig(*cstor.NewPoolConfig().
+						WithDataRaidGroupType("mirror").
+						WithWriteCacheGroupType("mirrror")).
+					WithDataRaidGroups(*cstor.NewRaidGroup().
+						WithCStorPoolInstanceBlockDevices(*cstor.NewCStorPoolInstanceBlockDevice().
+							WithName("blockdevice-15"),
+							*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-16")),
+						*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(*cstor.NewCStorPoolInstanceBlockDevice().
+								WithName("blockdevice-17"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-18"))).
+					WithWriteCacheRaidGroups(*cstor.NewRaidGroup().
+						WithCStorPoolInstanceBlockDevices(
+							*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-19"),
+							*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-20"),
+						).
+						WithCStorPoolInstanceBlockDevices(
+							*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-21"),
+							*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-22"),
+						),
+					),
+				),
+			wantCSPICount:              1,
+			wantPoolManagerCount:       1,
+			wantBlockDeviceCountInCSPI: 2,
+		},
 	}
 
 	for name, test := range tests {
@@ -513,6 +589,11 @@ func TestCSPCProvisionSingleNode(t *testing.T) {
 					t.Errorf("[Test Case:%s] want bd count %d but"+
 						" got %d for cspi %s", name, test.wantBlockDeviceCountInCSPI, bdCount, cspi.Name)
 				}
+			}
+
+			err = fixture.verifyBlockDevicesOfCSPCClaimState(test.CSPC)
+			if err != nil {
+				t.Errorf("[Test Case: %s] failed error: %v", name, err)
 			}
 		})
 	}
@@ -774,6 +855,77 @@ func TestCSPCProvisionMultipleNode(t *testing.T) {
 			wantBlockDeviceCountInCSPI: 6,
 			wantRaidGroupCountInCSPI:   2,
 		},
+		"3 node with combination of different raid groups and provision pool": {
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-combinations").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe").
+							WithWriteCacheGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-25"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-26"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-27"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-28"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror").
+							WithWriteCacheGroupType("raidz")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-55"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-56"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-57"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-58"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-59"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe").
+							WithWriteCacheGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-85"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-86"),
+								),
+						).
+						WithWriteCacheRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-87"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-88"),
+								),
+						),
+				),
+			wantCSPICount:              3,
+			wantPoolManagerCount:       3,
+			wantBlockDeviceCountInCSPI: 2,
+			wantRaidGroupCountInCSPI:   1,
+		},
 	}
 
 	for name, test := range tests {
@@ -826,6 +978,10 @@ func TestCSPCProvisionMultipleNode(t *testing.T) {
 					}
 				}
 
+			}
+			err = fixture.verifyBlockDevicesOfCSPCClaimState(test.CSPC)
+			if err != nil {
+				t.Errorf("[Test Case: %s] failed error: %v", name, err)
 			}
 		})
 	}
@@ -962,6 +1118,11 @@ func TestPoolScaleUp(t *testing.T) {
 					t.Errorf("[Test Case:%s] want bd count %d but"+
 						" got %d for cspi %s", test.TestName, test.wantBlockDeviceCountInCSPI, bdCount, cspi.Name)
 				}
+			}
+
+			err = fixture.verifyBlockDevicesOfCSPCClaimState(test.CSPC)
+			if err != nil {
+				t.Errorf("[Test Case: %s] failed error: %v", test.TestName, err)
 			}
 		})
 	}
@@ -1189,6 +1350,33 @@ func TestPoolPoolExpansion(t *testing.T) {
 			wantBlockDeviceCountInCSPI: 6,
 			wantRaidGroupCount:         2,
 		},
+		{
+			TestName:  "Add 1 write cache raid group block devices",
+			CSPCApply: true,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+							)).
+						WithWriteCacheRaidGroups(*cstor.NewRaidGroup().
+							WithCStorPoolInstanceBlockDevices(
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+								*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+							)),
+				),
+			wantCSPICount:              1,
+			wantPoolManagerCount:       1,
+			wantBlockDeviceCountInCSPI: 2,
+			wantRaidGroupCount:         1,
+		},
 	}
 
 	for _, test := range tests {
@@ -1246,6 +1434,10 @@ func TestPoolPoolExpansion(t *testing.T) {
 					t.Errorf("[Test Case:%s] want bd count %d but"+
 						" got %d for cspi %s", test.TestName, test.wantBlockDeviceCountInCSPI, bdCount, cspi.Name)
 				}
+			}
+			err = fixture.verifyBlockDevicesOfCSPCClaimState(test.CSPC)
+			if err != nil {
+				t.Errorf("[Test Case: %s] failed error: %v", test.TestName, err)
 			}
 		})
 	}

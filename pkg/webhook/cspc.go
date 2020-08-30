@@ -413,7 +413,6 @@ func validateBlockDevice(bd *openebsapis.BlockDevice, hostName string) error {
 			bd.Labels[types.HostNameLabelKey],
 		)
 	}
-	
 	if v, found := bd.Labels[types.BlockDeviceTagLabelKey]; found {
 		return errors.Errorf(
 			"block device %s is tagged with a value %s and cannot be used",

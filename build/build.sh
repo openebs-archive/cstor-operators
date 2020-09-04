@@ -149,19 +149,6 @@ for F in $(find ${DEV_PLATFORM} -mindepth 1 -maxdepth 2 -type f); do
     cp ${F} ${MAIN_GOPATH}/bin/
 done
 
-if [[ "x${DEV}" == "x" ]]; then
-    # Zip and copy to the dist dir
-    echo "==> Packaging..."
-    for PLATFORM in $(find ./bin/${PNAME} -mindepth 1 -maxdepth 1 -type d); do
-        OSARCH=$(basename ${PLATFORM})
-        echo "--> ${OSARCH}"
-
-        pushd "$PLATFORM" >/dev/null 2>&1
-        zip ../${PNAME}-${OSARCH}.zip ./*
-        popd >/dev/null 2>&1
-    done
-fi
-
 # Done!
 echo
 echo "==> Results:"

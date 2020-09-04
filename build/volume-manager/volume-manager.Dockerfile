@@ -14,7 +14,11 @@ ENV GO111MODULE=on \
 
 WORKDIR /go/src/github.com/openebs/cstor-operator/
 
-RUN apt-get update && apt-get install -y make git zip
+RUN apt-get update && apt-get install -y make git
+
+COPY go.mod go.sum ./
+# Get dependancies - will also be cached if we won't change mod/sum
+RUN go mod download
 
 COPY . .
 
@@ -25,7 +29,6 @@ RUN export GOOS=$(echo ${TARGETPLATFORM} | cut -d / -f1) && \
 
 FROM ubuntu:16.04
 
-ARG ARCH
 ARG DBUILD_DATE
 ARG DBUILD_REPO_URL
 ARG DBUILD_SITE_URL

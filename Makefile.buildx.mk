@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Build cstor-operator docker images with buildx
+# Experimental docker feature to build cross platform multi-architecture docker images
+# https://docs.docker.com/buildx/working-with-buildx/
+
 # ==============================================================================
 # Build Options
 
@@ -35,7 +39,7 @@ else ifeq (${IMG_RESULT}, cache)
 	# if cache is specified, image will only be available in the build cache, it won't be pushed or loaded
 	# therefore no PUSH_ARG will be specified
 else
-	export PUSH_ARG="--push"
+	export PUSH_ARG="--load"
 endif
 
 # Name of the multiarch image for cspc-operator
@@ -53,10 +57,19 @@ DOCKERX_IMAGE_VOLUME_MANAGER:=${IMAGE_ORG}/volume-manager:${TAG}
 # Name of the multiarch image for cstor-webhook
 DOCKERX_IMAGE_CSTOR_WEBHOOK:=${IMAGE_ORG}/cstor-webhook:${TAG}
 
+.PHONY: docker.buildx
+docker.buildx:
+	export DOCKER_CLI_EXPERIMENTAL=enabled
+	@if ! docker buildx ls | grep -q container-builder; then\
+		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
+	fi
+	@docker buildx build --platform "${PLATFORMS}" \
+		-t "$(DOCKERX_IMAGE_NAME)" ${BUILD_ARGS} \
+		-f $(PWD)/build/$(COMPONENT)/$(COMPONENT).Dockerfile \
+		. ${PUSH_ARG}
+	@echo "--> Build docker image: $(DOCKERX_IMAGE_NAME)"
+	@echo
 
-# Build cstor-operator docker images with buildx
-# Experimental docker feature to build cross platform multi-architecture docker images
-# https://docs.docker.com/buildx/working-with-buildx/
 .PHONY: buildx.cspc-operator
 buildx.cspc-operator: bootstrap clean 
 	@echo '--> Building cspc-operator binary...'
@@ -66,16 +79,10 @@ buildx.cspc-operator: bootstrap clean
 	@echo
 
 .PHONY: docker.buildx.cspc-operator
-docker.buildx.cspc-operator:
-	export DOCKER_CLI_EXPERIMENTAL=enabled
-	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
-	fi
-	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_CSPC_OPERATOR)" ${DBUILD_ARGS} -f $(PWD)/build/$(CSPC_OPERATOR)/cspc-operator.Dockerfile \
-		. ${PUSH_ARG}
-	@echo "--> Build docker image: $(DOCKERX_IMAGE_CSPC_OPERATOR)"
-	@echo
+docker.buildx.cspc-operator: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_CSPC_OPERATOR)
+docker.buildx.cspc-operator: COMPONENT=$(CSPC_OPERATOR)
+docker.buildx.cspc-operator: BUILD_ARGS=$(DBUILD_ARGS)
+docker.buildx.cspc-operator: docker.buildx
 
 .PHONY: buildx.cvc-operator
 buildx.cvc-operator: bootstrap clean 
@@ -87,15 +94,10 @@ buildx.cvc-operator: bootstrap clean
 
 .PHONY: docker.buildx.cvc-operator
 docker.buildx.cvc-operator:
-	export DOCKER_CLI_EXPERIMENTAL=enabled
-	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
-	fi
-	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_CVC_OPERATOR)" ${DBUILD_ARGS} -f $(PWD)/build/$(CVC_OPERATOR)/cvc-operator.Dockerfile \
-		. ${PUSH_ARG}
-	@echo "--> Build docker image: $(DOCKERX_IMAGE_CVC_OPERATOR)"
-	@echo
+docker.buildx.cvc-operator: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_CVC_OPERATOR)
+docker.buildx.cvc-operator: COMPONENT=$(CVC_OPERATOR)
+docker.buildx.cvc-operator: BUILD_ARGS=$(DBUILD_ARGS)
+docker.buildx.cvc-operator: docker.buildx
 
 .PHONY: buildx.pool-manager
 buildx.pool-manager: bootstrap clean 
@@ -107,15 +109,10 @@ buildx.pool-manager: bootstrap clean
 
 .PHONY: docker.buildx.pool-manager
 docker.buildx.pool-manager:
-	export DOCKER_CLI_EXPERIMENTAL=enabled
-	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
-	fi
-	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_POOL_MANAGER)" --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} ${DBUILD_ARGS} -f $(PWD)/build/$(POOL_MANAGER)/pool-manager.Dockerfile \
-		. ${PUSH_ARG}
-	@echo "--> Build docker image: $(DOCKERX_IMAGE_POOL_MANAGER)"
-	@echo
+docker.buildx.pool-manager: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_POOL_MANAGER)
+docker.buildx.pool-manager: COMPONENT=$(POOL_MANAGER)
+docker.buildx.pool-manager: BUILD_ARGS=--build-arg BASE_IMAGE=$(CSTOR_BASE_IMAGE) ${DBUILD_ARGS}
+docker.buildx.pool-manager: docker.buildx
 
 .PHONY: buildx.volume-manager
 buildx.volume-manager: bootstrap clean 
@@ -127,15 +124,10 @@ buildx.volume-manager: bootstrap clean
 
 .PHONY: docker.buildx.volume-manager
 docker.buildx.volume-manager:
-	export DOCKER_CLI_EXPERIMENTAL=enabled
-	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
-	fi
-	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_VOLUME_MANAGER)" ${DBUILD_ARGS} -f $(PWD)/build/$(VOLUME_MANAGER)/volume-manager.Dockerfile \
-		. ${PUSH_ARG}
-	@echo "--> Build docker image: $(DOCKERX_IMAGE_VOLUME_MANAGER)"
-	@echo
+docker.buildx.volume-manager: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_VOLUME_MANAGER)
+docker.buildx.volume-manager: COMPONENT=$(VOLUME_MANAGER)
+docker.buildx.volume-manager: BUILD_ARGS=$(DBUILD_ARGS)
+docker.buildx.volume-manager: docker.buildx
 
 .PHONY: buildx.cstor-webhook
 buildx.cstor-webhook: bootstrap clean 
@@ -147,15 +139,10 @@ buildx.cstor-webhook: bootstrap clean
 
 .PHONY: docker.buildx.cstor-webhook
 docker.buildx.cstor-webhook:
-	export DOCKER_CLI_EXPERIMENTAL=enabled
-	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
-	fi
-	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_CSTOR_WEBHOOK)" ${DBUILD_ARGS} -f $(PWD)/build/$(CSTOR_WEBHOOK)/cstor-webhook.Dockerfile \
-		. ${PUSH_ARG}
-	@echo "--> Build docker image: $(DOCKERX_IMAGE_CSTOR_WEBHOOK)"
-	@echo
+docker.buildx.cstor-webhook: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_CSTOR_WEBHOOK)
+docker.buildx.cstor-webhook: COMPONENT=$(CSTOR_WEBHOOK)
+docker.buildx.cstor-webhook: BUILD_ARGS=$(DBUILD_ARGS)
+docker.buildx.cstor-webhook: docker.buildx
 
 .PHONY: buildx.push.cspc-operator
 buildx.push.cspc-operator:

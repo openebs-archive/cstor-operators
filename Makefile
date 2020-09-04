@@ -240,11 +240,11 @@ bootstrap:
 .PHONY: clean
 clean: 
 	@echo '--> Cleaning directory...'
-	rm -rf bin
-	rm -rf ${GOPATH}/bin/${UPGRADE}
-	rm -rf ${GOPATH}/bin/${MIGRATE}
-	rm -rf Dockerfile.upgarde
-	rm -rf Dockerfile.migrate
+	rm -rf ${GOPATH}/bin/${CSPC_OPERATOR}
+	rm -rf ${GOPATH}/bin/${CVC_OPERATOR}
+	rm -rf ${GOPATH}/bin/${POOL_MANAGER}
+	rm -rf ${GOPATH}/bin/${VOLUME_MANAGER}
+	rm -rf ${GOPATH}/bin/${CSTOR_WEBHOOK}
 	@echo '--> Done cleaning.'
 	@echo
 

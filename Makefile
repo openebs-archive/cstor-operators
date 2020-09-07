@@ -215,14 +215,12 @@ gen-api-docs:
 	@echo ">> generating cstor 'v1' apis docs"
 	go run github.com/ahmetb/gen-crd-api-reference-docs -api-dir ../api/pkg/apis/cstor/v1 -config hack/api-docs/config.json -template-dir hack/api-docs/template -out-file docs/api-references/apis.md
 
-.PHONY: build.common
-build.common: license-check-go
 
-.PHONY: license-check-go
-license-check-go:
+.PHONY: license-check
+license-check:
 	@echo "--> Checking license header..."
-	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*' ! -path './pkg/signals/*' ! -path './pkg/debug/*' ) ; do \
-               awk 'NR<=3' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
+	@licRes=$$(for file in $$(find . -type f -regex '.*\.sh\|.*\.go\|.*Docker.*\|.*\Makefile*' ! -path './vendor/*' ) ; do \
+               awk 'NR<=5' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
        done); \
        if [ -n "$${licRes}" ]; then \
                echo "license header checking failed:"; echo "$${licRes}"; \

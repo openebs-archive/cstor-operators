@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"reflect"
 	"testing"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
@@ -761,6 +762,88 @@ func TestValidateRaidGroupChanges(t *testing.T) {
 			}
 			if !test.expectedError && err != nil {
 				t.Errorf("test %s failed expectedError not to be error but got error %v", name, err)
+			}
+		})
+	}
+}
+
+func Test_getAllowedTagMap(t *testing.T) {
+	type args struct {
+		cspcAnnotation map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]bool
+	}{
+		{
+			name: "Test case #1",
+			args: args{
+				cspcAnnotation: map[string]string{CStorBDTagAnnotationKey: "fast,slow"},
+			},
+			want: map[string]bool{"fast": true, "slow": true},
+		},
+
+		{
+			name: "Test case #2",
+			args: args{
+				cspcAnnotation: map[string]string{CStorBDTagAnnotationKey: "fast,slow"},
+			},
+			want: map[string]bool{"slow": true, "fast": true},
+		},
+
+		{
+			name: "Test case #3 -- Nil Annotations",
+			args: args{
+				cspcAnnotation: nil,
+			},
+			want: map[string]bool{},
+		},
+
+		{
+			name: "Test case #4 -- No BD tag Annotations",
+			args: args{
+				cspcAnnotation: map[string]string{"some-other-annotation-key": "awesome-openebs"},
+			},
+			want: map[string]bool{},
+		},
+
+		{
+			name: "Test case #5 -- Improper format 1",
+			args: args{
+				cspcAnnotation: map[string]string{CStorBDTagAnnotationKey: ",fast,slow,,"},
+			},
+			want: map[string]bool{"fast": true, "slow": true},
+		},
+
+		{
+			name: "Test case #6 -- Improper format 2",
+			args: args{
+				cspcAnnotation: map[string]string{CStorBDTagAnnotationKey: ",fast,slow"},
+			},
+			want: map[string]bool{"fast": true, "slow": true},
+		},
+
+		{
+			name: "Test case #7 -- Improper format 2",
+			args: args{
+				cspcAnnotation: map[string]string{CStorBDTagAnnotationKey: ",fast,,slow"},
+			},
+			want: map[string]bool{"fast": true, "slow": true},
+		},
+
+		{
+			name: "Test case #7 -- Improper format 2",
+			args: args{
+				cspcAnnotation: map[string]string{CStorBDTagAnnotationKey: "this is improper"},
+			},
+			want: map[string]bool{"this is improper": true},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getAllowedTagMap(tt.args.cspcAnnotation); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getAllowedTagMap() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
@@ -413,12 +414,17 @@ func validateBlockDevice(bd *openebsapis.BlockDevice, hostName string) error {
 			bd.Labels[types.HostNameLabelKey],
 		)
 	}
+
+	// If the BD tag is present on BD and the value is empty then
+	// this BD is not a valid BD for provisioning.
 	if v, found := bd.Labels[types.BlockDeviceTagLabelKey]; found {
-		return errors.Errorf(
-			"block device %s is tagged with a value %s and cannot be used",
-			bd.Name,
-			v,
-		)
+		if strings.TrimSpace(v) == "" {
+			return errors.Errorf(
+				"block device %s is tagged with a value %s and cannot be used",
+				bd.Name,
+				v,
+			)
+		}
 	}
 
 	return nil

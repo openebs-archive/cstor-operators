@@ -19,6 +19,7 @@ package webhook
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
@@ -461,7 +462,33 @@ func getBDOwnerReference(cspc *cstor.CStorPoolCluster) []metav1.OwnerReference {
 }
 
 // ClaimBD claims a given BlockDevice
+// ToDo: The BD Claim functionality has code repetition.
+// Need to think about packaging and refactor.
 func (pOps *PoolOperations) ClaimBD(newBdObj *openebsapis.BlockDevice, oldBD string) error {
+
+	// If the BD has a BD tag present then we need to decide whether
+	// cStor can use it or not.
+	// If there is not BD tag present on BD then still the BD is safe to use.
+	value, ok := newBdObj.Labels[types.BlockDeviceTagLabelKey]
+	var allowedBDTags map[string]bool
+	if ok {
+		// If the BD tag value is empty -- cStor cannot use it.
+		if strings.TrimSpace(value) == "" {
+			return errors.Errorf("failed to create block device "+
+				"claim for bd {%s} as it has empty value for bd tag", newBdObj.Name)
+		}
+
+		// If the BD tag in the BD is present in allowed annotations on CSPC then
+		// it means that this BD can be considered in provisioning else it should not
+		// be considered
+		allowedBDTags = getAllowedTagMap(pOps.NewCSPC.GetAnnotations())
+		if !allowedBDTags[strings.TrimSpace(value)] {
+			return errors.Errorf("cannot use bd {%s} as it has tag %s but "+
+				"cspc has allowed bd tags as %s",
+				newBdObj.Name, value, pOps.NewCSPC.GetAnnotations()[types.OpenEBSAllowedBDTagKey])
+		}
+	}
+
 	newBDCObj := openebsapis.NewBlockDeviceClaim().
 		WithName("bdc-cstor-" + string(newBdObj.UID)).
 		WithNamespace(newBdObj.Namespace).
@@ -472,6 +499,14 @@ func (pOps *PoolOperations) ClaimBD(newBdObj *openebsapis.BlockDevice, oldBD str
 		WithCapacity(resource.MustParse(ByteCount(newBdObj.Spec.Capacity.Storage))).
 		WithCSPCOwnerReference(getBDOwnerReference(pOps.OldCSPC)[0]).
 		WithFinalizer(types.CSPCFinalizer)
+	// ToDo: Move this to openebs/api builder
+	// Create label selector to fill in BDC spec.
+	if ok {
+		ls := &metav1.LabelSelector{
+			MatchLabels: map[string]string{types.BlockDeviceTagLabelKey: value},
+		}
+		newBDCObj.Spec.Selector = ls
+	}
 
 	bdcClient := pOps.clientset.OpenebsV1alpha1().BlockDeviceClaims(newBdObj.Namespace)
 	bdcObj, err := bdcClient.Get(newBDCObj.Name, v1.GetOptions{})
@@ -493,6 +528,29 @@ func (pOps *PoolOperations) ClaimBD(newBdObj *openebsapis.BlockDevice, oldBD str
 	_, err = bdcClient.
 		Update(bdcObj)
 	return err
+}
+
+// getAllowedTagMap returns a map of the allowed BD tags
+// Example :
+// If the CSPC annotation is passed and following is the BD tag annotation
+//
+// cstor.openebs.io/allowed-bd-tags:fast,slow
+//
+// Then, a map {"fast":true,"slow":true} is returned.
+func getAllowedTagMap(cspcAnnotation map[string]string) map[string]bool {
+	allowedTagsMap := make(map[string]bool)
+	allowedTags := cspcAnnotation[types.OpenEBSAllowedBDTagKey]
+	if strings.TrimSpace(allowedTags) == "" {
+		return allowedTagsMap
+	}
+	allowedTagsList := strings.Split(allowedTags, ",")
+	for _, v := range allowedTagsList {
+		if strings.TrimSpace(v) == "" {
+			continue
+		}
+		allowedTagsMap[v] = true
+	}
+	return allowedTagsMap
 }
 
 // GetNewBDFromRaidGroups returns a map of new successor bd to old bd for replacement in a raid group

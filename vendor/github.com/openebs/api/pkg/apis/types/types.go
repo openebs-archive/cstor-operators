@@ -121,4 +121,10 @@ const (
 	// OpenEBSCStorExistingPoolName is the name of the cstor pool already present on
 	// the disk that needs to be imported and renamed
 	OpenEBSCStorExistingPoolName = "import.cspi.cstor.openebs.io/existing-pool-name"
+
+	// OpenEBSCStorAllowedBDTagKey is the annotation key present that decides whether
+	// a particular BD with a tag is allowed in storage provisioning or not.
+	// This annotation can be used on SPC or CSPC to allow a particular BD(s) with tag
+	// for provisioning.
+	OpenEBSAllowedBDTagKey = "openebs.io/allowed-bd-tags"
 )

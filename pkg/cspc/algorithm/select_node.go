@@ -18,6 +18,7 @@ package algorithm
 
 import (
 	"fmt"
+	"strings"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
@@ -162,6 +163,29 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 		return errors.Errorf("failed to get capacity from block device %s:%s", bdObj.Name, err)
 	}
 
+	// If the BD has a BD tag present then we need to decide whether
+	// cStor can use it or not.
+	// If there is no BD tag present on BD then still the BD is safe to use.
+	value, ok := bdObj.Labels[types.BlockDeviceTagLabelKey]
+	var allowedBDTags map[string]bool
+	if ok {
+		// If the BD tag value is empty -- cStor cannot use it.
+		if strings.TrimSpace(value) == "" {
+			return errors.Errorf("failed to create block device "+
+				"claim for bd {%s} as it has empty value for bd tag", bdObj.Name)
+		}
+
+		// If the BD tag in the BD is present in allowed annotations on CSPC then
+		// it means that this BD can be considered in provisioning else it should not
+		// be considered
+		allowedBDTags = getAllowedTagMap(ac.CSPC.GetAnnotations())
+		if !allowedBDTags[strings.TrimSpace(value)] {
+			return errors.Errorf("cannot use bd {%s} as it has tag %s but "+
+				"cspc has allowed bd tags as %s",
+				bdObj.Name, value, ac.CSPC.GetAnnotations()[types.OpenEBSAllowedBDTagKey])
+		}
+	}
+
 	newBDCObj := openebsio.NewBlockDeviceClaim().
 		WithName("bdc-cstor-" + string(bdObj.UID)).
 		WithNamespace(ac.Namespace).
@@ -172,6 +196,15 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 		WithCapacity(resourceList).
 		WithFinalizer(types.CSPCFinalizer)
 
+	// ToDo: Move this to openebs/api builder
+	// Create label selector to fill in BDC spec.
+	if ok {
+		ls := &metav1.LabelSelector{
+			MatchLabels: map[string]string{types.BlockDeviceTagLabelKey: value},
+		}
+		newBDCObj.Spec.Selector = ls
+	}
+
 	_, err = ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Create(newBDCObj)
 	if k8serror.IsAlreadyExists(err) {
 		klog.Infof("BDC for BD {%s} already created", bdObj.Name)
@@ -181,6 +214,29 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 		return errors.Wrapf(err, "failed to create block device claim for bd {%s}", bdObj.Name)
 	}
 	return nil
+}
+
+// getAllowedTagMap returns a map of the allowed BD tags
+// Example :
+// If the CSPC annotation is passed and following is the BD tag annotation
+//
+// cstor.openebs.io/allowed-bd-tags:fast,slow
+//
+// Then, a map {"fast":true,"slow":true} is returned.
+func getAllowedTagMap(cspcAnnotation map[string]string) map[string]bool {
+	allowedTagsMap := make(map[string]bool)
+	allowedTags := cspcAnnotation[types.OpenEBSAllowedBDTagKey]
+	if strings.TrimSpace(allowedTags) == "" {
+		return allowedTagsMap
+	}
+	allowedTagsList := strings.Split(allowedTags, ",")
+	for _, v := range allowedTagsList {
+		if strings.TrimSpace(v) == "" {
+			continue
+		}
+		allowedTagsMap[v] = true
+	}
+	return allowedTagsMap
 }
 
 // IsClaimedBDUsable returns true if the passed BD is already claimed and can be

@@ -37,8 +37,6 @@ import (
 const (
 	dataRG       = "data"
 	writeCacheRG = "writeCache"
-	// ToDo: Move to API type (openebs/api)
-	OpenEBSAllowedBDTagKey = "openebs.io/allowed-bd-tags"
 )
 
 // PoolOperations contains old and new CSPC to validate for pool
@@ -487,7 +485,7 @@ func (pOps *PoolOperations) ClaimBD(newBdObj *openebsapis.BlockDevice, oldBD str
 		if !allowedBDTags[strings.TrimSpace(value)] {
 			return errors.Errorf("cannot use bd {%s} as it has tag %s but "+
 				"cspc has allowed bd tags as %s",
-				newBdObj.Name, value, pOps.NewCSPC.GetAnnotations()[OpenEBSAllowedBDTagKey])
+				newBdObj.Name, value, pOps.NewCSPC.GetAnnotations()[types.OpenEBSAllowedBDTagKey])
 		}
 	}
 
@@ -541,7 +539,7 @@ func (pOps *PoolOperations) ClaimBD(newBdObj *openebsapis.BlockDevice, oldBD str
 // Then, a map {"fast":true,"slow":true} is returned.
 func getAllowedTagMap(cspcAnnotation map[string]string) map[string]bool {
 	allowedTagsMap := make(map[string]bool)
-	allowedTags := cspcAnnotation[OpenEBSAllowedBDTagKey]
+	allowedTags := cspcAnnotation[types.OpenEBSAllowedBDTagKey]
 	if strings.TrimSpace(allowedTags) == "" {
 		return allowedTagsMap
 	}

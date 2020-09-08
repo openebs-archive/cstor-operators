@@ -391,6 +391,8 @@ github.com/openebs/api v1.12.1-0.20200805040335-b9bd4809e80c h1:fZmO/A7BnxFAg9y1
 github.com/openebs/api v1.12.1-0.20200805040335-b9bd4809e80c/go.mod h1:TASujm6H1LGdx43MN7Dab1xdAqR7MVU8bsS74Ywop5w=
 github.com/openebs/api v1.12.1-0.20200813113856-a86aa610f932 h1:YzV1nspFTKrCa7c2XeWPcrU9KRvV9Ul9Yu9SLHqldas=
 github.com/openebs/api v1.12.1-0.20200813113856-a86aa610f932/go.mod h1:TASujm6H1LGdx43MN7Dab1xdAqR7MVU8bsS74Ywop5w=
+github.com/openebs/api v1.12.1-0.20200908020958-c9b104663c7f h1:ebsHrWNo+Ypp5C9eKMC8lX9z9OrZxCUkWAzN2otwfek=
+github.com/openebs/api v1.12.1-0.20200908020958-c9b104663c7f/go.mod h1:TASujm6H1LGdx43MN7Dab1xdAqR7MVU8bsS74Ywop5w=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/pelletier/go-toml v1.1.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=

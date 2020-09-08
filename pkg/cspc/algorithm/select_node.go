@@ -32,9 +32,6 @@ import (
 
 const (
 	unit = 1024
-	// CStorBDTagAnnotationKey is the annotation key for CSPC allowed BD tags
-	// ToDo: Move to API type (openebs/api)
-	OpenEBSAllowedBDTagKey = "openebs.io/allowed-bd-tags"
 )
 
 // SelectNode returns a node where pool should be created.
@@ -168,7 +165,7 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 
 	// If the BD has a BD tag present then we need to decide whether
 	// cStor can use it or not.
-	// If there is not BD tag present on BD then still the BD is safe to use.
+	// If there is no BD tag present on BD then still the BD is safe to use.
 	value, ok := bdObj.Labels[types.BlockDeviceTagLabelKey]
 	var allowedBDTags map[string]bool
 	if ok {
@@ -185,7 +182,7 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 		if !allowedBDTags[strings.TrimSpace(value)] {
 			return errors.Errorf("cannot use bd {%s} as it has tag %s but "+
 				"cspc has allowed bd tags as %s",
-				bdObj.Name, value, ac.CSPC.GetAnnotations()[OpenEBSAllowedBDTagKey])
+				bdObj.Name, value, ac.CSPC.GetAnnotations()[types.OpenEBSAllowedBDTagKey])
 		}
 	}
 
@@ -228,7 +225,7 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 // Then, a map {"fast":true,"slow":true} is returned.
 func getAllowedTagMap(cspcAnnotation map[string]string) map[string]bool {
 	allowedTagsMap := make(map[string]bool)
-	allowedTags := cspcAnnotation[OpenEBSAllowedBDTagKey]
+	allowedTags := cspcAnnotation[types.OpenEBSAllowedBDTagKey]
 	if strings.TrimSpace(allowedTags) == "" {
 		return allowedTagsMap
 	}

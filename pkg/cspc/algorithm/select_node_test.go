@@ -387,7 +387,7 @@ func Test_getAllowedTagMap(t *testing.T) {
 		{
 			name: "Test case #1",
 			args: args{
-				cspcAnnotation: map[string]string{OpenEBSAllowedBDTagKey: "fast,slow"},
+				cspcAnnotation: map[string]string{types.OpenEBSAllowedBDTagKey: "fast,slow"},
 			},
 			want: map[string]bool{"fast": true, "slow": true},
 		},
@@ -395,7 +395,7 @@ func Test_getAllowedTagMap(t *testing.T) {
 		{
 			name: "Test case #2",
 			args: args{
-				cspcAnnotation: map[string]string{OpenEBSAllowedBDTagKey: "fast,slow"},
+				cspcAnnotation: map[string]string{types.OpenEBSAllowedBDTagKey: "fast,slow"},
 			},
 			want: map[string]bool{"slow": true, "fast": true},
 		},
@@ -419,7 +419,7 @@ func Test_getAllowedTagMap(t *testing.T) {
 		{
 			name: "Test case #5 -- Improper format 1",
 			args: args{
-				cspcAnnotation: map[string]string{OpenEBSAllowedBDTagKey: ",fast,slow,,"},
+				cspcAnnotation: map[string]string{types.OpenEBSAllowedBDTagKey: ",fast,slow,,"},
 			},
 			want: map[string]bool{"fast": true, "slow": true},
 		},
@@ -427,7 +427,7 @@ func Test_getAllowedTagMap(t *testing.T) {
 		{
 			name: "Test case #6 -- Improper format 2",
 			args: args{
-				cspcAnnotation: map[string]string{OpenEBSAllowedBDTagKey: ",fast,slow"},
+				cspcAnnotation: map[string]string{types.OpenEBSAllowedBDTagKey: ",fast,slow"},
 			},
 			want: map[string]bool{"fast": true, "slow": true},
 		},
@@ -435,7 +435,7 @@ func Test_getAllowedTagMap(t *testing.T) {
 		{
 			name: "Test case #7 -- Improper format 2",
 			args: args{
-				cspcAnnotation: map[string]string{OpenEBSAllowedBDTagKey: ",fast,,slow"},
+				cspcAnnotation: map[string]string{types.OpenEBSAllowedBDTagKey: ",fast,,slow"},
 			},
 			want: map[string]bool{"fast": true, "slow": true},
 		},
@@ -443,7 +443,7 @@ func Test_getAllowedTagMap(t *testing.T) {
 		{
 			name: "Test case #7 -- Improper format 2",
 			args: args{
-				cspcAnnotation: map[string]string{OpenEBSAllowedBDTagKey: "this is improper"},
+				cspcAnnotation: map[string]string{types.OpenEBSAllowedBDTagKey: "this is improper"},
 			},
 			want: map[string]bool{"this is improper": true},
 		},

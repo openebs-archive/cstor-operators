@@ -1,5 +1,29 @@
 # Changelog
 
+## [v2.1.0-RC2](https://github.com/openebs/cstor-operators/tree/v2.1.0-RC2) (2020-09-10)
+
+**Merged pull requests:**
+
+- chore\(upgrade\): add valid current versions for 2.1.0 upgrades [\#174](https://github.com/openebs/cstor-operators/pull/174) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+## [v2.1.0-RC1](https://github.com/openebs/cstor-operators/tree/v2.1.0-RC1) (2020-09-08)
+
+**Merged pull requests:**
+
+- feat\(cspc\): add capability to specify allowed BD tags on CSPC [\#172](https://github.com/openebs/cstor-operators/pull/172) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(license\): add license check for .sh and Dockerfile [\#171](https://github.com/openebs/cstor-operators/pull/171) ([AJEETRAI707](https://github.com/AJEETRAI707))
+- chore\(ci\): add license check in ci [\#170](https://github.com/openebs/cstor-operators/pull/170) ([AJEETRAI707](https://github.com/AJEETRAI707))
+- Bump golang version to 1.14.7 [\#169](https://github.com/openebs/cstor-operators/pull/169) ([AJEETRAI707](https://github.com/AJEETRAI707))
+- fix\(backup\): fixing deletion of backup snapshot [\#168](https://github.com/openebs/cstor-operators/pull/168) ([mynktl](https://github.com/mynktl))
+- fix\(write cache\): create claim for write cache raid group blockdevices [\#162](https://github.com/openebs/cstor-operators/pull/162) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(roThreshold\): update default roThresholdLimit to 85% during sync time [\#159](https://github.com/openebs/cstor-operators/pull/159) ([mittachaitu](https://github.com/mittachaitu))
+- refact\(vendor\): sync with openebs apis changes [\#156](https://github.com/openebs/cstor-operators/pull/156) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): update README and quick.md files  [\#154](https://github.com/openebs/cstor-operators/pull/154) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(version\): update upgrade matrix with valid current versions [\#152](https://github.com/openebs/cstor-operators/pull/152) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(tests\): add integration tests for scaleup and scaledown of CStorVolume [\#151](https://github.com/openebs/cstor-operators/pull/151) ([mittachaitu](https://github.com/mittachaitu))
+- test\(cspc\): add cspc tunables test [\#150](https://github.com/openebs/cstor-operators/pull/150) ([sonasingh46](https://github.com/sonasingh46))
+- feat\(tests\): add integration test cases for changing the policies on CVC dynamically [\#148](https://github.com/openebs/cstor-operators/pull/148) ([mittachaitu](https://github.com/mittachaitu))
+
 ## [v2.0.0](https://github.com/openebs/cstor-operators/tree/v2.0.0) (2020-08-13)
 
 **Merged pull requests:**

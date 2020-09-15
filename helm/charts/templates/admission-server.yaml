@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "openebs-cstor.fullname" . }}-admission-server
+  {{- if .Values.admissionServer.annotations }}
+  annotations:
+  {{ toYaml .Values.admissionServer.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    {{- include "openebs-cstor.admissionServer.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.admissionServer.replicas }}
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  selector:
+    matchLabels:
+      {{- include "openebs-cstor.admissionServer.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "openebs-cstor.admissionServer.labels" . | nindent 8 }}
+        {{- if .Values.admissionServer.podLabels}}
+        {{ toYaml .Values.admissionServer.podLabels | nindent 8 }}
+        {{- end}}
+    spec:
+      serviceAccountName: {{ template "openebs-cstor.serviceAccountName" . }}
+      containers:
+        - name: {{ template "openebs-cstor.fullname" . }}-admission-webhook
+          image: "{{ .Values.admissionServer.image.registry }}{{ .Values.admissionServer.image.repository }}:{{ .Values.admissionServer.image.tag }}"
+          imagePullPolicy: {{ .Values.admissionServer.image.pullPolicy }}
+          args:
+            - -alsologtostderr
+            - -v=2
+            - 2>&1
+          env:
+            - name: OPENEBS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ADMISSION_WEBHOOK_NAME
+              value: "openebs-cstor-admission-server"
+            - name: ADMISSION_WEBHOOK_FAILURE_POLICY
+              value: {{ .Values.admissionServer.failurePolicy }}

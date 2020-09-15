@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "openebs-cstor.fullname" . }}-cspc-operator
+  {{- if .Values.cspcOperator.annotations }}
+  annotations:
+  {{ toYaml .Values.cspcOperator.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    {{- include "openebs-cstor.cspcOperator.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "openebs-cstor.cspcOperator.matchLabels" . | nindent 6 }}
+  replicas: {{ .Values.cspcOperator.replicas }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "openebs-cstor.cspcOperator.labels" . | nindent 8 }}
+        {{- if .Values.cspcOperator.podLabels}}
+        {{ toYaml .Values.cspcOperator.podLabels | nindent 8 }}
+        {{- end}}
+    spec:
+      serviceAccountName: {{ template "openebs-cstor.serviceAccountName" . }}
+      containers:
+        - name: {{ template "openebs-cstor.fullname" . }}-cspc-operator
+          imagePullPolicy: {{ .Values.cspcOperator.image.pullPolicy }}
+          image: "{{ .Values.cspcOperator.image.registry }}{{ .Values.cspcOperator.image.repository }}:{{ .Values.cspcOperator.image.tag }}"
+          env:
+            - name: OPENEBS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPENEBS_SERVICEACCOUNT_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.serviceAccountName
+            - name: CSPC_OPERATOR_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            # OPENEBS_IO_BASE_DIR is used to configure base directory for openebs on host path.
+            # Where OpenEBS can store required files. Default base path will be /var/openebs
+            # - name: OPENEBS_IO_BASE_DIR
+            #   value: "/var/openebs"
+            # OPENEBS_IO_CSTOR_POOL_SPARSE_DIR can be used to specify the hostpath
+            # to be used for saving the shared content between the side cars
+            # of cstor pool pod. This ENV is also used to indicate the location
+            # of the sparse devices.
+            # The default path used is /var/openebs/sparse
+            #- name: OPENEBS_IO_CSTOR_POOL_SPARSE_DIR
+            #  value: "/var/openebs/sparse"
+            - name: OPENEBS_IO_CSPI_MGMT_IMAGE
+              value: "{{ .Values.cspcOperator.poolManager.image.registry }}{{ .Values.cspcOperator.poolManager.image.repository }}:{{ .Values.cspcOperator.poolManager.image.tag }}"
+            - name: OPENEBS_IO_CSTOR_POOL_IMAGE
+              value: "{{ .Values.cspcOperator.cstorPool.image.registry }}{{ .Values.cspcOperator.cstorPool.image.repository }}:{{ .Values.cspcOperator.cstorPool.image.tag }}"
+            - name:  OPENEBS_IO_CSTOR_POOL_EXPORTER_IMAGE
+              value: "{{ .Values.cspcOperator.cstorPoolExporter.image.registry }}{{ .Values.cspcOperator.cstorPoolExporter.image.repository }}:{{ .Values.cspcOperator.cstorPoolExporter.image.tag }}"
+            - name: RESYNC_INTERVAL
+              value: {{ .Values.cspcOperator.resyncInterval }}
+---

@@ -21,3 +21,4 @@ On a high level, this tutorial covers following:
 4. This [link](./volumes/policy.md) explains the volume policy related operations.
 5. This [link](./volumes/migration.md) explains the volume migration related operations across k8s nodes.
 6. This [link](./volumes/block_volume.md) explains how to use cstor raw block volume.
+7. This [link](./volumes/prometheus-monitoring.md) explains how to configure and monitor cstor volumes.

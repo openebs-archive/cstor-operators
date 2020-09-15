@@ -585,7 +585,7 @@ metadata:
   name: openebs-cstor-csi-provisioner-role
 rules:
   - apiGroups: [""]
-    resources: ["secrets"]
+    resources: ["secrets","namespaces"]
     verbs: ["get", "list"]
   - apiGroups: [""]
     resources: ["persistentvolumes", "services"]
@@ -611,7 +611,6 @@ rules:
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshotcontents"]
     verbs: ["get", "list"]
-
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["*"]
@@ -679,7 +678,7 @@ spec:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-snapshotter
-          image: quay.io/k8scsi/csi-snapshotter:v2.0.1
+          image: quay.io/k8scsi/csi-snapshotter:v2.1.1
           args:
             - "--csi-address=$(ADDRESS)"
           env:
@@ -690,7 +689,7 @@ spec:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: snapshot-controller
-          image: quay.io/k8scsi/snapshot-controller:v2.0.1
+          image: quay.io/k8scsi/snapshot-controller:v2.1.1
           args:
             - "--v=5"
             - "--leader-election=false"
@@ -753,6 +752,10 @@ spec:
               # has been installed
             - name: OPENEBS_NAMESPACE
               value: openebs
+            - name: OPENEBS_IO_INSTALLER_TYPE
+              value: "cstor-operator"
+            - name: OPENEBS_IO_ENABLE_ANALYTICS
+              value: "false"
           args :
             - "--endpoint=$(OPENEBS_CSI_ENDPOINT)"
             - "--url=$(OPENEBS_CSI_API_URL)"

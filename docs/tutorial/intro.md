@@ -11,6 +11,7 @@ On a high level, this tutorial covers following:
 1. This [link](./cspc/stripe/stripe.md) explains the pool related operations for stripe configuration.
 2. This [link](./cspc/mirror/mirror.md) explains the pool related operations for mirror configuration.
 3. This [link](./cspc/tuning/tune.md) explains the tuning of cStor pools via CSPC.
+4. This [link](./cspc/allow-tagged-bds/allowed-bds.md) explains to use the BD tag feature.
 
 
 ## cStor Volumes

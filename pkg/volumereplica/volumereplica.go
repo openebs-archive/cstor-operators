@@ -26,7 +26,6 @@ import (
 	"github.com/openebs/cstor-operators/pkg/log/alertlog"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	types "github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/api/pkg/util"
@@ -389,7 +388,7 @@ func buildVolumeCloneCommand(cStorVolumeReplica *cstor.CStorVolumeReplica, snapN
 // ToDo: Move to backup package
 
 // CreateVolumeBackup sends cStor snapshots to remote location specified by cstorbackup.
-func CreateVolumeBackup(bkp *openebsio.CStorBackup) error {
+func CreateVolumeBackup(bkp *cstor.CStorBackup) error {
 	var cmd []string
 	var retryCount int
 	var err error
@@ -446,7 +445,7 @@ func buildVolumeBackupCommand(poolName, fullVolName, oldSnapName, newSnapName, b
 // ToDo: Move this to restore package
 
 // CreateVolumeRestore receive cStor snapshots from remote location(zfs volumes).
-func CreateVolumeRestore(rst *openebsio.CStorRestore) error {
+func CreateVolumeRestore(rst *cstor.CStorRestore) error {
 	var cmd []string
 	var retryCount int
 	var err error

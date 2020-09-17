@@ -17,9 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"os"
+
 	"github.com/openebs/cstor-operators/cmd/pool-manager/app"
 	"k8s.io/klog"
-	"os"
 )
 
 func main() {

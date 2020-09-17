@@ -33,7 +33,7 @@ import (
 
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 
-	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebstypes "github.com/openebs/api/pkg/apis/types"
 
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
@@ -78,7 +78,7 @@ func NewCStorBackupController(
 	cStorInformerFactory informers.SharedInformerFactory) *BackupController {
 
 	// obtain references to shared index informers for the CStorBackup resources.
-	BackupInformer := cStorInformerFactory.Openebs().V1alpha1().CStorBackups()
+	BackupInformer := cStorInformerFactory.Cstor().V1().CStorBackups()
 
 	err := openebsScheme.AddToScheme(scheme.Scheme)
 	if err != nil {
@@ -121,7 +121,7 @@ func NewCStorBackupController(
 			// Note: AddFunc is called when a new object comes into etcd
 			// Note : In case controller reboots and existing object in etcd can cause delivery of
 			// add event when the controller comes again. Be careful in this part and handle accordingly.
-			bkp := obj.(*apis.CStorBackup)
+			bkp := obj.(*cstorapis.CStorBackup)
 
 			if !IsRightCStorPoolInstanceMgmt(bkp) {
 				return
@@ -133,8 +133,8 @@ func NewCStorBackupController(
 			// 1. When object is updated/patched i.e. Resource version of object changes.
 			// 2. When object is deleted i.e. the deletion timestamp of object is set.
 			// 3. After every resync interval.
-			newbkp := newVar.(*apis.CStorBackup)
-			oldbkp := oldVar.(*apis.CStorBackup)
+			newbkp := newVar.(*cstorapis.CStorBackup)
+			oldbkp := oldVar.(*cstorapis.CStorBackup)
 
 			if !IsRightCStorPoolInstanceMgmt(newbkp) {
 				return
@@ -143,7 +143,7 @@ func NewCStorBackupController(
 			controller.handleBKPUpdateEvent(oldbkp, newbkp, &q)
 		},
 		DeleteFunc: func(obj interface{}) {
-			bkp := obj.(*apis.CStorBackup)
+			bkp := obj.(*cstorapis.CStorBackup)
 			if !IsRightCStorPoolInstanceMgmt(bkp) {
 				return
 			}
@@ -156,7 +156,7 @@ func NewCStorBackupController(
 // enqueueCStorBackup takes a CStorBackup resource and converts it into a namespace/name
 // string which is then put onto the work queue. This method should *not* be
 // passed resources of any type other than CStorBackup.
-func (c *BackupController) enqueueCStorBackup(obj *apis.CStorBackup, q common.QueueLoad) {
+func (c *BackupController) enqueueCStorBackup(obj *cstorapis.CStorBackup, q common.QueueLoad) {
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
@@ -168,7 +168,7 @@ func (c *BackupController) enqueueCStorBackup(obj *apis.CStorBackup, q common.Qu
 }
 
 // IsRightCStorPoolInstanceMgmt is to check if the backup request is for this cstor-pool or not.
-func IsRightCStorPoolInstanceMgmt(bkp *apis.CStorBackup) bool {
+func IsRightCStorPoolInstanceMgmt(bkp *cstorapis.CStorBackup) bool {
 	if os.Getenv(OpenEBSIOCSPIID) ==
 		bkp.GetLabels()[openebstypes.CStorPoolInstanceUIDLabelKey] {
 		return true
@@ -183,31 +183,31 @@ func (c *BackupController) cleanupOldBackup() {
 		LabelSelector: bkplabel,
 	}
 
-	bkplist, err := c.clientset.OpenebsV1alpha1().CStorBackups(metav1.NamespaceAll).List(bkplistop)
+	bkplist, err := c.clientset.CstorV1().CStorBackups(metav1.NamespaceAll).List(bkplistop)
 	if err != nil {
 		return
 	}
 
 	for _, bkp := range bkplist.Items {
 		switch bkp.Status {
-		case apis.BKPCStorStatusInProgress:
+		case cstorapis.BKPCStorStatusInProgress:
 			//Backup was in in-progress state
 			laststate := findLastBackupStat(c.clientset, bkp)
 			updateBackupStatus(c.clientset, bkp, laststate)
-		case apis.BKPCStorStatusDone:
+		case cstorapis.BKPCStorStatusDone:
 			continue
 		default:
 			//Set backup status as failed
-			updateBackupStatus(c.clientset, bkp, apis.BKPCStorStatusFailed)
+			updateBackupStatus(c.clientset, bkp, cstorapis.BKPCStorStatusFailed)
 		}
 	}
 }
 
 // updateBackupStatus will update the backup status to given status
-func updateBackupStatus(clientset clientset.Interface, bkp apis.CStorBackup, status apis.CStorBackupStatus) {
+func updateBackupStatus(clientset clientset.Interface, bkp cstorapis.CStorBackup, status cstorapis.CStorBackupStatus) {
 	bkp.Status = status
 
-	_, err := clientset.OpenebsV1alpha1().CStorBackups(bkp.Namespace).Update(&bkp)
+	_, err := clientset.CstorV1().CStorBackups(bkp.Namespace).Update(&bkp)
 	if err != nil {
 		klog.Errorf("Failed to update backup(%s) status(%s)", status, bkp.Name)
 		return
@@ -215,29 +215,29 @@ func updateBackupStatus(clientset clientset.Interface, bkp apis.CStorBackup, sta
 }
 
 // findLastBackupStat will find the status of backup from last completed-backup
-func findLastBackupStat(clientset clientset.Interface, bkp apis.CStorBackup) apis.CStorBackupStatus {
+func findLastBackupStat(clientset clientset.Interface, bkp cstorapis.CStorBackup) cstorapis.CStorBackupStatus {
 	lastbkpname := bkp.Spec.BackupName + "-" + bkp.Spec.VolumeName
 
-	lastbkp, err := clientset.OpenebsV1alpha1().
+	lastbkp, err := clientset.CstorV1().
 		CStorCompletedBackups(bkp.Namespace).
 		Get(lastbkpname, metav1.GetOptions{})
 	if err != nil {
 		// Unable to fetch the last backup, so we will return fail state
 		klog.Errorf("Failed to fetch last completed backup:%s error:%s", lastbkpname, err.Error())
-		return apis.BKPCStorStatusFailed
+		return cstorapis.BKPCStorStatusFailed
 	}
 
 	// let's check if snapname matches with current snapshot name
-	if bkp.Spec.SnapName == lastbkp.Spec.SnapName || bkp.Spec.SnapName == lastbkp.Spec.PrevSnapName {
-		return apis.BKPCStorStatusDone
+	if bkp.Spec.SnapName == lastbkp.Spec.LastSnapName || bkp.Spec.SnapName == lastbkp.Spec.SecondLastSnapName {
+		return cstorapis.BKPCStorStatusDone
 	}
 
 	// lastbackup snap/prevsnap doesn't match with bkp snapname
-	return apis.BKPCStorStatusFailed
+	return cstorapis.BKPCStorStatusFailed
 }
 
 // handleBKPAddEvent is to handle add operation of backup controller
-func (c *BackupController) handleBKPAddEvent(bkp *apis.CStorBackup, q *common.QueueLoad) {
+func (c *BackupController) handleBKPAddEvent(bkp *cstorapis.CStorBackup, q *common.QueueLoad) {
 	q.Operation = common.QOpAdd
 	klog.Infof("CStorBackup event added: %v, %v", bkp.ObjectMeta.Name, string(bkp.ObjectMeta.UID))
 	c.recorder.Event(bkp, corev1.EventTypeNormal, string(common.SuccessSynced), string(common.MessageCreateSynced))
@@ -245,7 +245,7 @@ func (c *BackupController) handleBKPAddEvent(bkp *apis.CStorBackup, q *common.Qu
 }
 
 // handleBKPUpdateEvent is to handle add operation of backup controller
-func (c *BackupController) handleBKPUpdateEvent(oldbkp, newbkp *apis.CStorBackup, q *common.QueueLoad) {
+func (c *BackupController) handleBKPUpdateEvent(oldbkp, newbkp *cstorapis.CStorBackup, q *common.QueueLoad) {
 	klog.V(2).Infof("Received Update for backup:%s", oldbkp.ObjectMeta.Name)
 
 	if newbkp.ResourceVersion == oldbkp.ResourceVersion {

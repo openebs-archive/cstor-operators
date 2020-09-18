@@ -834,7 +834,7 @@ func TestBackupDeleteEndPoint(t *testing.T) {
 		},
 		"When delete method is triggered on v1 backup endpoint without any error injection": {
 			cspcName:    "cspc-cstor-pool5",
-			poolVersion: "2.1.0",
+			poolVersion: "2.2.0",
 			// Since json tags are same for v1 and v1alpha version there won't be any problem
 			cstorBackup: &openebsapis.CStorBackup{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1185,7 +1185,7 @@ func TestRestoreEndPoint(t *testing.T) {
 		},
 		"When restore is triggered for pools on v1 version": {
 			cspcName:    "cspc-cstor-pool7",
-			poolVersion: "2.1.0",
+			poolVersion: "2.2.0",
 			cstorRestore: &openebsapis.CStorRestore{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace,

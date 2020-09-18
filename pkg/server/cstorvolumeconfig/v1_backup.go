@@ -45,8 +45,8 @@ func (backupWrapper *v1BackupWrapper) setBackup(
 
 // isBackupCompleted returns true if backup execution is completed
 func (backupWrapper *v1BackupWrapper) isBackupCompleted() bool {
-	if backupWrapper.backup.IsBackupFailed() ||
-		backupWrapper.backup.IsBackupSucceeded() {
+	if backupWrapper.backup.IsFailed() ||
+		backupWrapper.backup.IsSucceeded() {
 		return true
 	}
 	return false

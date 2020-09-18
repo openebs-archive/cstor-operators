@@ -58,10 +58,10 @@ var (
 
 func init() {
 	var err error
-	// 2.1.0 is minimum version that supports v1 version of cStor and backup
-	minV1SupportedVersion, err = version.NewVersion("2.1.0")
+	// 2.2.0 is minimum version that supports v1 version of cStor and backup
+	minV1SupportedVersion, err = version.NewVersion("2.2.0")
 	if err != nil {
-		klog.Fatalf("failed to parse 2.1.0 version error: %v", err)
+		klog.Fatalf("failed to parse 2.2.0 version error: %v", err)
 	}
 }
 

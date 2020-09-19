@@ -282,6 +282,11 @@ func (bOps *backupAPIOps) deleteBackup(snapName, volname, ns, schedule string) e
 	if err != nil {
 		return errors.Wrapf(err, "failed to get backup interface")
 	}
+	// On successfull completion of backup plugin will send delete request to cleanup the backup
+	if backupInterface == nil {
+		klog.Infof("Backup %s for volume %s already deleted", snapName, volname)
+		return nil
+	}
 
 	err = backupInterface.deleteCompletedBackup(lastCompletedBackup, ns, snapName)
 	if err != nil {
@@ -360,7 +365,11 @@ func (bOps *backupAPIOps) getBackupInterface(backupName,
 			CStorBackups(backupNamespace).
 			Get(backupName, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to fetch %s backup v1 version also", backupName)
+			if !k8serror.IsNotFound(err) {
+				return nil, errors.Wrapf(err, "failed to fetch %s backup v1 version also", backupName)
+			}
+			// This is a case where backup is already deleted
+			return nil, nil
 		}
 		backupInterface := newV1BackupWrapper(bOps.clientset).setBackup(backupObj)
 		return backupInterface, nil

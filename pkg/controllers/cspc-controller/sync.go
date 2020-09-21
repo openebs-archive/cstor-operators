@@ -447,8 +447,8 @@ func (pc *PoolConfig) syncCSPIWithCSPC(cspc *cstor.CStorPoolCluster, cspi *cstor
 	// one blockdevice name in CSPI data raid groups is matched to
 	// blockdevice name in data raidgroups in CSPC spec then
 
-	//NOTE: CSPC pools spec consist repeation of blockdevice names
-	// is outof context. This kind of CSPC should not reconcile
+	//NOTE: CSPC pools spec consist repetion of blockdevice names
+	// is outof context. This kind of CSPC should not be reconciled
 	for _, poolSpec := range cspc.Spec.Pools {
 
 		if reflect.DeepEqual(poolSpec.NodeSelector, cspi.Spec.NodeSelector) ||

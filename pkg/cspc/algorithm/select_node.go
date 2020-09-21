@@ -107,7 +107,7 @@ func getLabelSelectorString(selector map[string]string) string {
 // GetUsedNode returns a map of node for which pool has already been created.
 func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 	usedNode := make(map[string]bool)
-	cspList, err := ac.
+	cspiList, err := ac.
 		clientset.
 		CstorV1().
 		CStorPoolInstances(ac.Namespace).
@@ -116,7 +116,7 @@ func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list already created cspi(s)")
 	}
-	for _, cspObj := range cspList.Items {
+	for _, cspObj := range cspiList.Items {
 		usedNode[cspObj.Labels[string(types.HostNameLabelKey)]] = true
 	}
 	return usedNode, nil
@@ -126,7 +126,7 @@ func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 // present on provisioned CSPI
 func (ac *Config) GetUsedBlockDevices() (map[string]bool, error) {
 	usedBlockDevices := make(map[string]bool)
-	cspList, err := ac.
+	cspiList, err := ac.
 		clientset.
 		CstorV1().
 		CStorPoolInstances(ac.Namespace).
@@ -135,7 +135,7 @@ func (ac *Config) GetUsedBlockDevices() (map[string]bool, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list already provisioned cspi(s)")
 	}
-	for _, cspiObj := range cspList.Items {
+	for _, cspiObj := range cspiList.Items {
 		for _, rg := range append(cspiObj.Spec.DataRaidGroups, cspiObj.Spec.WriteCacheRaidGroups...) {
 			for _, cspiBD := range rg.CStorPoolInstanceBlockDevices {
 				usedBlockDevices[cspiBD.BlockDeviceName] = true

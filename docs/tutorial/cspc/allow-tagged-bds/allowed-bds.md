@@ -1,11 +1,11 @@
 # Block Device Tagging
 
-Node disk manager provides a feature to restrict the use of block devices via
-tagging it. Engines like cStor utilises this feature to apply restriction on 
-blockdevices and ensure that only cStor can use it and hence guarantee that the 
-disk/blockdevice is not abused due to a faulty human operation by any other 
-control plane sub-system/software that uses the node disk manager for disk 
-discovery and management.
+NDM provides a feature to reserve block devices to be used for specific 
+applications via block device tags. This feature can also be used by cStor 
+operators to specify the block devices that should be consumed by cstor pools 
+and conversely restrict anyone else from using those block devices. This feature
+can help in protecting against manual errors in specifying the block devices in 
+the CSPC yamls by users.
 
 ## How to use it ?
 
@@ -98,12 +98,12 @@ on the block device or has the tag but the values are either `cstor` or `ssd`.
 - In this case the `blockdevice-022674b5f97f06195fe962a7a61fcb64` 
 (on node `worker1`) and `blockdevice-241fb162b8d0eafc640ed89588a832df`
 (on node `worker2`) does not have a tag with key `openebs.io/block-device-tag`.
-Hence, not restriction is applied on it and it can be used the the CSPC operator
+Hence, no restriction is applied on it and it can be used the the CSPC operator
 for pool provisioning or operations.
 
 - In the case of blockdevice `blockdevice-00439dc464b785256242113bf0ef64b9`
 (on node `worker3`) it has a block device tag `openebs.io/block-device-tag` with
-value `fast`. (This tag is simply Kubernetes label). But on the CSPC, the
+value `fast`. (This tag is simply a Kubernetes label). But on the CSPC, the
 annotation `openebs.io/allowed-bd-tags` has value `cstor` and `ssd`. There is no
 `fast` keyword present in the annotation value and hence this BD cannot be used. 
 

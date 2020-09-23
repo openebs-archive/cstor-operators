@@ -132,11 +132,13 @@ openebs.io/allowed-bd-tags: fast,ssd,nvme
 ```
 - A BD tag has only one value on the block device CR. For example 
     - `openebs.io/block-device-tag: fast` — fast is the value.
-    - `openebs.io/block-device-tag: fast,slow` — one can tag a BD like this but 
-    it is not recommended and will not be allowed to be consumed by cStor as 
-    cStor annotation takes a comma-separated value for allowed bd tags.
-    - `openebs.io/block-device-tag: fast-slow` — One can use a hyphen in the 
-    bd tag value.`fast-slow` is a valid value here.
+    - `openebs.io/block-device-tag: fast,ssd` — one can tag a BD like this but 
+    block devices should not be tagged in this fashion. One of the reasons for 
+    this is, cStor allowed bd tag annotation takes a comma-separated values and 
+    value like above(i.e `fast,ssd` ) can never be interpreted as a single word 
+    in cStor and hence BDs tagged in above fashion cannot be utilised by cStor.
+    - `openebs.io/block-device-tag: in-south` — One can use a hyphen in the 
+    bd tag value.`in-south` is a valid value here.
 
 - If any block device mentioned in CSPC has an empty value for the 
 `openebs.io/block-device-tag` then it will not be considered for pool

@@ -165,7 +165,7 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 
 	updatedCVC, err := c.populateVersion(cvc)
 	if err != nil {
-		klog.Errorf("failed to add versionDetails to CVC %s in namesapce %s :{%s}", cvc.Name, cvc.Namespace, err.Error())
+		klog.Errorf("failed to add versionDetails to CVC %s in namespace %s :{%s}", cvc.Name, cvc.Namespace, err.Error())
 		return nil
 	}
 

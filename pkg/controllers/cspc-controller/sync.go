@@ -74,7 +74,7 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 		if err != nil {
 			message := fmt.Sprintf("Could not sync CSPC: {%s}", err.Error())
 			c.recorder.Event(cspc, corev1.EventTypeWarning, "Pool Cleanup", message)
-			klog.Errorf("Could not sync CSPC %s in namesapce %s: {%s}", cspc.Name, cspc.Namespace, err.Error())
+			klog.Errorf("Could not sync CSPC %s in namespace %s: {%s}", cspc.Name, cspc.Namespace, err.Error())
 			return nil
 		}
 
@@ -82,14 +82,14 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 		if err != nil {
 			message := fmt.Sprintf("Could not sync CSPC: {%s}", err.Error())
 			c.recorder.Event(cspc, corev1.EventTypeWarning, "Pool Cleanup", message)
-			klog.Errorf("Could not sync CSPC %s in namesapce %s: {%s}", cspc.Name, cspc.Namespace, err.Error())
+			klog.Errorf("Could not sync CSPC %s in namespace %s: {%s}", cspc.Name, cspc.Namespace, err.Error())
 			return nil
 		}
 	}
 
 	cspcGot, err := c.populateVersion(cspc)
 	if err != nil {
-		klog.Errorf("failed to add versionDetails to CSPC %s in namesapce %s :{%s}", cspc.Name, cspc.Namespace, err.Error())
+		klog.Errorf("failed to add versionDetails to CSPC %s in namespace %s :{%s}", cspc.Name, cspc.Namespace, err.Error())
 		return nil
 	}
 
@@ -121,7 +121,7 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 
 	cspcGot, err = c.populateDesiredInstances(cspcGot)
 	if err != nil {
-		klog.Errorf("failed to add desired instances to CSPC %s in namesapce %s :{%s}", cspc.Name, cspc.Namespace, err.Error())
+		klog.Errorf("failed to add desired instances to CSPC %s in namespace %s :{%s}", cspc.Name, cspc.Namespace, err.Error())
 		return nil
 	}
 

@@ -38,8 +38,8 @@ type CommandStatus struct {
 
 // Snapshotter is used to perform snapshot operations on given volume
 type Snapshotter interface {
-	CreateSnapshot(ip, volumeName, namesapce string) (*v1proto.VolumeSnapCreateResponse, error)
-	DestroySnapshot(ip, volumeName, namesapce string) (*v1proto.VolumeSnapDeleteResponse, error)
+	CreateSnapshot(ip, volumeName, snapName string) (*v1proto.VolumeSnapCreateResponse, error)
+	DestroySnapshot(ip, volumeName, snapName string) (*v1proto.VolumeSnapDeleteResponse, error)
 }
 
 // SnapClient is used to perform real snap create and snap delete commands

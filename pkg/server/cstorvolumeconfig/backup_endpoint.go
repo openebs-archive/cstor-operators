@@ -51,7 +51,7 @@ type backupAPIOps struct {
 var (
 	// openebsNamespace is the namespace where openebs is deployed
 	openebsNamespace string
-	// minV1SupportedVersion is the minimum version required to perfrom
+	// minV1SupportedVersion is the minimum OpenEBS version required to perfrom
 	// CRUD operations on v1 cStor backup and restore resources
 	minV1SupportedVersion *version.Version
 )
@@ -171,7 +171,7 @@ func (bOps *backupAPIOps) create() (interface{}, error) {
 	backupInterface.setBackupStatus(string(openebsapis.BKPCStorStatusPending))
 	backupInterface.setLastSnapshotName(lastSnapName)
 
-	// NOTE: For logging we are using v1 backup resource itself
+	// NOTE: We are logining by using v1 backup resource irrespective of version
 	klog.Infof("Creating backup %s for volume %q poolName: %v poolUUID:%v", backup.Spec.SnapName,
 		backup.Spec.VolumeName,
 		backup.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],

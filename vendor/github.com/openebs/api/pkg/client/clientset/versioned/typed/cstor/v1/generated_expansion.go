@@ -18,9 +18,15 @@ limitations under the License.
 
 package v1
 
+type CStorBackupExpansion interface{}
+
+type CStorCompletedBackupExpansion interface{}
+
 type CStorPoolClusterExpansion interface{}
 
 type CStorPoolInstanceExpansion interface{}
+
+type CStorRestoreExpansion interface{}
 
 type CStorVolumeExpansion interface{}
 

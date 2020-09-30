@@ -48,6 +48,10 @@ func (c *FakeOpenebsV1alpha1) CStorRestores(namespace string) v1alpha1.CStorRest
 	return &FakeCStorRestores{c, namespace}
 }
 
+func (c *FakeOpenebsV1alpha1) MigrationTasks(namespace string) v1alpha1.MigrationTaskInterface {
+	return &FakeMigrationTasks{c, namespace}
+}
+
 func (c *FakeOpenebsV1alpha1) UpgradeTasks(namespace string) v1alpha1.UpgradeTaskInterface {
 	return &FakeUpgradeTasks{c, namespace}
 }

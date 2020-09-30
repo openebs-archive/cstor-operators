@@ -28,12 +28,24 @@ type FakeCstorV1 struct {
 	*testing.Fake
 }
 
+func (c *FakeCstorV1) CStorBackups(namespace string) v1.CStorBackupInterface {
+	return &FakeCStorBackups{c, namespace}
+}
+
+func (c *FakeCstorV1) CStorCompletedBackups(namespace string) v1.CStorCompletedBackupInterface {
+	return &FakeCStorCompletedBackups{c, namespace}
+}
+
 func (c *FakeCstorV1) CStorPoolClusters(namespace string) v1.CStorPoolClusterInterface {
 	return &FakeCStorPoolClusters{c, namespace}
 }
 
 func (c *FakeCstorV1) CStorPoolInstances(namespace string) v1.CStorPoolInstanceInterface {
 	return &FakeCStorPoolInstances{c, namespace}
+}
+
+func (c *FakeCstorV1) CStorRestores(namespace string) v1.CStorRestoreInterface {
+	return &FakeCStorRestores{c, namespace}
 }
 
 func (c *FakeCstorV1) CStorVolumes(namespace string) v1.CStorVolumeInterface {

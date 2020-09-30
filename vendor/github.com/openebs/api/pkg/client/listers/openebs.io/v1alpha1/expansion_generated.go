@@ -58,6 +58,14 @@ type CStorRestoreListerExpansion interface{}
 // CStorRestoreNamespaceLister.
 type CStorRestoreNamespaceListerExpansion interface{}
 
+// MigrationTaskListerExpansion allows custom methods to be added to
+// MigrationTaskLister.
+type MigrationTaskListerExpansion interface{}
+
+// MigrationTaskNamespaceListerExpansion allows custom methods to be added to
+// MigrationTaskNamespaceLister.
+type MigrationTaskNamespaceListerExpansion interface{}
+
 // UpgradeTaskListerExpansion allows custom methods to be added to
 // UpgradeTaskLister.
 type UpgradeTaskListerExpansion interface{}

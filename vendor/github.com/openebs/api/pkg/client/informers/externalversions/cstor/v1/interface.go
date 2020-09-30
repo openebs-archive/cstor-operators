@@ -24,10 +24,16 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// CStorBackups returns a CStorBackupInformer.
+	CStorBackups() CStorBackupInformer
+	// CStorCompletedBackups returns a CStorCompletedBackupInformer.
+	CStorCompletedBackups() CStorCompletedBackupInformer
 	// CStorPoolClusters returns a CStorPoolClusterInformer.
 	CStorPoolClusters() CStorPoolClusterInformer
 	// CStorPoolInstances returns a CStorPoolInstanceInformer.
 	CStorPoolInstances() CStorPoolInstanceInformer
+	// CStorRestores returns a CStorRestoreInformer.
+	CStorRestores() CStorRestoreInformer
 	// CStorVolumes returns a CStorVolumeInformer.
 	CStorVolumes() CStorVolumeInformer
 	// CStorVolumeConfigs returns a CStorVolumeConfigInformer.
@@ -49,6 +55,16 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// CStorBackups returns a CStorBackupInformer.
+func (v *version) CStorBackups() CStorBackupInformer {
+	return &cStorBackupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CStorCompletedBackups returns a CStorCompletedBackupInformer.
+func (v *version) CStorCompletedBackups() CStorCompletedBackupInformer {
+	return &cStorCompletedBackupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // CStorPoolClusters returns a CStorPoolClusterInformer.
 func (v *version) CStorPoolClusters() CStorPoolClusterInformer {
 	return &cStorPoolClusterInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -57,6 +73,11 @@ func (v *version) CStorPoolClusters() CStorPoolClusterInformer {
 // CStorPoolInstances returns a CStorPoolInstanceInformer.
 func (v *version) CStorPoolInstances() CStorPoolInstanceInformer {
 	return &cStorPoolInstanceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CStorRestores returns a CStorRestoreInformer.
+func (v *version) CStorRestores() CStorRestoreInformer {
+	return &cStorRestoreInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // CStorVolumes returns a CStorVolumeInformer.

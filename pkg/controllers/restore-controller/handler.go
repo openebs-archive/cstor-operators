@@ -18,7 +18,10 @@ package restorecontroller
 
 import (
 	"fmt"
-	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	"os"
+	"reflect"
+
+	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
@@ -27,8 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
-	"os"
-	"reflect"
 )
 
 // syncHandler compares the actual state with the desired, and attempts to
@@ -44,7 +45,7 @@ func (c *RestoreController) syncHandler(key string, operation common.QueueOperat
 		return fmt.Errorf("can not retrieve CStorRestore %q", key)
 	}
 
-	if IsDoneStatus(rst) || IsFailedStatus(rst) {
+	if rst.IsSucceeded() || rst.IsFailed() {
 		return nil
 	}
 
@@ -55,19 +56,19 @@ func (c *RestoreController) syncHandler(key string, operation common.QueueOperat
 
 	if err != nil {
 		klog.Errorf(err.Error())
-		rst.Status = apis.RSTCStorStatusFailed
+		rst.Status = cstorapis.RSTCStorStatusFailed
 	} else {
-		rst.Status = apis.CStorRestoreStatus(status)
+		rst.Status = cstorapis.CStorRestoreStatus(status)
 	}
 
-	nrst, err := c.clientset.OpenebsV1alpha1().CStorRestores(rst.Namespace).Get(rst.Name, metav1.GetOptions{})
+	nrst, err := c.clientset.CstorV1().CStorRestores(rst.Namespace).Get(rst.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	nrst.Status = rst.Status
 
-	_, err = c.clientset.OpenebsV1alpha1().CStorRestores(nrst.Namespace).Update(nrst)
+	_, err = c.clientset.CstorV1().CStorRestores(nrst.Namespace).Update(nrst)
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func (c *RestoreController) syncHandler(key string, operation common.QueueOperat
 }
 
 // eventHandler will execute a function according to a given operation
-func (c *RestoreController) rstEventHandler(operation common.QueueOperation, rst *apis.CStorRestore) (string, error) {
+func (c *RestoreController) rstEventHandler(operation common.QueueOperation, rst *cstorapis.CStorRestore) (string, error) {
 	switch operation {
 	case common.QOpAdd:
 		return c.addEventHandler(rst)
@@ -93,23 +94,23 @@ func (c *RestoreController) rstEventHandler(operation common.QueueOperation, rst
 	case common.QOpModify:
 		return "", nil
 	}
-	return string(apis.RSTCStorStatusInvalid), nil
+	return string(cstorapis.RSTCStorStatusInvalid), nil
 }
 
 // addEventHandler will change the state of restore to Init state.
-func (c *RestoreController) addEventHandler(rst *apis.CStorRestore) (string, error) {
-	if !IsPendingStatus(rst) {
-		return string(apis.RSTCStorStatusInvalid), nil
+func (c *RestoreController) addEventHandler(rst *cstorapis.CStorRestore) (string, error) {
+	if !rst.IsPending() {
+		return string(cstorapis.RSTCStorStatusInvalid), nil
 	}
-	return string(apis.RSTCStorStatusInit), nil
+	return string(cstorapis.RSTCStorStatusInit), nil
 }
 
 // syncEventHandler will perform the restore if a given restore is in init state
-func (c *RestoreController) syncEventHandler(rst *apis.CStorRestore) (string, error) {
+func (c *RestoreController) syncEventHandler(rst *cstorapis.CStorRestore) (string, error) {
 	// If the restore is in init state then only we will complete the restore
-	if IsInitStatus(rst) {
-		rst.Status = apis.RSTCStorStatusInProgress
-		_, err := c.clientset.OpenebsV1alpha1().CStorRestores(rst.Namespace).Update(rst)
+	if rst.IsInInit() {
+		rst.Status = cstorapis.RSTCStorStatusInProgress
+		_, err := c.clientset.CstorV1().CStorRestores(rst.Namespace).Update(rst)
 		if err != nil {
 			klog.Errorf("Failed to update restore:%s status : %v", rst.Name, err.Error())
 			return "", err
@@ -118,20 +119,20 @@ func (c *RestoreController) syncEventHandler(rst *apis.CStorRestore) (string, er
 		err = volumereplica.CreateVolumeRestore(rst)
 		if err != nil {
 			klog.Errorf("restore creation failure: %v", err.Error())
-			return string(apis.RSTCStorStatusFailed), err
+			return string(cstorapis.RSTCStorStatusFailed), err
 		}
 		c.recorder.Event(rst, corev1.EventTypeNormal, string(common.SuccessCreated), string(common.MessageResourceCreated))
 		klog.Infof("restore creation successful: %v, %v", rst.ObjectMeta.Name, string(rst.GetUID()))
-		return string(apis.RSTCStorStatusDone), nil
-	} else if IsPendingStatus(rst) {
-		klog.Infof("Updating restore:%s status to %v", rst.Name, apis.RSTCStorStatusInit)
-		return string(apis.RSTCStorStatusInit), nil
+		return string(cstorapis.RSTCStorStatusDone), nil
+	} else if rst.IsPending() {
+		klog.Infof("Updating restore:%s status to %v", rst.Name, cstorapis.RSTCStorStatusInit)
+		return string(cstorapis.RSTCStorStatusInit), nil
 	}
 	return "", nil
 }
 
 // getCStorRestoreResource returns a restore object corresponding to the resource key
-func (c *RestoreController) getCStorRestoreResource(key string) (*apis.CStorRestore, error) {
+func (c *RestoreController) getCStorRestoreResource(key string) (*cstorapis.CStorRestore, error) {
 	// Convert the key(namespace/name) string into a distinct name
 	klog.V(1).Infof("Finding restore for key:%s", key)
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
@@ -140,7 +141,7 @@ func (c *RestoreController) getCStorRestoreResource(key string) (*apis.CStorRest
 		return nil, nil
 	}
 
-	rst, err := c.clientset.OpenebsV1alpha1().CStorRestores(ns).Get(name, metav1.GetOptions{})
+	rst, err := c.clientset.CstorV1().CStorRestores(ns).Get(name, metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("Restore resource for key:%s is missing", name)
 		return nil, err
@@ -148,48 +149,8 @@ func (c *RestoreController) getCStorRestoreResource(key string) (*apis.CStorRest
 	return rst, nil
 }
 
-// IsPendingStatus is to check if the restore is in a pending state.
-func IsPendingStatus(rst *apis.CStorRestore) bool {
-	if string(rst.Status) == string(apis.RSTCStorStatusPending) {
-		return true
-	}
-	return false
-}
-
-// IsInProgressStatus is to check if the restore is in in-progress state.
-func IsInProgressStatus(rst *apis.CStorRestore) bool {
-	if string(rst.Status) == string(apis.RSTCStorStatusInProgress) {
-		return true
-	}
-	return false
-}
-
-// IsInitStatus is to check if the restore is in init state.
-func IsInitStatus(rst *apis.CStorRestore) bool {
-	if string(rst.Status) == string(apis.RSTCStorStatusInit) {
-		return true
-	}
-	return false
-}
-
-// IsDoneStatus is to check if the restore is completed or not
-func IsDoneStatus(rst *apis.CStorRestore) bool {
-	if string(rst.Status) == string(apis.RSTCStorStatusDone) {
-		return true
-	}
-	return false
-}
-
-// IsFailedStatus is to check if the restore is failed or not
-func IsFailedStatus(rst *apis.CStorRestore) bool {
-	if string(rst.Status) == string(apis.RSTCStorStatusFailed) {
-		return true
-	}
-	return false
-}
-
 // IsRightCStorPoolMgmt is to check if the restore request is for particular pod/application.
-func IsRightCStorPoolMgmt(rst *apis.CStorRestore) bool {
+func IsRightCStorPoolMgmt(rst *cstorapis.CStorRestore) bool {
 	if os.Getenv(string(common.OpenEBSIOCSPIID)) == rst.ObjectMeta.Labels[types.CStorPoolInstanceUIDLabelKey] {
 		return true
 	}
@@ -197,7 +158,7 @@ func IsRightCStorPoolMgmt(rst *apis.CStorRestore) bool {
 }
 
 // IsDestroyEvent is to check if the call is for restore destroy.
-func IsDestroyEvent(rst *apis.CStorRestore) bool {
+func IsDestroyEvent(rst *cstorapis.CStorRestore) bool {
 	if rst.ObjectMeta.DeletionTimestamp != nil {
 		return true
 	}
@@ -205,7 +166,7 @@ func IsDestroyEvent(rst *apis.CStorRestore) bool {
 }
 
 // IsOnlyStatusChange is to check only status change of restore object.
-func IsOnlyStatusChange(oldrst, newrst *apis.CStorRestore) bool {
+func IsOnlyStatusChange(oldrst, newrst *cstorapis.CStorRestore) bool {
 	if reflect.DeepEqual(oldrst.Spec, newrst.Spec) &&
 		!reflect.DeepEqual(oldrst.Status, newrst.Status) {
 		return true

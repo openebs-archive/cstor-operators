@@ -34,6 +34,8 @@ type Interface interface {
 	CStorCompletedBackups() CStorCompletedBackupInformer
 	// CStorRestores returns a CStorRestoreInformer.
 	CStorRestores() CStorRestoreInformer
+	// MigrationTasks returns a MigrationTaskInformer.
+	MigrationTasks() MigrationTaskInformer
 	// UpgradeTasks returns a UpgradeTaskInformer.
 	UpgradeTasks() UpgradeTaskInformer
 }
@@ -72,6 +74,11 @@ func (v *version) CStorCompletedBackups() CStorCompletedBackupInformer {
 // CStorRestores returns a CStorRestoreInformer.
 func (v *version) CStorRestores() CStorRestoreInformer {
 	return &cStorRestoreInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// MigrationTasks returns a MigrationTaskInformer.
+func (v *version) MigrationTasks() MigrationTaskInformer {
+	return &migrationTaskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // UpgradeTasks returns a UpgradeTaskInformer.

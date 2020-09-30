@@ -19,11 +19,12 @@ package backupcontroller
 import (
 	"fmt"
 
-	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -41,29 +42,29 @@ func (c *BackupController) syncHandler(key string, operation common.QueueOperati
 	if bkp == nil {
 		return fmt.Errorf("cannot retrieve CStorBackup %q", key)
 	}
-	if IsDoneStatus(bkp) || IsFailedStatus(bkp) {
+	if bkp.IsSucceeded() || bkp.IsFailed() {
 		return nil
 	}
 
 	status, err := c.eventHandler(operation, bkp)
 	if err != nil {
 		klog.Errorf(err.Error())
-		bkp.Status = apis.BKPCStorStatusFailed
+		bkp.Status = cstorapis.BKPCStorStatusFailed
 	} else {
-		bkp.Status = apis.CStorBackupStatus(status)
+		bkp.Status = cstorapis.CStorBackupStatus(status)
 	}
 	if status == "" {
 		return nil
 	}
 
-	nbkp, err := c.clientset.OpenebsV1alpha1().CStorBackups(bkp.Namespace).Get(bkp.Name, metav1.GetOptions{})
+	nbkp, err := c.clientset.CstorV1().CStorBackups(bkp.Namespace).Get(bkp.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	nbkp.Status = bkp.Status
 
-	_, err = c.clientset.OpenebsV1alpha1().CStorBackups(nbkp.Namespace).Update(nbkp)
+	_, err = c.clientset.CstorV1().CStorBackups(nbkp.Namespace).Update(nbkp)
 	if err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func (c *BackupController) syncHandler(key string, operation common.QueueOperati
 }
 
 // eventHandler will execute a function according to a given operation
-func (c *BackupController) eventHandler(operation common.QueueOperation, bkp *apis.CStorBackup) (string, error) {
+func (c *BackupController) eventHandler(operation common.QueueOperation, bkp *cstorapis.CStorBackup) (string, error) {
 	klog.Infof("%s operation on Backup %s", operation, bkp.Name)
 	switch operation {
 	case common.QOpAdd:
@@ -85,24 +86,24 @@ func (c *BackupController) eventHandler(operation common.QueueOperation, bkp *ap
 	case common.QOpSync:
 		return c.syncEventHandler(bkp)
 	}
-	return string(apis.BKPCStorStatusInvalid), nil
+	return string(cstorapis.BKPCStorStatusInvalid), nil
 }
 
 // addEventHandler will change the state of backup to Init state.
-func (c *BackupController) addEventHandler(bkp *apis.CStorBackup) (string, error) {
-	if !IsPendingStatus(bkp) {
-		return string(apis.BKPCStorStatusInvalid), nil
+func (c *BackupController) addEventHandler(bkp *cstorapis.CStorBackup) (string, error) {
+	if !bkp.IsPending() {
+		return string(cstorapis.BKPCStorStatusInvalid), nil
 	}
 	c.recorder.Event(bkp, corev1.EventTypeNormal, "Update", "initilized backup process")
-	return string(apis.BKPCStorStatusInit), nil
+	return string(cstorapis.BKPCStorStatusInit), nil
 }
 
 // syncEventHandler will perform the backup if a given backup is in init state
-func (c *BackupController) syncEventHandler(bkp *apis.CStorBackup) (string, error) {
+func (c *BackupController) syncEventHandler(bkp *cstorapis.CStorBackup) (string, error) {
 	// If the backup is in init state then only we will complete the backup
-	if IsInitStatus(bkp) {
-		bkp.Status = apis.BKPCStorStatusInProgress
-		_, err := c.clientset.OpenebsV1alpha1().CStorBackups(bkp.Namespace).Update(bkp)
+	if bkp.IsInInit() {
+		bkp.Status = cstorapis.BKPCStorStatusInProgress
+		_, err := c.clientset.CstorV1().CStorBackups(bkp.Namespace).Update(bkp)
 		if err != nil {
 			klog.Errorf("Failed to update backup:%s status : %v", bkp.Name, err.Error())
 			return "", err
@@ -111,22 +112,22 @@ func (c *BackupController) syncEventHandler(bkp *apis.CStorBackup) (string, erro
 		err = volumereplica.CreateVolumeBackup(bkp)
 		if err != nil {
 			c.recorder.Eventf(bkp, corev1.EventTypeWarning, "Backup", "failed to create backup error: %s", err.Error())
-			return string(apis.BKPCStorStatusFailed), err
+			return string(cstorapis.BKPCStorStatusFailed), err
 		}
 
 		c.recorder.Event(bkp, corev1.EventTypeNormal, "Backup", "backup creation is successful")
 		klog.Infof("backup creation successful: %v, %v", bkp.ObjectMeta.Name, string(bkp.GetUID()))
 		err = c.updateCStorCompletedBackup(bkp)
 		if err != nil {
-			return string(apis.BKPCStorStatusFailed), err
+			return string(cstorapis.BKPCStorStatusFailed), err
 		}
-		return string(apis.BKPCStorStatusDone), nil
+		return string(cstorapis.BKPCStorStatusDone), nil
 	}
 	return "", nil
 }
 
 // getCStorBackupResource returns a backup object corresponding to the resource key
-func (c *BackupController) getCStorBackupResource(key string) (*apis.CStorBackup, error) {
+func (c *BackupController) getCStorBackupResource(key string) (*cstorapis.CStorBackup, error) {
 	// Convert the key(namespace/name) string into a distinct name
 	klog.V(1).Infof("Finding backup for key:%s", key)
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
@@ -135,7 +136,7 @@ func (c *BackupController) getCStorBackupResource(key string) (*apis.CStorBackup
 		return nil, nil
 	}
 
-	bkp, err := c.clientset.OpenebsV1alpha1().CStorBackups(ns).Get(name, metav1.GetOptions{})
+	bkp, err := c.clientset.CstorV1().CStorBackups(ns).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			runtime.HandleError(fmt.Errorf("bkp '%s' in work queue no longer exists", key))
@@ -146,48 +147,8 @@ func (c *BackupController) getCStorBackupResource(key string) (*apis.CStorBackup
 	return bkp, nil
 }
 
-// IsPendingStatus is to check if the backup is in a pending state.
-func IsPendingStatus(bkp *apis.CStorBackup) bool {
-	if string(bkp.Status) == string(apis.BKPCStorStatusPending) {
-		return true
-	}
-	return false
-}
-
-// IsInProgressStatus is to check if the backup is in in-progress state.
-func IsInProgressStatus(bkp *apis.CStorBackup) bool {
-	if string(bkp.Status) == string(apis.BKPCStorStatusInProgress) {
-		return true
-	}
-	return false
-}
-
-// IsInitStatus is to check if the backup is in init state.
-func IsInitStatus(bkp *apis.CStorBackup) bool {
-	if string(bkp.Status) == string(apis.BKPCStorStatusInit) {
-		return true
-	}
-	return false
-}
-
-// IsDoneStatus is to check if the backup is completed or not
-func IsDoneStatus(bkp *apis.CStorBackup) bool {
-	if string(bkp.Status) == string(apis.BKPCStorStatusDone) {
-		return true
-	}
-	return false
-}
-
-// IsFailedStatus is to check if the backup is failed or not
-func IsFailedStatus(bkp *apis.CStorBackup) bool {
-	if string(bkp.Status) == string(apis.BKPCStorStatusFailed) {
-		return true
-	}
-	return false
-}
-
 // IsDestroyEvent is to check if the call is for backup destroy.
-func IsDestroyEvent(bkp *apis.CStorBackup) bool {
+func IsDestroyEvent(bkp *cstorapis.CStorBackup) bool {
 	if bkp.ObjectMeta.DeletionTimestamp != nil {
 		return true
 	}
@@ -200,20 +161,45 @@ func IsDestroyEvent(bkp *apis.CStorBackup) bool {
 // b-0 and b-1 respectively then CStorCompletedBackups for the schedule `b` will have following information :
 //	CStorCompletedBackups.Spec.PrevSnapName =  b-1
 //  CStorCompletedBackups.Spec.SnapName = b-0
-func (c *BackupController) updateCStorCompletedBackup(bkp *apis.CStorBackup) error {
+func (c *BackupController) updateCStorCompletedBackup(bkp *cstorapis.CStorBackup) error {
 	lastbkpname := bkp.Spec.BackupName + "-" + bkp.Spec.VolumeName
-	bkplast, err := c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Get(lastbkpname, metav1.GetOptions{})
-	if err != nil {
-		klog.Errorf("Failed to get last completed backup for %s vol:%v", bkp.Spec.BackupName, bkp.Spec.VolumeName)
+
+	// There can be cases where only few pools of CSPC is upgraded but not all
+	// cstor pools. In such cases if backup is for scheduled backup then and completed
+	// backup belongs to the pool that supports v1alpha1 then we have to update v1alpha1
+	// completed backup resource
+	completedBackup, err := c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Get(lastbkpname, metav1.GetOptions{})
+	if err != nil && !k8serror.IsNotFound(err) {
+		klog.Errorf("failed to get completed backup for %s vol: %v error: %v", bkp.Spec.BackupName, bkp.Spec.VolumeName, err)
+	}
+	// Update v1alpha1 backup resource if exist
+	if err == nil {
+		// SnapName store the name of 2nd last backed up snapshot
+		completedBackup.Spec.SnapName = completedBackup.Spec.PrevSnapName
+
+		// PrevSnapName store the name of last backed up snapshot<Paste>
+		completedBackup.Spec.PrevSnapName = bkp.Spec.SnapName
+
+		_, err = c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Update(completedBackup)
+		if err != nil {
+			klog.Errorf("Failed to update lastbackup for %s", completedBackup.Name)
+			return err
+		}
 		return nil
 	}
 
-	// SnapName store the name of 2nd last backed up snapshot
-	bkplast.Spec.SnapName = bkplast.Spec.PrevSnapName
+	bkplast, err := c.clientset.CstorV1().CStorCompletedBackups(bkp.Namespace).Get(lastbkpname, metav1.GetOptions{})
+	if err != nil {
+		klog.Errorf("Failed to get last completed backup for %s vol:%v error: %v", bkp.Spec.BackupName, bkp.Spec.VolumeName, err)
+		return nil
+	}
 
-	// PrevSnapName store the name of last backed up snapshot
-	bkplast.Spec.PrevSnapName = bkp.Spec.SnapName
-	_, err = c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Update(bkplast)
+	// SecondLastSnapName store the name of 2nd last backed up snapshot
+	bkplast.Spec.SecondLastSnapName = bkplast.Spec.LastSnapName
+
+	// LastSnapName store the name of last backed up snapshot
+	bkplast.Spec.LastSnapName = bkp.Spec.SnapName
+	_, err = c.clientset.CstorV1().CStorCompletedBackups(bkp.Namespace).Update(bkplast)
 	if err != nil {
 		klog.Errorf("Failed to update lastbackup for %s", bkplast.Name)
 		return err

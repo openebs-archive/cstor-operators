@@ -31,6 +31,7 @@ type OpenebsV1alpha1Interface interface {
 	CStorBackupsGetter
 	CStorCompletedBackupsGetter
 	CStorRestoresGetter
+	MigrationTasksGetter
 	UpgradeTasksGetter
 }
 
@@ -57,6 +58,10 @@ func (c *OpenebsV1alpha1Client) CStorCompletedBackups(namespace string) CStorCom
 
 func (c *OpenebsV1alpha1Client) CStorRestores(namespace string) CStorRestoreInterface {
 	return newCStorRestores(c, namespace)
+}
+
+func (c *OpenebsV1alpha1Client) MigrationTasks(namespace string) MigrationTaskInterface {
+	return newMigrationTasks(c, namespace)
 }
 
 func (c *OpenebsV1alpha1Client) UpgradeTasks(namespace string) UpgradeTaskInterface {

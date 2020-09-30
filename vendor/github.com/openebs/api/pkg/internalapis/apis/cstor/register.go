@@ -50,6 +50,12 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CStorVolumeConfigList{},
 		&CStorVolumePolicy{},
 		&CStorVolumePolicyList{},
+		&CStorBackup{},
+		&CStorBackupList{},
+		&CStorCompletedBackup{},
+		&CStorCompletedBackupList{},
+		&CStorRestore{},
+		&CStorRestoreList{},
 	)
 	return nil
 }

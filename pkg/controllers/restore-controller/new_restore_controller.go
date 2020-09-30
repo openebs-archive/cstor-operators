@@ -17,8 +17,9 @@ limitations under the License.
 package restorecontroller
 
 import (
-	"github.com/openebs/api/pkg/apis/types"
 	"os"
+
+	"github.com/openebs/api/pkg/apis/types"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
@@ -72,7 +73,7 @@ func NewCStorRestoreController(
 	cStorInformerFactory informers.SharedInformerFactory) *RestoreController {
 
 	// obtain references to shared index informers for the CStorRestore resources.
-	CStorRestoreInformer := cStorInformerFactory.Openebs().V1alpha1().CStorRestores()
+	CStorRestoreInformer := cStorInformerFactory.Cstor().V1().CStorRestores()
 
 	err := openebsScheme.AddToScheme(scheme.Scheme)
 	if err != nil {
@@ -116,7 +117,7 @@ func NewCStorRestoreController(
 			// Note: AddFunc is called when a new object comes into etcd
 			// Note : In case controller reboots and existing object in etcd can cause delivery of
 			// add event when the controller comes again. Be careful in this part and handle accordingly.
-			rst := obj.(*apis.CStorRestore)
+			rst := obj.(*cstorapis.CStorRestore)
 
 			if !IsRightCStorPoolMgmt(rst) {
 				return
@@ -129,8 +130,8 @@ func NewCStorRestoreController(
 			// 1. When object is updated/patched i.e. Resource version of object changes.
 			// 2. When object is deleted i.e. the deletion timestamp of object is set.
 			// 3. After every resync interval.
-			newrst := newVar.(*apis.CStorRestore)
-			oldrst := oldVar.(*apis.CStorRestore)
+			newrst := newVar.(*cstorapis.CStorRestore)
+			oldrst := oldVar.(*cstorapis.CStorRestore)
 
 			if !IsRightCStorPoolMgmt(newrst) {
 				return
@@ -139,7 +140,7 @@ func NewCStorRestoreController(
 			controller.handleRSTUpdateEvent(oldrst, newrst, &q)
 		},
 		DeleteFunc: func(obj interface{}) {
-			rst := obj.(*apis.CStorRestore)
+			rst := obj.(*cstorapis.CStorRestore)
 			if !IsRightCStorPoolMgmt(rst) {
 				return
 			}
@@ -153,7 +154,7 @@ func NewCStorRestoreController(
 // enqueueCStorRestore takes a CStorRestore resource and converts it into a namespace/name
 // string which is then put onto the work queue. This method should *not* be
 // passed resources of any type other than CStorRestore.
-func (c *RestoreController) enqueueCStorRestore(obj *apis.CStorRestore, q common.QueueLoad) {
+func (c *RestoreController) enqueueCStorRestore(obj *cstorapis.CStorRestore, q common.QueueLoad) {
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
@@ -165,14 +166,14 @@ func (c *RestoreController) enqueueCStorRestore(obj *apis.CStorRestore, q common
 }
 
 // handleRSTAddEvent is to handle add operation of restore controller
-func (c *RestoreController) handleRSTAddEvent(rst *apis.CStorRestore, q *common.QueueLoad) {
+func (c *RestoreController) handleRSTAddEvent(rst *cstorapis.CStorRestore, q *common.QueueLoad) {
 	q.Operation = common.QOpAdd
 	klog.Infof("cStorRestore event added: %v, %v", rst.ObjectMeta.Name, string(rst.ObjectMeta.UID))
 	c.recorder.Event(rst, corev1.EventTypeNormal, string(common.SuccessSynced), string(common.MessageCreateSynced))
 	c.enqueueCStorRestore(rst, *q)
 }
 
-func (c *RestoreController) handleRSTUpdateEvent(oldrst, newrst *apis.CStorRestore, q *common.QueueLoad) {
+func (c *RestoreController) handleRSTUpdateEvent(oldrst, newrst *cstorapis.CStorRestore, q *common.QueueLoad) {
 	klog.V(2).Infof("Received Update for restore:%s", oldrst.ObjectMeta.Name)
 
 	// If there is no change in status then we will ignore the event
@@ -180,7 +181,7 @@ func (c *RestoreController) handleRSTUpdateEvent(oldrst, newrst *apis.CStorResto
 		return
 	}
 
-	if IsDoneStatus(newrst) || IsFailedStatus(newrst) {
+	if newrst.IsSucceeded() || newrst.IsFailed() {
 		return
 	}
 
@@ -204,27 +205,27 @@ func (c *RestoreController) cleanupOldRestore(clientset clientset.Interface) {
 	rstlistop := metav1.ListOptions{
 		LabelSelector: rstlabel,
 	}
-	rstlist, err := clientset.OpenebsV1alpha1().CStorRestores(metav1.NamespaceAll).List(rstlistop)
+	rstlist, err := clientset.CstorV1().CStorRestores(metav1.NamespaceAll).List(rstlistop)
 	if err != nil {
 		return
 	}
 
 	for _, rst := range rstlist.Items {
 		switch rst.Status {
-		case apis.RSTCStorStatusDone:
+		case cstorapis.RSTCStorStatusDone:
 			continue
 		default:
 			//Set restore status as failed
-			updateRestoreStatus(clientset, rst, apis.RSTCStorStatusFailed)
+			updateRestoreStatus(clientset, rst, cstorapis.RSTCStorStatusFailed)
 		}
 	}
 }
 
 // updateRestoreStatus will update the restore status to given status
-func updateRestoreStatus(clientset clientset.Interface, rst apis.CStorRestore, status apis.CStorRestoreStatus) {
+func updateRestoreStatus(clientset clientset.Interface, rst cstorapis.CStorRestore, status cstorapis.CStorRestoreStatus) {
 	rst.Status = status
 
-	_, err := clientset.OpenebsV1alpha1().CStorRestores(rst.Namespace).Update(&rst)
+	_, err := clientset.CstorV1().CStorRestores(rst.Namespace).Update(&rst)
 	if err != nil {
 		klog.Errorf("Failed to update restore(%s) status(%s)", status, rst.Name)
 		return

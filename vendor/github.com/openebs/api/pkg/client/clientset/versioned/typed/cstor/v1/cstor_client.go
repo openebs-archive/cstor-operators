@@ -26,8 +26,11 @@ import (
 
 type CstorV1Interface interface {
 	RESTClient() rest.Interface
+	CStorBackupsGetter
+	CStorCompletedBackupsGetter
 	CStorPoolClustersGetter
 	CStorPoolInstancesGetter
+	CStorRestoresGetter
 	CStorVolumesGetter
 	CStorVolumeConfigsGetter
 	CStorVolumePoliciesGetter
@@ -39,12 +42,24 @@ type CstorV1Client struct {
 	restClient rest.Interface
 }
 
+func (c *CstorV1Client) CStorBackups(namespace string) CStorBackupInterface {
+	return newCStorBackups(c, namespace)
+}
+
+func (c *CstorV1Client) CStorCompletedBackups(namespace string) CStorCompletedBackupInterface {
+	return newCStorCompletedBackups(c, namespace)
+}
+
 func (c *CstorV1Client) CStorPoolClusters(namespace string) CStorPoolClusterInterface {
 	return newCStorPoolClusters(c, namespace)
 }
 
 func (c *CstorV1Client) CStorPoolInstances(namespace string) CStorPoolInstanceInterface {
 	return newCStorPoolInstances(c, namespace)
+}
+
+func (c *CstorV1Client) CStorRestores(namespace string) CStorRestoreInterface {
+	return newCStorRestores(c, namespace)
 }
 
 func (c *CstorV1Client) CStorVolumes(namespace string) CStorVolumeInterface {

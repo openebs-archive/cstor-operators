@@ -108,7 +108,7 @@ func (c *RestoreController) addEventHandler(rst *cstorapis.CStorRestore) (string
 // syncEventHandler will perform the restore if a given restore is in init state
 func (c *RestoreController) syncEventHandler(rst *cstorapis.CStorRestore) (string, error) {
 	// If the restore is in init state then only we will complete the restore
-	if rst.IsInitilized() {
+	if rst.IsInInit() {
 		rst.Status = cstorapis.RSTCStorStatusInProgress
 		_, err := c.clientset.CstorV1().CStorRestores(rst.Namespace).Update(rst)
 		if err != nil {

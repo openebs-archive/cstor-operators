@@ -24,6 +24,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -100,7 +101,7 @@ func (c *BackupController) addEventHandler(bkp *cstorapis.CStorBackup) (string, 
 // syncEventHandler will perform the backup if a given backup is in init state
 func (c *BackupController) syncEventHandler(bkp *cstorapis.CStorBackup) (string, error) {
 	// If the backup is in init state then only we will complete the backup
-	if bkp.IsInitilized() {
+	if bkp.IsInInit() {
 		bkp.Status = cstorapis.BKPCStorStatusInProgress
 		_, err := c.clientset.CstorV1().CStorBackups(bkp.Namespace).Update(bkp)
 		if err != nil {
@@ -162,9 +163,34 @@ func IsDestroyEvent(bkp *cstorapis.CStorBackup) bool {
 //  CStorCompletedBackups.Spec.SnapName = b-0
 func (c *BackupController) updateCStorCompletedBackup(bkp *cstorapis.CStorBackup) error {
 	lastbkpname := bkp.Spec.BackupName + "-" + bkp.Spec.VolumeName
+
+	// There can be cases where only few pools of CSPC is upgraded but not all
+	// cstor pools. In such cases if backup is for scheduled backup then and completed
+	// backup belongs to the pool that supports v1alpha1 then we have to update v1alpha1
+	// completed backup resource
+	completedBackup, err := c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Get(lastbkpname, metav1.GetOptions{})
+	if err != nil && !k8serror.IsNotFound(err) {
+		klog.Errorf("failed to get completed backup for %s vol: %v error: %v", bkp.Spec.BackupName, bkp.Spec.VolumeName, err)
+	}
+	// Update v1alpha1 backup resource if exist
+	if err == nil {
+		// SnapName store the name of 2nd last backed up snapshot
+		completedBackup.Spec.SnapName = completedBackup.Spec.PrevSnapName
+
+		// PrevSnapName store the name of last backed up snapshot<Paste>
+		completedBackup.Spec.PrevSnapName = bkp.Spec.SnapName
+
+		_, err = c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Update(completedBackup)
+		if err != nil {
+			klog.Errorf("Failed to update lastbackup for %s", completedBackup.Name)
+			return err
+		}
+		return nil
+	}
+
 	bkplast, err := c.clientset.CstorV1().CStorCompletedBackups(bkp.Namespace).Get(lastbkpname, metav1.GetOptions{})
 	if err != nil {
-		klog.Errorf("Failed to get last completed backup for %s vol:%v", bkp.Spec.BackupName, bkp.Spec.VolumeName)
+		klog.Errorf("Failed to get last completed backup for %s vol:%v error: %v", bkp.Spec.BackupName, bkp.Spec.VolumeName, err)
 		return nil
 	}
 

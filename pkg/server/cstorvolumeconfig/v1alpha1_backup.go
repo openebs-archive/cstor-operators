@@ -132,11 +132,14 @@ func (backupWrapper *v1Alpha1BackupWrapper) getBackupObject() interface{} {
 func (backupWrapper *v1Alpha1BackupWrapper) getOrCreateLastBackupSnap() (string, error) {
 	lastbkpName := backupWrapper.backup.Spec.BackupName + "-" + backupWrapper.backup.Spec.VolumeName
 
-	// NOTE: When only few pools of CStorPoolCluster is upgrade and if the backup request is scheduled
+	// When only few pools of CStorPoolCluster is upgrade and if the backup request is scheduled
 	// backup then we need to check for v1 version of completed backup to get last snapshot name
 	completedBackup, err := backupWrapper.clientset.CstorV1().
 		CStorCompletedBackups(backupWrapper.backup.Namespace).
 		Get(lastbkpName, metav1.GetOptions{})
+	if err != nil && !k8serror.IsNotFound(err) {
+		return "", errors.Wrapf(err, "failed to get v1 completed backup %s", lastbkpName)
+	}
 	if err == nil {
 		return completedBackup.Spec.LastSnapName, nil
 	}

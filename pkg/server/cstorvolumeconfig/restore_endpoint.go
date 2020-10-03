@@ -24,11 +24,12 @@ import (
 	"strings"
 	"time"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	version "github.com/hashicorp/go-version"
+	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	cstortypes "github.com/openebs/api/pkg/apis/types"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	version "github.com/openebs/cstor-operators/pkg/version"
+	cstorversion "github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -75,13 +76,13 @@ func (s *HTTPServer) restoreV1alpha1SpecificRequest(
 // Create is http handler which handles restore-create request
 func (rOps *restoreAPIOps) create() (interface{}, error) {
 	var err error
-	restore := &openebsapis.CStorRestore{}
+	restore := &cstorapis.CStorRestore{}
 	err = decodeBody(rOps.req, restore)
 	if err != nil {
 		return nil, err
 	}
 
-	err = restoreCreateValidationRequest(restore)
+	err = validateCreateRestoreRequest(restore)
 	if err != nil {
 		return nil, CodedError(400, fmt.Sprintf("restore create validation failed error: {%s}", err.Error()))
 	}
@@ -96,23 +97,21 @@ func (rOps *restoreAPIOps) create() (interface{}, error) {
 		return getISCSIPersistentVolumeSource(restore.Spec.VolumeName, rOps.namespace, rOps.clientset)
 	}
 
-	return createRestoreResource(rOps.clientset, restore)
+	return createRestore(rOps.clientset, restore)
 }
 
-// get is http handler which handles backup get request
+// get is http handler which handles restore get request
 func (rOps *restoreAPIOps) get() (interface{}, error) {
-	var err error
-	var rstatus openebsapis.CStorRestoreStatus
 	var resp []byte
 
-	rst := &openebsapis.CStorRestore{}
+	rst := &cstorapis.CStorRestore{}
 
-	err = decodeBody(rOps.req, rst)
+	err := decodeBody(rOps.req, rst)
 	if err != nil {
 		return nil, err
 	}
 
-	// backup name is expected
+	// restore name is expected
 	if len(strings.TrimSpace(rst.Spec.RestoreName)) == 0 {
 		return nil, CodedError(400, fmt.Sprintf("Failed to get restore: missing restore name "))
 	}
@@ -127,7 +126,7 @@ func (rOps *restoreAPIOps) get() (interface{}, error) {
 		return nil, CodedError(400, fmt.Sprintf("Failed to get restore '%v': missing volume name", rst.Spec.RestoreName))
 	}
 
-	rstatus, err = rOps.getRestoreStatus(rst)
+	rstatus, err := rOps.getRestoreStatus(rst)
 	if err != nil {
 		return nil, CodedError(400, fmt.Sprintf("Failed to fetch status '%v'", err))
 	}
@@ -145,8 +144,8 @@ func (rOps *restoreAPIOps) get() (interface{}, error) {
 }
 
 // createVolumeForRestore creates CVC object only if it is local restore request
-// else it will retun error if CVC is not in Bound state else nil will be returned
-func (rOps *restoreAPIOps) createVolumeForRestore(restoreObj *openebsapis.CStorRestore) error {
+// else retun error if CVC status is not in Bound state else nil will be returned
+func (rOps *restoreAPIOps) createVolumeForRestore(restoreObj *cstorapis.CStorRestore) error {
 
 	// If the request is to restore local backup then velero-plugin will not create PVC.
 	// So let's create CVC with annotation "openebs.io/created-through" which will be propagated
@@ -184,49 +183,43 @@ func (rOps *restoreAPIOps) createVolumeForRestore(restoreObj *openebsapis.CStorR
 }
 
 // getRestoreStatus returns the status of CStorRestore
-func (rOps *restoreAPIOps) getRestoreStatus(rst *openebsapis.CStorRestore) (openebsapis.CStorRestoreStatus, error) {
-	rstStatus := openebsapis.RSTCStorStatusEmpty
+func (rOps *restoreAPIOps) getRestoreStatus(rst *cstorapis.CStorRestore) (cstorapis.CStorRestoreStatus, error) {
+	rstStatus := cstorapis.RSTCStorStatusEmpty
 
 	listOptions := metav1.ListOptions{
 		LabelSelector: "openebs.io/restore=" + rst.Spec.RestoreName + "," +
 			cstortypes.PersistentVolumeLabelKey + "=" + rst.Spec.VolumeName,
 	}
+	// NOTE: CStorPoolInstances of same pool cluster may be in different versions
 
-	rlist, err := rOps.clientset.OpenebsV1alpha1().CStorRestores(rst.Namespace).List(listOptions)
-	if err != nil {
-		return openebsapis.RSTCStorStatusEmpty, CodedError(400, fmt.Sprintf("Failed to fetch restore error:%v", err))
+	// If v1alpha1 resource doesn't exist then listing resources will get NotFound error
+	v1Alpha1RestoreList, err := rOps.clientset.OpenebsV1alpha1().CStorRestores(rst.Namespace).List(listOptions)
+	if err != nil && !k8serror.IsNotFound(err) {
+		return cstorapis.RSTCStorStatusEmpty, CodedError(400, fmt.Sprintf("Failed to fetch restore error:%v", err))
 	}
 
-	for _, nr := range rlist.Items {
-		rstStatus = getCStorRestoreStatus(rOps.k8sclientset, nr)
+	v1RestoreList, err := rOps.clientset.CstorV1().CStorRestores(rst.Namespace).List(listOptions)
+	if err != nil && !k8serror.IsNotFound(err) {
+		return cstorapis.RSTCStorStatusEmpty, CodedError(400, fmt.Sprintf("Failed to fetch restore error:%v", err))
+	}
 
-		switch rstStatus {
-		case openebsapis.RSTCStorStatusInProgress:
-			rstStatus = openebsapis.RSTCStorStatusInProgress
-		case openebsapis.RSTCStorStatusFailed, openebsapis.RSTCStorStatusInvalid:
-			if nr.Status != rstStatus {
-				// Restore for given CVR may failed due to node failure or pool failure
-				// Let's update status for given CVR's restore to failed
-				updateRestoreStatus(rOps.clientset, nr, rstStatus)
-			}
-			rstStatus = openebsapis.RSTCStorStatusFailed
-		case openebsapis.RSTCStorStatusDone:
-			if rstStatus != openebsapis.RSTCStorStatusFailed {
-				rstStatus = openebsapis.RSTCStorStatusDone
-			}
+	// Get restore status of v1alpha1 CStorRestore objects
+	if len(v1Alpha1RestoreList.Items) != 0 {
+		rstStatus = cstorapis.CStorRestoreStatus(rOps.getV1Alpha1CStorRestoreStatus(v1Alpha1RestoreList))
+		if rstStatus == cstorapis.RSTCStorStatusInProgress {
+			return rstStatus, nil
 		}
+	}
 
-		klog.Infof("Restore:%v status is %v", nr.Name, nr.Status)
-
-		if rstStatus == openebsapis.RSTCStorStatusInProgress {
-			break
-		}
+	// Get restore status of v1 CStorRestore objects
+	if len(v1RestoreList.Items) != 0 {
+		rstStatus = rOps.getCStorRestoreStatus(v1RestoreList)
 	}
 	return rstStatus, nil
 }
 
-// createRestoreResource create restore CR for volume's CVR
-func createRestoreResource(openebsClient clientset.Interface, restoreObj *openebsapis.CStorRestore) (interface{}, error) {
+// createRestore create restore CR for volume's CVR
+func createRestore(openebsClient clientset.Interface, restoreObj *cstorapis.CStorRestore) (interface{}, error) {
 	// TODO: Need to check changes related to namespace
 	namespace := getOpenEBSNamespace()
 	//Get List of cvr's related to this pvc
@@ -237,61 +230,78 @@ func createRestoreResource(openebsClient clientset.Interface, restoreObj *openeb
 	if err != nil {
 		return nil, CodedError(500, err.Error())
 	}
+	if len(cvrList.Items) == 0 {
+		return nil, CodedError(500, fmt.Sprintf("CVRs doesn't exist for volume %s", restoreObj.Spec.VolumeName))
+	}
+	// Below flow:
+	// 1. Get CSPC and list all the CSPIs name with that CSPC.
+	// 2. Select CSPIs which has restore CVRs of this particular volume.
+	// 3. Get the pool version details from above selected CSPIs.
+	// 4. Based on the version of CSPI create supported version of restore objects.
+	cspiName := cvrList.Items[0].Labels[cstortypes.CStorPoolInstanceNameLabelKey]
+	lastIndex := strings.LastIndex(cspiName, "-")
+	cspcName := cspiName[:lastIndex]
+	cspiList, err := openebsClient.CstorV1().
+		CStorPoolInstances("").
+		List(metav1.ListOptions{
+			LabelSelector: cstortypes.CStorPoolClusterLabelKey + "=" + cspcName,
+		})
+	if err != nil {
+		return nil, CodedError(500, fmt.Sprintf("failed to list CSPIs of CSPC %s error: %v", cspcName, err))
+	}
 
+	cspiToCVRMap := make(map[string]string, len(cvrList.Items))
 	for _, cvr := range cvrList.Items {
-		restoreObj.Name = restoreObj.Spec.RestoreName + "-" + string(uuid.NewUUID())
-		oldrestoreObj, err := openebsClient.
-			OpenebsV1alpha1().
-			CStorRestores(restoreObj.Namespace).
-			Get(restoreObj.Name, metav1.GetOptions{})
-		if err != nil {
-			restoreObj.Status = openebsapis.RSTCStorStatusPending
-			restoreObj.ObjectMeta.Labels = map[string]string{
-				cstortypes.CStorPoolInstanceNameLabelKey: cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
-				cstortypes.CStorPoolInstanceUIDLabelKey:  cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceUIDLabelKey],
-				cstortypes.PersistentVolumeLabelKey:      cvr.ObjectMeta.Labels[cstortypes.PersistentVolumeLabelKey],
-				"openebs.io/restore":                     restoreObj.Spec.RestoreName,
-			}
+		cspiToCVRMap[cvr.Labels[cstortypes.CStorPoolInstanceNameLabelKey]] = cvr.Name
+	}
 
-			_, err = openebsClient.OpenebsV1alpha1().CStorRestores(restoreObj.Namespace).Create(restoreObj)
-			if err != nil {
-				klog.Errorf("Failed to create restore CR(volume:%s CSPI:%s) : error '%s'",
-					restoreObj.Spec.VolumeName, cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
-					err.Error())
-				return nil, CodedError(500, err.Error())
-			}
-			klog.Infof("Restore:%s created for volume %q CSPI: %s", restoreObj.Name,
-				restoreObj.Spec.VolumeName,
-				restoreObj.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey])
+	poolVersionMap := make(map[string]*version.Version, len(cvrList.Items))
+	for _, cspi := range cspiList.Items {
+		cspiVersion := cspi.VersionDetails.Status.Current
+		// Ignore pool which doesn't have restore CVRs
+		if _, ok := cspiToCVRMap[cspi.Name]; !ok {
+			continue
+		}
+		poolVersion, err := version.NewVersion(cspiVersion)
+		// If Current version is empty treat it as a ci
+		if err != nil && (cspiVersion != "" && !strings.Contains(cspiVersion, "dev")) {
+			return nil, CodedError(500,
+				fmt.Sprintf("failed to parse pool(%s) version %s error: %v", cspi.Name, cspi.VersionDetails.Status.Current, err))
+		}
+		poolVersionMap[cspi.Name] = poolVersion
+	}
+
+	v1Alpha1RestoreObj := getV1Alpha1RestoreFromV1(restoreObj)
+	for _, cvr := range cvrList.Items {
+		cspiName := cvr.GetLabels()[cstortypes.CStorPoolInstanceNameLabelKey]
+		poolVersion := poolVersionMap[cspiName]
+
+		if poolVersion != nil && poolVersion.LessThan(minV1SupportedVersion) {
+			err = buildAndCreateV1Alpha1Restore(openebsClient, v1Alpha1RestoreObj, cvr)
 		} else {
-			oldrestoreObj.Status = openebsapis.RSTCStorStatusPending
-			oldrestoreObj.Spec = restoreObj.Spec
-			_, err = openebsClient.OpenebsV1alpha1().CStorRestores(oldrestoreObj.Namespace).Update(oldrestoreObj)
-			if err != nil {
-				klog.Errorf("Failed to re-initialize old existing restore CR(volume:%s CSPI:%s) : error '%s'",
-					restoreObj.Spec.VolumeName, cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
-					err.Error())
-				return nil, CodedError(500, err.Error())
-			}
-			klog.Infof("Re-initialized old restore:%s  %q CSPI:%v", restoreObj.Name,
-				restoreObj.Spec.VolumeName,
-				restoreObj.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey])
+			err = buildAndCreateV1Restore(openebsClient, restoreObj, cvr)
+		}
+		if err != nil {
+			return nil, CodedError(500, fmt.Sprintf("failed to create restore for %s error: %v", restoreObj.Spec.VolumeName, err))
 		}
 	}
 	return getISCSIPersistentVolumeSource(restoreObj.Spec.VolumeName, namespace, openebsClient)
 }
 
-// updateRestoreStatus will update the restore status to given status
-func updateRestoreStatus(
-	clientset clientset.Interface,
-	rst openebsapis.CStorRestore,
-	status openebsapis.CStorRestoreStatus) {
-	rst.Status = status
-
-	_, err := clientset.OpenebsV1alpha1().CStorRestores(rst.Namespace).Update(&rst)
-	if err != nil {
-		klog.Errorf("Failed to update restore:%s with status:%v", rst.Name, status)
-		return
+func getV1Alpha1RestoreFromV1(restore *cstorapis.CStorRestore) *openebsapis.CStorRestore {
+	return &openebsapis.CStorRestore{
+		ObjectMeta: restore.ObjectMeta,
+		Spec: openebsapis.CStorRestoreSpec{
+			RestoreName:   restore.Spec.RestoreName,
+			VolumeName:    restore.Spec.VolumeName,
+			RestoreSrc:    restore.Spec.RestoreSrc,
+			MaxRetryCount: restore.Spec.MaxRetryCount,
+			RetryCount:    restore.Spec.RetryCount,
+			StorageClass:  restore.Spec.StorageClass,
+			Size:          restore.Spec.Size,
+			Local:         restore.Spec.Local,
+		},
+		Status: openebsapis.CStorRestoreStatus(restore.Status),
 	}
 }
 
@@ -303,7 +313,7 @@ func waitForCVCBoundState(cvcName, namespace string, clientset clientset.Interfa
 		if err != nil && !k8serror.IsNotFound(err) {
 			return err
 		}
-		if cvcObj.Status.Phase == cstor.CStorVolumeConfigPhaseBound {
+		if cvcObj.Status.Phase == cstorapis.CStorVolumeConfigPhaseBound {
 			// Which means all the CStorVolume related resources are created
 			return nil
 		}
@@ -313,9 +323,9 @@ func waitForCVCBoundState(cvcName, namespace string, clientset clientset.Interfa
 	return errors.Errorf("CVC %s in namespace %s is not in Bound status", cvcName, namespace)
 }
 
-// restoreCreateValidationRequest will validate the restore creation request and
+// ValidateCreateRestoreRequest will validate the restore creation request and
 // returns error if any validation failed
-func restoreCreateValidationRequest(restore *openebsapis.CStorRestore) error {
+func validateCreateRestoreRequest(restore *cstorapis.CStorRestore) error {
 	// namespace is expected
 	if !restore.Spec.Local && len(strings.TrimSpace(restore.Namespace)) == 0 {
 		return errors.Errorf("failed to create restore '%v': missing namespace", restore.Name)
@@ -364,12 +374,12 @@ func validateStorageClassParameters(scObj *storagev1.StorageClass) error {
 // buildCStorVolumeConfig build the CVC from StorageClass and restoreObject
 // NOTE: This function will be called only in case of local restore request
 func (rOps *restoreAPIOps) buildCStorVolumeConfig(
-	scObj *storagev1.StorageClass, restoreObj *openebsapis.CStorRestore) (*cstor.CStorVolumeConfig, error) {
+	scObj *storagev1.StorageClass, restoreObj *cstorapis.CStorRestore) (*cstorapis.CStorVolumeConfig, error) {
 	replicaCount, _ := strconv.Atoi(scObj.Parameters["replicaCount"])
 
 	// Build CStorVolumeConfig
 	// TODO: Convert all literals into constants and make as builder code
-	cvcObj := &cstor.CStorVolumeConfig{
+	cvcObj := &cstorapis.CStorVolumeConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      restoreObj.Spec.VolumeName,
 			Namespace: rOps.namespace,
@@ -383,8 +393,8 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 			},
 			Finalizers: []string{"cvc.openebs.io/finalizer"},
 		},
-		Spec: cstor.CStorVolumeConfigSpec{
-			Provision: cstor.VolumeProvision{
+		Spec: cstorapis.CStorVolumeConfigSpec{
+			Provision: cstorapis.VolumeProvision{
 				Capacity: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): restoreObj.Spec.Size,
 				},
@@ -397,14 +407,14 @@ func (rOps *restoreAPIOps) buildCStorVolumeConfig(
 			// CStorVolumeSource contains the source volumeName@snapShotname
 			CStorVolumeSource: restoreObj.Spec.RestoreSrc + "@" + restoreObj.Spec.RestoreName,
 		},
-		VersionDetails: cstor.VersionDetails{
-			Status: cstor.VersionStatus{
-				Current: version.Current(),
+		VersionDetails: cstorapis.VersionDetails{
+			Status: cstorapis.VersionStatus{
+				Current: cstorversion.Current(),
 			},
-			Desired: version.Current(),
+			Desired: cstorversion.Current(),
 		},
-		Status: cstor.CStorVolumeConfigStatus{
-			Phase: cstor.CStorVolumeConfigPhasePending,
+		Status: cstorapis.CStorVolumeConfigStatus{
+			Phase: cstorapis.CStorVolumeConfigPhasePending,
 		},
 	}
 
@@ -431,24 +441,130 @@ func getISCSIPersistentVolumeSource(
 	return iscsiPVSrc, nil
 }
 
-// getCStorRestoreStatus returns the status of Restore. It returns
-// restore status as "Failed" if pool manager (or) pool manager pod
-// node is down else it will return same status whatever restore.Status
-// contains
-func getCStorRestoreStatus(k8sClient kubernetes.Interface,
-	rst openebsapis.CStorRestore) openebsapis.CStorRestoreStatus {
+// isPoolManagerDown returns true if either pool manager pod/
+// pool manager node went down
+func isPoolManagerDown(k8sClient kubernetes.Interface,
+	poolName, namespace string) bool {
+
+	// check if node is running or not
+	bkpNodeDown := checkIfPoolManagerNodeDown(k8sClient, poolName, namespace)
+	// check if cstor-pool-mgmt container is running or not
+	bkpPodDown := checkIfPoolManagerDown(k8sClient, poolName, namespace)
+
+	if bkpNodeDown || bkpPodDown {
+		return true
+	}
+	return false
+}
+
+func buildAndCreateV1Alpha1Restore(
+	openebsClient clientset.Interface,
+	restoreObj *openebsapis.CStorRestore,
+	cvr cstorapis.CStorVolumeReplica,
+) error {
+	restoreObj.Name = restoreObj.Spec.RestoreName + "-" + string(uuid.NewUUID())
+	_, err := openebsClient.
+		OpenebsV1alpha1().
+		CStorRestores(restoreObj.Namespace).
+		Get(restoreObj.Name, metav1.GetOptions{})
+	if err != nil {
+		restoreObj.Status = openebsapis.RSTCStorStatusPending
+		restoreObj.ObjectMeta.Labels = map[string]string{
+			cstortypes.CStorPoolInstanceNameLabelKey: cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
+			cstortypes.CStorPoolInstanceUIDLabelKey:  cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceUIDLabelKey],
+			cstortypes.PersistentVolumeLabelKey:      cvr.ObjectMeta.Labels[cstortypes.PersistentVolumeLabelKey],
+			"openebs.io/restore":                     restoreObj.Spec.RestoreName,
+		}
+
+		_, err = openebsClient.OpenebsV1alpha1().CStorRestores(restoreObj.Namespace).Create(restoreObj)
+		if err != nil {
+			klog.Errorf("Failed to create restore CR(volume:%s CSPI:%s) : error '%s'",
+				restoreObj.Spec.VolumeName, cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
+				err.Error())
+			return err
+		}
+		klog.Infof("V1Alpha1 Restore:%s created for volume %q CSPI: %s", restoreObj.Name,
+			restoreObj.Spec.VolumeName,
+			restoreObj.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey])
+	}
+	return nil
+}
+
+func buildAndCreateV1Restore(
+	openebsClient clientset.Interface,
+	restoreObj *cstorapis.CStorRestore,
+	cvr cstorapis.CStorVolumeReplica,
+) error {
+	cspiName := cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
+	restoreObj.Name = restoreObj.Spec.RestoreName + "-" + string(uuid.NewUUID())
+	_, err := openebsClient.
+		CstorV1().
+		CStorRestores(restoreObj.Namespace).
+		Get(restoreObj.Name, metav1.GetOptions{})
+	if err != nil {
+		restoreObj.Status = cstorapis.RSTCStorStatusPending
+		restoreObj.ObjectMeta.Labels = map[string]string{
+			cstortypes.CStorPoolInstanceNameLabelKey: cspiName,
+			cstortypes.CStorPoolInstanceUIDLabelKey:  cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceUIDLabelKey],
+			cstortypes.PersistentVolumeLabelKey:      cvr.ObjectMeta.Labels[cstortypes.PersistentVolumeLabelKey],
+			"openebs.io/restore":                     restoreObj.Spec.RestoreName,
+		}
+
+		_, err = openebsClient.CstorV1().CStorRestores(restoreObj.Namespace).Create(restoreObj)
+		if err != nil {
+			klog.Errorf("Failed to create restore CR(volume:%s CSPI:%s) : error '%s'",
+				restoreObj.Spec.VolumeName, cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
+				err.Error())
+			return err
+		}
+		klog.Infof("Restore:%s created for volume %q CSPI: %s", restoreObj.Name,
+			restoreObj.Spec.VolumeName,
+			restoreObj.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey])
+	}
+	return nil
+}
+
+func (rOps *restoreAPIOps) getCStorRestoreStatus(
+	restoreList *cstorapis.CStorRestoreList) cstorapis.CStorRestoreStatus {
+	rstStatus := cstorapis.RSTCStorStatusEmpty
 	namespace := getOpenEBSNamespace()
 
-	if rst.Status != openebsapis.RSTCStorStatusDone && rst.Status != openebsapis.RSTCStorStatusFailed {
-		// check if node is running or not
-		bkpNodeDown := checkIfPoolManagerNodeDown(k8sClient, rst.Labels[cstortypes.CStorPoolInstanceNameLabelKey], namespace)
-		// check if cstor-pool-mgmt container is running or not
-		bkpPodDown := checkIfPoolManagerDown(k8sClient, rst.Labels[cstortypes.CStorPoolInstanceNameLabelKey], namespace)
+	for _, restore := range restoreList.Items {
+		rstStatus = restore.Status
+		if restore.Status != cstorapis.RSTCStorStatusDone &&
+			restore.Status != cstorapis.RSTCStorStatusFailed {
+			poolName := restore.Labels[cstortypes.CStorPoolInstanceLabelKey]
+			isPoolDown := isPoolManagerDown(rOps.k8sclientset, poolName, namespace)
+			if isPoolDown {
+				rstStatus = cstorapis.RSTCStorStatusFailed
+			}
+		}
 
-		if bkpNodeDown || bkpPodDown {
-			// Backup is stalled, assume status as failed
-			return openebsapis.RSTCStorStatusFailed
+		switch rstStatus {
+		case cstorapis.RSTCStorStatusInProgress:
+			rstStatus = cstorapis.RSTCStorStatusInProgress
+		case cstorapis.RSTCStorStatusFailed, cstorapis.RSTCStorStatusInvalid:
+			if restore.Status != rstStatus {
+				// Restore for given CVR may failed due to node failure or pool failure
+				// Let's update status for given CVR's restore to failed
+				restore.Status = rstStatus
+				_, err := rOps.clientset.CstorV1().CStorRestores(restore.Namespace).Update(&restore)
+				if err != nil {
+					klog.Errorf("Failed to update restore:%s with status:%v", restore.Name, rstStatus)
+				}
+				rstStatus = cstorapis.RSTCStorStatusFailed
+			}
+		case cstorapis.RSTCStorStatusDone:
+			if rstStatus != cstorapis.RSTCStorStatusFailed {
+				rstStatus = cstorapis.RSTCStorStatusDone
+			}
+		}
+
+		klog.Infof("Restore:%v status is %v", restore.Name, restore.Status)
+
+		if rstStatus == cstorapis.RSTCStorStatusInProgress {
+			break
 		}
 	}
-	return rst.Status
+	return rstStatus
 }

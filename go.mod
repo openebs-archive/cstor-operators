@@ -6,6 +6,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
+	github.com/hashicorp/go-version v1.2.1
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0

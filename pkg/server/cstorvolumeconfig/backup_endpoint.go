@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	version "github.com/hashicorp/go-version"
 	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	cstortypes "github.com/openebs/api/pkg/apis/types"
@@ -30,7 +31,6 @@ import (
 	"github.com/openebs/api/pkg/util"
 	snapshot "github.com/openebs/cstor-operators/pkg/snapshot"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -51,7 +51,19 @@ type backupAPIOps struct {
 var (
 	// openebsNamespace is the namespace where openebs is deployed
 	openebsNamespace string
+	// minV1SupportedVersion is the minimum OpenEBS version required to perfrom
+	// CRUD operations on v1 cStor backup and restore resources
+	minV1SupportedVersion *version.Version
 )
+
+func init() {
+	var err error
+	// 2.2.0 is minimum version that supports v1 version of cStor and backup
+	minV1SupportedVersion, err = version.NewVersion("2.2.0")
+	if err != nil {
+		klog.Fatalf("failed to parse 2.2.0 version error: %v", err)
+	}
+}
 
 /***************************REST ENDPOINTS**********************************************************************************************
  * curl on CVC service with port 5757 then it will create backup related resources. We can use below example to execute POST, GET and DELETE methods
@@ -94,7 +106,7 @@ func (s *HTTPServer) backupV1alpha1SpecificRequest(resp http.ResponseWriter, req
 
 // Create is http handler which handles backup create request
 func (bOps *backupAPIOps) create() (interface{}, error) {
-	backup := &openebsapis.CStorBackup{}
+	backup := &cstorapis.CStorBackup{}
 
 	err := decodeBody(bOps.req, backup)
 	if err != nil {
@@ -130,32 +142,41 @@ func (bOps *backupAPIOps) create() (interface{}, error) {
 	// find healthy CVR which will helps to create backup CR
 	cvr, err := findHealthyCVR(bOps.clientset, backup.Spec.VolumeName, bOps.namespace)
 	if err != nil {
-		return nil, CodedError(400, fmt.Sprintf("Failed to find healthy replica"))
+		return nil, CodedError(400, fmt.Sprintf("Failed to find healthy replica for volume %s", backup.Spec.VolumeName))
 	}
 
+	poolName := cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
 	backup.ObjectMeta.Labels = map[string]string{
 		cstortypes.CStorPoolInstanceUIDLabelKey:  cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceUIDLabelKey],
-		cstortypes.CStorPoolInstanceNameLabelKey: cvr.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
+		cstortypes.CStorPoolInstanceNameLabelKey: poolName,
 		cstortypes.PersistentVolumeLabelKey:      cvr.ObjectMeta.Labels[cstortypes.PersistentVolumeLabelKey],
 		"openebs.io/backup":                      backup.Spec.BackupName,
 	}
 
-	// Find last backup snapshot name
-	lastsnap, err := bOps.getLastBackupSnap(backup)
+	poolVersion, err := getPoolVersion(poolName, bOps.namespace, bOps.clientset)
 	if err != nil {
-		return nil, CodedError(400, fmt.Sprintf("Failed create lastbackup"))
+		return nil, CodedError(400, fmt.Sprintf("failed to get %s pool version error: %v", poolName, err))
 	}
 
-	// Initialize backup status as pending
-	backup.Status = openebsapis.BKPCStorStatusPending
-	backup.Spec.PrevSnapName = lastsnap
+	backupInterface, err := bOps.getBackupInterfaceFromPoolVersion(poolVersion, backup)
+	if err != nil {
+		return nil, CodedError(400, fmt.Sprintf("failed to get backupInterface error: %v", err))
+	}
 
+	lastSnapName, err := backupInterface.getOrCreateLastBackupSnap()
+	if err != nil {
+		return nil, CodedError(400, fmt.Sprintf("Failed get or create lastCompleted backup error: %v", err.Error()))
+	}
+	// Initialize backup status as pending
+	backupInterface.setBackupStatus(string(openebsapis.BKPCStorStatusPending))
+	backupInterface.setLastSnapshotName(lastSnapName)
+
+	// NOTE: We are logining by using v1 backup resource irrespective of version
 	klog.Infof("Creating backup %s for volume %q poolName: %v poolUUID:%v", backup.Spec.SnapName,
 		backup.Spec.VolumeName,
 		backup.ObjectMeta.Labels[cstortypes.CStorPoolInstanceNameLabelKey],
 		backup.ObjectMeta.Labels[cstortypes.CStorPoolInstanceUIDLabelKey])
-
-	_, err = bOps.clientset.OpenebsV1alpha1().CStorBackups(backup.Namespace).Create(backup)
+	backupInterface, err = backupInterface.createBackupResource()
 	if err != nil {
 		klog.Errorf("Failed to create backup: error '%s'", err.Error())
 		return nil, CodedError(500, err.Error())
@@ -168,7 +189,7 @@ func (bOps *backupAPIOps) create() (interface{}, error) {
 // get is http handler which handles backup get request
 // It will get the snapshot created by the given backup if backup is done/failed
 func (bOps *backupAPIOps) get() (interface{}, error) {
-	backup := &openebsapis.CStorBackup{}
+	backup := &cstorapis.CStorBackup{}
 
 	err := decodeBody(bOps.req, backup)
 	if err != nil {
@@ -191,15 +212,14 @@ func (bOps *backupAPIOps) get() (interface{}, error) {
 	}
 
 	backup.Name = backup.Spec.SnapName + "-" + backup.Spec.VolumeName
-	backupObj, err := bOps.clientset.OpenebsV1alpha1().
-		CStorBackups(backup.Namespace).
-		Get(backup.Name, metav1.GetOptions{})
+
+	backupInterface, err := bOps.getBackupInterface(backup.Name, backup.Namespace)
 	if err != nil {
-		return nil, CodedError(400, fmt.Sprintf("Failed to fetch backup error:%v", err))
+		return nil, CodedError(400, fmt.Sprintf("failed to get backup interface error: %v", err))
 	}
 
-	if !isBackupCompleted(backupObj) {
-		cspiName := backupObj.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
+	if !backupInterface.isBackupCompleted() {
+		cspiName := backupInterface.getCSPIName()
 		// check if node is running or not
 		backupNodeDown := checkIfPoolManagerNodeDown(bOps.k8sclientset, cspiName, bOps.namespace)
 		// check if cstor-pool-mgmt container is running or not
@@ -207,19 +227,13 @@ func (bOps *backupAPIOps) get() (interface{}, error) {
 
 		if backupNodeDown || backupPodDown {
 			// Backup is stalled, let's find last completed-backup status
-			laststat := findLastBackupStat(bOps.clientset, backupObj)
+			laststat := backupInterface.findLastBackupStat()
 			// Update Backup status according to last completed-backup
-			updateBackupStatus(bOps.clientset, backupObj, laststat)
-
-			// Get updated backup object
-			backupObj, err = bOps.clientset.OpenebsV1alpha1().CStorBackups(backup.Namespace).Get(backup.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, CodedError(400, fmt.Sprintf("Failed to fetch backup error:%v", err))
-			}
+			backupInterface = backupInterface.updateBackupStatus(laststat)
 		}
 	}
 
-	out, err := json.Marshal(backupObj)
+	out, err := json.Marshal(backupInterface.getBackupObject())
 	if err == nil {
 		_, err = bOps.resp.Write(out)
 		if err != nil {
@@ -260,33 +274,28 @@ func (bOps *backupAPIOps) delete() (interface{}, error) {
 }
 
 // deleteBackup delete the relevant cstorBackup/cstorCompletedBackup resource and cstor snapshot for the given backup
-func (bOps *backupAPIOps) deleteBackup(backup, volname, ns, schedule string) error {
+func (bOps *backupAPIOps) deleteBackup(snapName, volname, ns, schedule string) error {
 	lastCompletedBackup := schedule + "-" + volname
+	cstorBackupName := snapName + "-" + volname
 
-	// Let's get the cstorCompletedBackup resource for the given backup
-	// CStorCompletedBackups resource stores the information about last two completed snapshots
-	lastbkp, err := bOps.clientset.
-		OpenebsV1alpha1().
-		CStorCompletedBackups(ns).
-		Get(lastCompletedBackup, metav1.GetOptions{})
-	if err != nil && !k8serror.IsNotFound(err) {
-		return errors.Wrapf(err, "failed to fetch last-completed-backup=%s resource", lastCompletedBackup)
+	backupInterface, err := bOps.getBackupInterface(cstorBackupName, ns)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get backup interface")
+	}
+	// On successfull completion of backup plugin will send delete request to cleanup the backup
+	if backupInterface == nil {
+		klog.Infof("Backup %s for volume %s already deleted", snapName, volname)
+		return nil
 	}
 
-	// lastbkp stores the last(PrevSnapName) and 2nd last(SnapName) completed snapshot
-	// If given backup is the last backup of scheduled backup (lastbkp.Spec.PrevSnapName == backup) or
-	// completedBackup doesn't have successful backup(len(lastbkp.Spec.PrevSnapName) == 0) then we will delete the lastbkp CR
-	// Deleting this CR make sure that next backup of the schedule will be full backup
-	if lastbkp != nil && (lastbkp.Spec.PrevSnapName == backup || len(lastbkp.Spec.PrevSnapName) == 0) {
-		err := bOps.clientset.OpenebsV1alpha1().CStorCompletedBackups(ns).Delete(lastCompletedBackup, &metav1.DeleteOptions{})
-		if err != nil && !k8serror.IsNotFound(err) {
-			return errors.Wrapf(err, "failed to delete last-completed-backup=%s resource", lastCompletedBackup)
-		}
+	err = backupInterface.deleteCompletedBackup(lastCompletedBackup, ns, snapName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete lastCompletedBackup %s", lastCompletedBackup)
 	}
 
 	snapshot := snapshot.Snapshot{
 		VolumeName:   volname,
-		SnapshotName: backup,
+		SnapshotName: snapName,
 		Namespace:    bOps.namespace,
 		SnapClient:   bOps.snapshotter,
 	}
@@ -296,16 +305,15 @@ func (bOps *backupAPIOps) deleteBackup(backup, volname, ns, schedule string) err
 		return errors.Wrapf(err, "snapshot deletion failed")
 	}
 
-	cstorBackup := backup + "-" + volname
-	err = bOps.clientset.OpenebsV1alpha1().CStorBackups(ns).Delete(cstorBackup, &metav1.DeleteOptions{})
-	if err != nil && !k8serror.IsNotFound(err) {
-		return errors.Wrapf(err, "failed to delete cstorbackup: %s resource", cstorBackup)
+	err = backupInterface.deleteBackup(cstorBackupName, ns)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete cstorbackup: %s resource", cstorBackupName)
 	}
 	return nil
 }
 
 // backupCreateRequestValidations validates the backup create request
-func backupCreateRequestValidations(backup *openebsapis.CStorBackup) error {
+func backupCreateRequestValidations(backup *cstorapis.CStorBackup) error {
 	// backup name is expected
 	if len(strings.TrimSpace(backup.Spec.BackupName)) == 0 {
 		return CodedError(400, fmt.Sprintf("Failed to create backup: missing backup name "))
@@ -342,6 +350,56 @@ func getOpenEBSNamespace() string {
 	return openebsNamespace
 }
 
+func (bOps *backupAPIOps) getBackupInterface(backupName,
+	backupNamespace string) (backupHelper, error) {
+
+	backupObj, err := bOps.clientset.OpenebsV1alpha1().
+		CStorBackups(backupNamespace).
+		Get(backupName, metav1.GetOptions{})
+	if err == nil {
+		backupInterface := newV1Alpha1BackupWrapper(bOps.clientset).setBackup(backupObj)
+		return backupInterface, nil
+	}
+	if k8serror.IsNotFound(err) {
+		backupObj, err := bOps.clientset.CstorV1().
+			CStorBackups(backupNamespace).
+			Get(backupName, metav1.GetOptions{})
+		if err != nil {
+			if !k8serror.IsNotFound(err) {
+				return nil, errors.Wrapf(err, "failed to fetch %s backup v1 version also", backupName)
+			}
+			// This is a case where backup is already deleted
+			return nil, nil
+		}
+		backupInterface := newV1BackupWrapper(bOps.clientset).setBackup(backupObj)
+		return backupInterface, nil
+	}
+	return nil, errors.Wrapf(err, "failed to fetch %s backup", backupName)
+}
+
+func (bOps *backupAPIOps) getBackupInterfaceFromPoolVersion(
+	poolVersion string, backup *cstorapis.CStorBackup) (backupHelper, error) {
+	// error will be reported when version doesn't contain any valid version pattern
+	// Ex: dev, ci, master
+	currentVersion, err := version.NewVersion(poolVersion)
+	if err != nil {
+		// We need to support backup for ci images also
+		if strings.TrimSpace(poolVersion) != "" && !strings.Contains(poolVersion, "dev") {
+			return nil, errors.Wrapf(err, "failed to parse %q pool version", poolVersion)
+		}
+		klog.Warningf("failed to parse pool %s version error: %v will create v1 version of backup and restore", poolVersion, err)
+	}
+
+	if currentVersion != nil && currentVersion.LessThan(minV1SupportedVersion) {
+		return newV1Alpha1BackupWrapper(bOps.clientset).setBackup(getV1Alpha1BackupFromV1(backup)), nil
+	} else if currentVersion != nil && currentVersion.GreaterThanOrEqual(minV1SupportedVersion) {
+		return newV1BackupWrapper(bOps.clientset).setBackup(backup), nil
+	}
+	// return latest supported version v1
+	// If code reached over here then pool is in non released version i.e dev/ci
+	return newV1BackupWrapper(bOps.clientset).setBackup(backup), nil
+}
+
 // findHealthyCVR returns Heathy CVR if exists else
 // it will return error
 func findHealthyCVR(
@@ -366,8 +424,23 @@ func findHealthyCVR(
 	return nil, errors.New("unable to find healthy CVR")
 }
 
+func getV1Alpha1BackupFromV1(backup *cstorapis.CStorBackup) *openebsapis.CStorBackup {
+	return &openebsapis.CStorBackup{
+		ObjectMeta: backup.ObjectMeta,
+		Spec: openebsapis.CStorBackupSpec{
+			BackupName:   backup.Spec.BackupName,
+			VolumeName:   backup.Spec.VolumeName,
+			SnapName:     backup.Spec.SnapName,
+			PrevSnapName: backup.Spec.PrevSnapName,
+			BackupDest:   backup.Spec.BackupDest,
+			LocalSnap:    backup.Spec.LocalSnap,
+		},
+		Status: openebsapis.CStorBackupStatus(backup.Status),
+	}
+}
+
 // getLastBackupSnap will fetch the last successful backup's snapshot name
-func (bOps *backupAPIOps) getLastBackupSnap(backup *openebsapis.CStorBackup) (string, error) {
+func (bOps *backupAPIOps) getLastBackupSnap(backup *cstorapis.CStorBackup) (string, error) {
 	lastbkpName := backup.Spec.BackupName + "-" + backup.Spec.VolumeName
 	b, err := bOps.clientset.OpenebsV1alpha1().
 		CStorCompletedBackups(backup.Namespace).
@@ -402,145 +475,10 @@ func (bOps *backupAPIOps) getLastBackupSnap(backup *openebsapis.CStorBackup) (st
 	return b.Spec.PrevSnapName, nil
 }
 
-// checkIfPoolManagerNodeDown will check if CSPI pool manager is in running or not
-func checkIfPoolManagerNodeDown(k8sclient kubernetes.Interface, cspiName, namespace string) bool {
-	var nodeDown = true
-	var pod *corev1.Pod
-	var err error
-
-	// If cspiName is not empty then fetch the CStor pool pod using CSPI name
-	if cspiName == "" {
-		klog.Errorf("failed to find pool manager, empty CSPI is provided")
-		return nodeDown
-	}
-	pod, err = fetchPoolManagerFromCSPI(k8sclient, cspiName, namespace)
+func getPoolVersion(cspiName, cspiNamespace string, clientset clientset.Interface) (string, error) {
+	cspi, err := clientset.CstorV1().CStorPoolInstances(cspiNamespace).Get(cspiName, metav1.GetOptions{})
 	if err != nil {
-		klog.Errorf("Failed to find pool manager for CSPI:%s err:%s", cspiName, err.Error())
-		return nodeDown
+		return "", err
 	}
-
-	if pod.Spec.NodeName == "" {
-		klog.Errorf("node name is empty in pool manager %s", pod.Name)
-		return nodeDown
-	}
-
-	node, err := k8sclient.CoreV1().Nodes().Get(pod.Spec.NodeName, metav1.GetOptions{})
-	if err != nil {
-		klog.Infof("Failed to fetch node info for CSPI:%s: %v", cspiName, err)
-		return nodeDown
-	}
-	for _, nodestat := range node.Status.Conditions {
-		if nodestat.Type == corev1.NodeReady && nodestat.Status != corev1.ConditionTrue {
-			klog.Infof("Node:%v is not in ready state", node.Name)
-			return nodeDown
-		}
-	}
-	return !nodeDown
-}
-
-// checkIfPoolManagerDown will check if pool pod is running or not
-func checkIfPoolManagerDown(k8sclient kubernetes.Interface, cspiName, namespace string) bool {
-	var podDown = true
-	var pod *corev1.Pod
-	var err error
-
-	// If cspiName is not empty then fetch the CStor pool pod using CSPI name
-	if cspiName == "" {
-		klog.Errorf("failed to find pool manager, empty CSPI is provided")
-		return podDown
-	}
-	pod, err = fetchPoolManagerFromCSPI(k8sclient, cspiName, namespace)
-	if err != nil {
-		klog.Errorf("Failed to find pool manager for CSPI:%s err:%s", cspiName, err.Error())
-		return podDown
-	}
-
-	for _, containerstatus := range pod.Status.ContainerStatuses {
-		if containerstatus.Name == "cstor-pool-mgmt" {
-			return !containerstatus.Ready
-		}
-	}
-
-	return podDown
-}
-
-// findLastBackupStat will find the status of given backup from last completed-backup
-func findLastBackupStat(clientset clientset.Interface, backup *openebsapis.CStorBackup) openebsapis.CStorBackupStatus {
-	lastbkpname := backup.Spec.BackupName + "-" + backup.Spec.VolumeName
-	lastbkp, err := clientset.OpenebsV1alpha1().CStorCompletedBackups(backup.Namespace).Get(lastbkpname, metav1.GetOptions{})
-	if err != nil {
-		// Unable to fetch the last backup, so we will return fail state
-		klog.Errorf("Failed to fetch last completed-backup:%s error:%s", lastbkpname, err.Error())
-		return openebsapis.BKPCStorStatusFailed
-	}
-
-	// lastbkp stores the last(PrevSnapName) and 2nd last(SnapName) completed snapshot
-	// let's check if last backup's snapname/PrevSnapName  matches with current snapshot name
-	if backup.Spec.SnapName == lastbkp.Spec.SnapName || backup.Spec.SnapName == lastbkp.Spec.PrevSnapName {
-		return openebsapis.BKPCStorStatusDone
-	}
-
-	// lastbackup snap/prevsnap doesn't match with bkp snapname
-	return openebsapis.BKPCStorStatusFailed
-}
-
-// updateBackupStatus will update the backup status to given status
-func updateBackupStatus(clientset clientset.Interface, backup *openebsapis.CStorBackup, status openebsapis.CStorBackupStatus) {
-	backup.Status = status
-
-	_, err := clientset.OpenebsV1alpha1().CStorBackups(backup.Namespace).Update(backup)
-	if err != nil {
-		klog.Errorf("Failed to update backup:%s with status:%v", backup.Name, status)
-		return
-	}
-}
-
-// fetchPoolManagerFromCSPI returns pool manager pod for provided CSPI
-func fetchPoolManagerFromCSPI(k8sclientset kubernetes.Interface, cspiName, openebsNs string) (*corev1.Pod, error) {
-	cstorPodLabel := "app=cstor-pool"
-	cspiPoolName := cstortypes.CStorPoolInstanceLabelKey + "=" + cspiName
-	podlistops := metav1.ListOptions{
-		LabelSelector: cstorPodLabel + "," + cspiPoolName,
-	}
-
-	if openebsNs == "" {
-		return nil, errors.Errorf("Failed to fetch operator namespace")
-	}
-
-	podList, err := k8sclientset.CoreV1().Pods(openebsNs).List(podlistops)
-	if err != nil {
-		klog.Errorf("Failed to fetch pod list :%v", err)
-		return nil, err
-	}
-
-	if len(podList.Items) != 1 {
-		return nil, errors.Errorf("expected 1 pool manager but got %d pool managers", len(podList.Items))
-	}
-	return &podList.Items[0], nil
-}
-
-// TODO: Move below functions into API because there kind of getter methods.
-
-// isBackupCompleted returns true if backup execution is completed
-func isBackupCompleted(backup *openebsapis.CStorBackup) bool {
-	if isBackupFailed(backup) || isBackupSucceeded(backup) {
-		return true
-	}
-	return false
-}
-
-// isBackupFailed returns true if backup failed
-func isBackupFailed(backup *openebsapis.CStorBackup) bool {
-	if backup.Status == openebsapis.BKPCStorStatusFailed {
-		return true
-	}
-	return false
-}
-
-// isBackupSucceeded returns true if backup completed successfully
-func isBackupSucceeded(backup *openebsapis.CStorBackup) bool {
-	if backup.Status == openebsapis.BKPCStorStatusDone {
-		return true
-	}
-	return false
+	return cspi.VersionDetails.Status.Current, nil
 }

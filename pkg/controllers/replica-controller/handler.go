@@ -23,9 +23,9 @@ import (
 	"reflect"
 	"strings"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
+	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/debug"
 	"github.com/openebs/cstor-operators/pkg/version"

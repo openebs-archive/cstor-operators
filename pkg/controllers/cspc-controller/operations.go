@@ -17,9 +17,9 @@ limitations under the License.
 package cspccontroller
 
 import (
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
-	"github.com/openebs/api/pkg/apis/types"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	openebsapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
+	"github.com/openebs/api/v2/pkg/apis/types"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"

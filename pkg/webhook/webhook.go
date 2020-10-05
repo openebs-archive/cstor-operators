@@ -24,7 +24,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	"k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	v1 "k8s.io/api/apps/v1"

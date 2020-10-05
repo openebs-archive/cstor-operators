@@ -17,7 +17,7 @@ limitations under the License.
 package cspccache
 
 import (
-	"github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/api/v2/pkg/apis/types"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
 	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"

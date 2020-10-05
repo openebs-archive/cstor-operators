@@ -17,7 +17,7 @@ limitations under the License.
 package cvcspecbuilder
 
 import (
-	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
+	cstorapis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"

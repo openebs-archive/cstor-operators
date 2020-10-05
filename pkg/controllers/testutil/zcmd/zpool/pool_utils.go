@@ -15,7 +15,7 @@ limitations under the License.
 */
 package zpool
 
-import internalapi "github.com/openebs/api/pkg/internalapis/apis/cstor"
+import internalapi "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
 
 var (
 	supportedPoolTypes = map[string]bool{

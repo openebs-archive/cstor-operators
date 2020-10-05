@@ -22,14 +22,14 @@ import (
 	"strings"
 	"time"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
-	apitypes "github.com/openebs/api/pkg/apis/types"
+	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	apitypes "github.com/openebs/api/v2/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/util/hash"
 	"github.com/openebs/cstor-operators/pkg/version"
 	errors "github.com/pkg/errors"
 	"k8s.io/klog"
 
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policy "k8s.io/api/policy/v1beta1"

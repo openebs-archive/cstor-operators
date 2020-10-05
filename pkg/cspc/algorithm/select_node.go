@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	openebsio "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
-	"github.com/openebs/api/pkg/apis/types"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	openebsio "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
+	"github.com/openebs/api/v2/pkg/apis/types"
 	"github.com/pkg/errors"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"

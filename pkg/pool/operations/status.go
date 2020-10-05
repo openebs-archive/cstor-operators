@@ -19,7 +19,7 @@ package v1alpha2
 import (
 	"strings"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	volumereplica "github.com/openebs/cstor-operators/pkg/volumereplica"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	bin "github.com/openebs/cstor-operators/pkg/zcmd/bin"

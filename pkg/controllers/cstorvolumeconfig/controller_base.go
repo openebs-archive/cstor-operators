@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"time"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	openebsScheme "github.com/openebs/api/pkg/client/clientset/versioned/scheme"
-	informers "github.com/openebs/api/pkg/client/informers/externalversions"
-	listers "github.com/openebs/api/pkg/client/listers/cstor/v1"
+	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	openebsScheme "github.com/openebs/api/v2/pkg/client/clientset/versioned/scheme"
+	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
+	listers "github.com/openebs/api/v2/pkg/client/listers/cstor/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"

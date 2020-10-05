@@ -32,8 +32,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	informers "github.com/openebs/api/pkg/client/informers/externalversions"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
 	"github.com/openebs/cstor-operators/pkg/signals"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"

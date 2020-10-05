@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
+	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
 )
 
 func TestGetSyncInterval(t *testing.T) {

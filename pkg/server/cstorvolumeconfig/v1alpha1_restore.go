@@ -16,8 +16,8 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
-	openebsapis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
-	cstortypes "github.com/openebs/api/pkg/apis/types"
+	openebsapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
+	cstortypes "github.com/openebs/api/v2/pkg/apis/types"
 	"k8s.io/klog"
 )
 

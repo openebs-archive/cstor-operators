@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	//snapclientset "github.com/openebs/maya/pkg/client/generated/openebs.io/snapshot/v1alpha1/clientset/internalclientset"
 )
 

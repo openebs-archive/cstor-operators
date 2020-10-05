@@ -19,11 +19,11 @@ package algorithm
 import (
 	"os"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/api/pkg/apis/types"
-	deployapi "github.com/openebs/api/pkg/kubernetes/apps"
-	coreapi "github.com/openebs/api/pkg/kubernetes/core"
-	util "github.com/openebs/api/pkg/util"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v2/pkg/apis/types"
+	deployapi "github.com/openebs/api/v2/pkg/kubernetes/apps"
+	coreapi "github.com/openebs/api/v2/pkg/kubernetes/core"
+	util "github.com/openebs/api/v2/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

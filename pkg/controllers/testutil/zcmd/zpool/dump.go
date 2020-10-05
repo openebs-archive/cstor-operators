@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	internalapi "github.com/openebs/api/pkg/internalapis/apis/cstor"
+	internalapi "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
 	"github.com/pkg/errors"
 )
 

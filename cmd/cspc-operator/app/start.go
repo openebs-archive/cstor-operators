@@ -24,9 +24,9 @@ import (
 	"strconv"
 	"time"
 
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	informers "github.com/openebs/api/pkg/client/informers/externalversions"
-	leader "github.com/openebs/api/pkg/kubernetes/leaderelection"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
+	leader "github.com/openebs/api/v2/pkg/kubernetes/leaderelection"
 	cspccontroller "github.com/openebs/cstor-operators/pkg/controllers/cspc-controller"
 	"github.com/pkg/errors"
 	kubeinformers "k8s.io/client-go/informers"

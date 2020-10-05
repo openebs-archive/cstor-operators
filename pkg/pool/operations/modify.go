@@ -19,8 +19,8 @@ package v1alpha2
 import (
 	"fmt"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/api/pkg/apis/types"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v2/pkg/apis/types"
 	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	corev1 "k8s.io/api/core/v1"
 )

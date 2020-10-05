@@ -26,9 +26,9 @@ import (
 
 	"strings"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/api/pkg/apis/types"
-	"github.com/openebs/api/pkg/util"
+	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v2/pkg/apis/types"
+	"github.com/openebs/api/v2/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog"

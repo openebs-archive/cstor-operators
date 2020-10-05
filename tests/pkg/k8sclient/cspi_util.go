@@ -18,8 +18,8 @@ package k8sclient
 
 import (
 	. "github.com/onsi/gomega"
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/api/pkg/apis/types"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v2/pkg/apis/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"time"

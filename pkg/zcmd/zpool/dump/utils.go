@@ -21,7 +21,7 @@ import (
 	"strings"
 	"unicode"
 
-	vdump "github.com/openebs/api/pkg/internalapis/apis/cstor"
+	vdump "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
 )
 
 // SetPool method set the Pool field of PoolDump object.

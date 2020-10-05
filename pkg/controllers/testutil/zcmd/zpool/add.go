@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/pkg/errors"
 )
 

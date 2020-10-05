@@ -124,10 +124,7 @@ deps:
 .PHONY: test
 test:
 	go fmt ./...
-	## To verify how much time it is consuming for test
-	date
 	go test $(PACKAGES)
-	date
 
 .PHONY: build
 build:

@@ -19,9 +19,9 @@ package k8sclient
 import (
 	"time"
 
-	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
-	openebstypes "github.com/openebs/api/pkg/apis/types"
-	"github.com/openebs/api/pkg/util"
+	cstorapis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	openebstypes "github.com/openebs/api/v2/pkg/apis/types"
+	"github.com/openebs/api/v2/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"

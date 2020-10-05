@@ -17,11 +17,11 @@ limitations under the License.
 package webhook
 
 import (
-	"github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/api/v2/pkg/apis/types"
 	"reflect"
 	"testing"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

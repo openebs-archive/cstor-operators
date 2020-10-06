@@ -56,19 +56,19 @@ spec:
               description: BackupDest is the remote address for backup transfer
               type: string
             backupName:
-              description: BackupName is a name of the backup or scheduled backup
+              description: BackupName is the name of the backup or scheduled backup
               type: string
             localSnap:
-              description: LocalSnap is flag to enable local snapshot only
+              description: LocalSnap is the flag to enable local snapshot only
               type: boolean
             prevSnapName:
               description: PrevSnapName is the last completed-backup's snapshot name
               type: string
             snapName:
-              description: SnapName is a name of the current backup snapshot
+              description: SnapName is the name of the current backup snapshot
               type: string
             volumeName:
-              description: VolumeName is a name of the volume for which this backup
+              description: VolumeName is the name of the volume for which this backup
                 is destined
               type: string
           required:
@@ -77,7 +77,8 @@ spec:
           - volumeName
           type: object
         status:
-          description: CStorBackupStatus is to hold status of backup
+          description: CStorBackupStatus is a string type that represents the status
+            of the backup
           type: string
       required:
       - spec
@@ -148,17 +149,18 @@ spec:
           description: CStorCompletedBackupSpec is the spec for a CStorBackup resource
           properties:
             backupName:
-              description: BackupName is a name of the backup or scheduled backup
+              description: BackupName is the name of backup or scheduled backup
               type: string
             lastSnapName:
-              description: LastSnapName is the last completed-backup's snapshot name
+              description: LastSnapName is the name of last completed-backup's snapshot
+                name
               type: string
             secondLastSnapName:
-              description: SecondLastSnapName is a name of the second last 'successfully'
+              description: SecondLastSnapName is the name of second last 'successfully'
                 completed-backup's snapshot
               type: string
             volumeName:
-              description: VolumeName is a name of the volume for which this backup
+              description: VolumeName is the name of volume for which this backup
                 is destined
               type: string
           type: object
@@ -1214,7 +1216,8 @@ spec:
           - volumeName
           type: object
         status:
-          description: CStorRestoreStatus is to hold result of action.
+          description: CStorRestoreStatus is a string type that represents the status
+            of the restore
           type: string
       required:
       - spec
@@ -2776,3 +2779,26 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  # name must match the spec fields below, and be in the form: <plural>.<group>
+  name: upgradetasks.openebs.io
+spec:
+  # group name to use for REST API: /apis/<group>/<version>
+  group: openebs.io
+  # version name to use for REST API: /apis/<group>/<version>
+  version: v1alpha1
+  # either Namespaced or Cluster
+  scope: Namespaced
+  names:
+    # plural name to be used in the URL: /apis/<group>/<version>/<plural>
+    plural: upgradetasks
+    # singular name to be used as an alias on the CLI and for display
+    singular: upgradetask
+    # kind is normally the CamelCased singular type. Your resource manifests use this.
+    kind: UpgradeTask
+    # shortNames allow shorter string to match your resource on the CLI
+    shortNames:
+    - utask

@@ -17,6 +17,7 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -27,8 +28,10 @@ import (
 	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
 	openebsinformers "github.com/openebs/api/pkg/client/informers/externalversions"
 	"github.com/openebs/cstor-operators/pkg/controllers/testutil"
+	"github.com/openebs/cstor-operators/pkg/cspc/algorithm"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -160,6 +163,37 @@ func newFixture(t *testing.T) *fixture {
 	return f
 }
 
+func (f *fixture) fakePoolManagerRoutine(signal <-chan bool) {
+	for {
+		_, ok := <-signal
+		// channel is closed
+		if !ok {
+			break
+		}
+		poolManagerList, err := f.k8sClient.AppsV1().
+			Deployments("openebs").
+			List(metav1.ListOptions{LabelSelector: "app=cstor-pool"})
+		if err != nil {
+			klog.Infof("Failed to list pool managers error: %v", err)
+			continue
+		}
+		for _, poolManagerObj := range poolManagerList.Items {
+			cspiName := poolManagerObj.Name
+			_, err := f.openebsClient.CstorV1().CStorPoolInstances("openebs").Get(cspiName, metav1.GetOptions{})
+			if err == nil {
+				continue
+			}
+			if k8serror.IsNotFound(err) {
+				err = f.k8sClient.AppsV1().Deployments("openebs").Delete(cspiName, &metav1.DeleteOptions{})
+				if err != nil {
+					klog.Errorf("failed to delete %s pool manager", cspiName)
+					continue
+				}
+			}
+		}
+	}
+}
+
 func (f *fixture) fakeNDMRoutine() {
 	NDMStarted = true
 	for {
@@ -270,6 +304,9 @@ func (f *fixture) run_(cspcName string, startInformers bool, expectError bool, l
 		defer close(stopCh)
 		informers.Start(stopCh)
 	}
+	notifyPoolManagerRoutine := make(chan bool)
+	go f.fakePoolManagerRoutine(notifyPoolManagerRoutine)
+	defer close(notifyPoolManagerRoutine)
 
 	// fake ndm go routine
 	for i := 0; i < loopCount; i++ {
@@ -279,6 +316,7 @@ func (f *fixture) run_(cspcName string, startInformers bool, expectError bool, l
 		} else if expectError && err == nil {
 			f.t.Error("expected error syncing cspc, got nil")
 		}
+		notifyPoolManagerRoutine <- true
 
 		if !f.ignoreActionExpectations {
 			actions := filterInformerActions(f.openebsClient.Actions())
@@ -1440,5 +1478,507 @@ func TestPoolPoolExpansion(t *testing.T) {
 				t.Errorf("[Test Case: %s] failed error: %v", test.TestName, err)
 			}
 		})
+	}
+}
+
+// TestCSPCNodeNameChanges after provisioning the cstor pools.
+// After provisioning the pool if node name changes CSPC
+// controller should shift the pool-mangers to different node
+func TestCSPCNodeNameChanges(t *testing.T) {
+	fixture := newFixture(t)
+	fixture.SetFakeClient()
+	fixture.FakeDiskCreator(150, 6)
+	fixture.fakeNodeCreator(6)
+
+	tests := []struct {
+		testName                   string
+		CSPC                       *cstor.CStorPoolCluster
+		CSPCApply                  bool
+		replacedBlockDeviceList    []string
+		wantCSPICount              int
+		wantPoolManagerCount       int
+		wantBlockDeviceCountInCSPI int
+	}{
+		{
+			testName: "[Pre-requisite Step for node name change in stripe multiple node] " +
+				"3 node stripe with 1 raid group pool provision",
+			CSPCApply: false,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-61"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-62"),
+								),
+						),
+				),
+			wantCSPICount:              3,
+			wantPoolManagerCount:       3,
+			wantBlockDeviceCountInCSPI: 2,
+		},
+		{
+			testName:  "Changed worker-1 and worker-3 to worker-5 and worker-4",
+			CSPCApply: true,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-5"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-4"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-61"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-62"),
+								),
+						),
+				),
+			wantCSPICount:              3,
+			wantPoolManagerCount:       3,
+			wantBlockDeviceCountInCSPI: 2,
+		},
+		{
+			testName:  "Changed worker-5 and worker-4 to worker-1 and worker-3 and expanded the pool",
+			CSPCApply: true,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-61"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-62"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-63"),
+								),
+						),
+				),
+			wantCSPICount:              3,
+			wantPoolManagerCount:       3,
+			wantBlockDeviceCountInCSPI: 3,
+		},
+		{
+			testName:  "Changed worker-2 to worker-5 and deleted the pool spec from worker-3",
+			CSPCApply: true,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-stripe").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-1"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-2"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-3"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-5"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("stripe")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-31"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-32"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-33"),
+								),
+						),
+				),
+			wantCSPICount:              2,
+			wantPoolManagerCount:       2,
+			wantBlockDeviceCountInCSPI: 3,
+		},
+		{
+			testName: "[Pre-requisite Step for node name change in mirror node] " +
+				"3 node stripe with 1 raid group pool provision",
+			CSPCApply: false,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-mirror").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-34"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-35"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-64"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-65"),
+								),
+						),
+				),
+			wantCSPICount:              3,
+			wantPoolManagerCount:       3,
+			wantBlockDeviceCountInCSPI: 2,
+		},
+		{
+			testName:  "worker-2 and worker-3 name changed to worker-5 and worker-4 along with blockdevice replacement",
+			CSPCApply: true,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-mirror").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-5"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-35"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-36"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-4"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-66"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-65"),
+								),
+						),
+				),
+			replacedBlockDeviceList:    []string{"blockdevice-36", "blockdevice-66"},
+			wantCSPICount:              3,
+			wantPoolManagerCount:       3,
+			wantBlockDeviceCountInCSPI: 2,
+		},
+		{
+			testName:  "worker-5 changed to worker-2 and by expanding the pool vertically and scaling down the pools vertically",
+			CSPCApply: true,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-mirror").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-1"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-37"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-38"),
+								),
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-35"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-36"),
+								),
+						),
+				),
+			wantCSPICount:              2,
+			wantPoolManagerCount:       2,
+			wantBlockDeviceCountInCSPI: 2,
+		},
+		{
+			testName:  "worker-1 changed to worker-5 and by expanding the pool horizontally",
+			CSPCApply: true,
+			CSPC: cstor.NewCStorPoolCluster().
+				WithName("cspc-foo-mirror").
+				WithNamespace("openebs").
+				WithPoolSpecs(
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-5"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-4"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-5"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-2"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-37"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-38"),
+								),
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-35"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-36"),
+								),
+						),
+
+					*cstor.NewPoolSpec().
+						WithNodeSelector(map[string]string{types.HostNameLabelKey: "worker-3"}).
+						WithPoolConfig(*cstor.NewPoolConfig().
+							WithDataRaidGroupType("mirror")).
+						WithDataRaidGroups(
+							*cstor.NewRaidGroup().
+								WithCStorPoolInstanceBlockDevices(
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-90"),
+									*cstor.NewCStorPoolInstanceBlockDevice().WithName("blockdevice-91"),
+								),
+						),
+				),
+			wantCSPICount:              3,
+			wantPoolManagerCount:       3,
+			wantBlockDeviceCountInCSPI: 2,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		test.CSPC.Kind = "CStorPoolCluster"
+		// Create a CSPC to persist it in a fake store
+		var gotCSPC *cstor.CStorPoolCluster
+		var errCSPC error
+		hostNamesMap := map[string]int{}
+		if test.CSPCApply {
+			gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Update(test.CSPC)
+			if errCSPC != nil {
+				t.Errorf("[Test Case:%s] failed to update cspc %s:%s", test.testName, test.CSPC.Name, errCSPC)
+
+			}
+		} else {
+			gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(test.CSPC)
+			if errCSPC != nil {
+				t.Errorf("[Test Case:%s] failed to create cspc %s:%s", test.testName, test.CSPC.Name, errCSPC)
+			}
+		}
+		ac, _ := algorithm.NewBuilder().
+			WithCSPC(gotCSPC).
+			WithNameSpace(gotCSPC.Namespace).
+			WithKubeClient(fixture.k8sClient).
+			WithOpenEBSClient(fixture.openebsClient).
+			Build()
+		for _, bdName := range test.replacedBlockDeviceList {
+			bdObj, err := fixture.openebsClient.
+				OpenebsV1alpha1().
+				BlockDevices("openebs").
+				Get(bdName, metav1.GetOptions{})
+			if err != nil {
+				t.Errorf("[Test Case: %s] failed to get the blockdevice error: %v", test.testName, err)
+			}
+			err = ac.ClaimBD(*bdObj)
+			if err != nil {
+				t.Errorf("[Test Case: %s] failed to claim blockdevices error: %v", test.testName, err)
+			}
+		}
+		for _, poolSpec := range gotCSPC.Spec.Pools {
+			hostNamesMap[poolSpec.NodeSelector[types.HostNameLabelKey]]++
+		}
+		// Add the cspc to the cspc lister
+		fixture.cspcLister = append(fixture.cspcLister, gotCSPC)
+		// We do not want to track the API calls here for provisioning rather the state of the system
+		// hence ignore the action expectations.
+		// Although a diff test aiming to track/benchmark API calls for diff paths of cspc controller
+		// should be in a different test(todo).
+		fixture.ignoreActionExpectations = true
+
+		fixture.runLoop(testutil.GetKey(gotCSPC, t), 5, time.Second*1)
+		gotCSPICount := fixture.getCSPICount(gotCSPC.Name, gotCSPC.Namespace)
+		gotPoolManagerCount := fixture.getPoolManagerCount(gotCSPC.Name, gotCSPC.Namespace)
+
+		if gotCSPICount != test.wantCSPICount {
+			t.Errorf("[Test Case:%s] Want cspi count %d but got %d", test.testName, test.wantCSPICount, gotCSPICount)
+		}
+
+		if gotPoolManagerCount != test.wantPoolManagerCount {
+			t.Errorf("[Test Case:%s] Want pool manager count %d but got %d",
+				test.testName, test.wantPoolManagerCount, gotPoolManagerCount)
+		}
+
+		cspiList, err := fixture.openebsClient.CstorV1().
+			CStorPoolInstances("openebs").
+			List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + gotCSPC.Name})
+		if err != nil {
+			t.Errorf("[Test Case:%s] fake client failed to list cspi for cspc %s:%s", test.testName, gotCSPC.Name, err)
+		}
+
+		// Verify node name changes
+		for _, cspi := range cspiList.Items {
+			hostNamesMap[cspi.Spec.HostName]++
+			bdCount := len(cspi.Spec.DataRaidGroups[0].CStorPoolInstanceBlockDevices)
+
+			foundPoolSpec := false
+			for _, cspcPoolSpec := range gotCSPC.Spec.Pools {
+				if reflect.DeepEqual(cspcPoolSpec.NodeSelector, cspi.Spec.NodeSelector) {
+					foundPoolSpec = true
+					break
+				}
+			}
+			if !foundPoolSpec {
+				t.Errorf("failed to find the pool spec belongs to %s", cspi.Name)
+			}
+
+			if bdCount != test.wantBlockDeviceCountInCSPI {
+				t.Errorf("[Test Case:%s] want bd count %d but"+
+					" got %d for cspi %s", test.testName, test.wantBlockDeviceCountInCSPI, bdCount, cspi.Name)
+			}
+
+			poolManager, err := fixture.k8sClient.
+				AppsV1().
+				Deployments(test.CSPC.Namespace).
+				Get(cspi.Name, metav1.GetOptions{})
+			if err != nil {
+				t.Errorf("failed to get pool manager %s, err: %v", cspi.Name, err)
+			}
+			cspiHostName := cspi.Spec.HostName
+			poolManagerHostName := poolManager.Spec.Template.Spec.NodeSelector[types.HostNameLabelKey]
+			if poolManagerHostName != cspiHostName {
+				t.Errorf("[Test Case:%s] want pool managet to be on host %s but"+
+					" got %s", test.testName, cspiHostName, poolManagerHostName)
+			}
+		}
+		for key, value := range hostNamesMap {
+			if value != 2 {
+				t.Errorf("[Test Case: %s] CSPI might/might not exist on host %s -- value %d", test.testName, key, value)
+			}
+		}
 	}
 }

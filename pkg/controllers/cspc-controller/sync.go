@@ -438,11 +438,31 @@ func (pc *PoolConfig) syncCSPI(cspc *cstor.CStorPoolCluster) error {
 func (pc *PoolConfig) syncCSPIWithCSPC(cspc *cstor.CStorPoolCluster, cspi *cstor.CStorPoolInstance) error {
 	cspiCopy := cspi.DeepCopy()
 	klog.V(2).Infof("Syncing cspi %s from parent cspc %s", cspiCopy.Name, cspc.Name)
+
+	// Finding out the cspc pool spec in the following way:
+	// 1. Using node selectors i.e if node selector of cspc and cspi is
+	// matched then that is the spec of CSPC belongs to searching CSPI
+	//			(If above step failed then find using step2)
+	// 2. Find out using data raidgroup blockdevice names i.e if atleast
+	// one blockdevice name in CSPI data raid groups is matched to
+	// blockdevice name in data raidgroups in CSPC spec then
+
+	//NOTE: CSPC pools spec consist repetion of blockdevice names
+	// is outof context. This kind of CSPC should not be reconciled
 	for _, poolSpec := range cspc.Spec.Pools {
-		if reflect.DeepEqual(poolSpec.NodeSelector, cspi.Spec.NodeSelector) {
+
+		if reflect.DeepEqual(poolSpec.NodeSelector, cspi.Spec.NodeSelector) ||
+			pc.isCSPISpecExist([]cstor.PoolSpec{poolSpec}, cspi.Spec) {
+
 			poolSpec := poolSpec
-			cspiCopy.Spec.PoolConfig = poolSpec.PoolConfig
+			cspiCopy = cspiCopy.WithPoolConfig(poolSpec.PoolConfig).
+				WithNodeSelectorByReference(poolSpec.NodeSelector)
 			defaultPoolConfig(cspiCopy, cspc)
+			hostName, err := pc.AlgorithmConfig.GetNodeFromLabelSelector(cspiCopy.Spec.NodeSelector)
+			if err != nil || hostName == "" {
+				return errors.Errorf("could not use node for selectors {%v}: {%s}", cspiCopy.Spec.NodeSelector, err.Error())
+			}
+			cspiCopy.Spec.HostName = hostName
 			break
 		}
 	}

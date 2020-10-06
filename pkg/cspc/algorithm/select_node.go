@@ -40,9 +40,17 @@ func (ac *Config) SelectNode() (*cstor.PoolSpec, string, error) {
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "could not get used nodes list for pool creation")
 	}
+
+	// This case will helpful when nodename changes and
+	// user performed horizontal scale up of pools
+	usedBlockDevices, err := ac.GetUsedBlockDevices()
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "could not get used blockdevice list for pool creation")
+	}
 	for _, pool := range ac.CSPC.Spec.Pools {
 		// pin it
 		pool := pool
+		isPoolAlreadyExistOnDevices := false
 		nodeName, err := ac.GetNodeFromLabelSelector(pool.NodeSelector)
 		if err != nil || nodeName == "" {
 			klog.Errorf("could not use node for selectors {%v}: {%s}", pool.NodeSelector, err.Error())
@@ -52,6 +60,17 @@ func (ac *Config) SelectNode() (*cstor.PoolSpec, string, error) {
 			continue
 		} else {
 			ac.VisitedNodes[nodeName] = true
+
+			// Check are any spec blockdevices are in use
+			for _, bd := range GetBDListForNode(pool) {
+				if usedBlockDevices[bd] {
+					isPoolAlreadyExistOnDevices = true
+					break
+				}
+			}
+			if isPoolAlreadyExistOnDevices {
+				continue
+			}
 
 			if !usedNodes[nodeName] {
 				return &pool, nodeName, nil
@@ -88,19 +107,42 @@ func getLabelSelectorString(selector map[string]string) string {
 // GetUsedNode returns a map of node for which pool has already been created.
 func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 	usedNode := make(map[string]bool)
-	cspList, err := ac.
+	cspiList, err := ac.
 		clientset.
 		CstorV1().
 		CStorPoolInstances(ac.Namespace).
 		List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "could not list already created csp(s)")
+		return nil, errors.Wrap(err, "could not list already created cspi(s)")
 	}
-	for _, cspObj := range cspList.Items {
+	for _, cspObj := range cspiList.Items {
 		usedNode[cspObj.Labels[string(types.HostNameLabelKey)]] = true
 	}
 	return usedNode, nil
+}
+
+// GetUsedBlockDevices returns a map of blockdevice
+// present on provisioned CSPI
+func (ac *Config) GetUsedBlockDevices() (map[string]bool, error) {
+	usedBlockDevices := make(map[string]bool)
+	cspiList, err := ac.
+		clientset.
+		CstorV1().
+		CStorPoolInstances(ac.Namespace).
+		List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list already provisioned cspi(s)")
+	}
+	for _, cspiObj := range cspiList.Items {
+		for _, rg := range append(cspiObj.Spec.DataRaidGroups, cspiObj.Spec.WriteCacheRaidGroups...) {
+			for _, cspiBD := range rg.CStorPoolInstanceBlockDevices {
+				usedBlockDevices[cspiBD.BlockDeviceName] = true
+			}
+		}
+	}
+	return usedBlockDevices, nil
 }
 
 // GetBDListForNode returns a list of BD from the pool spec.

@@ -18,6 +18,7 @@ package cspccontroller
 
 import (
 	"fmt"
+
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	corev1 "k8s.io/api/core/v1"
@@ -97,7 +98,7 @@ func (pc *PoolConfig) CreateCSPIDeployment(cspc *cstor.CStorPoolCluster, cspi *c
 // DownScalePool deletes the required pool.
 func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) {
 	needsStatusUpdate := false
-	orphanedCSP, err := pc.getOrphanedCStorPools(cspc)
+	orphanedCSPI, err := pc.getOrphanedCStorPools(cspc)
 
 	if err != nil {
 		pc.Controller.recorder.Event(cspc, corev1.EventTypeWarning,
@@ -106,7 +107,7 @@ func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) {
 		return
 	}
 
-	for _, cspiName := range orphanedCSP {
+	for _, cspiName := range orphanedCSPI {
 		pc.Controller.recorder.Event(cspc, corev1.EventTypeNormal,
 			"ScaleDown", "De-provisioning pool "+cspiName)
 
@@ -130,7 +131,7 @@ func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) {
 
 // getOrphanedCStorPools returns a list of CSPI names that should be deleted.
 func (pc *PoolConfig) getOrphanedCStorPools(cspc *cstor.CStorPoolCluster) ([]string, error) {
-	var orphanedCSP []string
+	var orphanedCSPI []string
 	nodePresentOnCSPC, err := pc.getNodePresentOnCSPC(cspc)
 	if err != nil {
 		return []string{}, errors.Wrap(err, "could not get node names of pool config present on CSPC")
@@ -142,14 +143,15 @@ func (pc *PoolConfig) getOrphanedCStorPools(cspc *cstor.CStorPoolCluster) ([]str
 		return []string{}, errors.Wrap(err, "could not list CSP(s)")
 	}
 
-	for _, cspObj := range cspList.Items {
-		cspObj := cspObj
-		if nodePresentOnCSPC[cspObj.Spec.HostName] {
+	for _, cspiObj := range cspList.Items {
+		cspiObj := cspiObj
+		if nodePresentOnCSPC[cspiObj.Spec.HostName] ||
+			pc.isCSPISpecExist(pc.AlgorithmConfig.CSPC.Spec.Pools, cspiObj.Spec) {
 			continue
 		}
-		orphanedCSP = append(orphanedCSP, cspObj.Name)
+		orphanedCSPI = append(orphanedCSPI, cspiObj.Name)
 	}
-	return orphanedCSP, nil
+	return orphanedCSPI, nil
 }
 
 // getNodePresentOnCSPC returns a map of node names where pool should
@@ -166,4 +168,27 @@ func (pc *PoolConfig) getNodePresentOnCSPC(cspc *cstor.CStorPoolCluster) (map[st
 		nodeMap[nodeName] = true
 	}
 	return nodeMap, nil
+}
+
+// isCSPISpecExist returns true if atleast one blockdevice
+// in any of data raidgroups of CSPI spec is matched to
+// CSPC pool specs in data raidgroup
+func (pc *PoolConfig) isCSPISpecExist(cspcPoolSpecs []cstor.PoolSpec, cspiPoolSpec cstor.CStorPoolInstanceSpec) bool {
+	bdMap := map[string]bool{}
+	for _, poolSpec := range cspcPoolSpecs {
+		for _, raidGroup := range poolSpec.DataRaidGroups {
+			for _, cspiBD := range raidGroup.CStorPoolInstanceBlockDevices {
+				bdMap[cspiBD.BlockDeviceName] = true
+			}
+		}
+	}
+
+	for _, raidGroup := range cspiPoolSpec.DataRaidGroups {
+		for _, cspiBD := range raidGroup.CStorPoolInstanceBlockDevices {
+			if bdMap[cspiBD.BlockDeviceName] {
+				return true
+			}
+		}
+	}
+	return false
 }

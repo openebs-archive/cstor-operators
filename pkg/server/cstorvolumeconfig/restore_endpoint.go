@@ -533,7 +533,7 @@ func (rOps *restoreAPIOps) getCStorRestoreStatus(
 		rstStatus = restore.Status
 		if restore.Status != cstorapis.RSTCStorStatusDone &&
 			restore.Status != cstorapis.RSTCStorStatusFailed {
-			poolName := restore.Labels[cstortypes.CStorPoolInstanceLabelKey]
+			poolName := restore.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
 			isPoolDown := isPoolManagerDown(rOps.k8sclientset, poolName, namespace)
 			if isPoolDown {
 				rstStatus = cstorapis.RSTCStorStatusFailed

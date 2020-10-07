@@ -30,7 +30,7 @@ func (rOps *restoreAPIOps) getV1Alpha1CStorRestoreStatus(
 		rstStatus = restore.Status
 		if restore.Status != openebsapis.RSTCStorStatusDone &&
 			restore.Status != openebsapis.RSTCStorStatusFailed {
-			poolName := restore.Labels[cstortypes.CStorPoolInstanceLabelKey]
+			poolName := restore.Labels[cstortypes.CStorPoolInstanceNameLabelKey]
 			isPoolDown := isPoolManagerDown(rOps.k8sclientset, poolName, namespace)
 			if isPoolDown {
 				rstStatus = openebsapis.RSTCStorStatusFailed

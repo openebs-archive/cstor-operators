@@ -508,6 +508,27 @@ func TestBackupPostEndPoint(t *testing.T) {
 			checkExistenceOfCStorCompletedBackup: true,
 			isV1Version:                          true,
 		},
+		"test backup when pool is in RC versions": {
+			cspcName:    "cspc-disk-pool7",
+			poolVersion: "2.2.0-RC2",
+			cstorBackup: &openebsapis.CStorBackup{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorBackupSpec{
+					BackupName: "backup7",
+					VolumeName: "volume7",
+					BackupDest: "172.102.29.12:3234",
+					SnapName:   "snapshot7",
+				},
+			},
+			snapshotter:                          &snapshot.FakeSnapshotter{},
+			cvrStatus:                            cstorapis.CVRStatusOnline,
+			expectedResponseCode:                 http.StatusOK,
+			verifyBackUpStatus:                   verifyExistenceOfPendingV1Backup,
+			checkExistenceOfCStorCompletedBackup: true,
+			isV1Version:                          true,
+		},
 	}
 	os.Setenv(util.OpenEBSNamespace, "openebs")
 	for name, test := range tests {
@@ -1236,6 +1257,40 @@ func TestRestoreEndPoint(t *testing.T) {
 					Namespace: namespace,
 					Labels: map[string]string{
 						openebstypes.CStorPoolClusterLabelKey: "cspc-cstor-pool8",
+					},
+				},
+				Spec: cstorapis.CStorVolumeConfigSpec{
+					Provision: cstorapis.VolumeProvision{
+						ReplicaCount: 3,
+					},
+				},
+				Status: cstorapis.CStorVolumeConfigStatus{
+					Phase: cstorapis.CStorVolumeConfigPhasePending,
+				},
+			},
+			expectedResponseCode:    http.StatusOK,
+			verifyCStorRestoreCount: true,
+			isV1Version:             true,
+		},
+		"When restore is triggered for pools on v1 supported RC version": {
+			cspcName:    "cspc-cstor-pool9",
+			poolVersion: "2.2.0-RC3",
+			cstorRestore: &openebsapis.CStorRestore{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+				Spec: openebsapis.CStorRestoreSpec{
+					RestoreName: "restore9",
+					VolumeName:  "volume9",
+					RestoreSrc:  "127.0.0.1:3422",
+				},
+			},
+			cvcObj: &cstorapis.CStorVolumeConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "volume9",
+					Namespace: namespace,
+					Labels: map[string]string{
+						openebstypes.CStorPoolClusterLabelKey: "cspc-cstor-pool9",
 					},
 				},
 				Spec: cstorapis.CStorVolumeConfigSpec{

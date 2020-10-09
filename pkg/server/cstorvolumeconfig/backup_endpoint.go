@@ -381,7 +381,8 @@ func (bOps *backupAPIOps) getBackupInterfaceFromPoolVersion(
 	poolVersion string, backup *cstorapis.CStorBackup) (backupHelper, error) {
 	// error will be reported when version doesn't contain any valid version pattern
 	// Ex: dev, ci, master
-	currentVersion, err := version.NewVersion(poolVersion)
+	// Spliting required if version contains RC1, RC2 to make comparisions
+	currentVersion, err := version.NewVersion(strings.Split(poolVersion, "-")[0])
 	if err != nil {
 		// We need to support backup for ci images also
 		if strings.TrimSpace(poolVersion) != "" && !strings.Contains(poolVersion, "dev") {

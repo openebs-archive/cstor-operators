@@ -262,7 +262,7 @@ func createRestore(openebsClient clientset.Interface, restoreObj *cstorapis.CSto
 		if _, ok := cspiToCVRMap[cspi.Name]; !ok {
 			continue
 		}
-		poolVersion, err := version.NewVersion(cspiVersion)
+		poolVersion, err := version.NewVersion(strings.Split(cspiVersion, "-")[0])
 		// If Current version is empty treat it as a ci
 		if err != nil && (cspiVersion != "" && !strings.Contains(cspiVersion, "dev")) {
 			return nil, CodedError(500,

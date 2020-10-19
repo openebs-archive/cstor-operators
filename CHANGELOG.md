@@ -1,15 +1,74 @@
 # Changelog
 
-## [v2.1.0-RC2](https://github.com/openebs/cstor-operators/tree/v2.1.0-RC2) (2020-09-10)
+## [v2.2.0](https://github.com/openebs/cstor-operators/tree/v2.2.0) (2020-10-09)
+
+**Merged pull requests:**
+
+- cherry-pick\[fix, backup, restore\]: create backup and restore in cstor.openebs.io/v1 group [\#193](https://github.com/openebs/cstor-operators/pull/193) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(backup, restore\): create backup and restore in cstor.openebs.io/v1 group [\#192](https://github.com/openebs/cstor-operators/pull/192) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(cstor restore\): use relevant labels to fetch CSPI name [\#191](https://github.com/openebs/cstor-operators/pull/191) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(travis\): add recipients for travis notifications. [\#190](https://github.com/openebs/cstor-operators/pull/190) ([sonasingh46](https://github.com/sonasingh46))
+- refact\(crds\): update crds based on new api spec changes [\#189](https://github.com/openebs/cstor-operators/pull/189) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(version\): add 2.2.0 to upgrade matrix [\#188](https://github.com/openebs/cstor-operators/pull/188) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(typo\): Fixes typo in cstor cspc controller log messages [\#186](https://github.com/openebs/cstor-operators/pull/186) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- feat\(backup, restore\): promote backup and restore controller to use v1 apis [\#183](https://github.com/openebs/cstor-operators/pull/183) ([mittachaitu](https://github.com/mittachaitu))
+- feat\(backup & restore\): add v1 support for backup and restore [\#182](https://github.com/openebs/cstor-operators/pull/182) ([mittachaitu](https://github.com/mittachaitu))
+- docs\(bd-tag\): add tutorial for using BD tag feature. [\#181](https://github.com/openebs/cstor-operators/pull/181) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(docs\): add csi cstor volume metrics exposed by prometheus [\#179](https://github.com/openebs/cstor-operators/pull/179) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix various language issues on homepage [\#176](https://github.com/openebs/cstor-operators/pull/176) ([didier-durand](https://github.com/didier-durand))
+- chore\(upgrade\): add valid current versions for 2.1.0 upgrades [\#173](https://github.com/openebs/cstor-operators/pull/173) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(CSPC, nodeName changes\): add suport to move the CStorPoolInstances to specified node [\#167](https://github.com/openebs/cstor-operators/pull/167) ([mittachaitu](https://github.com/mittachaitu))
+
+## [v2.2.0-RC2](https://github.com/openebs/cstor-operators/tree/v2.2.0-RC2) (2020-10-09)
+
+No Changes
+
+## [v2.2.0-RC1](https://github.com/openebs/cstor-operators/tree/v2.2.0-RC1) (2020-10-09)
+
+**Merged pull requests:**
+
+- fix\(backup, restore\): create backup and restore in cstor.openebs.io/v1 group [\#192](https://github.com/openebs/cstor-operators/pull/192) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(cstor restore\): use relevant labels to fetch CSPI name [\#191](https://github.com/openebs/cstor-operators/pull/191) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(travis\): add recipients for travis notifications. [\#190](https://github.com/openebs/cstor-operators/pull/190) ([sonasingh46](https://github.com/sonasingh46))
+- refact\(crds\): update crds based on new api spec changes [\#189](https://github.com/openebs/cstor-operators/pull/189) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(version\): add 2.2.0 to upgrade matrix [\#188](https://github.com/openebs/cstor-operators/pull/188) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(typo\): Fixes typo in cstor cspc controller log messages [\#186](https://github.com/openebs/cstor-operators/pull/186) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- feat\(backup, restore\): promote backup and restore controller to use v1 apis [\#183](https://github.com/openebs/cstor-operators/pull/183) ([mittachaitu](https://github.com/mittachaitu))
+- feat\(backup & restore\): add v1 support for backup and restore [\#182](https://github.com/openebs/cstor-operators/pull/182) ([mittachaitu](https://github.com/mittachaitu))
+- docs\(bd-tag\): add tutorial for using BD tag feature. [\#181](https://github.com/openebs/cstor-operators/pull/181) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(docs\): add csi cstor volume metrics exposed by prometheus [\#179](https://github.com/openebs/cstor-operators/pull/179) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix various language issues on homepage [\#176](https://github.com/openebs/cstor-operators/pull/176) ([didier-durand](https://github.com/didier-durand))
+- chore\(upgrade\): add valid current versions for 2.1.0 upgrades [\#173](https://github.com/openebs/cstor-operators/pull/173) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(CSPC, nodeName changes\): add suport to move the CStorPoolInstances to specified node [\#167](https://github.com/openebs/cstor-operators/pull/167) ([mittachaitu](https://github.com/mittachaitu))
+
+## [v2.1.0](https://github.com/openebs/cstor-operators/tree/v2.1.0) (2020-09-10)
 
 **Merged pull requests:**
 
 - chore\(upgrade\): add valid current versions for 2.1.0 upgrades [\#174](https://github.com/openebs/cstor-operators/pull/174) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(cspc\): add capability to specify allowed BD tags on CSPC [\#172](https://github.com/openebs/cstor-operators/pull/172) ([sonasingh46](https://github.com/sonasingh46))
+- chore\(license\): add license check for .sh and Dockerfile [\#171](https://github.com/openebs/cstor-operators/pull/171) ([AJEETRAI707](https://github.com/AJEETRAI707))
+- chore\(ci\): add license check in ci [\#170](https://github.com/openebs/cstor-operators/pull/170) ([AJEETRAI707](https://github.com/AJEETRAI707))
+- Bump golang version to 1.14.7 [\#169](https://github.com/openebs/cstor-operators/pull/169) ([AJEETRAI707](https://github.com/AJEETRAI707))
+- fix\(backup\): fixing deletion of backup snapshot [\#168](https://github.com/openebs/cstor-operators/pull/168) ([mynktl](https://github.com/mynktl))
+- fix\(write cache\): create claim for write cache raid group blockdevices [\#162](https://github.com/openebs/cstor-operators/pull/162) ([mittachaitu](https://github.com/mittachaitu))
+- fix\(roThreshold\): update default roThresholdLimit to 85% during sync time [\#159](https://github.com/openebs/cstor-operators/pull/159) ([mittachaitu](https://github.com/mittachaitu))
+- refact\(vendor\): sync with openebs apis changes [\#156](https://github.com/openebs/cstor-operators/pull/156) ([mittachaitu](https://github.com/mittachaitu))
+- chore\(docs\): update README and quick.md files  [\#154](https://github.com/openebs/cstor-operators/pull/154) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(version\): update upgrade matrix with valid current versions [\#152](https://github.com/openebs/cstor-operators/pull/152) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- feat\(tests\): add integration tests for scaleup and scaledown of CStorVolume [\#151](https://github.com/openebs/cstor-operators/pull/151) ([mittachaitu](https://github.com/mittachaitu))
+- test\(cspc\): add cspc tunables test [\#150](https://github.com/openebs/cstor-operators/pull/150) ([sonasingh46](https://github.com/sonasingh46))
+- feat\(tests\): add integration test cases for changing the policies on CVC dynamically [\#148](https://github.com/openebs/cstor-operators/pull/148) ([mittachaitu](https://github.com/mittachaitu))
+
+## [v2.1.0-RC2](https://github.com/openebs/cstor-operators/tree/v2.1.0-RC2) (2020-09-10)
+
+No Changes
 
 ## [v2.1.0-RC1](https://github.com/openebs/cstor-operators/tree/v2.1.0-RC1) (2020-09-08)
 
 **Merged pull requests:**
 
+- chore\(upgrade\): add valid current versions for 2.1.0 upgrades [\#174](https://github.com/openebs/cstor-operators/pull/174) ([shubham14bajpai](https://github.com/shubham14bajpai))
 - feat\(cspc\): add capability to specify allowed BD tags on CSPC [\#172](https://github.com/openebs/cstor-operators/pull/172) ([sonasingh46](https://github.com/sonasingh46))
 - chore\(license\): add license check for .sh and Dockerfile [\#171](https://github.com/openebs/cstor-operators/pull/171) ([AJEETRAI707](https://github.com/AJEETRAI707))
 - chore\(ci\): add license check in ci [\#170](https://github.com/openebs/cstor-operators/pull/170) ([AJEETRAI707](https://github.com/AJEETRAI707))

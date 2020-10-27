@@ -19,7 +19,7 @@ package app
 import (
 	"fmt"
 
-	"github.com/openebs/api/pkg/util"
+	"github.com/openebs/api/v2/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )

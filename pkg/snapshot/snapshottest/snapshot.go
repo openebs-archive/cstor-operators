@@ -15,7 +15,7 @@ limitations under the License.
 package snapshottest
 
 import (
-	v1proto "github.com/openebs/api/pkg/proto"
+	v1proto "github.com/openebs/api/v2/pkg/proto"
 	"github.com/pkg/errors"
 )
 

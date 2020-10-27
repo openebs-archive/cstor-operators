@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	v1proto "github.com/openebs/api/pkg/proto"
+	v1proto "github.com/openebs/api/v2/pkg/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

@@ -18,7 +18,7 @@ package zpool
 import (
 	"strings"
 
-	internalapi "github.com/openebs/api/pkg/internalapis/apis/cstor"
+	internalapi "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
 	"github.com/pkg/errors"
 )
 

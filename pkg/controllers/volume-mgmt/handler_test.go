@@ -21,11 +21,11 @@ import (
 	"testing"
 	"time"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
+	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 
-	apitypes "github.com/openebs/api/pkg/apis/types"
-	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
-	informers "github.com/openebs/api/pkg/client/informers/externalversions"
+	apitypes "github.com/openebs/api/v2/pkg/apis/types"
+	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
+	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

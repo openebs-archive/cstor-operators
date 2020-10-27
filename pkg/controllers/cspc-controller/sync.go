@@ -22,9 +22,9 @@ import (
 	"reflect"
 	"strings"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/api/pkg/apis/types"
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v2/pkg/apis/types"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	"github.com/openebs/cstor-operators/pkg/cspc/algorithm"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"

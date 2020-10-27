@@ -22,8 +22,8 @@ import (
 	"testing"
 	"time"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
-	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
+	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"

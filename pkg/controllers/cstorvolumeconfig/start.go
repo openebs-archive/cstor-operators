@@ -27,9 +27,9 @@ import (
 
 	"time"
 
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	informers "github.com/openebs/api/pkg/client/informers/externalversions"
-	leader "github.com/openebs/api/pkg/kubernetes/leaderelection"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
+	leader "github.com/openebs/api/v2/pkg/kubernetes/leaderelection"
 	server "github.com/openebs/cstor-operators/pkg/server"
 	cvcserver "github.com/openebs/cstor-operators/pkg/server/cstorvolumeconfig"
 	"github.com/openebs/cstor-operators/pkg/snapshot"

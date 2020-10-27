@@ -18,9 +18,9 @@ import (
 	"testing"
 	"time"
 
-	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
+	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
 
-	informers "github.com/openebs/api/pkg/client/informers/externalversions"
+	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
 
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"

@@ -18,8 +18,8 @@ import (
 	"reflect"
 	"testing"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/api/pkg/util"
+	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v2/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"

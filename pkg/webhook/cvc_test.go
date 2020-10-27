@@ -19,9 +19,9 @@ package webhook
 import (
 	"testing"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
 	"github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"

@@ -33,12 +33,12 @@ import (
 
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 
-	cstorapis "github.com/openebs/api/pkg/apis/cstor/v1"
-	openebstypes "github.com/openebs/api/pkg/apis/types"
+	cstorapis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	openebstypes "github.com/openebs/api/v2/pkg/apis/types"
 
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	openebsScheme "github.com/openebs/api/pkg/client/clientset/versioned/scheme"
-	informers "github.com/openebs/api/pkg/client/informers/externalversions"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	openebsScheme "github.com/openebs/api/v2/pkg/client/clientset/versioned/scheme"
+	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
 )
 
 var (

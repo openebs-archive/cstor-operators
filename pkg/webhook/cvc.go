@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
-	util "github.com/openebs/api/pkg/util"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	util "github.com/openebs/api/v2/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"

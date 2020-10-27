@@ -17,7 +17,7 @@ package client
 import (
 	"testing"
 
-	"github.com/openebs/api/pkg/proto"
+	"github.com/openebs/api/v2/pkg/proto"
 )
 
 type TestUnixSock struct{}

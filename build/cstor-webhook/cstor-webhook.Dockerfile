@@ -1,8 +1,13 @@
-FROM golang:1.13.6 as build
+FROM golang:1.14.7 as build
 
-ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT=""
 
 ENV GO111MODULE=on \
+  GOOS=${TARGETOS} \
+  GOARCH=${TARGETARCH} \
+  GOARM=${TARGETVARIANT} \
   DEBIAN_FRONTEND=noninteractive \
   PATH="/root/go/bin:${PATH}"
 
@@ -16,10 +21,7 @@ RUN go mod download
 
 COPY . .
 
-RUN export GOOS=$(echo ${TARGETPLATFORM} | cut -d / -f1) && \
-  export GOARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) && \
-  GOARM=$(echo ${TARGETPLATFORM} | cut -d / -f3 | cut -c2-) && \
-  make buildx.cstor-webhook
+RUN make buildx.cstor-webhook
 
 FROM ubuntu:18.04
 

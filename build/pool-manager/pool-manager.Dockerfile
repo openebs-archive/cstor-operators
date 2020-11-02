@@ -7,12 +7,16 @@
 #libraries - zpool, zfs, zrepl
 #FROM openebs/cstor-base:ci
 ARG BASE_IMAGE
-FROM golang:1.13.6 as build
+FROM golang:1.14.7 as build
 
-ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT=""
 
 ENV GO111MODULE=on \
-  CGO_ENABLED=1 \
+  GOOS=${TARGETOS} \
+  GOARCH=${TARGETARCH} \
+  GOARM=${TARGETVARIANT} \
   DEBIAN_FRONTEND=noninteractive \
   PATH="/root/go/bin:${PATH}"
 
@@ -26,10 +30,7 @@ RUN go mod download
 
 COPY . .
 
-RUN export GOOS=$(echo ${TARGETPLATFORM} | cut -d / -f1) && \
-  export GOARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) && \
-  GOARM=$(echo ${TARGETPLATFORM} | cut -d / -f3 | cut -c2-) && \
-  make buildx.pool-manager
+RUN make buildx.pool-manager
 
 FROM $BASE_IMAGE
 

@@ -27,7 +27,7 @@ endif
 
 # default list of platforms for which multiarch image is built
 ifeq (${PLATFORMS}, )
-	export PLATFORMS="linux/ppc64le,linux/arm64,linux/ppc64le"
+	export PLATFORMS="linux/amd64,linux/arm64,linux/ppc64le"
 endif
 
 # if IMG_RESULT is unspecified, by default the image will be pushed to registry
@@ -93,7 +93,6 @@ buildx.cvc-operator: bootstrap clean
 	@echo
 
 .PHONY: docker.buildx.cvc-operator
-docker.buildx.cvc-operator:
 docker.buildx.cvc-operator: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_CVC_OPERATOR)
 docker.buildx.cvc-operator: COMPONENT=$(CVC_OPERATOR)
 docker.buildx.cvc-operator: BUILD_ARGS=$(DBUILD_ARGS)
@@ -108,7 +107,6 @@ buildx.pool-manager: bootstrap clean
 	@echo
 
 .PHONY: docker.buildx.pool-manager
-docker.buildx.pool-manager:
 docker.buildx.pool-manager: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_POOL_MANAGER)
 docker.buildx.pool-manager: COMPONENT=$(POOL_MANAGER)
 docker.buildx.pool-manager: BUILD_ARGS=--build-arg BASE_IMAGE=$(CSTOR_BASE_IMAGE) ${DBUILD_ARGS}
@@ -123,7 +121,6 @@ buildx.volume-manager: bootstrap clean
 	@echo
 
 .PHONY: docker.buildx.volume-manager
-docker.buildx.volume-manager:
 docker.buildx.volume-manager: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_VOLUME_MANAGER)
 docker.buildx.volume-manager: COMPONENT=$(VOLUME_MANAGER)
 docker.buildx.volume-manager: BUILD_ARGS=$(DBUILD_ARGS)
@@ -138,7 +135,6 @@ buildx.cstor-webhook: bootstrap clean
 	@echo
 
 .PHONY: docker.buildx.cstor-webhook
-docker.buildx.cstor-webhook:
 docker.buildx.cstor-webhook: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_CSTOR_WEBHOOK)
 docker.buildx.cstor-webhook: COMPONENT=$(CSTOR_WEBHOOK)
 docker.buildx.cstor-webhook: BUILD_ARGS=$(DBUILD_ARGS)

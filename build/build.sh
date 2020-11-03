@@ -43,11 +43,11 @@ fi
 
 # Determine the current branch
 CURRENT_BRANCH=""
-if [ -z "${RELEASE_TAG}" ];
+if [ -z "${BRANCH}" ];
 then
   CURRENT_BRANCH=$(git branch | grep "\*" | cut -d ' ' -f2)
 else
-  CURRENT_BRANCH="${RELEASE_TAG}"
+  CURRENT_BRANCH="${BRANCH}"
 fi
 
 ## Populate the version based on release tag

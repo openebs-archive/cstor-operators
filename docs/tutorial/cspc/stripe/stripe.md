@@ -383,4 +383,4 @@ spec:
 ```
 
 ## Disk Replacement By Removing Disk
-Stipe RAID configuration of cStor pool does not support disk replacement.
+Stripe RAID configuration of cStor pool does not support disk replacement.

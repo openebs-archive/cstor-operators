@@ -21,6 +21,8 @@
 
 export DBUILD_ARGS=--build-arg DBUILD_DATE=${DBUILD_DATE} --build-arg DBUILD_REPO_URL=${DBUILD_REPO_URL} --build-arg DBUILD_SITE_URL=${DBUILD_SITE_URL}
 
+CSTOR_BASE_IMAGE= ${IMAGE_ORG}/cstor-base:${BASE_TAG}
+
 ifeq (${TAG}, )
   export TAG=ci
 endif
@@ -48,11 +50,11 @@ DOCKERX_IMAGE_CSPC_OPERATOR:=${IMAGE_ORG}/cspc-operator:${TAG}
 # Name of the multiarch image for cvc-operator
 DOCKERX_IMAGE_CVC_OPERATOR:=${IMAGE_ORG}/cvc-operator:${TAG}
 
-# Name of the multiarch image for pool-manager
-DOCKERX_IMAGE_POOL_MANAGER:=${IMAGE_ORG}/pool-manager:${TAG}
+# Name of the multiarch image for cstor-volume-manager
+DOCKERX_IMAGE_POOL_MANAGER:=${IMAGE_ORG}/cstor-pool-manager:${TAG}
 
-# Name of the multiarch image for volume-manager
-DOCKERX_IMAGE_VOLUME_MANAGER:=${IMAGE_ORG}/volume-manager:${TAG}
+# Name of the multiarch image for cstor-volume-manager
+DOCKERX_IMAGE_VOLUME_MANAGER:=${IMAGE_ORG}/cstor-volume-manager:${TAG}
 
 # Name of the multiarch image for cstor-webhook
 DOCKERX_IMAGE_CSTOR_WEBHOOK:=${IMAGE_ORG}/cstor-webhook:${TAG}

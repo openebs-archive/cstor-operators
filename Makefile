@@ -204,7 +204,7 @@ license-check:
        fi
 	@echo "--> Done checking license."
 	@echo
-# If there are any external tools need to be used, they can be added by defining a EXTERNAL_TOOLS variable 
+# If there are any external tools need to be used, they can be added by defining a EXTERNAL_TOOLS variable
 # Bootstrap the build by downloading additional tools
 .PHONY: bootstrap
 bootstrap:
@@ -214,7 +214,7 @@ bootstrap:
 	done
 
 .PHONY: clean
-clean: 
+clean:
 	@echo '--> Cleaning directory...'
 	rm -rf ${GOPATH}/bin/${CSPC_OPERATOR}
 	rm -rf ${GOPATH}/bin/${CVC_OPERATOR}
@@ -225,3 +225,16 @@ clean:
 	@echo
 
 include Makefile.buildx.mk
+
+.PHONY: k8s-deploy
+k8s-deploy:
+	kubectl apply -f https://openebs.github.io/charts/openebs-operator.yaml
+	kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
+
+.PHONY: k8s-deploy-devel
+k8s-deploy-devel:
+	kubectl apply -f deploy/rbac.yaml
+	kubectl apply -f deploy/ndm-operator.yaml
+	kubectl apply -f deploy/crds
+	kubectl apply -f deploy/cstor-operator.yaml
+	kubectl apply -f deploy/csi-operator.yaml

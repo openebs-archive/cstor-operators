@@ -27,6 +27,7 @@ import (
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 
 	"github.com/openebs/cstor-operators/pkg/version"
+	"github.com/openebs/cstor-operators/pkg/volumereplica"
 
 	"github.com/openebs/api/v2/pkg/util"
 
@@ -56,6 +57,10 @@ const (
 	volumeID          = "openebs.io/volumeID"
 	cspiLabel         = "cstorpoolinstance.openebs.io/name"
 	cspiOnline        = "ONLINE"
+
+	// these should be moved to openebs/api
+	pvCreatedByKey        = "openebs.io/created-through"
+	createdThroughRestore = "restore"
 )
 
 // replicaInfo struct is used to pass replica information to
@@ -459,8 +464,8 @@ func (c *CVCController) createCVR(
 	}
 	// Set isRestoreVol annotation on CVR if CVC has
 	// "openebs.io/created-through: restore" annotation
-	if value := claim.GetAnnotations()["openebs.io/created-through"]; value == "restore" {
-		annotations["isRestoreVol"] = "true"
+	if value := claim.GetAnnotations()[pvCreatedByKey]; value == createdThroughRestore {
+		annotations[volumereplica.IsRestoreVol] = "true"
 	}
 	cvrObj, err := c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
 		Get(volume.Name+"-"+string(pool.Name), metav1.GetOptions{})

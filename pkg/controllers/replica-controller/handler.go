@@ -51,6 +51,11 @@ var (
 	upgradeMap = map[string]upgradeFunc{}
 )
 
+const (
+	// this should be moved to openebs/api
+	restoreCompletedAnnotation = "openebs.io/restore-completed"
+)
+
 // CVRPatch struct represent the struct used to patch
 // the cvr object
 type CVRPatch struct {
@@ -117,6 +122,18 @@ func (c *CStorVolumeReplicaController) syncHandler(
 		// TODO
 		// need to rethink on this logic !!
 		// status holds more importance than error
+
+		if err != nil {
+			klog.Errorf("handling operation %s failed: %v", operation, err)
+
+			c.recorder.Event(
+				cvrGot,
+				corev1.EventTypeWarning,
+				"SyncFailed",
+				fmt.Sprintf("handling operation %s failed: %v", operation, err),
+			)
+		}
+
 		return nil
 	}
 	cvrGot.Status.LastUpdateTime = metav1.Now()
@@ -257,6 +274,24 @@ func (c *CStorVolumeReplicaController) cVREventHandler(
 		if isCVRCreateStatus(cvrObj) {
 			return c.cVRAddEventHandler(cvrObj, fullVolName)
 		}
+
+		if cvrObj.Annotations[restoreCompletedAnnotation] == "true" {
+			targetIp, err := volumereplica.GetTargetIp(fullVolName)
+			if err != nil {
+				return "", err
+			}
+
+			if targetIp == "" {
+				err := volumereplica.SetTargetIp(fullVolName, cvrObj.Spec.TargetIP)
+				if err != nil {
+					return "", err
+				}
+			}
+
+			delete(cvrObj.Annotations, restoreCompletedAnnotation)
+			delete(cvrObj.Annotations, volumereplica.IsRestoreVol)
+		}
+
 		return c.getCVRStatus(cvrObj)
 	}
 

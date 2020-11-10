@@ -80,19 +80,8 @@ endif
 export DBUILD_ARGS=--build-arg DBUILD_DATE=${DBUILD_DATE} --build-arg DBUILD_REPO_URL=${DBUILD_REPO_URL} --build-arg DBUILD_SITE_URL=${DBUILD_SITE_URL} --build-arg ARCH=${ARCH}
 
 # Specify the name of cstor-base image
-CSTOR_BASE_IMAGE= ${IMAGE_ORG}/cstor-base:${BASE_TAG}
-export CSTOR_BASE_IMAGE
-
-ifeq (${CSTOR_BASE_IMAGE_ARM64}, )
-  CSTOR_BASE_IMAGE_ARM64= ${IMAGE_ORG}/cstor-base-arm64:${BASE_TAG}
-  export CSTOR_BASE_IMAGE_ARM64
-endif
-
-# Specify the name of base image for ARM64
-ifeq (${BASE_DOCKER_IMAGE_ARM64}, )
-  BASE_DOCKER_IMAGE_ARM64 = "arm64v8/ubuntu:18.04"
-  export BASE_DOCKER_IMAGE_ARM64
-endif
+CSTOR_BASE_IMAGE_AMD64= ${IMAGE_ORG}/cstor-base-amd64:${BASE_TAG}
+export CSTOR_BASE_IMAGE_AMD64
 
 # Specify the name of the docker repo for amd64
 CSPC_OPERATOR_REPO_NAME=cspc-operator-amd64
@@ -109,8 +98,6 @@ CVC_OPERATOR=cvc-operator
 VOLUME_MANAGER=volume-manager
 CSTOR_WEBHOOK=cstor-webhook
 WEBHOOK_REPO=webhook
-# Specify the name of the docker repo for arm64
-CVC_OPERATOR_ARM64?=cvc-operator-arm64
 
 # list only the source code directories
 PACKAGES = $(shell go list ./... | grep -v 'vendor\|pkg/client/generated\|tests')
@@ -145,17 +132,6 @@ cvc-operator-image.amd64:
 	@cd build/${CVC_OPERATOR} && sudo docker build -t ${IMAGE_ORG}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG} ${DBUILD_ARGS} .
 	@rm build/${CVC_OPERATOR}/${CVC_OPERATOR}
 
-.PHONY: cvc-operator-image.arm64
-cvc-operator-image.arm64:
-	@echo "----------------------------"
-	@echo -n "--> arm64 based cvc-operator image "
-	@echo "${IMAGE_ORG}/${CVC_OPERATOR_REPO_NAME}:${IMAGE_TAG}"
-	@echo "----------------------------"
-	@PNAME=${CVC_OPERATOR} CTLNAME=${CVC_OPERATOR} sh -c "'$(PWD)/build/build.sh'"
-	@cp bin/${CVC_OPERATOR}/${CVC_OPERATOR} build/cvc-operator/
-	@cd build/${CVC_OPERATOR} && sudo docker build -t ${IMAGE_ORG}/${CVC_OPERATOR_ARM64}:${IMAGE_TAG} -f Dockerfile.arm64 ${DBUILD_ARGS} .
-	@rm build/${CVC_OPERATOR}/${CVC_OPERATOR}
-
 .PHONY: volume-manager-image.amd64
 volume-manager-image.amd64:
 	@echo -n "--> volume manager image <--"
@@ -183,7 +159,7 @@ pool-manager-image.amd64:
 	@echo "----------------------------"
 	@PNAME=${POOL_MANAGER} CTLNAME=${POOL_MANAGER} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${POOL_MANAGER}/${POOL_MANAGER} build/pool-manager/
-	@cd build/${POOL_MANAGER} && sudo docker build -t ${IMAGE_ORG}/${POOL_MANAGER_REPO_NAME}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} ${DBUILD_ARGS} . --no-cache
+	@cd build/${POOL_MANAGER} && sudo docker build -t ${IMAGE_ORG}/${POOL_MANAGER_REPO_NAME}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE_AMD64} ${DBUILD_ARGS} . --no-cache
 	@rm build/${POOL_MANAGER}/${POOL_MANAGER}
 
 .PHONY: cstor-webhook-image.amd64
@@ -228,3 +204,24 @@ license-check:
        fi
 	@echo "--> Done checking license."
 	@echo
+# If there are any external tools need to be used, they can be added by defining a EXTERNAL_TOOLS variable 
+# Bootstrap the build by downloading additional tools
+.PHONY: bootstrap
+bootstrap:
+	@for tool in  $(EXTERNAL_TOOLS) ; do \
+		echo "+ Installing $$tool" ; \
+		cd && GO111MODULE=on go get $$tool; \
+	done
+
+.PHONY: clean
+clean: 
+	@echo '--> Cleaning directory...'
+	rm -rf ${GOPATH}/bin/${CSPC_OPERATOR}
+	rm -rf ${GOPATH}/bin/${CVC_OPERATOR}
+	rm -rf ${GOPATH}/bin/${POOL_MANAGER}
+	rm -rf ${GOPATH}/bin/${VOLUME_MANAGER}
+	rm -rf ${GOPATH}/bin/${CSTOR_WEBHOOK}
+	@echo '--> Done cleaning.'
+	@echo
+
+include Makefile.buildx.mk

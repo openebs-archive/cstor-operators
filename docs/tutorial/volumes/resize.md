@@ -45,7 +45,7 @@ pvc-849bd646-6d3f-4a87-909e-2416d4e00904   5Gi        RWO            Delete     
 ```
 
 To resize the PV that has been created from 5Gi to 10Gi, edit the PVC definition and update the `spec.resources.requests.storage` to 10Gi.
-It may take few seconds to update the actual size in PVC resourece, wait for the updated capacity to reflect in PVC status (pvc.status.capacity.storage).
+It may take few seconds to update the actual size in PVC resource, wait for the updated capacity to reflect in PVC status (pvc.status.capacity.storage).
 It is internally a two step process for volumes containing a file system:
 - Volume expansion
 - FileSystem expansion

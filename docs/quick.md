@@ -28,7 +28,6 @@ Install the latest release using:
  **Note: If running on K8s version lesser than 1.17, you will need to comment the `priorityClassName: system-cluster-critical` in the csi-operator.yaml**
  
 ```
-kubectl apply -f https://openebs.github.io/charts/openebs-operator.yaml
 kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
 ```
 
@@ -51,20 +50,15 @@ $ kubectl get pod -n openebs
 NAME                                                              READY   STATUS    RESTARTS   AGE
 cspc-operator-5fb7db848f-wgnq8                                    1/1     Running   0          6d7h
 cvc-operator-7f7d8dc4c5-sn7gv                                     1/1     Running   0          6d7h
-maya-apiserver-69455f46c4-hchf4                                   1/1     Running   2          6d7h
-openebs-admission-server-5779b64b89-ztzn6                         1/1     Running   0          6d7h
 openebs-cstor-admission-server-7585b9659b-rbkmn                   1/1     Running   0          6d7h
 openebs-cstor-csi-controller-0                                    7/7     Running   0          6d7h
 openebs-cstor-csi-node-dl58c                                      2/2     Running   0          6d7h
 openebs-cstor-csi-node-jmpzv                                      2/2     Running   0          6d7h
 openebs-cstor-csi-node-tfv45                                      2/2     Running   0          6d7h
-openebs-localpv-provisioner-67b78448bf-jj7fp                      1/1     Running   0          6d7h
 openebs-ndm-gctb7                                                 1/1     Running   0          6d7h
 openebs-ndm-operator-7c8759dbb5-58zpl                             1/1     Running   0          6d7h
 openebs-ndm-sfczv                                                 1/1     Running   0          6d7h
 openebs-ndm-vgdnv                                                 1/1     Running   0          6d6h
-openebs-provisioner-d4c96499c-l6b4g                               1/1     Running   0          6d7h
-openebs-snapshot-operator-6865b77f-6dp22                          2/2     Running   0          6d7h
 ```
 
 Check that blockdevices are created:

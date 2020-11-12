@@ -152,11 +152,11 @@ buildx.push.cvc-operator:
 
 .PHONY: buildx.push.pool-manager
 buildx.push.pool-manager:
-	BUILDX=true DIMAGE=${IMAGE_ORG}/pool-manager ./build/push
+	BUILDX=true DIMAGE=${IMAGE_ORG}/cstor-pool-manager ./build/push
 
 .PHONY: buildx.push.volume-manager
 buildx.push.volume-manager:
-	BUILDX=true DIMAGE=${IMAGE_ORG}/volume-manager ./build/push
+	BUILDX=true DIMAGE=${IMAGE_ORG}/cstor-volume-manager ./build/push
 
 .PHONY: buildx.push.cstor-webhook
 buildx.push.cstor-webhook:

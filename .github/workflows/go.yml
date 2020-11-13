@@ -3,7 +3,7 @@ on:
   push:
   pull_request:
     paths-ignore:
-      - 'charts/**'
+      - 'deploy/helm/**'
 jobs:
 
   test:

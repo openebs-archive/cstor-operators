@@ -63,6 +63,6 @@ LABEL org.label-schema.build-date=$DBUILD_DATE
 LABEL org.label-schema.vcs-url=$DBUILD_REPO_URL
 LABEL org.label-schema.url=$DBUILD_SITE_URL
 
-COPY --from=build /go/src/github.com/openebs/cstor-operator/bin/cspc-operator /usr/local/bin/cspc-operator
+COPY --from=build /go/src/github.com/openebs/cstor-operator/bin/cspc-operator/cspc-operator /usr/local/bin/cspc-operator
 
 ENTRYPOINT ["/usr/local/bin/cspc-operator"]

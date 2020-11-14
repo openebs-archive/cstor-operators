@@ -60,7 +60,7 @@ RUN apt-get -y install rsyslog
 
 RUN mkdir -p /usr/local/etc/istgt
 
-COPY --from=build /go/src/github.com/openebs/cstor-operator/bin/volume-manager /usr/local/bin/
+COPY --from=build /go/src/github.com/openebs/cstor-operator/bin/volume-manager/volume-manager /usr/local/bin/
 COPY --from=build /go/src/github.com/openebs/cstor-operator/build/volume-manager/entrypoint.sh /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/entrypoint.sh

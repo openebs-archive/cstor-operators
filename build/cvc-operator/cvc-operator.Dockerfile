@@ -63,7 +63,7 @@ LABEL org.label-schema.build-date=$DBUILD_DATE
 LABEL org.label-schema.vcs-url=$DBUILD_REPO_URL
 LABEL org.label-schema.url=$DBUILD_SITE_URL
 
-COPY --from=build /go/src/github.com/openebs/cstor-operator/bin/cvc-operator /usr/local/bin/cvc-operator
+COPY --from=build /go/src/github.com/openebs/cstor-operator/bin/cvc-operator/cvc-operator /usr/local/bin/cvc-operator
 COPY --from=build /go/src/github.com/openebs/cstor-operator/build/cvc-operator/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

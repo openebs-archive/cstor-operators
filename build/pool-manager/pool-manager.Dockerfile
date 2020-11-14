@@ -60,7 +60,7 @@ LABEL org.label-schema.build-date=$DBUILD_DATE
 LABEL org.label-schema.vcs-url=$DBUILD_REPO_URL
 LABEL org.label-schema.url=$DBUILD_SITE_URL
 
-COPY --from=build /go/src/github.com/openebs/cstor-operator/bin/pool-manager /usr/local/bin/
+COPY --from=build /go/src/github.com/openebs/cstor-operator/bin/pool-manager/pool-manager /usr/local/bin/
 COPY --from=build /go/src/github.com/openebs/cstor-operator/build/pool-manager/entrypoint.sh /usr/local/bin/
 
 RUN echo '#!/bin/bash\nif [ $# -lt 1 ]; then\n\techo "argument missing"\n\texit 1\nfi\neval "$*"\n' >> /usr/local/bin/execute.sh

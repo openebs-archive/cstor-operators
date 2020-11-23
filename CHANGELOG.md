@@ -1,4 +1,23 @@
-# Changelog
+v2.3.0 / 2020-11-14
+========================
+* refact(crds): update crds to use apiextensions.k8s.io/v1 apis ([#197](https://github.com/openebs/cstor-operators/pull/197),[@prateekpandey14](https://github.com/prateekpandey14))
+* refact(deps): use openebs/api v2 release modules ([#187](https://github.com/openebs/cstor-operators/pull/187),[@prateekpandey14](https://github.com/prateekpandey14))
+* add air gapped documentation  ([#205](https://github.com/openebs/cstor-operators/pull/205),[@daximillian](https://github.com/daximillian))
+* fix(restore): set targetip on CVRs after restore is completed ([#198](https://github.com/openebs/cstor-operators/pull/198),[@zlymeda](https://github.com/zlymeda))
+* chore(build): add support for multiarch build ([#155](https://github.com/openebs/cstor-operators/pull/155),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
+v2.3.0-RC2 / 2020-11-14
+========================
+
+
+v2.3.0-RC1 / 2020-11-12
+========================
+* refact(crds): update crds to use apiextensions.k8s.io/v1 apis ([#197](https://github.com/openebs/cstor-operators/pull/197),[@prateekpandey14](https://github.com/prateekpandey14))
+* refact(deps): use openebs/api v2 release modules ([#187](https://github.com/openebs/cstor-operators/pull/187),[@prateekpandey14](https://github.com/prateekpandey14))
+* add air gapped documentation  ([#205](https://github.com/openebs/cstor-operators/pull/205),[@daximillian](https://github.com/daximillian))
+* fix(restore): set targetip on CVRs after restore is completed ([#198](https://github.com/openebs/cstor-operators/pull/198),[@zlymeda](https://github.com/zlymeda))
+* chore(build): add support for multiarch build ([#155](https://github.com/openebs/cstor-operators/pull/155),[@shubham14bajpai](https://github.com/shubham14bajpai))
 
 ## [v2.2.0](https://github.com/openebs/cstor-operators/tree/v2.2.0) (2020-10-09)
 

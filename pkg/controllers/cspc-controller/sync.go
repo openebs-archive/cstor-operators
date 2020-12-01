@@ -270,7 +270,9 @@ func (c *Controller) removeCSPCFinalizer(cspc *cstor.CStorPoolCluster) error {
 			LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name,
 		},
 	)
-
+	if err != nil {
+		return err
+	}
 	for _, bdcItem := range bdcList.Items {
 		bdcItem := bdcItem // pin it
 		bdcObj := &bdcItem

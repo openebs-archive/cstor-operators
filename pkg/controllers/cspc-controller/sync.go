@@ -25,6 +25,7 @@ import (
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	"github.com/openebs/api/v2/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/cspc/algorithm"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
@@ -259,6 +260,27 @@ func (c *Controller) removeCSPCFinalizer(cspc *cstor.CStorPoolCluster) error {
 	if len(cspList.Items) > 0 {
 		return errors.Wrap(err, "failed to remove CSPC finalizer on associated resources as "+
 			"CSPI(s) still exists for CSPC")
+	}
+
+	// If the BD(s) are claimed and the CSPI(s) do not spawn up for some reason,
+	// the pending BDC(s) finalizer don't get removed automatically.
+	// The below code handles cleanup for such cases.
+	bdcList, err := c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspc.Namespace).List(
+		metav1.ListOptions{
+			LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name,
+		},
+	)
+	if err != nil {
+		return err
+	}
+	for _, bdcItem := range bdcList.Items {
+		bdcItem := bdcItem // pin it
+		bdcObj := &bdcItem
+		bdcObj.Finalizers = util.RemoveString(bdcObj.Finalizers, types.CSPCFinalizer)
+		bdcObj, err = c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspc.Namespace).Update(bdcObj)
+		if err != nil {
+			return errors.Wrapf(err, "failed to remove finalizers from bdc %s", bdcItem.Name)
+		}
 	}
 
 	cspc.RemoveFinalizer(types.CSPCFinalizer)

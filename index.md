@@ -13,7 +13,7 @@ $ helm repo add cstor https://openebs.github.io/cstor-operators
 
 You can then run `helm search repo cstor` to see the charts.
 
-#### Update OpenEBS Repo
+#### Update OpenEBS CStor Repo
 
 Once cstor repository has been successfully fetched into the local system, it has to be updated to get the latest version. The cstor repo can be updated using the following command.
 
@@ -36,4 +36,3 @@ helm install <your-relase-name> cstor/openebs-cstor --create-namespace
 ```bash
 helm install <your-relase-name> cstor/openebs-cstor
 ```
-

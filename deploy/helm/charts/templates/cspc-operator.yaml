@@ -2,9 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "openebs-cstor.fullname" . }}-cspc-operator
-  {{- if .Values.cspcOperator.annotations }}
-  annotations:
-  {{ toYaml .Values.cspcOperator.annotations | indent 4 }}
+  {{- with .Values.cspcOperator.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
   {{- end }}
   labels:
     {{- include "openebs-cstor.cspcOperator.labels" . | nindent 4 }}
@@ -17,6 +16,9 @@ spec:
     type: Recreate
   template:
     metadata:
+      {{- with .Values.cspcOperator.podAnnotations }}
+      annotations: {{ toYaml . | nindent 8 }}
+      {{- end }}
       labels:
         {{- include "openebs-cstor.cspcOperator.labels" . | nindent 8 }}
         {{- if .Values.cspcOperator.podLabels}}
@@ -60,4 +62,19 @@ spec:
               value: "{{ .Values.cspcOperator.cstorPoolExporter.image.registry }}{{ .Values.cspcOperator.cstorPoolExporter.image.repository }}:{{ .Values.cspcOperator.cstorPoolExporter.image.tag }}"
             - name: RESYNC_INTERVAL
               value: {{ .Values.cspcOperator.resyncInterval }}
----
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 2 }}
+{{- end }}
+{{- if .Values.cspcOperator.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.cspcOperator.nodeSelector | indent 8 }}
+{{- end }}
+{{- if .Values.cspcOperator.securityContext }}
+      securityContext:
+{{ toYaml .Values.cspcOperator.securityContext | indent 8 }}
+{{- end }}
+{{- if .Values.cspcOperator.tolerations }}
+      tolerations:
+{{ toYaml .Values.cspcOperator.tolerations | indent 8 }}
+{{- end }}

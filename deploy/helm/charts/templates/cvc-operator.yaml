@@ -2,9 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "openebs-cstor.fullname" . }}-cvc-operator
-  {{- if .Values.cvcOperator.annotations }}
-  annotations:
-  {{ toYaml .Values.cvcOperator.annotations | indent 4 }}
+  {{- with .Values.cvcOperator.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
   {{- end }}
   labels:
     {{- include "openebs-cstor.cvcOperator.labels" . | nindent 4 }}
@@ -49,7 +48,22 @@ spec:
             - name: OPENEBS_IO_CSTOR_TARGET_IMAGE
               value: "{{ .Values.cvcOperator.target.image.registry }}{{ .Values.cvcOperator.target.image.repository }}:{{ .Values.cvcOperator.target.image.tag }}"
             - name:  OPENEBS_IO_CSTOR_VOLUME_MGMT_IMAGE
-              value: "{{ .Values.volumeMgmt.target.image.registry }}{{ .Values.volumeMgmt.target.image.repository }}:{{ .Values.volumeMgmt.target.image.tag }}"
+              value: "{{ .Values.cvcOperator.volumeMgmt.image.registry }}{{ .Values.cvcOperator.volumeMgmt.image.repository }}:{{ .Values.cvcOperator.volumeMgmt.image.tag }}"
             - name:  OPENEBS_IO_VOLUME_MONITOR_IMAGE
-              value: "{{ .Values.volumeExporter.target.image.registry }}{{ .Values.volumeExporter.target.image.repository }}:{{ .Values.volumeExporter.target.image.tag }}"
----
+              value: "{{ .Values.cvcOperator.volumeExporter.image.registry }}{{ .Values.cvcOperator.volumeExporter.image.repository }}:{{ .Values.cvcOperator.volumeExporter.image.tag }}"
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 2 }}
+{{- end }}
+{{- if .Values.cvcOperator.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.cvcOperator.nodeSelector | indent 8 }}
+{{- end }}
+{{- if .Values.cvcOperator.securityContext }}
+      securityContext:
+{{ toYaml .Values.cvcOperator.securityContext | indent 8 }}
+{{- end }}
+{{- if .Values.cvcOperator.tolerations }}
+      tolerations:
+{{ toYaml .Values.cvcOperator.tolerations | indent 8 }}
+{{- end }}

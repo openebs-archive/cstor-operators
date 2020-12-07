@@ -1,4 +1,4 @@
-{{- if .Values.csiDriver.install.create -}}
+{{- if .Values.csiDriver.create -}}
 apiVersion: storage.k8s.io/v1beta1
 kind: CSIDriver
 metadata:

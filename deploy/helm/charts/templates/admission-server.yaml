@@ -2,9 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "openebs-cstor.fullname" . }}-admission-server
-  {{- if .Values.admissionServer.annotations }}
-  annotations:
-  {{ toYaml .Values.admissionServer.annotations | indent 4 }}
+  {{- with .Values.admissionServer.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
   {{- end }}
   labels:
     {{- include "openebs-cstor.admissionServer.labels" . | nindent 4 }}
@@ -42,3 +41,19 @@ spec:
               value: "openebs-cstor-admission-server"
             - name: ADMISSION_WEBHOOK_FAILURE_POLICY
               value: {{ .Values.admissionServer.failurePolicy }}
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 2 }}
+{{- end }}
+{{- if .Values.admissionServer.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.admissionServer.nodeSelector | indent 8 }}
+{{- end }}
+{{- if .Values.admissionServer.securityContext }}
+      securityContext:
+{{ toYaml .Values.admissionServer.securityContext | indent 8 }}
+{{- end }}
+{{- if .Values.admissionServer.tolerations }}
+      tolerations:
+{{ toYaml .Values.admissionServer.tolerations | indent 8 }}
+{{- end }}

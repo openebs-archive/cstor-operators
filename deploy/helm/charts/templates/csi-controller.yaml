@@ -2,9 +2,8 @@ kind: StatefulSet
 apiVersion: apps/v1
 metadata:
   name: {{ template "openebs-cstor.fullname" . }}-csi-controller
-  {{- if .Values.csiController.annotations }}
-  annotations:
-  {{ toYaml .Values.csiController.annotations | indent 4 }}
+  {{- with .Values.csiController.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
   {{- end }}
   labels:
     {{- include "openebs-cstor.csiController.labels" . | nindent 4 }}
@@ -122,4 +121,19 @@ spec:
       volumes:
         - name: socket-dir
           emptyDir: {}
----
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 2 }}
+{{- end }}
+{{- if .Values.csiController.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.csiController.nodeSelector | indent 8 }}
+{{- end }}
+{{- if .Values.csiController.securityContext }}
+      securityContext:
+{{ toYaml .Values.csiController.securityContext | indent 8 }}
+{{- end }}
+{{- if .Values.csiController.tolerations }}
+      tolerations:
+{{ toYaml .Values.csiController.tolerations | indent 8 }}
+{{- end }}

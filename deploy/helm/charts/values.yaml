@@ -1,6 +1,11 @@
 # Default values for cstor-operators.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+release:
+  version: "0.9.1"
+
+imagePullSecrets:
+# - name: "image-pull-secret"
 
 cspcOperator:
   componentName: cspc-operator
@@ -30,8 +35,11 @@ cspcOperator:
   annotations: {}
   resyncInterval: "30"
   podAnnotations: {}
+  podLabels: {}
   nodeSelector: {}
   tolerations: []
+  resources: {}
+  securityContext: {}
 
 cvcOperator:
   componentName: cvc-operator
@@ -61,73 +69,85 @@ cvcOperator:
   annotations: {}
   resyncInterval: "30"
   podAnnotations: {}
+  podLabels: {}
   nodeSelector: {}
   tolerations: []
+  resources: {}
+  securityContext: {}
 
 csiController:
   componentName: ""
-    resizer:
-      name: "csi-resizer"
-      image:
-        # Make sure that registry name end with a '/'.
-        # For example : quay.io/ is a correct value here and quay.io is incorrect
-        registry: quay.io/
-        repository: k8scsi/csi-resizer
-        pullPolicy: IfNotPresent
-        # Overrides the image tag whose default is the chart appVersion.
-        tag: v0.4.0
-    snapshotter:
-      name: "csi-snapshotter"
-      image:
-        # Make sure that registry name end with a '/'.
-        # For example : quay.io/ is a correct value here and quay.io is incorrect
-        registry: quay.io/
-        repository: k8scsi/csi-snapshotter
-        pullPolicy: IfNotPresent
-        # Overrides the image tag whose default is the chart appVersion.
-        tag: v2.0.1
-    snapshotController:
-      name: "snapshot-controller"
-      image:
-        # Make sure that registry name end with a '/'.
-        # For example : quay.io/ is a correct value here and quay.io is incorrect
-        registry: quay.io/
-        repository: k8scsi/snapshot-controller
-        pullPolicy: IfNotPresent
-        # Overrides the image tag whose default is the chart appVersion.
-        tag: v2.0.1
-    provisioner:
-      name: "csi-provisioner"
-      image:
-        # Make sure that registry name end with a '/'.
-        # For example : quay.io/ is a correct value here and quay.io is incorrect
-        registry: quay.io/
-        repository: k8scsi/csi-attacher
-        pullPolicy: IfNotPresent
-        # Overrides the image tag whose default is the chart appVersion.
-        tag: v2.0.0
-    attacher:
-      name: "csi-attacher"
-      image:
-        # Make sure that registry name end with a '/'.
-        # For example : quay.io/ is a correct value here and quay.io is incorrect
-        registry: quay.io/
-        repository: k8scsi/csi-provisioner
-        pullPolicy: IfNotPresent
-        # Overrides the image tag whose default is the chart appVersion.
-        tag: v1.6.0
-    driverRegistrar:
-      name: "csi-cluster-driver-registrar"
-      image:
-        # Make sure that registry name end with a '/'.
-        # For example : quay.io/ is a correct value here and quay.io is incorrect
-        registry: quay.io/
-        repository: k8scsi/csi-cluster-driver-registrar
-        pullPolicy: IfNotPresent
-        # Overrides the image tag whose default is the chart appVersion.
-        tag: v1.0.1
+  resizer:
+    name: "csi-resizer"
+    image:
+      # Make sure that registry name end with a '/'.
+      # For example : quay.io/ is a correct value here and quay.io is incorrect
+      registry: quay.io/
+      repository: k8scsi/csi-resizer
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: v0.4.0
+  snapshotter:
+    name: "csi-snapshotter"
+    image:
+      # Make sure that registry name end with a '/'.
+      # For example : quay.io/ is a correct value here and quay.io is incorrect
+      registry: quay.io/
+      repository: k8scsi/csi-snapshotter
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: v2.0.1
+  snapshotController:
+    name: "snapshot-controller"
+    image:
+      # Make sure that registry name end with a '/'.
+      # For example : quay.io/ is a correct value here and quay.io is incorrect
+      registry: quay.io/
+      repository: k8scsi/snapshot-controller
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: v2.0.1
+  provisioner:
+    name: "csi-provisioner"
+    image:
+      # Make sure that registry name end with a '/'.
+      # For example : quay.io/ is a correct value here and quay.io is incorrect
+      registry: quay.io/
+      repository: k8scsi/csi-attacher
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: v2.0.0
+  attacher:
+    name: "csi-attacher"
+    image:
+      # Make sure that registry name end with a '/'.
+      # For example : quay.io/ is a correct value here and quay.io is incorrect
+      registry: quay.io/
+      repository: k8scsi/csi-provisioner
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: v1.6.0
+  driverRegistrar:
+    name: "csi-cluster-driver-registrar"
+    image:
+      # Make sure that registry name end with a '/'.
+      # For example : quay.io/ is a correct value here and quay.io is incorrect
+      registry: quay.io/
+      repository: k8scsi/csi-cluster-driver-registrar
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: v1.0.1
+  annotations: {}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  resources: {}
+  securityContext: {}
 
 cstorCSIPlugin:
+  # ToDo: Verify the name
+  name: cstor-csi-plugin
   image:
     # Make sure that registry name end with a '/'.
     # For example : quay.io/ is a correct value here and quay.io is incorrect
@@ -148,7 +168,6 @@ csiNode:
       # Overrides the image tag whose default is the chart appVersion.
       tag: v1.0.1
 
-
 csiDriver:
   create: true
   podInfoOnMount: true
@@ -167,8 +186,15 @@ admissionServer:
   failurePolicy: "Fail"
   annotations: {}
   podAnnotations: {}
-  ## Labels to be added to ndm daemonset pods
-  podLabels:
-    name: openebs-ndm
+  podLabels: {}
   nodeSelector: {}
   tolerations: []
+  resources: {}
+  securityContext: {}
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: openebs-ndm

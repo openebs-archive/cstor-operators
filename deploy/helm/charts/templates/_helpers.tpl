@@ -54,16 +54,16 @@ openebs.io/version: {{ .Values.release.version | quote }}
 {{/*
 Create match labels for openebs-cstor admission server
 */}}
-{{- define "openebs-cstor.admissionSever.matchLabels" -}}
-app: {{ .Values.admissionSever.componentName | quote }}
+{{- define "openebs-cstor.admissionServer.matchLabels" -}}
+app: {{ .Values.admissionServer.componentName | quote }}
 release: {{ .Release.Name }}
-component: {{ .Values.admissionSever.componentName | quote }}
+component: {{ .Values.admissionServer.componentName | quote }}
 {{- end -}}
 
 {{/*
 Create component labels for openebs-cstor admission server
 */}}
-{{- define "openebs-cstor.admissionSever.componentLabels" -}}
+{{- define "openebs-cstor.admissionServer.componentLabels" -}}
 openebs.io/component-name: {{ .Values.admissionServer.componentName | quote }}
 {{- end -}}
 
@@ -71,10 +71,10 @@ openebs.io/component-name: {{ .Values.admissionServer.componentName | quote }}
 {{/*
 Create labels for openebs-cstor admission server
 */}}
-{{- define "openebs-cstor.labels" -}}
+{{- define "openebs-cstor.admissionServer.labels" -}}
 {{ include "openebs-cstor.common.metaLabels" . }}
-{{ include "openebs-cstor.admissionSever.matchLabels" . }}
-{{ include "openebs-cstor.admissionSever.componentLabels" . }}
+{{ include "openebs-cstor.admissionServer.matchLabels" . }}
+{{ include "openebs-cstor.admissionServer.componentLabels" . }}
 {{- end -}}
 
 {{/*
@@ -102,6 +102,80 @@ Create labels for openebs-cstor cspc operator
 {{ include "openebs-cstor.cspcOperator.componentLabels" . }}
 {{- end -}}
 
+{{/*
+Create match labels for openebs-cstor cvc operator
+*/}}
+{{- define "openebs-cstor.cvcOperator.matchLabels" -}}
+name: {{ .Values.cvcOperator.componentName | quote }}
+release: {{ .Release.Name }}
+{{- end -}}
+
+{{/*
+Create component labels openebs-cstor cvc operator
+*/}}
+{{- define "openebs-cstor.cvcOperator.componentLabels" -}}
+openebs.io/component-name: {{ .Values.cvcOperator.componentName | quote }}
+{{- end -}}
+
+
+{{/*
+Create labels for openebs-cstor cvc operator
+*/}}
+{{- define "openebs-cstor.cvcOperator.labels" -}}
+{{ include "openebs-cstor.common.metaLabels" . }}
+{{ include "openebs-cstor.cvcOperator.matchLabels" . }}
+{{ include "openebs-cstor.cvcOperator.componentLabels" . }}
+{{- end -}}
+
+{{/*
+Create match labels for openebs-cstor csi node operator
+*/}}
+{{- define "openebs-cstor.csiNode.matchLabels" -}}
+name: {{ .Values.csiNode.componentName | quote }}
+release: {{ .Release.Name }}
+{{- end -}}
+
+{{/*
+Create component labels openebs-cstor csi node operator
+*/}}
+{{- define "openebs-cstor.csiNode.componentLabels" -}}
+openebs.io/component-name: {{ .Values.csiNode.componentName | quote }}
+{{- end -}}
+
+
+{{/*
+Create labels for openebs-cstor csi node operator
+*/}}
+{{- define "openebs-cstor.csiNode.labels" -}}
+{{ include "openebs-cstor.common.metaLabels" . }}
+{{ include "openebs-cstor.csiNode.matchLabels" . }}
+{{ include "openebs-cstor.csiNode.componentLabels" . }}
+{{- end -}}
+
+{{/*
+Create match labels for openebs-cstor csi controller
+*/}}
+{{- define "openebs-cstor.csiController.matchLabels" -}}
+name: {{ .Values.csiController.componentName | quote }}
+release: {{ .Release.Name }}
+{{- end -}}
+
+{{/*
+Create component labels openebs-cstor csi controller
+*/}}
+{{- define "openebs-cstor.csiController.componentLabels" -}}
+openebs.io/component-name: {{ .Values.csiController.componentName | quote }}
+{{- end -}}
+
+
+{{/*
+Create labels for openebs-cstor csi controller
+*/}}
+{{- define "openebs-cstor.csiController.labels" -}}
+{{ include "openebs-cstor.common.metaLabels" . }}
+{{ include "openebs-cstor.csiController.matchLabels" . }}
+{{ include "openebs-cstor.csiController.componentLabels" . }}
+{{- end -}}
 
 
 

@@ -2,9 +2,8 @@ kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: {{ template "openebs-cstor.fullname" . }}-csi-node
-  {{- if .Values.csiNode.annotations }}
-  annotations:
-  {{ toYaml .Values.csiNode.annotations | indent 4 }}
+  {{- with .Values.csiNode.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
   {{- end }}
   labels:
     {{- include "openebs-cstor.csiNode.labels" . | nindent 4 }}
@@ -124,4 +123,19 @@ spec:
           hostPath:
             path: /
             type: Directory
----
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 2 }}
+{{- end }}
+{{- if .Values.csiNode.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.csiNode.nodeSelector | indent 8 }}
+{{- end }}
+{{- if .Values.csiNode.securityContext }}
+      securityContext:
+{{ toYaml .Values.csiNode.securityContext | indent 8 }}
+{{- end }}
+{{- if .Values.csiNode.tolerations }}
+      tolerations:
+{{ toYaml .Values.csiNode.tolerations | indent 8 }}
+{{- end }}

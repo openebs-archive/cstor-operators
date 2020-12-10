@@ -4,6 +4,10 @@
 release:
   version: "0.9.1"
 
+# If false, openebs NDM sub-chart will not be installed
+openebsNDM:
+  enabled: true
+
 imagePullSecrets:
 # - name: "image-pull-secret"
 

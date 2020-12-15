@@ -1,12 +1,19 @@
 # Default values for cstor-operators.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+
 release:
-  version: "0.9.1"
+  version: "2.4.0"
 
 # If false, openebs NDM sub-chart will not be installed
 openebsNDM:
   enabled: true
+
+rbac:
+  # rbac.create: `true` if rbac resources should be created
+  create: true
+  # rbac.pspEnabled: `true` if PodSecurityPolicy resources should be created
+  pspEnabled: false
 
 imagePullSecrets:
 # - name: "image-pull-secret"
@@ -16,26 +23,26 @@ cspcOperator:
   poolManager:
     image:
       registry:
-      repository: openebs/cstor-pool-manager-amd64
-      tag: 2.0.0
+      repository: openebs/cstor-pool-manager
+      tag: 2.4.0
   cstorPool:
     image:
       registry:
       repository: openebs/cstor-pool
-      tag: 2.0.0
+      tag: 2.4.0
   cstorPoolExporter:
     image:
       registry:
       repository: openebs/m-exporter
-      tag: 2.0.0
+      tag: 2.4.0
   image:
     # Make sure that registry name end with a '/'.
     # For example : quay.io/ is a correct value here and quay.io is incorrect
     registry:
-    repository: openebs/cspc-operator-amd64
+    repository: openebs/cspc-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 2.0.0
+    tag: 2.4.0
   annotations: {}
   resyncInterval: "30"
   podAnnotations: {}
@@ -51,25 +58,25 @@ cvcOperator:
     image:
       registry:
       repository: openebs/cstor-istgt
-      tag: 2.0.0
+      tag: 2.4.0
   volumeMgmt:
     image:
       registry:
-      repository: openebs/cstor-volume-manager-amd64
-      tag: 2.0.0
+      repository: openebs/cstor-volume-manager
+      tag: 2.4.0
   volumeExporter:
     image:
       registry:
       repository: openebs/m-exporter
-      tag: 2.0.0
+      tag: 2.4.0
   image:
     # Make sure that registry name end with a '/'.
     # For example : quay.io/ is a correct value here and quay.io is incorrect
     registry:
-    repository: openebs/cvc-operator-amd64
+    repository: openebs/cvc-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 2.0.0
+    tag: 2.4.0
   annotations: {}
   resyncInterval: "30"
   podAnnotations: {}
@@ -80,7 +87,7 @@ cvcOperator:
   securityContext: {}
 
 csiController:
-  componentName: ""
+  componentName: "openebs-cstor-csi-controller"
   resizer:
     name: "csi-resizer"
     image:
@@ -111,8 +118,8 @@ csiController:
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v2.0.1
-  provisioner:
-    name: "csi-provisioner"
+  attacher:
+    name: "csi-attacher"
     image:
       # Make sure that registry name end with a '/'.
       # For example : quay.io/ is a correct value here and quay.io is incorrect
@@ -121,8 +128,8 @@ csiController:
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v2.0.0
-  attacher:
-    name: "csi-attacher"
+  provisioner:
+    name: "csi-provisioner"
     image:
       # Make sure that registry name end with a '/'.
       # For example : quay.io/ is a correct value here and quay.io is incorrect
@@ -150,7 +157,6 @@ csiController:
   securityContext: {}
 
 cstorCSIPlugin:
-  # ToDo: Verify the name
   name: cstor-csi-plugin
   image:
     # Make sure that registry name end with a '/'.
@@ -159,7 +165,8 @@ cstorCSIPlugin:
     repository: openebs/cstor-csi-driver
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 2.0.0
+    tag: 2.4.0
+  remount: "true"
 
 csiNode:
   componentName: "openebs-cstor-csi-node"
@@ -167,10 +174,30 @@ csiNode:
     name: "csi-node-driver-registrar"
     image:
       registry: quay.io/
-      repository: csi-node-driver-registrar
+      repository: k8scsi/csi-node-driver-registrar
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v1.0.1
+  updateStrategy:
+    type: RollingUpdate
+  annotations: {}
+  podAnnotations: {}
+  resources: {}
+  # limits:
+  #   cpu: 10m
+  #   memory: 32Mi
+  # requests:
+  #   cpu: 10m
+  #   memory: 32Mi
+  ## Labels to be added to openebs-cstor-csi-node pods
+  podLabels: {}
+  # kubeletDir path can be configured to run on various different k8s ditributions like
+  # microk8s where kubelet root dir is not (/var/lib/kubelet/). For example microk8s,
+  # we need to change the kubelet directory to `/var/snap/microk8s/common/var/lib/kubelet/`
+  kubeletDir: "/var/lib/kubelet/"
+  nodeSelector: {}
+  tolerations: []
+  securityContext: {}
 
 csiDriver:
   create: true
@@ -183,10 +210,10 @@ admissionServer:
     # Make sure that registry name end with a '/'.
     # For example : quay.io/ is a correct value here and quay.io is incorrect
     registry:
-    repository: openebs/cstor-webhook-amd64
+    repository: openebs/cstor-webhook
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 2.0.0
+    tag: 2.4.0
   failurePolicy: "Fail"
   annotations: {}
   podAnnotations: {}
@@ -197,8 +224,18 @@ admissionServer:
   securityContext: {}
 
 serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: openebs-ndm
+  # Annotations to add to the service account
+  annotations: {}
+  csiController:
+    # Specifies whether a service account should be created
+    create: true
+    name: openebs-cstor-csi-controller-sa
+  csiNode:
+    # Specifies whether a service account should be created
+    create: true
+    name: openebs-cstor-csi-node-sa
+
+analytics:
+  enabled: true
+  # Specify in hours the duration after which a ping event needs to be sent.
+  pingInterval: "24h"

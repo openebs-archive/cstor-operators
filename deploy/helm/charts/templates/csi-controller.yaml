@@ -1,27 +1,27 @@
 kind: StatefulSet
 apiVersion: apps/v1
 metadata:
-  name: {{ template "openebs-cstor.fullname" . }}-csi-controller
+  name: {{ template "cstor.fullname" . }}-csi-controller
   {{- with .Values.csiController.annotations }}
   annotations: {{ toYaml . | nindent 4 }}
   {{- end }}
   labels:
-    {{- include "openebs-cstor.csiController.labels" . | nindent 4 }}
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "openebs-cstor.csiController.matchLabels" . | nindent 6 }}
+      {{- include "cstor.csiController.matchLabels" . | nindent 6 }}
   serviceName: "openebs-csi"
   replicas: {{ .Values.csiController.replicas }}
   template:
     metadata:
       labels:
-        {{- include "openebs-cstor.csiController.labels" . | nindent 8 }}
+        {{- include "cstor.csiController.labels" . | nindent 8 }}
         {{- if .Values.csiController.podLabels}}
         {{ toYaml .Values.csiController.podLabels | nindent 8 }}
         {{- end}}
     spec:
-      serviceAccount: openebs-cstor-csi-controller-sa
+      serviceAccount: {{ .Values.serviceAccount.csiController.name }}
       containers:
         - name: {{ .Values.csiController.resizer.name }}
           image: "{{ .Values.csiController.resizer.image.registry }}{{ .Values.csiController.resizer.image.repository }}:{{ .Values.csiController.resizer.image.tag }}"
@@ -110,7 +110,13 @@ spec:
               # OpenEBS namespace where the openebs cstor operator components
               # has been installed
             - name: OPENEBS_NAMESPACE
-              value: openebs
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPENEBS_IO_INSTALLER_TYPE
+              value: "cstor-helm"
+            - name: OPENEBS_IO_ENABLE_ANALYTICS
+              value: "{{ .Values.analytics.enabled }}"
           args :
             - "--endpoint=$(OPENEBS_CSI_ENDPOINT)"
             - "--url=$(OPENEBS_CSI_API_URL)"

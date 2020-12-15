@@ -1,13 +1,26 @@
+{{- if .Values.serviceAccount.create -}}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: openebs-maya-operator
-  namespace: openebs
+  name: {{ include "cstor.serviceAccountName" . }}
+  labels:
+    {{- include "cstor.common.metaLabels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- if .Values.rbac.create }}
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-operator
+  {{- with .Values.serviceAccount.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "cstor.common.metaLabels" . | nindent 4 }}
 rules:
   - apiGroups: ["*"]
     resources: ["nodes", "nodes/proxy"]
@@ -51,22 +64,27 @@ rules:
     resources: ["poddisruptionbudgets"]
     verbs: ["get", "list", "create", "delete", "watch"]
 ---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: openebs-cstor-operator
-subjects:
-  - kind: ServiceAccount
-    name: openebs-maya-operator
-    namespace: openebs
+  {{- with .Values.serviceAccount.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "cstor.common.metaLabels" . | nindent 4 }}
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: openebs-cstor-operator
-  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: {{ template "cstor.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
 ---
 # Define Role that allows operations required for migration of snapshots
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-migration
 rules:
@@ -81,14 +99,228 @@ rules:
     verbs: ["create", "get", "list"]
 ---
 kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-migration
 subjects:
-  - kind: ServiceAccount
-    name: openebs-maya-operator
-    namespace: openebs
+- kind: ServiceAccount
+  name: {{ template "cstor.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: openebs-cstor-migration
   apiGroup: rbac.authorization.k8s.io
+---
+# cstor csi cluster roles and bindings
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-snapshotter-binding
+subjects:
+  - kind: ServiceAccount
+    name: openebs-cstor-csi-controller-sa
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: openebs-cstor-csi-snapshotter-role
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-snapshotter-role
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents"]
+    verbs: ["create", "get", "list", "watch", "update", "delete"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents/status"]
+    verbs: ["update"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots/status"]
+    verbs: ["update"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch", "list", "delete", "update", "create"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["create", "list", "watch", "delete", "get", "update"]
+---
+##############################################
+###########                       ############
+###########   Controller plugin   ############
+###########                       ############
+##############################################
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: {{ .Values.serviceAccount.csiController.name }}
+  namespace: {{ .Release.Namespace }}
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-provisioner-role
+rules:
+  - apiGroups: [""]
+    resources: ["secrets","namespaces"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes", "services"]
+    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["get", "list"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments"]
+    verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshotcontents"]
+    verbs: ["get", "list"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["*"]
+  - apiGroups: ["*"]
+    resources: ["cstorvolumeattachments", "cstorvolumes","cstorvolumeconfigs"]
+    verbs: ["*"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-provisioner-binding
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.csiController.name }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: openebs-cstor-csi-provisioner-role
+  apiGroup: rbac.authorization.k8s.io
+---
+############################## CSI- Attacher #######################
+# Attacher must be able to work with PVs, nodes and VolumeAttachments
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-attacher-role
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["csi.storage.k8s.io"]
+    resources: ["csinodeinfos"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments", "csinodes"]
+    verbs: ["get", "list", "watch", "update"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-attacher-binding
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.csiController.name }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: openebs-cstor-csi-attacher-role
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-cluster-registrar-role
+rules:
+  - apiGroups: ["csi.storage.k8s.io"]
+    resources: ["csidrivers"]
+    verbs: ["create", "delete"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-cluster-registrar-binding
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.csiController.name }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: openebs-cstor-csi-cluster-registrar-role
+  apiGroup: rbac.authorization.k8s.io
+---
+########################################
+###########                 ############
+###########   Node plugin   ############
+###########                 ############
+########################################
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.serviceAccount.csiNode.name }}
+  namespace: {{ .Release.Namespace }}
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-registrar-role
+rules:
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes", "nodes", "services"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["*"]
+    resources: ["cstorvolumeattachments", "cstorvolumes","cstorvolumeconfigs"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-cstor-csi-registrar-binding
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.csiNode.name }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: openebs-cstor-csi-registrar-role
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

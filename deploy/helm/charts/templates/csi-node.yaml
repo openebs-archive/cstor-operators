@@ -1,26 +1,26 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: {{ template "openebs-cstor.fullname" . }}-csi-node
+  name: {{ template "cstor.fullname" . }}-csi-node
   {{- with .Values.csiNode.annotations }}
   annotations: {{ toYaml . | nindent 4 }}
   {{- end }}
   labels:
-    {{- include "openebs-cstor.csiNode.labels" . | nindent 4 }}
+    {{- include "cstor.csiNode.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "openebs-cstor.csiNode.matchLabels" . | nindent 6 }}
+      {{- include "cstor.csiNode.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "openebs-cstor.csiNode.labels" . | nindent 8 }}
+        {{- include "cstor.csiNode.labels" . | nindent 8 }}
         {{- if .Values.csiNode.podLabels}}
         {{ toYaml .Values.csiNode.podLabels | nindent 8 }}
         {{- end}}
     spec:
       #priorityClassName: system-node-critical
-      serviceAccount: openebs-cstor-csi-node-sa
+      serviceAccount: {{ .Values.serviceAccount.csiNode.name }}
       hostNetwork: true
       containers:
         - name: {{ .Values.csiNode.driverRegistrar.name }}
@@ -38,7 +38,7 @@ spec:
             - name: ADDRESS
               value: /plugin/csi.sock
             - name: DRIVER_REG_SOCK_PATH
-              value: /var/lib/kubelet/plugins/cstor.csi.openebs.io/csi.sock
+              value: {{ .Values.csiNode.kubeletDir }}plugins/cstor.csi.openebs.io/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -77,18 +77,20 @@ spec:
               # OpenEBS namespace where the openebs cstor operator components
               # has been installed
             - name: OPENEBS_NAMESPACE
-              value: openebs
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
               # Enable/Disable auto-remount feature, when volumes
               # recovers form the read-only state
             - name: REMOUNT
-              value: "false"
+              value: "{{ .Values.cstorCSIPlugin.remount }}"
           volumeMounts:
             - name: plugin-dir
               mountPath: /plugin
             - name: device-dir
               mountPath: /dev
             - name: pods-mount-dir
-              mountPath: /var/lib/kubelet/
+              mountPath: {{ .Values.csiNode.kubeletDir }}
               # needed so that any mounts setup inside this container are
               # propagated back to the host machine.
               mountPropagation: "Bidirectional"
@@ -105,15 +107,15 @@ spec:
             type: Directory
         - name: registration-dir
           hostPath:
-            path: /var/lib/kubelet/plugins_registry/
+            path: {{ .Values.csiNode.kubeletDir }}plugins_registry/
             type: DirectoryOrCreate
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/cstor.csi.openebs.io/
+            path: {{ .Values.csiNode.kubeletDir }}plugins/cstor.csi.openebs.io/
             type: DirectoryOrCreate
         - name: pods-mount-dir
           hostPath:
-            path: /var/lib/kubelet/
+            path: {{ .Values.csiNode.kubeletDir }}
             type: Directory
         - name: chroot-iscsiadm
           configMap:

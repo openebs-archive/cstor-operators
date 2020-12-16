@@ -1,8 +1,10 @@
-# cstor
+# OpenEBS CStor
 
-![Version: 2.4.0](https://img.shields.io/badge/Version-2.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.4.0](https://img.shields.io/badge/AppVersion-2.4.0-informational?style=flat-square)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![Release Charts](https://github.com/openebs/cstor-operators/workflows/Release%20Charts/badge.svg?branch=master)
+![Chart Lint and Test](https://github.com/openebs/cstor-operators/workflows/Chart%20Lint%20and%20Test/badge.svg)
 
-OpenEBS CStor helm chart for Kubernetes
+OpenEBS CStor helm chart for Kubernetes. This chart bootstraps OpenEBS cstor operators and csi driver deployment on a [Kubernetes](http://kubernetes.io) cluster using the  [Helm](https://helm.sh) package manager
 
 **Homepage:** <http://www.openebs.io/>
 
@@ -29,7 +31,7 @@ Please visit the [link](https://openebs.github.io/cstor-operators) for install i
 
 ```console
 # Helm
-$ helm install [RELEASE_NAME] openebs-cstor/openebs-cstor
+$ helm install [RELEASE_NAME] openebs-cstor/cstor
 ```
 
 _See [configuration](#configuration) below._

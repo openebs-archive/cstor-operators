@@ -21,15 +21,17 @@ spec:
       {{- end }}
       labels:
         {{- include "cstor.cspcOperator.labels" . | nindent 8 }}
-        {{- if .Values.cspcOperator.podLabels}}
+        {{- if .Values.cspcOperator.podLabels }}
         {{ toYaml .Values.cspcOperator.podLabels | nindent 8 }}
-        {{- end}}
+        {{- end }}
     spec:
-      serviceAccountName: {{ template "cstor.serviceAccountName" . }}
+      serviceAccountName: {{ .Values.serviceAccount.cstorOperator.name }}
       containers:
         - name: {{ template "cstor.fullname" . }}-cspc-operator
           imagePullPolicy: {{ .Values.cspcOperator.image.pullPolicy }}
           image: "{{ .Values.cspcOperator.image.registry }}{{ .Values.cspcOperator.image.repository }}:{{ .Values.cspcOperator.image.tag }}"
+          resources:
+{{ toYaml .Values.cspcOperator.resources | indent 12 }}
           env:
             - name: OPENEBS_NAMESPACE
               valueFrom:

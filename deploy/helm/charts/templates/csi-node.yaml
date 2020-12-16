@@ -15,17 +15,19 @@ spec:
     metadata:
       labels:
         {{- include "cstor.csiNode.labels" . | nindent 8 }}
-        {{- if .Values.csiNode.podLabels}}
+        {{- if .Values.csiNode.podLabels }}
         {{ toYaml .Values.csiNode.podLabels | nindent 8 }}
-        {{- end}}
+        {{- end }}
     spec:
-      #priorityClassName: system-node-critical
+      priorityClassName: openebs-csi-node-critical
       serviceAccount: {{ .Values.serviceAccount.csiNode.name }}
       hostNetwork: true
       containers:
         - name: {{ .Values.csiNode.driverRegistrar.name }}
           image: "{{ .Values.csiNode.driverRegistrar.image.registry }}{{ .Values.csiNode.driverRegistrar.image.repository }}:{{ .Values.csiNode.driverRegistrar.image.tag }}"
           imagePullPolicy: {{ .Values.csiNode.driverRegistrar.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.csiNode.resources | indent 12 }}
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"

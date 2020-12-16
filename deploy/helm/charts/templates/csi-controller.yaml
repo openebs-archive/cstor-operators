@@ -17,14 +17,17 @@ spec:
     metadata:
       labels:
         {{- include "cstor.csiController.labels" . | nindent 8 }}
-        {{- if .Values.csiController.podLabels}}
+        {{- if .Values.csiController.podLabels }}
         {{ toYaml .Values.csiController.podLabels | nindent 8 }}
-        {{- end}}
+        {{- end }}
     spec:
+      priorityClassName: openebs-csi-controller-critical
       serviceAccount: {{ .Values.serviceAccount.csiController.name }}
       containers:
         - name: {{ .Values.csiController.resizer.name }}
           image: "{{ .Values.csiController.resizer.image.registry }}{{ .Values.csiController.resizer.image.repository }}:{{ .Values.csiController.resizer.image.tag }}"
+          resources:
+{{ toYaml .Values.csiController.resources | indent 12 }}
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"

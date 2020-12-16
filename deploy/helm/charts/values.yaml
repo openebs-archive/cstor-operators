@@ -226,6 +226,9 @@ admissionServer:
 serviceAccount:
   # Annotations to add to the service account
   annotations: {}
+  cstorOperator:
+    create: true
+    name: openebs-cstor-operator
   csiController:
     # Specifies whether a service account should be created
     create: true

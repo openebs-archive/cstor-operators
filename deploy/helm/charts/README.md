@@ -2,7 +2,7 @@
 
 ![Version: 2.4.0](https://img.shields.io/badge/Version-2.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.4.0](https://img.shields.io/badge/AppVersion-2.4.0-informational?style=flat-square)
 
-CStor-Operator helm chart for Kubernetes
+OpenEBS CStor helm chart for Kubernetes
 
 **Homepage:** <http://www.openebs.io/>
 
@@ -14,17 +14,62 @@ CStor-Operator helm chart for Kubernetes
 | prateekpandey14 | prateek.pandey@mayadata.io |  |
 | sonasingh46 | sonasingh46@gmail.com |  |
 
-## Source Code
+## Get Repo Info
 
-* <https://github.com/openebs/cstor-operators>
+```console
+helm repo add openebs-cstor https://openebs.github.io/cstor-operators
+helm repo update
+```
 
-## Requirements
+_See [helm repo](https://helm.sh/docs/helm/helm_repo/) for command documentation._
+
+## Install Chart
+
+Please visit the [link](https://openebs.github.io/cstor-operators) for install instructions via helm3.
+
+```console
+# Helm
+$ helm install [RELEASE_NAME] openebs-cstor/openebs-cstor
+```
+
+_See [configuration](#configuration) below._
+
+_See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
+
+
+## Dependencies
+
+By default this chart installs additional, dependent charts:
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://openebs.github.io/node-disk-manager | openebs-ndm | 1.0.1 |
+| https://openebs.github.io/node-disk-manager | openebs-ndm | 1.0.2 |
 
-## Values
+To disable the dependency during installation, set `openebsNDM.enabled` to `false`.
+
+_See [helm dependency](https://helm.sh/docs/helm/helm_dependency/) for command documentation._
+
+## Uninstall Chart
+
+```console
+# Helm
+$ helm uninstall [RELEASE_NAME]
+```
+
+This removes all the Kubernetes components associated with the chart and deletes the release.
+
+_See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command documentation._
+
+## Upgrading Chart
+
+```console
+# Helm
+$ helm upgrade [RELEASE_NAME] [CHART] --install
+```
+
+## Configuration
+
+The following table lists the configurable parameters of the OpenEBS CStor chart and their default values.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|

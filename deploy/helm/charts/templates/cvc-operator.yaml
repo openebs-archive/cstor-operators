@@ -18,15 +18,17 @@ spec:
     metadata:
       labels:
         {{- include "cstor.cvcOperator.labels" . | nindent 8 }}
-        {{- if .Values.cvcOperator.podLabels}}
+        {{- if .Values.cvcOperator.podLabels }}
         {{ toYaml .Values.cvcOperator.podLabels | nindent 8 }}
-        {{- end}}
+        {{- end }}
     spec:
-      serviceAccountName: {{ template "cstor.serviceAccountName" . }}
+      serviceAccountName: {{ .Values.serviceAccount.cstorOperator.name }}
       containers:
         - name: {{ template "cstor.fullname" . }}-cvc-operator
           imagePullPolicy: {{ .Values.cvcOperator.image.pullPolicy }}
           image: "{{ .Values.cvcOperator.image.registry }}{{ .Values.cvcOperator.image.repository }}:{{ .Values.cvcOperator.image.tag }}"
+          resources:
+{{ toYaml .Values.cvcOperator.resources | indent 12 }}
           env:
             # OPENEBS_IO_BASE_DIR is used to configure base directory for openebs on host path.
             # Where OpenEBS can store required files. Default base path will be /var/openebs

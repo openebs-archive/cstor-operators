@@ -87,6 +87,8 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-migration
+  labels:
+    {{- include "cstor.common.metaLabels" . | nindent 4 }}
 rules:
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshotclasses"]
@@ -102,6 +104,8 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-migration
+  labels:
+    {{- include "cstor.common.metaLabels" . | nindent 4 }}
 subjects:
 - kind: ServiceAccount
   name: {{ .Values.serviceAccount.cstorOperator.name }}

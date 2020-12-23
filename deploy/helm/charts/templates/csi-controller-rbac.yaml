@@ -3,6 +3,8 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: {{ .Values.serviceAccount.csiController.name }}
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
 {{- if .Values.rbac.create }}
@@ -12,6 +14,8 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-csi-snapshotter-binding
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
     name: {{ .Values.serviceAccount.csiController.name }}
@@ -25,6 +29,8 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-csi-snapshotter-role
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -67,6 +73,8 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-csi-provisioner-role
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 rules:
   - apiGroups: [""]
     resources: ["secrets","namespaces"]
@@ -106,6 +114,8 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-csi-provisioner-binding
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
     name: {{ .Values.serviceAccount.csiController.name }}
@@ -121,6 +131,8 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-csi-attacher-role
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -139,6 +151,8 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-csi-attacher-binding
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
     name: {{ .Values.serviceAccount.csiController.name }}
@@ -152,6 +166,8 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-csi-cluster-registrar-role
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["csi.storage.k8s.io"]
     resources: ["csidrivers"]
@@ -161,6 +177,8 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openebs-cstor-csi-cluster-registrar-binding
+  labels:
+    {{- include "cstor.csiController.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
     name: {{ .Values.serviceAccount.csiController.name }}

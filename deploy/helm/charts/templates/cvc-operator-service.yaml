@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ template "cstor.fullname" . }}-cvc-operator-svc
   labels:
-    openebs.io/component-name: cvc-operator-svc
+    {{- include "cstor.cvcOperator.labels" . | nindent 4 }}
 spec:
   ports:
     - name: api

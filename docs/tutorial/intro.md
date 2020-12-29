@@ -1,7 +1,7 @@
 # cStor Tutorial
 
-This tutorial will help you to understand the usage of cstor-opertors.
-On a high level, this tutorial covers following:
+This tutorial will help you to understand the usage of cstor-operators.
+On a high level, this tutorial covers the following:
 
 1. How to use CSPC APIs to do pool operations and their tuning.
 2. How to do volume operation and their tuning.
@@ -23,3 +23,4 @@ On a high level, this tutorial covers following:
 5. This [link](./volumes/migration.md) explains the volume migration related operations across k8s nodes.
 6. This [link](./volumes/block_volume.md) explains how to use cstor raw block volume.
 7. This [link](./volumes/prometheus-monitoring.md) explains how to configure and monitor cstor volumes.
+8. This [link](./volumes/storageclass.md) explains how to configure topology aware StorageClass

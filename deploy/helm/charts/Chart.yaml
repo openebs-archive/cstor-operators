@@ -1,0 +1,35 @@
+apiVersion: v2
+name: cstor
+description: CStor-Operator helm chart for Kubernetes
+type: application
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 2.4.0
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application.
+appVersion: 2.4.0
+icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/openebs/icon/color/openebs-icon-color.png
+home: http://www.openebs.io/
+keywords:
+  - cloud-native-storage
+  - block-storage
+  - iSCSI
+  - storage
+  - cstor
+  - cstor-operators
+sources:
+  - https://github.com/openebs/cstor-operators
+
+dependencies:
+  - name: openebs-ndm
+    version: "1.0.2"
+    repository: "https://openebs.github.io/node-disk-manager"
+    condition: openebsNDM.enabled
+
+maintainers:
+  - name: kiranmova
+    email: kiran.mova@mayadata.io
+  - name: prateekpandey14
+    email: prateek.pandey@mayadata.io
+  - name: sonasingh46
+    email: sonasingh46@gmail.com

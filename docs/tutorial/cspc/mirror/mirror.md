@@ -5,7 +5,7 @@ Application of following YAML provisions a single node mirror cStor pool.
 
 **Note:** 
 
-   i)Do not forget to modify the follwing CSPC YAML to add your hostname label of the k8s node.
+   i)Do not forget to modify the following CSPC YAML to add your hostname label of the k8s node.
    
    List the node to see the labels and modify accordingly.
    
@@ -17,7 +17,7 @@ Application of following YAML provisions a single node mirror cStor pool.
    ```bash
    kubernetes.io/hostname: "your-node"
    ```
-   ii)Do not forget to modify the follwing CSPC YAML to add your blockdevice(block device should belong to the node where you want to provision).
+   ii)Do not forget to modify the following CSPC YAML to add your blockdevice(block device should belong to the node where you want to provision).
    ```bash
          - blockDevices:
              - blockDeviceName: "your-block-device-1"

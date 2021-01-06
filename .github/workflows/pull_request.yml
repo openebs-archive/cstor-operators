@@ -57,7 +57,7 @@ jobs:
 
       - name: Build Image
         env:
-          IMG_RESULT: load
+          IMG_RESULT: cache
         run: make docker.buildx.cspc-operator
 
   cvc-operator:
@@ -80,7 +80,7 @@ jobs:
 
       - name: Build Image
         env:
-          IMG_RESULT: load
+          IMG_RESULT: cache
         run: make docker.buildx.cvc-operator
 
   pool-manager:
@@ -103,7 +103,7 @@ jobs:
 
       - name: Build Image
         env:
-          IMG_RESULT: load
+          IMG_RESULT: cache
         run: make docker.buildx.pool-manager
 
   volume-manager:
@@ -126,7 +126,7 @@ jobs:
 
       - name: Build Image
         env:
-          IMG_RESULT: load
+          IMG_RESULT: cache
         run: make docker.buildx.volume-manager
   
   cstor-webhook:
@@ -149,12 +149,12 @@ jobs:
 
       - name: Build Image
         env:
-          IMG_RESULT: load
+          IMG_RESULT: cache
         run: make docker.buildx.cstor-webhook
 
   minikube:
     name: e2e tests
-    needs: [cstor-webhook, volume-manager, pool-manager, cvc-operator, cspc-operator]
+    needs: ['lint']
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -169,7 +169,9 @@ jobs:
           minikube version: v1.9.2
           kubernetes version: ${{ matrix.kubernetes }}
           github token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Check cached images
-        run: docker images
+      - name: Build images locally
+        env:
+          RELEASE_TAG: vX.X.X
+        run: make all.amd64 || exit 1;
       - name: Running tests
         run: ./ci/sanity/install.sh && ./ci/sanity/sanity.sh

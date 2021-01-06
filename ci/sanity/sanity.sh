@@ -150,6 +150,8 @@ kubectl apply -f ./ci/artifacts/busybox-csi-cstor-sparse.yaml
 IsPVCBound csi-claim 30
 IsPodRunning busybox 30
 
+kubectl describe pods -n openebs
+
 echo "Deleting BusyBox pod and check for the iscsi session cleaned properly..."
 kubectl delete -f ./ci/artifacts/busybox-csi-cstor-sparse.yaml
 

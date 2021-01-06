@@ -69,6 +69,9 @@ before_script: # TODO add golangci yaml config
     eval "$(minikube docker-env --profile=minikube)" && export DOCKER_CLI='docker';
     JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done;
     fi
+  - if [ ! -z "${DNAME}" ] && [ ! -z "${DPASS}" ]; then
+    sudo docker login -u "${DNAME}" -p "${DPASS}";
+    fi
 
 script:
   - make test

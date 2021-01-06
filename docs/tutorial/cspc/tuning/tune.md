@@ -258,7 +258,7 @@ spec:
 Compression values can be set at pool level only. There is no override mechanism like it was there in case of `tolerations`, `resources`, `auxResources` and `priorityClass`.
 Compression value must be one of `on`,`off`,`lzjb`,`gzip`,`gzip-[1-9]`,`zle` and `lz4`.
 
-Note: lz4 is the defualt compression algorithm that is used if the compression field is left unspecified on the cspc.
+Note: lz4 is the default compression algorithm that is used if the compression field is left unspecified on the cspc.
 
 ```yml
 apiVersion: cstor.openebs.io/v1

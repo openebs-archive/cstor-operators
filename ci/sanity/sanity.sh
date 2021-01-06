@@ -94,7 +94,7 @@ function getBD(){
 nodeName=$1
 BD_RETRY=$2
 for i in $(seq 1 $BD_RETRY) ; do
- bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname=$nodeName -o=jsonpath={.items[1].metadata.name})
+ bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[1].metadata.name}')
  if [ "$bdName" != "" ]; then
  echo "Got BD $bdName"
  break
@@ -149,8 +149,6 @@ kubectl apply -f ./ci/artifacts/busybox-csi-cstor-sparse.yaml
 
 IsPVCBound csi-claim 30
 IsPodRunning busybox 30
-
-kubectl describe pods -n openebs
 
 echo "Deleting BusyBox pod and check for the iscsi session cleaned properly..."
 kubectl delete -f ./ci/artifacts/busybox-csi-cstor-sparse.yaml

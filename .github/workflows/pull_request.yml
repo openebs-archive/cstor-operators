@@ -152,8 +152,7 @@ jobs:
           IMG_RESULT: cache
         run: make docker.buildx.cstor-webhook
 
-  minikube:
-    name: e2e tests
+  e2e-tests:
     needs: ['lint']
     runs-on: ubuntu-latest
     strategy:
@@ -163,15 +162,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2.3.4
+      
       - name: Setup Minikube-Kubernetes
         uses: manusa/actions-setup-minikube@v2.3.0
         with:
           minikube version: v1.9.2
           kubernetes version: ${{ matrix.kubernetes }}
           github token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set tag
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+          CI_TAG="ci"
+          echo "TAG=${CI_TAG}" >> $GITHUB_ENV
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+
       - name: Build images locally
-        env:
-          RELEASE_TAG: vX.X.X
         run: make all.amd64 || exit 1;
+      
       - name: Running tests
         run: ./ci/sanity/install.sh && ./ci/sanity/sanity.sh

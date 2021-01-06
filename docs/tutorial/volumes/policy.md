@@ -259,6 +259,34 @@ spec:
 
 Note: These resource configuration can be changed once the volume get provisioned by editing the CStorVolumeConfig resource on per volume level.
 
+E.g. You can apply a patch to update CStorVolumeConfig resource that already exists.  Create a file that contains the changes like `patch-resources-cvc.yaml`
+
+```yaml
+spec:
+  policy:
+    target:
+      resources:
+        limits:
+          cpu: 500m
+          memory: 128Mi
+        requests:
+          cpu: 250m
+          memory: 64Mi
+      auxResources:
+        limits:
+          cpu: 500m
+          memory: 128Mi
+        requests:
+          cpu: 250m
+          memory: 64Mi
+```
+
+and apply the patch on the resource
+
+```bash
+kubectl patch cvc -n openebs -p "$(cat patch-resources-cvc.yaml)" pvc-0478b13d-b1ef-4cff-813e-8d2d13bcb316 --type merge
+```
+
 ### Target Pod Toleration:
 
 This Kubernetes feature allows users to mark a node (taint the node) so that no pods can be scheduled to it, unless a pod explicitly tolerates the taint. 

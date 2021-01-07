@@ -51,7 +51,7 @@ jobs:
         kubernetes: [v1.18.6]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2
       
       - name: Setup Minikube-Kubernetes
         uses: manusa/actions-setup-minikube@v2.3.0

@@ -29,8 +29,8 @@ allowedTopologies:
       - node-3
 ```
 
-The CStor CSI driver will create the Volume in the CStor Pool instance present on
-this list of nodes. `volumeBindingMode: WaitForFirstConsumer` to let the k8s select
+The CStor CSI driver will create the Volume in the CStor Pool Instances present on
+this list of nodes. We can use `volumeBindingMode: WaitForFirstConsumer` to let the k8s select
 the node where the volume should be provisioned.
 
 With `volumeBindingMode: Immediate` driver creates the volume without any topology awareness.

@@ -94,7 +94,7 @@ function getBD(){
 nodeName=$1
 BD_RETRY=$2
 for i in $(seq 1 $BD_RETRY) ; do
- bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname=$nodeName -o=jsonpath={.items[0].metadata.name})
+ bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[1].metadata.name}')
  if [ "$bdName" != "" ]; then
  echo "Got BD $bdName"
  break

@@ -31,9 +31,66 @@ jobs:
           pattern: '*.sh'
           exclude: './.git/*,./vendor/*'
 
+  unit-tests:
+    name: unit tests 
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.14.7
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: verify license
+      run: make license-check
+
+    - name: verify dependencies
+      run: make deps
+
+    - name: verify tests
+      run: make test
+
+  e2e-tests:
+    needs: ['unit-tests']
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes: [v1.18.6]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Setup Minikube-Kubernetes
+        uses: manusa/actions-setup-minikube@v2.3.0
+        with:
+          minikube version: v1.9.2
+          kubernetes version: ${{ matrix.kubernetes }}
+          github token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set tag
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+          CI_TAG=${BRANCH#v}-ci
+          if [ ${BRANCH} = "master" ]; then
+            CI_TAG="ci"
+          fi
+          echo "TAG=${CI_TAG}" >> $GITHUB_ENV
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+      
+      - name: Build images locally
+        run: make all.amd64 || exit 1;
+      
+      - name: Running tests
+        run: ./ci/sanity/install.sh && ./ci/sanity/sanity.sh
+
   cspc-operator:
     runs-on: ubuntu-latest
-    needs: ['lint']
+    needs: ['lint', 'e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -79,7 +136,7 @@ jobs:
 
   cvc-operator:
     runs-on: ubuntu-latest
-    needs: ['lint']
+    needs: ['lint', 'e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -125,7 +182,7 @@ jobs:
   
   pool-manager:
     runs-on: ubuntu-latest
-    needs: ['lint']
+    needs: ['lint', 'e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -171,7 +228,7 @@ jobs:
   
   volume-manager:
     runs-on: ubuntu-latest
-    needs: ['lint']
+    needs: ['lint', 'e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -217,7 +274,7 @@ jobs:
 
   cstor-webhook:
     runs-on: ubuntu-latest
-    needs: ['lint']
+    needs: ['lint', 'e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2

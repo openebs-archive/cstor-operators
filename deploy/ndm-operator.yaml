@@ -75,7 +75,7 @@ spec:
       hostNetwork: true
       containers:
       - name: node-disk-manager
-        image: openebs/node-disk-manager:0.9.1
+        image: openebs/node-disk-manager:1.0.1
         imagePullPolicy: IfNotPresent
         securityContext:
           privileged: true
@@ -165,7 +165,7 @@ spec:
       serviceAccountName: openebs-maya-operator
       containers:
         - name: node-disk-operator
-          image: openebs/node-disk-operator:0.9.1
+          image: openebs/node-disk-operator:1.0.1
           imagePullPolicy: IfNotPresent
           readinessProbe:
             exec:

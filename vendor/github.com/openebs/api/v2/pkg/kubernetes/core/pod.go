@@ -185,6 +185,16 @@ func (p *PodTemplateSpec) WithVolumes(volumerList ...*Volume) *PodTemplateSpec {
 	return p
 }
 
+// WithImagePullSecrets sets the pod image pull secrets
+// if the length is zero then no secret is needed to pull the image
+func (p *PodTemplateSpec) WithImagePullSecrets(secrets []corev1.LocalObjectReference) *PodTemplateSpec {
+	if len(secrets) == 0 {
+		return p
+	}
+	p.Spec.ImagePullSecrets = secrets
+	return p
+}
+
 func (p *PodTemplateSpec) Build() *corev1.PodTemplateSpec {
 	return p.PodTemplateSpec
 }

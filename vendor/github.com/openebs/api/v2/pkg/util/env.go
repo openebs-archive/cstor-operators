@@ -37,7 +37,7 @@ const (
 	// This environment variable is set via kubernetes downward API
 	Namespace = "NAMESPACE"
 
-	// DefaultOpenEBSServiceAccount name of the default openebs service accout with
+	// DefaultOpenEBSServiceAccount name of the default openebs service account with
 	// required permissions
 	DefaultOpenEBSServiceAccount = "openebs-maya-operator"
 
@@ -47,6 +47,9 @@ const (
 	// This environment variable is set via kubernetes downward API in cvc and
 	// cspc operators deployments
 	OpenEBSServiceAccount = "OPENEBS_SERVICEACCOUNT_NAME"
+
+	// OpenEBSImagePullSecret is the environment variable that provides the image pull secrets
+	OpenEBSImagePullSecret = "OPENEBS_IO_IMAGE_PULL_SECRETS"
 )
 
 // LookupOrFalse looks up an environment variable and returns a string "false"
@@ -96,4 +99,9 @@ func GetServiceAccountName() string {
 		name = DefaultOpenEBSServiceAccount
 	}
 	return name
+}
+
+// GetOpenEBSImagePullSecrets gets the image pull secrets as string from the environment variable
+func GetOpenEBSImagePullSecrets() string {
+	return os.Getenv(OpenEBSImagePullSecret)
 }

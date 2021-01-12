@@ -24,17 +24,34 @@ Before creating a Volume Snapshot, a `VolumeSnapshotClass` must be set up.
 
 ```yaml
 kind: VolumeSnapshotClass
-apiVersion: snapshot.storage.k8s.io/v1beta1
+apiVersion: snapshot.storage.k8s.io/v1
 metadata:
   name: csi-cstor-snapshotclass
-  namespace: kube-system
   annotations:
     snapshot.storage.kubernetes.io/is-default-class: "true"
 driver: cstor.csi.openebs.io
 deletionPolicy: Delete
 ```
 
-The driver points to OpenEBS Cstor CSI driver. The deletionPolicy can be set to `Delete` or `Retain`. When set to Retain, the underlying physical snapshot on the storage cluster is retained even when the VolumeSnapshot object is deleted.
+The driver points to OpenEBS CStor CSI driver. The `deletionPolicy` can be set to `Delete` or `Retain`. When set to Retain, the underlying physical snapshot on the storage cluster is retained even when the VolumeSnapshot object is deleted.
+
+#### Note: In some cluster like OpenShift(OCP) 4.5, which only installs the `v1beta1` version of `VolumeSnapshotClass` as supported version, then you may get the API error like:
+
+```
+$ kubectl apply -f snapshotclass.yaml
+no matches for kind "VolumeSnapshotClass" in version "snapshot.storage.k8s.io/v1"
+```
+in such cases you can change the apiVersion to use `v1beta1` version instead of `v1` shown below:
+
+```yaml
+kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1beta1
+metadata:
+  name: csi-cstor-snapshotclass
+  annotations:
+    snapshot.storage.kubernetes.io/is-default-class: "true"
+driver: cstor.csi.openebs.io
+deletionPolicy: Delete
 
 
 ### Create a Snapshot of a Volume
@@ -42,7 +59,7 @@ The driver points to OpenEBS Cstor CSI driver. The deletionPolicy can be set to 
 To create a snapshot of a volume, here's an example of a YAML file that defines a snapshot:
 
 ```yaml
-apiVersion: snapshot.storage.k8s.io/v1beta1
+apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshot
 metadata:
   name: cstor-pvc-snap
@@ -92,7 +109,24 @@ Status:
 The `SnapshotContentName` identifies the `VolumeSnapshotContent` object which serves this snapshot. The Ready To Use parameter indicates that the Snapshot created successfully and 
 can be used to create a new PVC.
 
+#### Note: In some cluster like OpenShift(OCP) 4.5, which only installs the `v1beta1` version of `VolumeSnapshots` as supported version, then you may get the API error like:
 
+```
+$ kubectl apply -f snapshot.yaml
+no matches for kind "VolumeSnapshot" in version "snapshot.storage.k8s.io/v1"
+```
+in such cases you can change the apiVersion to use `v1beta1` version instead of `v1` shown below:
+
+```yaml
+apiVersion: snapshot.storage.k8s.io/v1beta1
+kind: VolumeSnapshot
+metadata:
+  name: cstor-pvc-snap
+spec:
+  volumeSnapshotClassName: csi-cstor-snapshotclass
+  source:
+    persistentVolumeClaimName: cstor-pvc
+```
 
 ### Create PVCs from VolumeSnapshots
 
@@ -118,14 +152,12 @@ spec:
 
 The `dataSource` shows that the PVC must be created using a `VolumeSnapshot` named `cstor-pvc-snap` as the source of the data. This instructs CStor CSI to create a PVC from the snapshot. Once the PVC is created, it can be attached to a pod and used just like any other PVC.
 
-```sh
-
 
 5. Verify that the PVC has been successfully created:
+
 ```
 kubectl get pvc
 NAME                           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS              AGE
 cstor-pvc                      Bound    pvc-52d88903-0518-11ea-b887-42010a80006c   5Gi        RWO            cstor-csi-disk            1d
 restore-cstor-pvc              Bound    pvc-2f2d65fc-0784-11ea-b887-42010a80006c   5Gi        RWO            cstor-csi-disk            5s
-`
 ```

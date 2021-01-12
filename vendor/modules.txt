@@ -84,7 +84,7 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/openebs/api/v2 v2.1.0
+# github.com/openebs/api/v2 v2.2.0
 github.com/openebs/api/v2/pkg/apis/cstor
 github.com/openebs/api/v2/pkg/apis/cstor/v1
 github.com/openebs/api/v2/pkg/apis/openebs.io

@@ -93,6 +93,7 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) *appsv1.Deploy
 				WithAnnotationsNew(getPodAnnotations()).
 				WithServiceAccountName(util.GetServiceAccountName()).
 				WithTolerations(getPoolPodToleration(cspi)...).
+				WithImagePullSecrets(coreapi.GetImagePullSecrets(util.GetOpenEBSImagePullSecrets())).
 				WithContainers(
 					coreapi.NewContainer().
 						WithImage(getPoolMgmtImage()).

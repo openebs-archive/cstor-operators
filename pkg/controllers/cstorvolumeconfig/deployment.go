@@ -399,6 +399,7 @@ func (c *CVCController) BuildTargetDeployment(
 				WithPriorityClassName(getPriorityClass(policySpec)).
 				WithNodeSelectorByValue(policySpec.Target.NodeSelector).
 				WithTolerationsNew(getDeployTolerations(policySpec)...).
+				WithImagePullSecrets(apicore.GetImagePullSecrets(util.GetOpenEBSImagePullSecrets())).
 				WithContainers(
 					apicore.NewContainer().
 						WithImage(getVolumeTargetImage()).

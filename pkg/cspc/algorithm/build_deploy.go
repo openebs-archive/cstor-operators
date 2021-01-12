@@ -18,7 +18,6 @@ package algorithm
 
 import (
 	"os"
-	"strings"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/types"
@@ -40,12 +39,6 @@ const (
 
 	// PoolExporterContainerName is the name of cstor target container name
 	PoolExporterContainerName = "maya-exporter"
-)
-
-const (
-	// OpenEBSImagePullSecretEnv is the environment variable that providers the image pull secrets
-	// for cstor pool and volume pods
-	OpenEBSImagePullSecretEnv = "OPENEBS_IO_IMAGE_PULL_SECRETS"
 )
 
 var (
@@ -100,7 +93,7 @@ func (c *Config) GetPoolDeploySpec(cspi *cstor.CStorPoolInstance) *appsv1.Deploy
 				WithAnnotationsNew(getPodAnnotations()).
 				WithServiceAccountName(util.GetServiceAccountName()).
 				WithTolerations(getPoolPodToleration(cspi)...).
-				WithImagePullSecrets(getImagePullSecrets(getOpenEBSImagePullSecrets())).
+				WithImagePullSecrets(coreapi.GetImagePullSecrets(util.GetOpenEBSImagePullSecrets())).
 				WithContainers(
 					coreapi.NewContainer().
 						WithImage(getPoolMgmtImage()).
@@ -408,27 +401,4 @@ func getPriorityClass(cspi *cstor.CStorPoolInstance) string {
 		return ""
 	}
 	return *cspi.Spec.PoolConfig.PriorityClassName
-}
-
-// getImagePullSecrets  parse image pull secrets from env
-// transform  string to corev1.LocalObjectReference
-// multiple secrets are separated by commas
-func getImagePullSecrets(s string) []corev1.LocalObjectReference {
-	s = strings.TrimSpace(s)
-	list := make([]corev1.LocalObjectReference, 0)
-	if len(s) == 0 {
-		return list
-	}
-	arr := strings.Split(s, ",")
-	for _, item := range arr {
-		if len(item) > 0 {
-			l := corev1.LocalObjectReference{Name: strings.TrimSpace(item)}
-			list = append(list, l)
-		}
-	}
-	return list
-}
-
-func getOpenEBSImagePullSecrets() string {
-	return os.Getenv(OpenEBSImagePullSecretEnv)
 }

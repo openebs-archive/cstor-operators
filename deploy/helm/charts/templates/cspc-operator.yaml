@@ -65,6 +65,10 @@ spec:
             - name: RESYNC_INTERVAL
               value: "{{ .Values.cspcOperator.resyncInterval }}"
 {{- if .Values.imagePullSecrets }}
+            - name: OPENEBS_IO_IMAGE_PULL_SECRETS
+              value: "{{- range $.Values.imagePullSecrets }}{{ .name }},{{- end }}"
+{{- end }}
+{{- if .Values.imagePullSecrets }}
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 2 }}
 {{- end }}

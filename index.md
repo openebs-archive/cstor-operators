@@ -36,3 +36,29 @@ helm install <your-relase-name> cstor/openebs-cstor --create-namespace
 ```bash
 helm install <your-relase-name> cstor/openebs-cstor
 ```
+
+#### Upgrade OpenEBS CStor
+
+- Upgrade the CRDs by applying the CRD yaml from the helm repo 
+```bash
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorbackup.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorcompletedbackup.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorpoolcluster.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorpoolinstance.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorrestore.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorvolume.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorvolumeattachment.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorvolumeconfig.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorvolumepolicy.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/cstorvolumereplica.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/migrationtask.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/upgradetask.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/volumesnapshot.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/volumesnapshotclass.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/volumesnapshotcontent.yaml
+```
+
+- Upgrade the helm release
+```bash
+helm upgrade <your-release-name> cstor/openebs-cstor --namespace=openebs
+```

@@ -60,11 +60,13 @@ spec:
           image: "{{ .Values.csiController.provisioner.image.registry }}{{ .Values.csiController.provisioner.image.repository }}:{{ .Values.csiController.provisioner.image.tag }}"
           imagePullPolicy: {{ .Values.csiController.provisioner.image.pullPolicy }}
           args:
-            - "--provisioner=cstor.csi.openebs.io"
             - "--csi-address=$(ADDRESS)"
             - "--v=5"
             - "--feature-gates=Topology=true"
             - "--extra-create-metadata=true"
+            - "--metrics-address=:22011"
+            - "--timeout=250s"
+            - "--default-fstype=ext4"
           env:
             - name: MY_NAME
               valueFrom:
@@ -80,19 +82,6 @@ spec:
           imagePullPolicy: {{ .Values.csiController.attacher.image.pullPolicy }}
           args:
             - "--v=5"
-            - "--csi-address=$(ADDRESS)"
-          env:
-            - name: ADDRESS
-              value: /var/lib/csi/sockets/pluginproxy/csi.sock
-          volumeMounts:
-            - name: socket-dir
-              mountPath: /var/lib/csi/sockets/pluginproxy/
-        - name: {{ .Values.csiController.driverRegistrar.name }}
-          image: "{{ .Values.csiController.driverRegistrar.image.registry }}{{ .Values.csiController.driverRegistrar.image.repository }}:{{ .Values.csiController.driverRegistrar.image.tag }}"
-          imagePullPolicy: {{ .Values.csiController.driverRegistrar.image.pullPolicy }}
-          args:
-            - "--v=5"
-            - "--driver-requires-attachment=true"
             - "--csi-address=$(ADDRESS)"
           env:
             - name: ADDRESS

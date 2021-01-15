@@ -54,6 +54,10 @@ spec:
             - name:  OPENEBS_IO_VOLUME_MONITOR_IMAGE
               value: "{{ .Values.cvcOperator.volumeExporter.image.registry }}{{ .Values.cvcOperator.volumeExporter.image.repository }}:{{ .Values.cvcOperator.volumeExporter.image.tag }}"
 {{- if .Values.imagePullSecrets }}
+            - name: OPENEBS_IO_IMAGE_PULL_SECRETS
+              value: "{{- range $.Values.imagePullSecrets }}{{ .name }},{{- end }}"
+{{- end }}
+{{- if .Values.imagePullSecrets }}
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 2 }}
 {{- end }}

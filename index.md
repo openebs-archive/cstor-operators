@@ -58,7 +58,9 @@ kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/maste
 kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/helm/charts/crds/volumesnapshotcontent.yaml
 ```
 
-- Upgrade the helm release
+- Upgrade the CStor control-plane
 ```bash
 helm upgrade <your-release-name> cstor/openebs-cstor --namespace=openebs
 ```
+
+- To upgrade the data plane components follow [this](https://github.com/openebs/upgrade/blob/master/docs/upgrade.md) doc. 

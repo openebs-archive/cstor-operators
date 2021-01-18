@@ -8,10 +8,10 @@ Please refer to Helm's [documentation](https://helm.sh/docs/) to get started.
 Once Helm is set up properly, add the repo as follows:
 
 ```bash
-$ helm repo add cstor https://openebs.github.io/cstor-operators
+$ helm repo add openebs-cstor https://openebs.github.io/cstor-operators
 ```
 
-You can then run `helm search repo cstor` to see the charts.
+You can then run `helm search repo openebs-cstor` to see the charts.
 
 #### Update OpenEBS CStor Repo
 
@@ -30,11 +30,11 @@ kubectl config set-context <current_context_name> --namespace=openebs
 
 - If namespace is not created, run the following command
 ```bash
-helm install <your-relase-name> cstor/openebs-cstor --create-namespace
+helm install <your-relase-name> openebs-cstor/cstor --create-namespace
 ```
 - Else, if namespace is already created, run the following command
 ```bash
-helm install <your-relase-name> cstor/openebs-cstor
+helm install <your-relase-name> openebs-cstor/cstor
 ```
 
 #### Upgrade OpenEBS CStor
@@ -60,7 +60,7 @@ kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/maste
 
 - Upgrade the CStor control-plane
 ```bash
-helm upgrade <your-release-name> cstor/openebs-cstor --namespace=openebs
+helm upgrade <your-release-name> openebs-cstor/cstor --namespace=openebs
 ```
 
 - To upgrade the data plane components follow [this](https://github.com/openebs/upgrade/blob/master/docs/upgrade.md) doc. 

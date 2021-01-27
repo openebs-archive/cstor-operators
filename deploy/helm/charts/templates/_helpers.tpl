@@ -118,6 +118,13 @@ Create component labels cstor cvc operator
 openebs.io/component-name: {{ .Values.cvcOperator.componentName | quote }}
 {{- end -}}
 
+{{/*
+Create component labels cstor cvc operator service
+*/}}
+{{- define "cstor.cvcOperatorService.componentLabels" -}}
+openebs.io/component-name: {{ printf "%s-svc" .Values.cvcOperator.componentName | quote }}
+{{- end -}}
+
 
 {{/*
 Create labels for cstor cvc operator
@@ -126,6 +133,15 @@ Create labels for cstor cvc operator
 {{ include "cstor.common.metaLabels" . }}
 {{ include "cstor.cvcOperator.matchLabels" . }}
 {{ include "cstor.cvcOperator.componentLabels" . }}
+{{- end -}}
+
+{{/*
+Create labels for cstor cvc operator service
+*/}}
+{{- define "cstor.cvcOperatorService.labels" -}}
+{{ include "cstor.common.metaLabels" . }}
+{{ include "cstor.cvcOperator.matchLabels" . }}
+{{ include "cstor.cvcOperatorService.componentLabels" . }}
 {{- end -}}
 
 {{/*

@@ -338,12 +338,16 @@ var (
 		cstor.PoolRaidz2:   isRaidz2BDCountValid,
 	}
 	// SupportedCompression is a map holding the supported compressions
-	// TODO: confirm all the compression types supported by control plane
-	// and update the map accordingly
+	// TODO: support to allow gzip-[1-9] compression algo can be added later if requested
+	// by the community.
 	SupportedCompression = map[string]bool{
-		"":    true,
-		"off": true,
-		"lz":  true,
+		"on":   true,
+		"off":  true,
+		"lzjb": true,
+		"gzip": true,
+		"zle":  true,
+		"":     true,
+		"lz4":  true,
 	}
 )
 

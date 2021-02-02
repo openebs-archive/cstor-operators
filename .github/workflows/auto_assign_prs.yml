@@ -4,7 +4,7 @@ name: 'Auto Assign PRs'
 # This should mean PRs from forks are supported.
 on: 
   pull_request_target:
-    types: [opened, reopened, sychronized]
+    types: [opened, reopened, sychronize, ready_for_review]
 
 jobs:
   add-reviewers:
@@ -13,3 +13,4 @@ jobs:
       - uses: kentaro-m/auto-assign-action@v1.1.1
         with: 
           configuration-path: ".github/auto_assign.yml"
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'

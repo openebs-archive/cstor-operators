@@ -93,8 +93,8 @@ csiController:
     image:
       # Make sure that registry name end with a '/'.
       # For example : quay.io/ is a correct value here and quay.io is incorrect
-      registry: quay.io/
-      repository: k8scsi/csi-resizer
+      registry: k8s.gcr.io/
+      repository: sig-storage/csi-resizer
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v1.1.0
@@ -103,8 +103,8 @@ csiController:
     image:
       # Make sure that registry name end with a '/'.
       # For example : quay.io/ is a correct value here and quay.io is incorrect
-      registry: quay.io/
-      repository: k8scsi/csi-snapshotter
+      registry: k8s.gcr.io/
+      repository: sig-storage/csi-snapshotter
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v3.0.3
@@ -113,8 +113,8 @@ csiController:
     image:
       # Make sure that registry name end with a '/'.
       # For example : quay.io/ is a correct value here and quay.io is incorrect
-      registry: quay.io/
-      repository: k8scsi/snapshot-controller
+      registry: k8s.gcr.io/
+      repository: sig-storage/snapshot-controller
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v3.0.3
@@ -123,8 +123,8 @@ csiController:
     image:
       # Make sure that registry name end with a '/'.
       # For example : quay.io/ is a correct value here and quay.io is incorrect
-      registry: quay.io/
-      repository: k8scsi/csi-attacher
+      registry: k8s.gcr.io/
+      repository: sig-storage/csi-attacher
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v3.1.0
@@ -133,8 +133,8 @@ csiController:
     image:
       # Make sure that registry name end with a '/'.
       # For example : quay.io/ is a correct value here and quay.io is incorrect
-      registry: quay.io/
-      repository: k8scsi/csi-provisioner
+      registry: k8s.gcr.io/
+      repository: sig-storage/csi-provisioner
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v2.1.0
@@ -163,11 +163,11 @@ csiNode:
   driverRegistrar:
     name: "csi-node-driver-registrar"
     image:
-      registry: quay.io/
-      repository: k8scsi/csi-node-driver-registrar
+      registry: k8s.gcr.io/
+      repository: sig-storage/csi-node-driver-registrar
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
-      tag: v1.0.1
+      tag: v2.1.0
   updateStrategy:
     type: RollingUpdate
   annotations: {}

@@ -48,56 +48,14 @@ func (wh *webhook) validateNamespace(ar *v1beta1.AdmissionReview) *v1beta1.Admis
 func (wh *webhook) validateNamespaceDeleteRequest(req *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
 	response := &v1beta1.AdmissionResponse{}
 	response.Allowed = true
-	svcLabel := "openebs.io/controller-service=jiva-controller-svc"
-
-	msg := fmt.Sprintf("either BDCs or services with the label %s exists in the namespace %s.", svcLabel, req.Name)
 
 	// ignore the Delete request of Namespace if resource name is empty
 	if req.Name == "" {
 		return response
 	}
-
-	bdcList, err := wh.clientset.OpenebsV1alpha1().
-		BlockDeviceClaims(req.Name).
-		List(metav1.ListOptions{})
-	if err != nil {
-		response.Allowed = false
-		response.Result = &metav1.Status{
-			Message: fmt.Sprintf("error listing BDC in namespace %s: %v", req.Name, err.Error()),
-		}
-		return response
-	}
-
-	if len(bdcList.Items) != 0 {
-		response.Allowed = false
-		response.Result = &metav1.Status{
-			Message: msg,
-		}
-		return response
-	}
-
-	svcList, err := wh.kubeClient.CoreV1().Services(req.Name).
-		List(metav1.ListOptions{
-			LabelSelector: svcLabel,
-		})
-	if err != nil {
-		response.Allowed = false
-		response.Result = &metav1.Status{
-			Message: fmt.Sprintf("error listing svc in namespace %s: %v", req.Name, err.Error()),
-		}
-		return response
-	}
-
-	if len(svcList.Items) != 0 {
-		response.Allowed = false
-		response.Result = &metav1.Status{
-			Message: msg,
-		}
-		return response
-	}
 	// Delete the validatingWebhookConfiguration only if its a delete request to
 	// delete openebs namespace
-	err = wh.kubeClient.AdmissionregistrationV1().
+	err := wh.kubeClient.AdmissionregistrationV1().
 		ValidatingWebhookConfigurations().
 		Delete(validatorWebhook, &metav1.DeleteOptions{})
 	if err != nil {

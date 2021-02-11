@@ -73,13 +73,17 @@ var (
 	Ignore = admissionregistration.Ignore
 	// Fail means that an error calling the webhook causes the admission to fail.
 	Fail = admissionregistration.Fail
+	// SideEffectClassNone means that calling the webhook will have no side effects.
+	SideEffectClassNone = v1beta1.SideEffectClassNone
 	// WebhookFailurePolicye represents failure policy env name to make it configurable
 	// via ENV
 	WebhookFailurePolicy = "ADMISSION_WEBHOOK_FAILURE_POLICY"
 	// transformation function lists to upgrade webhook resources
-	transformSecret       = []transformSecretFunc{}
-	transformSvc          = []transformSvcFunc{}
-	transformConfig       = []transformConfigFunc{}
+	transformSecret = []transformSecretFunc{}
+	transformSvc    = []transformSvcFunc{}
+	transformConfig = []transformConfigFunc{
+		addNSWithDeleteRule,
+	}
 	cvcRuleWithOperations = v1beta1.RuleWithOperations{
 		Operations: []v1beta1.OperationType{
 			v1beta1.Update,
@@ -88,6 +92,16 @@ var (
 			APIGroups:   []string{"cstor.openebs.io"},
 			APIVersions: []string{"v1"},
 			Resources:   []string{"cstorvolumeconfigs"},
+		},
+	}
+	nsRuleWithOperations = v1beta1.RuleWithOperations{
+		Operations: []v1beta1.OperationType{
+			v1beta1.Delete,
+		},
+		Rule: v1beta1.Rule{
+			APIGroups:   []string{"*"},
+			APIVersions: []string{"*"},
+			Resources:   []string{"namespaces"},
 		},
 	}
 )
@@ -202,6 +216,7 @@ func (c *client) createAdmissionValidatingConfig(
 				},
 			},
 			cvcRuleWithOperations,
+			nsRuleWithOperations,
 		},
 		ClientConfig: admissionregistration.WebhookClientConfig{
 			Service: &admissionregistration.ServiceReference{
@@ -211,7 +226,7 @@ func (c *client) createAdmissionValidatingConfig(
 			},
 			CABundle: signingCert,
 		},
-		// SideEffects:             &sideEffectClass,
+		SideEffects: &SideEffectClassNone,
 		// AdmissionReviewVersions: []string{"v1"},
 		TimeoutSeconds: &five,
 		FailurePolicy:  failurePolicy(),
@@ -421,6 +436,12 @@ func getOpenebsNamespace() (string, error) {
 		return "", fmt.Errorf("%s must be set", util.OpenEBSNamespace)
 	}
 	return ns, nil
+}
+
+func addNSWithDeleteRule(config *v1beta1.ValidatingWebhookConfiguration) {
+	if IsCurrentLessThanNewVersion(config.Labels[string(types.OpenEBSVersionLabelKey)], "2.5.0") {
+		config.Webhooks[0].Rules = append(config.Webhooks[0].Rules, nsRuleWithOperations)
+	}
 }
 
 // GetAdmissionName return the admission server name

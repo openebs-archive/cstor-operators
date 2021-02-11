@@ -182,13 +182,16 @@ func validationRequired(ignoredList []string, metadata *metav1.ObjectMeta) bool 
 	return required
 }
 
-// validate validates the persistentvolumeclaim(PVC) create, delete request
+// validate validates the different openebs resource related operations
 func (wh *webhook) validate(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	req := ar.Request
 	response := &v1beta1.AdmissionResponse{}
 	response.Allowed = true
 	klog.Info("Admission webhook request received")
 	switch req.Kind.Kind {
+	case "Namespace":
+		klog.V(2).Infof("Admission webhook request for type %s", req.Kind.Kind)
+		return wh.validateNamespace(ar)
 	case "PersistentVolumeClaim":
 		klog.V(2).Infof("Admission webhook request for type %s", req.Kind.Kind)
 		return wh.validatePVC(ar)
@@ -198,6 +201,7 @@ func (wh *webhook) validate(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionRespo
 	case "CStorVolumeConfig":
 		klog.V(2).Infof("Admission webhook request for type %s", req.Kind.Kind)
 		return wh.validateCVC(ar)
+
 	default:
 		klog.V(2).Infof("Admission webhook not configured for type %s", req.Kind.Kind)
 		return response

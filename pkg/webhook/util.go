@@ -14,7 +14,11 @@
 
 package webhook
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 const (
 	unit = 1024
@@ -32,4 +36,19 @@ func ByteCount(b uint64) string {
 	}
 	return fmt.Sprintf("%d%c",
 		uint64(b)/uint64(div), "KMGTPE"[index])
+}
+
+// if currentversion is less `<` then new version (return true in case of equal version)
+// TODO use version lib to properly handle versions https://github.com/hashicorp/go-version
+func IsCurrentLessThanNewVersion(old, new string) bool {
+	oldVersions := strings.Split(strings.Split(old, "-")[0], ".")
+	newVersions := strings.Split(strings.Split(new, "-")[0], ".")
+	for i := 0; i < len(oldVersions); i++ {
+		oldVersion, _ := strconv.Atoi(oldVersions[i])
+		newVersion, _ := strconv.Atoi(newVersions[i])
+		if oldVersion > newVersion {
+			return false
+		}
+	}
+	return true
 }

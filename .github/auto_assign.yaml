@@ -1,0 +1,17 @@
+addReviewers: true
+
+addAssignees: false
+
+# Set this to the length of the reviewers list
+# because the default was not including everyone
+numberOfReviewers: 2
+
+reviewers:
+  - prateekpandey14
+  - shubham14bajpai
+  - mittachaitu
+  - sonasingh46
+  - kmova
+
+skipKeywords:
+  - wip

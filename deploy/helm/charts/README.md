@@ -165,6 +165,7 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | cstorCSIPlugin.image.repository | string | `"openebs/cstor-csi-driver"` |  CStor CSI driver image repository |
 | cstorCSIPlugin.image.tag | string | `"2.6.0"` | CStor CSI driver image tag |
 | cstorCSIPlugin.name | string | `"cstor-csi-plugin"` | CStor CSI driver container name |
+| cstorCSIPlugin.remount | string | `"true"` | Enable/disable auto-remount when volume recovers from read-only state |
 | cvcOperator.annotations | object | `{}` | CVC operator annotations |
 | cvcOperator.componentName | string | `"cvc-operator"` | CVC operator component name |
 | cvcOperator.image.pullPolicy | string | `"IfNotPresent"` | CVC operator image pull policy  |

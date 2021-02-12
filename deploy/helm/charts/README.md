@@ -93,12 +93,7 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | csiController.attacher.image.repository | string | `"sig-storage/csi-attacher"` |  CSI attacher image repo |
 | csiController.attacher.image.tag | string | `"v3.1.0"` | CSI attacher image tag |
 | csiController.attacher.name | string | `"csi-attacher"` |  CSI attacher container name|
-| csiController.componentName | string | `""` | CSI controller component name |
-| csiController.driverRegistrar.image.pullPolicy | string | `"IfNotPresent"` | CSI driver registrar image pull policy  |
-| csiController.driverRegistrar.image.registry | string | `"k8s.gcr.io/"` | CSI driver registrar image registry |
-| csiController.driverRegistrar.image.repository | string | `"sig-storage/csi-cluster-driver-registrar"` | CSI driver registrar image repo |
-| csiController.driverRegistrar.image.tag | string | `"v1.0.1"` |  CSI driver registrar image tag|
-| csiController.driverRegistrar.name | string | `"csi-cluster-driver-registrar"` | CSI driver registrar container name  |
+| csiController.componentName | string | `"openebs-cstor-csi-controller"` | CSI controller component name |
 | csiController.nodeSelector | object | `{}` |  CSI controller pod node selector |
 | csiController.podAnnotations | object | `{}` | CSI controller pod annotations |
 | csiController.provisioner.image.pullPolicy | string | `"IfNotPresent"` | CSI provisioner image pull policy |
@@ -129,7 +124,7 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | csiNode.driverRegistrar.image.pullPolicy | string | `"IfNotPresent"` | CSI Node driver registrar image pull policy|
 | csiNode.driverRegistrar.image.registry | string | `"k8s.gcr.io/"` | CSI Node driver registrar image registry |
 | csiNode.driverRegistrar.image.repository | string | `"sig-storage/csi-node-driver-registrar"` | CSI Node driver registrar image repository |
-| csiNode.driverRegistrar.image.tag | string | `"v1.0.1"` |  CSI Node driver registrar image tag|
+| csiNode.driverRegistrar.image.tag | string | `"v2.1.0"` |  CSI Node driver registrar image tag|
 | csiNode.driverRegistrar.name | string | `"csi-node-driver-registrar"` | CSI Node driver registrar container name |
 | csiNode.kubeletDir | string | `"/var/lib/kubelet/"` | Kubelet root dir |
 | csiNode.labels | object | `{}` | CSI Node pod labels |

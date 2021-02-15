@@ -55,8 +55,6 @@ spec:
         - name: {{ .Values.cstorCSIPlugin.name }}
           securityContext:
             privileged: true
-            capabilities:
-              add: ["CAP_MKNOD", "CAP_SYS_ADMIN", "SYS_ADMIN"]
             allowPrivilegeEscalation: true
           image: "{{ .Values.cstorCSIPlugin.image.registry }}{{ .Values.cstorCSIPlugin.image.repository }}:{{ .Values.cstorCSIPlugin.image.tag }}"
           imagePullPolicy: {{ .Values.cstorCSIPlugin.image.pullPolicy }}

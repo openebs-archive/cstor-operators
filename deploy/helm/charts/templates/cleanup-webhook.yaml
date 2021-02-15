@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "cstor.fullname" . }}-webhook-cleanup
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded
+  labels:
+    app: {{ template "cstor.name" . }}
+spec:
+  template:
+    metadata:
+      name: {{ template "cstor.fullname" . }}-webhook-cleanup
+      labels:
+        app: {{ template "cstor.name" . }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.cstorOperator.name }}
+      containers:
+        - name: kubectl
+          image: "{{ .Values.hyperkubeImage.repository }}:{{ .Values.hyperkubeImage.tag }}"
+          imagePullPolicy: "{{ .Values.hyperkubeImage.pullPolicy }}"
+          command:
+          - /bin/sh
+          - -c
+          - >
+              kubectl delete validatingWebhookConfiguration openebs-cstor-validation-webhook;
+      restartPolicy: OnFailure

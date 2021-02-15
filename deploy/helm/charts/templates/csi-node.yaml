@@ -81,7 +81,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
               # Enable/Disable auto-remount feature, when volumes
-              # recovers form the read-only state
+              # recovers from the read-only state
             - name: REMOUNT
               value: "{{ .Values.cstorCSIPlugin.remount }}"
           volumeMounts:

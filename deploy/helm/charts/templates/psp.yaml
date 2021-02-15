@@ -2,10 +2,7 @@
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: {{ template "cstor.fullname" . }}-psp
-  {{- with .Values.csiNode.annotations }}
-  annotations: {{ toYaml . | nindent 4 }}
-  {{- end }}
+  name: openebs-cstor-csi-node-psp
   labels:
     {{- include "cstor.csiNode.labels" . | nindent 4 }}
 spec:

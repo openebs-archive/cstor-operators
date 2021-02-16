@@ -1,5 +1,110 @@
+# Changelog
+
+## [v2.6.0](https://github.com/openebs/cstor-operators/tree/v2.6.0) (2021-02-13)
+
+- refact\(charts\): add pod security policy for cstor charts [\#249](https://github.com/openebs/cstor-operators/pull/249) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(webhook\): refactor namespace validation steps [\#247](https://github.com/openebs/cstor-operators/pull/247) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(webhook\): cleanup validatingwebhook config on openebs namespace deletion [\#246](https://github.com/openebs/cstor-operators/pull/246) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(ci\): auto-assign github PR reviewers and assignee using github-action [\#166](https://github.com/openebs/cstor-operators/pull/166) ([prateekpandey14](https://github.com/prateekpandey14))
+- admission-webhook.cstor.openebs.io validation of compression arguments in CStorPoolCluster [\#237](https://github.com/openebs/cstor-operators/issues/237)
+- refact\(crds\): update upgradetask and cstorvolumeattachment to v1 [\#242](https://github.com/openebs/cstor-operators/pull/242) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(webhook\): allow cspc validation based on supported compression algos [\#241](https://github.com/openebs/cstor-operators/pull/241) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(charts\): make the cvc operator service labels consistent with operator [\#239](https://github.com/openebs/cstor-operators/pull/239) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- wrong helm repo/chart name [\#233](https://github.com/openebs/cstor-operators/pull/233) ([survivant](https://github.com/survivant))
+- \[stable/cstor\]: update dependent NDM charts to 1.1.1 [\#231](https://github.com/openebs/cstor-operators/pull/231) ([akhilerm](https://github.com/akhilerm))
+- \[stable/cstor\]: update cstor charts to 2.5.0 [\#229](https://github.com/openebs/cstor-operators/pull/229) ([akhilerm](https://github.com/akhilerm))
+- chore\(docs\): update snapshot docs to include api version info [\#228](https://github.com/openebs/cstor-operators/pull/228) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(action\): fix cstor pool and volume manager image names [\#227](https://github.com/openebs/cstor-operators/pull/227) ([prateekpandey14](https://github.com/prateekpandey14))
+
+## [v2.6.0-RC2](https://github.com/openebs/cstor-operators/tree/v2.6.0-RC2) (2021-02-11)
+
+- refact\(charts\): add pod security policy for cstor charts [\#249](https://github.com/openebs/cstor-operators/pull/249) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(webhook\): refactor namespace validation steps [\#247](https://github.com/openebs/cstor-operators/pull/247) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(webhook\): cleanup validatingwebhook config on openebs namespace deletion [\#246](https://github.com/openebs/cstor-operators/pull/246) ([prateekpandey14](https://github.com/prateekpandey14))
+- feat\(ci\): auto-assign github PR reviewers and assignee using github-action [\#166](https://github.com/openebs/cstor-operators/pull/166) ([prateekpandey14](https://github.com/prateekpandey14))
+
+## [v2.6.0-RC1](https://github.com/openebs/cstor-operators/tree/v2.6.0-RC1) (2021-02-09)
+
+- admission-webhook.cstor.openebs.io validation of compression arguments in CStorPoolCluster [\#237](https://github.com/openebs/cstor-operators/issues/237)
+- refact\(crds\): update upgradetask and cstorvolumeattachment to v1 [\#242](https://github.com/openebs/cstor-operators/pull/242) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(webhook\): allow cspc validation based on supported compression algos [\#241](https://github.com/openebs/cstor-operators/pull/241) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(charts\): make the cvc operator service labels consistent with operator [\#239](https://github.com/openebs/cstor-operators/pull/239) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- wrong helm repo/chart name [\#233](https://github.com/openebs/cstor-operators/pull/233) ([survivant](https://github.com/survivant))
+- \[stable/cstor\]: update dependent NDM charts to 1.1.1 [\#231](https://github.com/openebs/cstor-operators/pull/231) ([akhilerm](https://github.com/akhilerm))
+- \[stable/cstor\]: update cstor charts to 2.5.0 [\#229](https://github.com/openebs/cstor-operators/pull/229) ([akhilerm](https://github.com/akhilerm))
+- chore\(docs\): update snapshot docs to include api version info [\#228](https://github.com/openebs/cstor-operators/pull/228) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(action\): fix cstor pool and volume manager image names [\#227](https://github.com/openebs/cstor-operators/pull/227) ([prateekpandey14](https://github.com/prateekpandey14))
+
+
+## [v2.5.0](https://github.com/openebs/cstor-operators/tree/v2.5.0) (2021-01-13)
+
+- Update policy.md [\#224](https://github.com/openebs/cstor-operators/pull/224) ([survivant](https://github.com/survivant))
+- chore\(actions\): move travis tests to github actions [\#223](https://github.com/openebs/cstor-operators/pull/223) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Update mirror.md [\#221](https://github.com/openebs/cstor-operators/pull/221) ([survivant](https://github.com/survivant))
+- Update tune.md [\#220](https://github.com/openebs/cstor-operators/pull/220) ([survivant](https://github.com/survivant))
+- fix\(action\): fix release workflow to run only tags with `v` prefix [\#219](https://github.com/openebs/cstor-operators/pull/219) ([akhilerm](https://github.com/akhilerm))
+- chore\(build\): update the buildx action verison [\#216](https://github.com/openebs/cstor-operators/pull/216) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(helm\): add cstor operators and csi helm charts [\#180](https://github.com/openebs/cstor-operators/pull/180) ([sonasingh46](https://github.com/sonasingh46))
+- feat\(pool, volume\): add image pull secrets to pool and volume pods [\#225](https://github.com/openebs/cstor-operators/pull/225) ([akhilerm](https://github.com/akhilerm))
+- chore\(operator\): bump k8s csi to latest stable container images [\#218](https://github.com/openebs/cstor-operators/pull/218) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(docs\):add topology aware storageclass docs and example [\#217](https://github.com/openebs/cstor-operators/pull/217) ([prateekpandey14](https://github.com/prateekpandey14))
+
+## [v2.5.0-RC2](https://github.com/openebs/cstor-operators/tree/v2.5.0-RC2) (2021-01-12)
+
+- feat\(pool, volume\): add image pull secrets to pool and volume deployment [\#225](https://github.com/openebs/cstor-operators/pull/225) ([akhilerm](https://github.com/akhilerm))
+- chore\(operator\): bump k8s csi to latest stable container images [\#218](https://github.com/openebs/cstor-operators/pull/218) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(docs\):add topology aware storageclass docs and example [\#217](https://github.com/openebs/cstor-operators/pull/217) ([prateekpandey14](https://github.com/prateekpandey14))
+
+## [v2.5.0-RC1](https://github.com/openebs/cstor-operators/tree/v2.5.0-RC1) (2021-01-09)
+
+- Update policy.md [\#224](https://github.com/openebs/cstor-operators/pull/224) ([survivant](https://github.com/survivant))
+- chore\(actions\): move travis tests to github actions [\#223](https://github.com/openebs/cstor-operators/pull/223) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Update mirror.md [\#221](https://github.com/openebs/cstor-operators/pull/221) ([survivant](https://github.com/survivant))
+- Update tune.md [\#220](https://github.com/openebs/cstor-operators/pull/220) ([survivant](https://github.com/survivant))
+- fix\(action\): fix release workflow to run only tags with `v` prefix [\#219](https://github.com/openebs/cstor-operators/pull/219) ([akhilerm](https://github.com/akhilerm))
+- chore\(build\): update the buildx action verison [\#216](https://github.com/openebs/cstor-operators/pull/216) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(helm\): add cstor operators and csi helm charts [\#180](https://github.com/openebs/cstor-operators/pull/180) ([sonasingh46](https://github.com/sonasingh46))
+
+## [v2.4.1](https://github.com/openebs/cstor-operators/tree/v2.4.1) (2020-12-18)
+
+- chore\(version\): add 2.4.1 to upgrade matrix [\#214](https://github.com/openebs/cstor-operators/pull/214) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+
+## [v2.4.0](https://github.com/openebs/cstor-operators/tree/v2.4.0) (2020-12-13)
+
+- fix\(cspc\): cleanup pending bdcs on cspc deletion [\#210](https://github.com/openebs/cstor-operators/pull/210) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(CHANGELOG\): add changelogs for v2.3.0 [\#209](https://github.com/openebs/cstor-operators/pull/209) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(build\): copy binaries instead of folders [\#208](https://github.com/openebs/cstor-operators/pull/208) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(build\): propagate RELEASE\_TAG to buildx container [\#206](https://github.com/openebs/cstor-operators/pull/206) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- add air gapped documentation [\#205](https://github.com/openebs/cstor-operators/pull/205) ([daximillian](https://github.com/daximillian))
+- fix\(build\): propagate RELEASE\_TAG to buildx container [\#204](https://github.com/openebs/cstor-operators/pull/204) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(docs\): update the docs with latest yamls [\#203](https://github.com/openebs/cstor-operators/pull/203) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Update resize.md [\#201](https://github.com/openebs/cstor-operators/pull/201) ([survivant](https://github.com/survivant))
+- Update mirror.md [\#200](https://github.com/openebs/cstor-operators/pull/200) ([survivant](https://github.com/survivant))
+- Update stripe.md [\#199](https://github.com/openebs/cstor-operators/pull/199) ([survivant](https://github.com/survivant))
+- chore\(ci\): set up helm chart ci [\#185](https://github.com/openebs/cstor-operators/pull/185) ([sonasingh46](https://github.com/sonasingh46))
+
+## [v2.4.0-RC2](https://github.com/openebs/cstor-operators/tree/v2.4.0-RC2) (2020-12-12)
+
+## [v2.4.0-RC1](https://github.com/openebs/cstor-operators/tree/v2.4.0-RC1) (2020-12-10)
+
+- fix\(cspc\): cleanup pending bdcs on cspc deletion [\#210](https://github.com/openebs/cstor-operators/pull/210) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(CHANGELOG\): add changelogs for v2.3.0 [\#209](https://github.com/openebs/cstor-operators/pull/209) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(build\): copy binaries instead of folders [\#208](https://github.com/openebs/cstor-operators/pull/208) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- fix\(build\): propagate RELEASE\_TAG to buildx container [\#206](https://github.com/openebs/cstor-operators/pull/206) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- add air gapped documentation [\#205](https://github.com/openebs/cstor-operators/pull/205) ([daximillian](https://github.com/daximillian))
+- fix\(build\): propagate RELEASE\_TAG to buildx container [\#204](https://github.com/openebs/cstor-operators/pull/204) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(docs\): update the docs with latest yamls [\#203](https://github.com/openebs/cstor-operators/pull/203) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Update resize.md [\#201](https://github.com/openebs/cstor-operators/pull/201) ([survivant](https://github.com/survivant))
+- Update mirror.md [\#200](https://github.com/openebs/cstor-operators/pull/200) ([survivant](https://github.com/survivant))
+- Update stripe.md [\#199](https://github.com/openebs/cstor-operators/pull/199) ([survivant](https://github.com/survivant))
+- chore\(ci\): set up helm chart ci [\#185](https://github.com/openebs/cstor-operators/pull/185) ([sonasingh46](https://github.com/sonasingh46))
+
+
 v2.3.0 / 2020-11-14
 ========================
+
+* fix(build): copy binaries instead of folders [#208](https://github.com/openebs/cstor-operators/pull/208) ([@shubham14bajpai](https://github.com/shubham14bajpai))
 * refact(crds): update crds to use apiextensions.k8s.io/v1 apis ([#197](https://github.com/openebs/cstor-operators/pull/197),[@prateekpandey14](https://github.com/prateekpandey14))
 * refact(deps): use openebs/api v2 release modules ([#187](https://github.com/openebs/cstor-operators/pull/187),[@prateekpandey14](https://github.com/prateekpandey14))
 * add air gapped documentation  ([#205](https://github.com/openebs/cstor-operators/pull/205),[@daximillian](https://github.com/daximillian))

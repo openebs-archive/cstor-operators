@@ -19,19 +19,24 @@ meets the following prerequisites:
 3. You have access to install RBAC components into kube-system namespace.
 4. You have disks attached to nodes to provision storage.
 
-## Install 
+## Install
 
-*Note: The helm chart support for new CSI Driver based cStor is under development. Currently kubectl based install is supported. If you would like to help with contributing to helm chart development, please join the Kubernetes Slack Channel #openebs-dev and discuss with the maintainers.*
-
-Install the latest release using:
-
- **Note: If running on K8s version lesser than 1.17, you will need to comment the `priorityClassName: system-cluster-critical` in the csi-operator.yaml**
+### Using Helm Charts:
  
+Install CStor operators and CSI driver components using [cstor helm charts](https://github.com/openebs/cstor-operators/tree/master/deploy/helm/charts).
+
+### Using Operator:
+
+Install the [latest release](https://github.com/openebs/cstor-operators/releases) using CStor Operator yaml.
+
 ```
 kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
 ```
 
+### Local Development:
+
 Alternatively you can also install the development version  of cstor operators using:
+
 ```bash
 $ git clone https://github.com/openebs/cstor-operators.git
 $ cd cstor-operators
@@ -42,7 +47,9 @@ $ kubectl create -f deploy/cstor-operator.yaml
 $ kubectl create -f deploy/csi-operator.yaml
 ```
 
-Verify that NDM and cStor operators are running. 
+ **Note: If running on K8s version lesser than 1.17, you will need to comment the `priorityClassName: system-cluster-critical` in the csi-operator.yaml**
+ 
+Once installed using any of the above methods, verify that NDM and cStor operators are running. 
 
 ```bash
 $ kubectl get pod -n openebs

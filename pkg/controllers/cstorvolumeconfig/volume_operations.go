@@ -17,6 +17,7 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -216,7 +217,7 @@ func (c *CVCController) listCStorPools(cspcName string) (*apis.CStorPoolInstance
 	}
 
 	cstorPoolList, err := c.clientset.CstorV1().CStorPoolInstances(openebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspcName,
 		})
 
@@ -236,7 +237,7 @@ func (c *CVCController) getOrCreateTargetService(
 ) (*corev1.Service, error) {
 
 	svcObj, err := c.kubeclientset.CoreV1().Services(openebsNamespace).
-		Get(claim.Name, metav1.GetOptions{})
+		Get(context.TODO(), claim.Name, metav1.GetOptions{})
 
 	if err == nil {
 		return svcObj, nil
@@ -260,7 +261,7 @@ func (c *CVCController) getOrCreateTargetService(
 		WithPorts(cvPorts).
 		Build()
 
-	svcObj, err = c.kubeclientset.CoreV1().Services(openebsNamespace).Create(svcObj)
+	svcObj, err = c.kubeclientset.CoreV1().Services(openebsNamespace).Create(context.TODO(), svcObj, metav1.CreateOptions{})
 	return svcObj, err
 }
 
@@ -291,7 +292,7 @@ func (c *CVCController) getOrCreateCStorVolumeResource(
 	}
 
 	cvObj, err := c.clientset.CstorV1().CStorVolumes(openebsNamespace).
-		Get(claim.Name, metav1.GetOptions{})
+		Get(context.TODO(), claim.Name, metav1.GetOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
 		return nil, errors.Wrapf(
 			err,
@@ -316,7 +317,7 @@ func (c *CVCController) getOrCreateCStorVolumeResource(
 			WithNewVersion(version.GetVersion()).
 			WithDependentsUpgraded()
 
-		return c.clientset.CstorV1().CStorVolumes(openebsNamespace).Create(cvObj)
+		return c.clientset.CstorV1().CStorVolumes(openebsNamespace).Create(context.TODO(), cvObj, metav1.CreateOptions{})
 	}
 	return cvObj, err
 }
@@ -468,7 +469,7 @@ func (c *CVCController) createCVR(
 		annotations[volumereplica.IsRestoreVol] = "true"
 	}
 	cvrObj, err := c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
-		Get(volume.Name+"-"+string(pool.Name), metav1.GetOptions{})
+		Get(context.TODO(), volume.Name+"-"+string(pool.Name), metav1.GetOptions{})
 
 	if err != nil && !k8serror.IsNotFound(err) {
 		return nil, errors.Wrapf(
@@ -493,7 +494,7 @@ func (c *CVCController) createCVR(
 			WithDependentsUpgraded().
 			WithStatusPhase(rInfo.phase)
 
-		cvrObj, err = c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).Create(cvrObj)
+		cvrObj, err = c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).Create(context.TODO(), cvrObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, errors.Wrapf(
 				err,
@@ -534,7 +535,7 @@ func getUsablePoolList(clientset clientset.Interface, pvName string, poolList *a
 
 	pvLabel := pvSelector + "=" + pvName
 	cvrList, err := clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: pvLabel,
 		})
 	if err != nil {
@@ -558,7 +559,7 @@ func getUsablePoolListForClone(clientset clientset.Interface, pvName, srcPVName 
 
 	pvLabel := pvSelector + "=" + pvName
 	cvrList, err := clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: pvLabel,
 		})
 	if err != nil {
@@ -566,7 +567,7 @@ func getUsablePoolListForClone(clientset clientset.Interface, pvName, srcPVName 
 	}
 	srcPVLabel := pvSelector + "=" + srcPVName
 	srcCVRList, err := clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: srcPVLabel,
 		})
 	if err != nil {
@@ -618,7 +619,7 @@ func (c *CVCController) getOrCreatePodDisruptionBudget(cspcName string,
 
 	pdblabelSelector := GetPDBLabelSelector(poolNames)
 	pdbList, err := c.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(openebsNamespace).
-		List(metav1.ListOptions{LabelSelector: pdblabelSelector})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: pdblabelSelector})
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"failed to list PDB belongs to pools with selector %v", pdblabelSelector)
@@ -742,7 +743,7 @@ func (c *CVCController) updatePDBForScaledVolume(cvc *apis.CStorVolumeConfig) (*
 	if pdbName != "" {
 		cvc.Labels[string(types.PodDisruptionBudgetKey)] = pdbName
 	}
-	newCVCObj, err := c.clientset.CstorV1().CStorVolumeConfigs(openebsNamespace).Update(cvc)
+	newCVCObj, err := c.clientset.CstorV1().CStorVolumeConfigs(openebsNamespace).Update(context.TODO(), cvc, metav1.UpdateOptions{})
 	if err != nil {
 		// If error occured point it to old cvc object it self
 		return cvcCopy, errors.Wrapf(err,
@@ -806,7 +807,7 @@ func getScaleDownCVR(clientset clientset.Interface, cvc *apis.CStorVolumeConfig)
 	removedPoolNames := util.ListDiff(cvc.Status.PoolInfo, desiredPoolNames)
 	cvrName := pvName + "-" + removedPoolNames[0]
 	return clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
-		Get(cvrName, metav1.GetOptions{})
+		Get(context.TODO(), cvrName, metav1.GetOptions{})
 }
 
 // handleVolumeReplicaCreation does the following changes:
@@ -822,14 +823,14 @@ func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig,
 	var errorMsg string
 
 	svcObj, err := c.kubeclientset.CoreV1().Services(openebsNamespace).
-		Get(cvc.Name, metav1.GetOptions{})
+		Get(context.TODO(), cvc.Name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get service object %s", cvc.Name)
 	}
 
 	for _, poolName := range newPoolNames {
 		cspiObj, err := c.clientset.CstorV1().CStorPoolInstances(openebsNamespace).
-			Get(poolName, metav1.GetOptions{})
+			Get(context.TODO(), poolName, metav1.GetOptions{})
 		if err != nil {
 			errorMsg = fmt.Sprintf("failed to get cstorpoolinstance %s error: %v", poolName, err)
 			errs = append(errs, errors.Errorf("%v", errorMsg))
@@ -883,7 +884,7 @@ func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig,
 func (c *CVCController) scaleUpVolumeReplicas(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
 	drCount := len(cvc.Spec.Policy.ReplicaPoolInfo)
 	cvObj, err := c.clientset.CstorV1().CStorVolumes(openebsNamespace).
-		Get(cvc.Name, metav1.GetOptions{})
+		Get(context.TODO(), cvc.Name, metav1.GetOptions{})
 	if err != nil {
 		return cvc, errors.Wrapf(err, "failed to get cstorvolumes object %s", cvc.Name)
 	}
@@ -914,7 +915,7 @@ func (c *CVCController) scaleDownVolumeReplicas(cvc *apis.CStorVolumeConfig) (*a
 	var cvrObj *apis.CStorVolumeReplica
 	drCount := len(cvc.Spec.Policy.ReplicaPoolInfo)
 	cvObj, err := c.clientset.CstorV1().CStorVolumes(openebsNamespace).
-		Get(cvc.Name, metav1.GetOptions{})
+		Get(context.TODO(), cvc.Name, metav1.GetOptions{})
 	if err != nil {
 		return cvc, errors.Wrapf(err, "failed to get cstorvolumes object %s", cvc.Name)
 	}
@@ -934,7 +935,7 @@ func (c *CVCController) scaleDownVolumeReplicas(cvc *apis.CStorVolumeConfig) (*a
 	if !apis.IsScaleDownInProgress(cvObj) {
 		if cvrObj != nil {
 			err = c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
-				Delete(cvrObj.Name, &metav1.DeleteOptions{})
+				Delete(context.TODO(), cvrObj.Name, metav1.DeleteOptions{})
 			if err != nil {
 				return cvc, errors.Wrapf(err, "failed to delete cstorvolumereplica %s", cvrObj.Name)
 			}
@@ -961,7 +962,7 @@ func (c *CVCController) scaleDownVolumeReplicas(cvc *apis.CStorVolumeConfig) (*a
 // Note: Caller code should handle the error
 func updateCStorVolumeInfo(clientset clientset.Interface, cvObj *apis.CStorVolume) (*apis.CStorVolume, error) {
 	return clientset.CstorV1().CStorVolumes(openebsNamespace).
-		Update(cvObj)
+		Update(context.TODO(), cvObj, metav1.UpdateOptions{})
 }
 
 // GetVolumeReplicaPoolNames return list of replicas pool names by taking pvName
@@ -980,7 +981,7 @@ func GetVolumeReplicaPoolNames(clientset clientset.Interface, pvName, namespace 
 func GetCVRList(clientset clientset.Interface, pvName, namespace string) (*apis.CStorVolumeReplicaList, error) {
 	pvLabel := string(types.PersistentVolumeLabelKey) + "=" + pvName
 	return clientset.CstorV1().CStorVolumeReplicas(namespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: pvLabel,
 		})
 }

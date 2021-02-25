@@ -17,6 +17,7 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -105,7 +106,7 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 			"Failed to reconcile cspc version",
 			err,
 		)
-		_, err = c.clientset.CstorV1().CStorPoolClusters(cspcGot.Namespace).Update(cspcGot)
+		_, err = c.clientset.CstorV1().CStorPoolClusters(cspcGot.Namespace).Update(context.TODO(), cspcGot, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("failed to update versionDetails status for cspc %s:%s", cspcGot.Name, err.Error())
 		}
@@ -129,7 +130,7 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 	// Add finalizer on CSPC
 	if !cspcGot.HasFinalizer(types.CSPCFinalizer) {
 		cspcGot.WithFinalizer(types.CSPCFinalizer)
-		cspcGot, err = c.GetStoredCStorVersionClient().CStorPoolClusters(cspcGot.Namespace).Update(cspcGot)
+		cspcGot, err = c.GetStoredCStorVersionClient().CStorPoolClusters(cspcGot.Namespace).Update(context.TODO(), cspcGot, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("Failed to add finalizer on CSPC %s in namespaces %s :{%s}", cspc.Name, cspc.Namespace, err.Error())
 			return nil
@@ -219,7 +220,8 @@ func (c *Controller) handleCSPCDeletion(cspc *cstor.CStorPoolCluster) error {
 // returns.
 func (c *Controller) deleteAssociatedCSPI(cspc *cstor.CStorPoolCluster) error {
 	err := c.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).DeleteCollection(
-		&metav1.DeleteOptions{},
+		context.TODO(),
+		metav1.DeleteOptions{},
 		metav1.ListOptions{
 			LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspc.Name,
 		},
@@ -266,6 +268,7 @@ func (c *Controller) removeCSPCFinalizer(cspc *cstor.CStorPoolCluster) error {
 	// the pending BDC(s) finalizer don't get removed automatically.
 	// The below code handles cleanup for such cases.
 	bdcList, err := c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspc.Namespace).List(
+		context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name,
 		},
@@ -277,14 +280,14 @@ func (c *Controller) removeCSPCFinalizer(cspc *cstor.CStorPoolCluster) error {
 		bdcItem := bdcItem // pin it
 		bdcObj := &bdcItem
 		bdcObj.Finalizers = util.RemoveString(bdcObj.Finalizers, types.CSPCFinalizer)
-		bdcObj, err = c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspc.Namespace).Update(bdcObj)
+		bdcObj, err = c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspc.Namespace).Update(context.TODO(), bdcObj, metav1.UpdateOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to remove finalizers from bdc %s", bdcItem.Name)
 		}
 	}
 
 	cspc.RemoveFinalizer(types.CSPCFinalizer)
-	_, err = c.GetStoredCStorVersionClient().CStorPoolClusters(cspc.Namespace).Update(cspc)
+	_, err = c.GetStoredCStorVersionClient().CStorPoolClusters(cspc.Namespace).Update(context.TODO(), cspc, metav1.UpdateOptions{})
 
 	if err != nil {
 		return errors.Wrap(err, "failed to remove CSPC finalizer on cspc resource")
@@ -297,7 +300,7 @@ func (c *Controller) populateDesiredInstances(cspc *cstor.CStorPoolCluster) (*cs
 
 	cspc, err := c.GetStoredCStorVersionClient().
 		CStorPoolClusters(cspc.Namespace).
-		Update(cspc)
+		Update(context.TODO(), cspc, metav1.UpdateOptions{})
 
 	if err != nil {
 		return nil, errors.Wrapf(
@@ -326,7 +329,7 @@ func (c *Controller) populateVersion(cspc *cstor.CStorPoolCluster) (*cstor.CStor
 		cspc.VersionDetails.Status.DependentsUpgraded = true
 		obj, err = c.GetStoredCStorVersionClient().
 			CStorPoolClusters(cspc.Namespace).
-			Update(cspc)
+			Update(context.TODO(), cspc, metav1.UpdateOptions{})
 
 		if err != nil {
 			return nil, errors.Wrapf(
@@ -347,6 +350,7 @@ func (c *Controller) EstimateCSPCVersion(cspc *cstor.CStorPoolCluster) (string, 
 	cspiList, err := c.clientset.CstorV1().
 		CStorPoolInstances(cspc.Namespace).
 		List(
+			context.TODO(),
 			metav1.ListOptions{
 				LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspc.Name,
 			})
@@ -377,7 +381,7 @@ func (c *Controller) reconcileVersion(cspc *cstor.CStorPoolCluster) (*cstor.CSto
 		cspcObj := cspc.DeepCopy()
 		if cspc.VersionDetails.Status.State != cstor.ReconcileInProgress {
 			cspcObj.VersionDetails.Status.SetInProgressStatus()
-			cspcObj, err = c.clientset.CstorV1().CStorPoolClusters(cspcObj.Namespace).Update(cspcObj)
+			cspcObj, err = c.clientset.CstorV1().CStorPoolClusters(cspcObj.Namespace).Update(context.TODO(), cspcObj, metav1.UpdateOptions{})
 			if err != nil {
 				return cspc, err
 			}
@@ -400,7 +404,7 @@ func (c *Controller) reconcileVersion(cspc *cstor.CStorPoolCluster) (*cstor.CSto
 		}
 		cspc = cspcObj.DeepCopy()
 		cspcObj.VersionDetails.SetSuccessStatus()
-		cspcObj, err = c.clientset.CstorV1().CStorPoolClusters(cspcObj.Namespace).Update(cspcObj)
+		cspcObj, err = c.clientset.CstorV1().CStorPoolClusters(cspcObj.Namespace).Update(context.TODO(), cspcObj, metav1.UpdateOptions{})
 		if err != nil {
 			return cspc, errors.Wrap(err, "failed to update CSPC")
 		}
@@ -412,13 +416,13 @@ func (c *Controller) reconcileVersion(cspc *cstor.CStorPoolCluster) (*cstor.CSto
 // GetCSPIWithoutDeployment gets the CSPIs for whom the pool deployment does not exists.
 func (c *Controller) GetCSPIWithoutDeployment(cspc *cstor.CStorPoolCluster) ([]cstor.CStorPoolInstance, error) {
 	var cspiList []cstor.CStorPoolInstance
-	cspiGotList, err := c.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name})
+	cspiGotList, err := c.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name})
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not list cspi for cspc {%s}", cspc.Name)
 	}
 	for _, cspObj := range cspiGotList.Items {
 		cspObj := cspObj
-		_, err := c.kubeclientset.AppsV1().Deployments(cspc.Namespace).Get(cspObj.Name, metav1.GetOptions{})
+		_, err := c.kubeclientset.AppsV1().Deployments(cspc.Namespace).Get(context.TODO(), cspObj.Name, metav1.GetOptions{})
 		if k8serror.IsNotFound(err) {
 			cspiList = append(cspiList, cspObj)
 			continue
@@ -488,7 +492,7 @@ func (pc *PoolConfig) syncCSPIWithCSPC(cspc *cstor.CStorPoolCluster, cspi *cstor
 			break
 		}
 	}
-	gotCSPI, err := pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspiCopy.Namespace).Update(cspiCopy)
+	gotCSPI, err := pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspiCopy.Namespace).Update(context.TODO(), cspiCopy, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -551,7 +555,7 @@ a JSON Merge Patch ( RFC 6902 )
 func (pc *PoolConfig) patchPoolDeploymentSpec(cspi *cstor.CStorPoolInstance) error {
 	// Get the corresponding deployment for the cspi
 
-	existingDeployObj, err := pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Get(cspi.Name, metav1.GetOptions{})
+	existingDeployObj, err := pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Get(context.TODO(), cspi.Name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get corresponding pool manager deployment for cspi %s in namespace %s", cspi.Name, cspi.Name)
 	}
@@ -580,7 +584,7 @@ func (pc *PoolConfig) patchPoolDeploymentSpec(cspi *cstor.CStorPoolInstance) err
 		return errors.Wrap(err, "could not compute strategic patch data")
 	}
 
-	_, err = pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Patch(existingDeployObj.Name, k8stypes.StrategicMergePatchType, strategicPatchData)
+	_, err = pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Patch(context.TODO(), existingDeployObj.Name, k8stypes.StrategicMergePatchType, strategicPatchData, metav1.PatchOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to patch pool manager")
 	}

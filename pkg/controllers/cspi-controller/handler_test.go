@@ -17,6 +17,7 @@ limitations under the License.
 package cspicontroller
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"os"
@@ -219,7 +220,7 @@ func (f *fixture) createFakeBlockDevices(totalDisk int, hostName string) {
 				State: openebscore.BlockDeviceActive,
 			},
 		}
-		_, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Create(bdObj)
+		_, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Create(context.TODO(), bdObj, metav1.CreateOptions{})
 		if err != nil {
 			klog.Error(err)
 			continue
@@ -234,7 +235,7 @@ func (f *fixture) fakeNodeCreator(nodeName string) {
 	labels := make(map[string]string)
 	labels["kubernetes.io/hostname"] = node.Name
 	node.Labels = labels
-	_, err := f.k8sClient.CoreV1().Nodes().Create(node)
+	_, err := f.k8sClient.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
 	if err != nil {
 		klog.Error(err)
 	}
@@ -248,7 +249,7 @@ func (f *fixture) createBlockDeviceClaim(
 	bdObj, err := f.openebsClient.
 		OpenebsV1alpha1().
 		BlockDevices("openebs").
-		Get(blockDeviceName, metav1.GetOptions{})
+		Get(context.TODO(), blockDeviceName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +274,7 @@ func (f *fixture) createBlockDeviceClaim(
 			},
 		},
 	}
-	return f.openebsClient.OpenebsV1alpha1().BlockDeviceClaims("openebs").Create(bdcObj)
+	return f.openebsClient.OpenebsV1alpha1().BlockDeviceClaims("openebs").Create(context.TODO(), bdcObj, metav1.CreateOptions{})
 }
 
 // claimBlcokDevice will bound blockdevice with corresponding blockdeviceclaim
@@ -282,7 +283,7 @@ func (f *fixture) claimBlockdevice(
 	bd, err := f.openebsClient.
 		OpenebsV1alpha1().
 		BlockDevices("openebs").
-		Get(bdName, metav1.GetOptions{})
+		Get(context.TODO(), bdName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -292,7 +293,7 @@ func (f *fixture) claimBlockdevice(
 		Name:      bdc.Name,
 		Namespace: "openebs",
 	}
-	_, err = f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Update(bd)
+	_, err = f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Update(context.TODO(), bd, metav1.UpdateOptions{})
 	return err
 }
 
@@ -375,7 +376,7 @@ func (f *fixture) updateCSPIToPerformDay2Operation(cspiName string, tConfig test
 	if err != nil {
 		return err
 	}
-	cspiObj, err := f.openebsClient.CstorV1().CStorPoolInstances(ns).Get(name, metav1.GetOptions{})
+	cspiObj, err := f.openebsClient.CstorV1().CStorPoolInstances(ns).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -427,7 +428,7 @@ func (f *fixture) updateCSPIToPerformDay2Operation(cspiName string, tConfig test
 			return err
 		}
 	}
-	_, err = f.openebsClient.CstorV1().CStorPoolInstances(ns).Update(cspiObj)
+	_, err = f.openebsClient.CstorV1().CStorPoolInstances(ns).Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -534,7 +535,7 @@ func (f *fixture) verifyDeviceLinksInRaidGroups(
 	rgs []cstor.RaidGroup, newBlockDeviceMap map[string]bool) error {
 	for _, rg := range rgs {
 		for _, cspiBD := range rg.CStorPoolInstanceBlockDevices {
-			bdObj, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Get(cspiBD.BlockDeviceName, metav1.GetOptions{})
+			bdObj, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Get(context.TODO(), cspiBD.BlockDeviceName, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -644,7 +645,7 @@ func (f *fixture) isPoolOperationPending(cspiName string, tConfig *testConfig) (
 	if err != nil {
 		return false, err.Error()
 	}
-	cspiObj, err := f.openebsClient.CstorV1().CStorPoolInstances(ns).Get(name, metav1.GetOptions{})
+	cspiObj, err := f.openebsClient.CstorV1().CStorPoolInstances(ns).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return false, err.Error()
 	}
@@ -668,7 +669,7 @@ func (f *fixture) isReplacementMarksExists(testConfig testConfig) (bool, string)
 		_, err := f.openebsClient.
 			OpenebsV1alpha1().
 			BlockDeviceClaims("openebs").
-			Get(oldBDCName, metav1.GetOptions{})
+			Get(context.TODO(), oldBDCName, metav1.GetOptions{})
 		if err != nil {
 			if !k8serror.IsNotFound(err) {
 				return true, fmt.Sprintf("Failed to get claim of old blockdevice %s error: %s", oldBDName, err.Error())
@@ -677,7 +678,7 @@ func (f *fixture) isReplacementMarksExists(testConfig testConfig) (bool, string)
 		newBDBDC, err := f.openebsClient.
 			OpenebsV1alpha1().
 			BlockDeviceClaims("openebs").
-			Get(newBDName, metav1.GetOptions{})
+			Get(context.TODO(), newBDName, metav1.GetOptions{})
 		if err != nil {
 			return true, fmt.Sprintf("Failed to get claim of blockdevice %s error: %s", newBDName, err.Error())
 		}
@@ -734,7 +735,7 @@ func TestCSPIFinalizerAdd(t *testing.T) {
 	f.run(testutil.GetKey(cspi, t))
 
 	os.Unsetenv(string(common.OpenEBSIOPoolName))
-	cspi, err := f.openebsClient.CstorV1().CStorPoolInstances(cspi.Namespace).Get(cspi.Name, metav1.GetOptions{})
+	cspi, err := f.openebsClient.CstorV1().CStorPoolInstances(cspi.Namespace).Get(context.TODO(), cspi.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Errorf("error getting cspc %s: %v", cspi.Name, err)
 	}
@@ -812,11 +813,11 @@ func TestCSPIFinalizerRemoval(t *testing.T) {
 		test.cspi.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 		t.Run(name, func(t *testing.T) {
 			// Create a CSPI to persist it in a fake store
-			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(test.cspi)
+			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(context.TODO(), test.cspi, metav1.CreateOptions{})
 
 			f.run_(testutil.GetKey(test.cspi, t), true, test.expectError, &test.testConfig)
 
-			cspi, err := f.openebsClient.CstorV1().CStorPoolInstances(test.cspi.Namespace).Get(test.cspi.Name, metav1.GetOptions{})
+			cspi, err := f.openebsClient.CstorV1().CStorPoolInstances(test.cspi.Namespace).Get(context.TODO(), test.cspi.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("error getting cspc %s: %v", cspi.Name, err)
 			}
@@ -1212,7 +1213,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			test.cspi.Kind = "CStorPoolInstance"
 			// Create a CSPI to persist it in a fake store
-			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(test.cspi)
+			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(context.TODO(), test.cspi, metav1.CreateOptions{})
 			// Create claims for blockdevices exist on cspi
 			err := f.prepareCSPIForDeploying(test.cspi)
 			if err != nil {
@@ -1225,7 +1226,7 @@ func TestCSPIPoolProvisioning(t *testing.T) {
 			cspi, err := f.openebsClient.
 				CstorV1().
 				CStorPoolInstances(test.cspi.Namespace).
-				Get(test.cspi.Name, metav1.GetOptions{})
+				Get(context.TODO(), test.cspi.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("error getting cspc %s: %v", cspi.Name, err)
 			}
@@ -1665,7 +1666,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			test.cspi.Kind = "CStorPoolInstance"
 			// Create a CSPI to persist it in a fake store
-			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(test.cspi)
+			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(context.TODO(), test.cspi, metav1.CreateOptions{})
 			// Create claims for blockdevices exist on cspi
 			err := f.prepareCSPIForDeploying(test.cspi)
 			if err != nil {
@@ -1678,7 +1679,7 @@ func TestCSPIPoolExpansion(t *testing.T) {
 			cspi, err := f.openebsClient.
 				CstorV1().
 				CStorPoolInstances(test.cspi.Namespace).
-				Get(test.cspi.Name, metav1.GetOptions{})
+				Get(context.TODO(), test.cspi.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("error getting cspc %s: %v", cspi.Name, err)
 			}
@@ -1837,7 +1838,7 @@ func TestCSPIBlockDeviceReplacement(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			test.cspi.Kind = "CStorPoolInstance"
 			// Create a CSPI to persist it in a fake store
-			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(test.cspi)
+			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(context.TODO(), test.cspi, metav1.CreateOptions{})
 			// Create claims for blockdevices exist on cspi
 			err := f.prepareCSPIForDeploying(test.cspi)
 			if err != nil {
@@ -1850,7 +1851,7 @@ func TestCSPIBlockDeviceReplacement(t *testing.T) {
 			cspi, err := f.openebsClient.
 				CstorV1().
 				CStorPoolInstances(test.cspi.Namespace).
-				Get(test.cspi.Name, metav1.GetOptions{})
+				Get(context.TODO(), test.cspi.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("error getting cspc %s: %v", cspi.Name, err)
 			}
@@ -2045,7 +2046,7 @@ func TestCSPIStatus(t *testing.T) {
 			healthyReplicas := test.testConfig.volumeInfo.TestConfig.HealthyReplicas
 			test.cspi.Kind = "CStorPoolInstance"
 			// Create a CSPI to persist it in a fake store
-			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(test.cspi)
+			f.openebsClient.CstorV1().CStorPoolInstances("openebs").Create(context.TODO(), test.cspi, metav1.CreateOptions{})
 			// Create claims for blockdevices exist on cspi
 			err := f.prepareCSPIForDeploying(test.cspi)
 			if err != nil {
@@ -2059,7 +2060,7 @@ func TestCSPIStatus(t *testing.T) {
 			cspi, err := f.openebsClient.
 				CstorV1().
 				CStorPoolInstances(test.cspi.Namespace).
-				Get(test.cspi.Name, metav1.GetOptions{})
+				Get(context.TODO(), test.cspi.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("error getting cspc %s: %v", cspi.Name, err)
 			}
@@ -2279,7 +2280,7 @@ func TestRun(t *testing.T) {
 
 			// Create fake objects in etcd
 			for _, cspiObj := range test.cspiList.Items {
-				_, _ = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Create(&cspiObj)
+				_, _ = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Create(context.TODO(), &cspiObj, metav1.CreateOptions{})
 			}
 
 			done := make(chan bool)
@@ -2300,7 +2301,7 @@ func TestRun(t *testing.T) {
 			for _, cspiObj := range test.cspiList.Items {
 				updatedCSPIObj, _ := c.clientset.CstorV1().
 					CStorPoolInstances(cspiObj.Namespace).
-					Get(cspiObj.Name, metav1.GetOptions{})
+					Get(context.TODO(), cspiObj.Name, metav1.GetOptions{})
 				if updatedCSPIObj.Name == test.updatedCSPIName &&
 					updatedCSPIObj.Status.Phase != cstor.CStorPoolStatusOffline {
 					t.Errorf("expected CSPI %s status to be updated to %s but got %s",

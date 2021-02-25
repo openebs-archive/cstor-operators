@@ -15,6 +15,7 @@
 package volumemgmt
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -95,7 +96,7 @@ func TestProcessNextWorkItemAdd(t *testing.T) {
 			},
 		},
 	}
-	_, err := volumeController.clientset.CstorV1().CStorVolumes("default").Create(testVolumeResource["img2VolumeResource"].test)
+	_, err := volumeController.clientset.CstorV1().CStorVolumes("default").Create(context.TODO(), testVolumeResource["img2VolumeResource"].test, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Unable to create resource : %v", testVolumeResource["img2VolumeResource"].test.ObjectMeta.Name)
 	}
@@ -148,7 +149,7 @@ func TestProcessNextWorkItemModify(t *testing.T) {
 		},
 	}
 
-	_, err := volumeController.clientset.CstorV1().CStorVolumes("default").Create(testVolumeResource["img2VolumeResource"].test)
+	_, err := volumeController.clientset.CstorV1().CStorVolumes("default").Create(context.TODO(), testVolumeResource["img2VolumeResource"].test, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Unable to create resource : %v", testVolumeResource["img2VolumeResource"].test.ObjectMeta.Name)
 	}
@@ -200,7 +201,7 @@ func TestProcessNextWorkItemDestroy(t *testing.T) {
 		},
 	}
 
-	_, err := volumeController.clientset.CstorV1().CStorVolumes("default").Create(testVolumeResource["img2VolumeResource"].test)
+	_, err := volumeController.clientset.CstorV1().CStorVolumes("default").Create(context.TODO(), testVolumeResource["img2VolumeResource"].test, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Unable to create resource : %v", testVolumeResource["img2VolumeResource"].test.ObjectMeta.Name)
 	}

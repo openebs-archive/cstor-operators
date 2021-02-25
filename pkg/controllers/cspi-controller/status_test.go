@@ -17,6 +17,7 @@ limitations under the License.
 package cspicontroller
 
 import (
+	"context"
 	"testing"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -195,7 +196,7 @@ func TestUpdateStatusConditionEventually(t *testing.T) {
 				_, err := controller.clientset.
 					CstorV1().
 					CStorPoolInstances(test.cspi.Namespace).
-					Create(test.cspi)
+					Create(context.TODO(), test.cspi, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatalf("Failed to create fake object: %v", err)
 				}

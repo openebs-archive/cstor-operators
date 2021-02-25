@@ -17,6 +17,7 @@ limitations under the License.
 package backupcontroller
 
 import (
+	"context"
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
@@ -183,7 +184,7 @@ func (c *BackupController) cleanupOldBackup() {
 		LabelSelector: bkplabel,
 	}
 
-	bkplist, err := c.clientset.CstorV1().CStorBackups(metav1.NamespaceAll).List(bkplistop)
+	bkplist, err := c.clientset.CstorV1().CStorBackups(metav1.NamespaceAll).List(context.TODO(), bkplistop)
 	if err != nil {
 		return
 	}
@@ -207,7 +208,7 @@ func (c *BackupController) cleanupOldBackup() {
 func updateBackupStatus(clientset clientset.Interface, bkp cstorapis.CStorBackup, status cstorapis.CStorBackupStatus) {
 	bkp.Status = status
 
-	_, err := clientset.CstorV1().CStorBackups(bkp.Namespace).Update(&bkp)
+	_, err := clientset.CstorV1().CStorBackups(bkp.Namespace).Update(context.TODO(), &bkp, metav1.UpdateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to update backup(%s) status(%s)", status, bkp.Name)
 		return
@@ -220,7 +221,7 @@ func findLastBackupStat(clientset clientset.Interface, bkp cstorapis.CStorBackup
 
 	lastbkp, err := clientset.CstorV1().
 		CStorCompletedBackups(bkp.Namespace).
-		Get(lastbkpname, metav1.GetOptions{})
+		Get(context.TODO(), lastbkpname, metav1.GetOptions{})
 	if err != nil {
 		// Unable to fetch the last backup, so we will return fail state
 		klog.Errorf("Failed to fetch last completed backup:%s error:%s", lastbkpname, err.Error())

@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -74,7 +75,7 @@ func (oc *OperationsConfig) getPathForBDev(bdev string) ([]string, error) {
 	bd, err := oc.openebsclientset.
 		OpenebsV1alpha1().
 		BlockDevices(util.GetEnv(util.Namespace)).
-		Get(bdev, metav1.GetOptions{})
+		Get(context.TODO(), bdev, metav1.GetOptions{})
 	if err != nil {
 		return path, err
 	}
@@ -204,7 +205,7 @@ func (oc *OperationsConfig) getBlockDeviceClaimList(key, value string) (
 	*openebsapis.BlockDeviceClaimList, error) {
 	namespace := util.GetEnv(util.Namespace)
 	bdcClient := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(namespace)
-	bdcAPIList, err := bdcClient.List(metav1.ListOptions{
+	bdcAPIList, err := bdcClient.List(context.TODO(), metav1.ListOptions{
 		LabelSelector: key + "=" + value,
 	})
 	if err != nil {
@@ -300,7 +301,7 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 	if oldObj != nil {
 		if util.ContainsString(oldObj.Finalizers, types.CSPCFinalizer) {
 			oldObj.RemoveFinalizer(types.CSPCFinalizer)
-			_, err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(oldObj.Namespace).Update(oldObj)
+			_, err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(oldObj.Namespace).Update(context.TODO(), oldObj, metav1.UpdateOptions{})
 			if err != nil {
 				return errors.Wrapf(
 					err,
@@ -311,7 +312,7 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 				)
 			}
 		}
-		err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(newObj.Namespace).Delete(oldObj.Name, &metav1.DeleteOptions{})
+		err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(newObj.Namespace).Delete(context.TODO(), oldObj.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrapf(
 				err,
@@ -324,7 +325,7 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 	bdAnnotations := newObj.GetAnnotations()
 	delete(bdAnnotations, types.PredecessorBDLabelKey)
 	newObj.SetAnnotations(bdAnnotations)
-	_, err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(newObj.Namespace).Update(newObj)
+	_, err := oc.openebsclientset.OpenebsV1alpha1().BlockDeviceClaims(newObj.Namespace).Update(context.TODO(), newObj, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrapf(
 			err,

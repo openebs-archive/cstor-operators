@@ -17,6 +17,7 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/openebs/api/v2/pkg/apis/types"
@@ -72,7 +73,7 @@ func (c *CVCController) createPDB(poolNames []string, cspcName string) (*policy.
 	}
 	// Create podDisruptionBudget
 	return c.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(openebsNamespace).
-		Create(pdbObj)
+		Create(context.TODO(), pdbObj, metav1.CreateOptions{})
 }
 
 // getPDBSelector returns PDB label selector from list of pools

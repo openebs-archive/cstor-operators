@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -50,6 +50,10 @@ func (c *FakeCstorV1) CStorRestores(namespace string) v1.CStorRestoreInterface {
 
 func (c *FakeCstorV1) CStorVolumes(namespace string) v1.CStorVolumeInterface {
 	return &FakeCStorVolumes{c, namespace}
+}
+
+func (c *FakeCstorV1) CStorVolumeAttachments(namespace string) v1.CStorVolumeAttachmentInterface {
+	return &FakeCStorVolumeAttachments{c, namespace}
 }
 
 func (c *FakeCstorV1) CStorVolumeConfigs(namespace string) v1.CStorVolumeConfigInterface {

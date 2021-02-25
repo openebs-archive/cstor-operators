@@ -32,7 +32,7 @@ type UpgradeTask struct {
 	// Spec i.e. specifications of the UpgradeTask
 	Spec UpgradeTaskSpec `json:"spec"`
 	// Status of UpgradeTask
-	Status UpgradeTaskStatus `json:"status"`
+	Status UpgradeTaskStatus `json:"status,omitempty"`
 }
 
 // UpgradeTaskSpec is the properties of an upgrade task
@@ -48,10 +48,10 @@ type UpgradeTaskSpec struct {
 	ResourceSpec `json:",inline"`
 	// ImagePrefix contains the url prefix of the image url. This field is
 	// optional. If not present upgrade takes the previously present ImagePrefix.
-	ImagePrefix string `json:"imagePrefix"`
+	ImagePrefix string `json:"imagePrefix,omitempty"`
 	// ImageTag contains the customized tag for ToVersion if any. This field is
 	// optional. If not present upgrade takes the ToVersion as the ImageTag
-	ImageTag string `json:"imageTag"`
+	ImageTag string `json:"imageTag,omitempty"`
 }
 
 // Options provides additional optional arguments
@@ -136,13 +136,15 @@ type UpgradeTaskStatus struct {
 	// Phase indicates if a upgradeTask is started, success or errored
 	Phase UpgradePhase `json:"phase,omitempty"`
 	// StartTime of Upgrade
+	// +nullable
 	StartTime metav1.Time `json:"startTime,omitempty"`
 	// CompletedTime of Upgrade
+	// +nullable
 	CompletedTime metav1.Time `json:"completedTime,omitempty"`
 	// UpgradeDetailedStatuses contains the list of statuses of each step
 	UpgradeDetailedStatuses []UpgradeDetailedStatuses `json:"upgradeDetailedStatuses,omitempty"`
 	// Retries is the number of times the job attempted to upgrade the resource
-	Retries int `json:"retries"`
+	Retries int `json:"retries,omitempty"`
 }
 
 // UpgradeDetailedStatuses represents the latest available observations
@@ -150,8 +152,10 @@ type UpgradeTaskStatus struct {
 type UpgradeDetailedStatuses struct {
 	Step UpgradeStep `json:"step,omitempty"`
 	// StartTime of a UpgradeStep
+	// +nullable
 	StartTime metav1.Time `json:"startTime,omitempty"`
 	// LastUpdatedTime of a UpgradeStep
+	// +nullable
 	LastUpdatedTime metav1.Time `json:"lastUpdatedAt,omitempty"`
 	// Status of a UpgradeStep
 	Status `json:",inline"`

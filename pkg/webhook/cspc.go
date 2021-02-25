@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -54,7 +55,7 @@ func getCSPCObject(name, namespace string,
 	clientset clientset.Interface) (*cstor.CStorPoolCluster, error) {
 	return clientset.CstorV1().
 		CStorPoolClusters(namespace).
-		Get(name, metav1.GetOptions{})
+		Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 // Builder is the builder object for Builder
@@ -152,6 +153,7 @@ func (wh *webhook) validateCSPCCreateRequest(req *v1beta1.AdmissionRequest) *v1b
 func (wh *webhook) validateCSPCDeleteRequest(req *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
 	response := NewAdmissionResponse().SetAllowed().WithResultAsSuccess(http.StatusAccepted).AR
 	cspiList, err := wh.clientset.CstorV1().CStorPoolInstances(req.Namespace).List(
+		context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: types.CStorPoolClusterLabelKey + "=" + req.Name,
 		})
@@ -162,7 +164,7 @@ func (wh *webhook) validateCSPCDeleteRequest(req *v1beta1.AdmissionRequest) *v1b
 	}
 	for _, cspiObj := range cspiList.Items {
 		// list cvrs in all namespaces
-		cvrList, err := wh.clientset.CstorV1().CStorVolumeReplicas("").List(metav1.ListOptions{
+		cvrList, err := wh.clientset.CstorV1().CStorVolumeReplicas("").List(context.TODO(), metav1.ListOptions{
 			LabelSelector: "cstorpoolinstance.openebs.io/name=" + cspiObj.Name,
 		})
 		if err != nil {
@@ -443,7 +445,7 @@ func (poolValidator *PoolValidator) blockDeviceValidation(
 		return false, fmt.Sprint("block device name cannot be empty")
 	}
 	bdObj, err := poolValidator.clientset.OpenebsV1alpha1().BlockDevices(poolValidator.namespace).
-		Get(bd.BlockDeviceName, metav1.GetOptions{})
+		Get(context.TODO(), bd.BlockDeviceName, metav1.GetOptions{})
 	if err != nil {
 		return false, fmt.Sprintf(
 			"failed to get block device: {%s} details error: %v",
@@ -470,7 +472,7 @@ func (poolValidator *PoolValidator) blockDeviceValidation(
 
 func (poolValidator *PoolValidator) blockDeviceClaimValidation(bdcName, bdName string) error {
 	bdcObject, err := poolValidator.clientset.OpenebsV1alpha1().BlockDeviceClaims(poolValidator.namespace).
-		Get(bdcName, metav1.GetOptions{})
+		Get(context.TODO(), bdcName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err,
 			"could not get block device claim for block device {%s}", bdName)
@@ -570,7 +572,7 @@ func (p *PoolOperations) ValidateScaledown() (bool, string) {
 				},
 			}
 			cspi, err := p.clientset.CstorV1().CStorPoolInstances(p.OldCSPC.Namespace).
-				List(metav1.ListOptions{
+				List(context.TODO(), metav1.ListOptions{
 					LabelSelector: labels.Set(ls.MatchLabels).String(),
 				})
 			if err != nil {
@@ -581,7 +583,7 @@ func (p *PoolOperations) ValidateScaledown() (bool, string) {
 	}
 	for _, cspiName := range removedPools {
 		// list cvrs in cspc namespaces
-		cvrList, err := p.clientset.CstorV1().CStorVolumeReplicas(p.OldCSPC.Namespace).List(metav1.ListOptions{
+		cvrList, err := p.clientset.CstorV1().CStorVolumeReplicas(p.OldCSPC.Namespace).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + cspiName,
 		})
 		if err != nil {

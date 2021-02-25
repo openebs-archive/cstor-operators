@@ -17,6 +17,7 @@ limitations under the License.
 package cspicontroller
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -93,7 +94,7 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 			"Failed to reconcile cspi version",
 			err,
 		)
-		_, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(cspiObj)
+		_, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("failed to update versionDetails status for cspi %s:%s", cspiObj.Name, err.Error())
 		}
@@ -246,7 +247,7 @@ updatestatus:
 	if _, er := c.clientset.
 		CstorV1().
 		CStorPoolInstances(cspi.Namespace).
-		Update(cspi); er != nil {
+		Update(context.TODO(), cspi, metav1.UpdateOptions{}); er != nil {
 		klog.Errorf("Update failed %s", er.Error())
 	}
 	return err
@@ -311,7 +312,7 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 		cspiGot, err := c.clientset.
 			CstorV1().
 			CStorPoolInstances(cspi.Namespace).
-			Update(cspi)
+			Update(context.TODO(), cspi, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("Error %v", err)
 			return cspi, errors.Errorf("Failed to updateStatus due to '%s'", err.Error())
@@ -390,7 +391,7 @@ func (c *CStorPoolInstanceController) getCSPIObjFromKey(key string) (*cstor.CSto
 	cspi, err := c.clientset.
 		CstorV1().
 		CStorPoolInstances(ns).
-		Get(name, metav1.GetOptions{})
+		Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		// The cStorPoolInstance resource may no longer exist, in which case we stop
 		// processing.
@@ -413,7 +414,7 @@ func (c *CStorPoolInstanceController) removeFinalizer(cspi *cstor.CStorPoolInsta
 	_, err := c.clientset.
 		CstorV1().
 		CStorPoolInstances(cspi.Namespace).
-		Update(cspi)
+		Update(context.TODO(), cspi, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -434,7 +435,7 @@ func (c *CStorPoolInstanceController) addPoolProtectionFinalizer(
 	newCSPI, err := c.clientset.
 		CstorV1().
 		CStorPoolInstances(cspi.Namespace).
-		Update(cspi)
+		Update(context.TODO(), cspi, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +506,7 @@ func (c *CStorPoolInstanceController) reconcileVersion(cspi *cstor.CStorPoolInst
 		cspiObj := cspi.DeepCopy()
 		if cspi.VersionDetails.Status.State != cstor.ReconcileInProgress {
 			cspiObj.VersionDetails.Status.SetInProgressStatus()
-			cspiObj, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(cspiObj)
+			cspiObj, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
 			if err != nil {
 				return cspi, err
 			}
@@ -528,7 +529,7 @@ func (c *CStorPoolInstanceController) reconcileVersion(cspi *cstor.CStorPoolInst
 		}
 		cspi = cspiObj.DeepCopy()
 		cspiObj.VersionDetails.SetSuccessStatus()
-		cspiObj, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(cspiObj)
+		cspiObj, err = c.clientset.CstorV1().CStorPoolInstances(cspiObj.Namespace).Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
 		if err != nil {
 			return cspi, errors.Wrap(err, "failed to update CSPI")
 		}
@@ -540,7 +541,7 @@ func (c *CStorPoolInstanceController) reconcileVersion(cspi *cstor.CStorPoolInst
 // markCSPIStatusToOffline will fetch all the CSPI resources present
 // in etcd and mark it's own CSPI.Status to Offline
 func (c *CStorPoolInstanceController) markCSPIStatusToOffline() {
-	cspiList, err := c.clientset.CstorV1().CStorPoolInstances("").List(metav1.ListOptions{})
+	cspiList, err := c.clientset.CstorV1().CStorPoolInstances("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		klog.Errorf("Failed to fetch CSPI list error: %v", err)
 	}
@@ -558,7 +559,7 @@ func (c *CStorPoolInstanceController) markCSPIStatusToOffline() {
 			cspi.Status.Phase = cstor.CStorPoolStatusOffline
 			// There will be one-to-one mapping between CSPI and pool-manager
 			// So after finding good to break
-			_, err = c.clientset.CstorV1().CStorPoolInstances(cspi.Namespace).Update(&cspi)
+			_, err = c.clientset.CstorV1().CStorPoolInstances(cspi.Namespace).Update(context.TODO(), &cspi, metav1.UpdateOptions{})
 			if err != nil {
 				klog.Errorf("Failed to update CSPI: %s status to %s", cspi.Name, cstor.CStorPoolStatusOffline)
 				return

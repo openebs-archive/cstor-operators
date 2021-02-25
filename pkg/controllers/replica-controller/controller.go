@@ -17,7 +17,10 @@ limitations under the License.
 package volumereplica
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -153,7 +156,7 @@ func NewCStorVolumeReplicaController(
 				cvrObj, _ = controller.clientset.
 					CstorV1().
 					CStorVolumeReplicas(cvrObj.Namespace).
-					Update(cvrObj)
+					Update(context.TODO(), cvrObj, metav1.UpdateOptions{})
 
 					// push this operation to workqueue
 				ql.Operation = common.QOpAdd

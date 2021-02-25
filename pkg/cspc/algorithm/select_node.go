@@ -17,6 +17,7 @@ limitations under the License.
 package algorithm
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -83,7 +84,7 @@ func (ac *Config) SelectNode() (*cstor.PoolSpec, string, error) {
 
 // GetNodeFromLabelSelector returns the node name selected by provided labels
 func (ac *Config) GetNodeFromLabelSelector(labels map[string]string) (string, error) {
-	nodeList, err := ac.kubeclientset.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: getLabelSelectorString(labels)})
+	nodeList, err := ac.kubeclientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{LabelSelector: getLabelSelectorString(labels)})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get node list from the node selector")
 	}
@@ -111,7 +112,7 @@ func (ac *Config) GetUsedNodes() (map[string]bool, error) {
 		clientset.
 		CstorV1().
 		CStorPoolInstances(ac.Namespace).
-		List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list already created cspi(s)")
@@ -130,7 +131,7 @@ func (ac *Config) GetUsedBlockDevices() (map[string]bool, error) {
 		clientset.
 		CstorV1().
 		CStorPoolInstances(ac.Namespace).
-		List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + ac.CSPC.Name})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list already provisioned cspi(s)")
@@ -165,7 +166,7 @@ func (ac *Config) ClaimBDsForNode(BD []string) error {
 	pendingClaim := 0
 	pendingClaimBDs := make(map[string]bool)
 	for _, bdName := range BD {
-		bdAPIObj, err := ac.clientset.OpenebsV1alpha1().BlockDevices(ac.Namespace).Get(bdName, metav1.GetOptions{})
+		bdAPIObj, err := ac.clientset.OpenebsV1alpha1().BlockDevices(ac.Namespace).Get(context.TODO(), bdName, metav1.GetOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "error in getting details for BD {%s} whether it is claimed", bdName)
 		}
@@ -247,7 +248,7 @@ func (ac *Config) ClaimBD(bdObj openebsio.BlockDevice) error {
 		newBDCObj.Spec.Selector = ls
 	}
 
-	_, err = ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Create(newBDCObj)
+	_, err = ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Create(context.TODO(), newBDCObj, metav1.CreateOptions{})
 	if k8serror.IsAlreadyExists(err) {
 		klog.Infof("BDC for BD {%s} already created", bdObj.Name)
 		return nil
@@ -291,7 +292,7 @@ func (ac *Config) IsClaimedBDUsable(bd openebsio.BlockDevice) (bool, error) {
 		}
 
 		bdcName := claimRef.Name
-		bdcAPIObject, err := ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Get(bdcName, metav1.GetOptions{})
+		bdcAPIObject, err := ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Get(context.TODO(), bdcName, metav1.GetOptions{})
 		if err != nil {
 			return false, errors.Wrapf(err, "could not get block device claim for block device {%s}", bd.Name)
 		}

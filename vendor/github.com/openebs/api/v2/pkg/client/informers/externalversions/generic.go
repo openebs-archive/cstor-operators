@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -66,6 +66,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cstor().V1().CStorRestores().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("cstorvolumes"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cstor().V1().CStorVolumes().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("cstorvolumeattachments"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cstor().V1().CStorVolumeAttachments().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("cstorvolumeconfigs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cstor().V1().CStorVolumeConfigs().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("cstorvolumepolicies"):

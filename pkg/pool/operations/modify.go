@@ -17,12 +17,14 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"context"
 	"fmt"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -204,7 +206,7 @@ func (oc *OperationsConfig) Update(cspi *cstor.CStorPoolInstance) (*cstor.CStorP
 		if ncspi, er := oc.openebsclientset.
 			CstorV1().
 			CStorPoolInstances(cspi.Namespace).
-			Update(cspi); er != nil {
+			Update(context.TODO(), cspi, metav1.UpdateOptions{}); er != nil {
 			err = ErrorWrapf(err, "Failed to update object.. err {%s}", er.Error())
 		} else {
 			cspi = ncspi

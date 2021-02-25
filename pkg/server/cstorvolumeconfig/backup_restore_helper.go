@@ -17,6 +17,8 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
+
 	cstortypes "github.com/openebs/api/v2/pkg/apis/types"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +49,7 @@ func checkIfPoolManagerNodeDown(k8sclient kubernetes.Interface, cspiName, namesp
 		return nodeDown
 	}
 
-	node, err := k8sclient.CoreV1().Nodes().Get(pod.Spec.NodeName, metav1.GetOptions{})
+	node, err := k8sclient.CoreV1().Nodes().Get(context.TODO(), pod.Spec.NodeName, metav1.GetOptions{})
 	if err != nil {
 		klog.Infof("Failed to fetch node info for CSPI:%s: %v", cspiName, err)
 		return nodeDown
@@ -99,7 +101,7 @@ func getPoolManager(k8sclientset kubernetes.Interface, cspiName, openebsNs strin
 		return nil, errors.Errorf("Failed to fetch operator namespace")
 	}
 
-	podList, err := k8sclientset.CoreV1().Pods(openebsNs).List(podlistops)
+	podList, err := k8sclientset.CoreV1().Pods(openebsNs).List(context.TODO(), podlistops)
 	if err != nil {
 		klog.Errorf("Failed to fetch pod list :%v", err)
 		return nil, err

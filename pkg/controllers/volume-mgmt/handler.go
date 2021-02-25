@@ -17,6 +17,7 @@ limitations under the License.
 package volumemgmt
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -80,7 +81,7 @@ func (c *CStorVolumeController) syncHandler(
 			err,
 		)
 		_, err = c.clientset.CstorV1().
-			CStorVolumes(cStorVolumeGot.Namespace).Update(cStorVolumeGot)
+			CStorVolumes(cStorVolumeGot.Namespace).Update(context.TODO(), cStorVolumeGot, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("failed to update versionDetails status for cv %s:%s", cStorVolumeGot.Name, err.Error())
 		}
@@ -101,7 +102,7 @@ func (c *CStorVolumeController) syncHandler(
 			string(cStorVolumeGot.GetUID()), cStorVolumeGot.Status.Phase)
 		_, err1 := c.clientset.CstorV1().
 			CStorVolumes(cStorVolumeGot.Namespace).
-			Update(cStorVolumeGot)
+			Update(context.TODO(), cStorVolumeGot, metav1.UpdateOptions{})
 		if err1 != nil {
 			return errors.Wrapf(
 				err1,
@@ -116,7 +117,7 @@ func (c *CStorVolumeController) syncHandler(
 	}
 	_, err = c.clientset.CstorV1().
 		CStorVolumes(cStorVolumeGot.Namespace).
-		Update(cStorVolumeGot)
+		Update(context.TODO(), cStorVolumeGot, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrapf(
 			err, "failed to update cStorVolume:%v, %v; Status: %v",
@@ -271,7 +272,7 @@ func (c *CStorVolumeController) cStorVolumeEventHandler(
 		cStorVolumeGot.Status.ReplicaStatuses = volStatus.ReplicaStatuses
 		updatedCstorVolume, err := c.clientset.CstorV1().
 			CStorVolumes(cStorVolumeGot.Namespace).
-			Update(cStorVolumeGot)
+			Update(context.TODO(), cStorVolumeGot, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("Error updating cStorVolume object: %s", err)
 			return CVStatusIgnore, nil
@@ -349,7 +350,7 @@ func (c *CStorVolumeController) createSyncUpdateEvent(
 	client := c.kubeclientset
 	event, err := client.CoreV1().
 		Events(eventGot.Namespace).
-		Get(eventGot.Name, metav1.GetOptions{})
+		Get(context.TODO(), eventGot.Name, metav1.GetOptions{})
 	// error could be due to missing object or some other reason
 	// we ignore error if it is due to missing object
 	if err != nil && !strings.Contains(err.Error(), "not found") {
@@ -358,12 +359,12 @@ func (c *CStorVolumeController) createSyncUpdateEvent(
 	// checking name as sometimes we receive an empty event object instead of nil
 	if event == nil || len(event.Name) == 0 {
 		// create event
-		event, err = client.CoreV1().Events(eventGot.Namespace).Create(eventGot)
+		event, err = client.CoreV1().Events(eventGot.Namespace).Create(context.TODO(), eventGot, metav1.CreateOptions{})
 	} else {
 		event.Count = event.Count + 1
 		event.LastTimestamp = metav1.Time{Time: time.Now()}
 		// update the event with increased count and new timestamp
-		_, err = client.CoreV1().Events(eventGot.Namespace).Update(event)
+		_, err = client.CoreV1().Events(eventGot.Namespace).Update(context.TODO(), event, metav1.UpdateOptions{})
 	}
 	return
 }
@@ -409,7 +410,7 @@ func (c *CStorVolumeController) getVolumeResource(
 
 	cStorVolumeGot, err := c.clientset.CstorV1().
 		CStorVolumes(namespace).
-		Get(name, metav1.GetOptions{})
+		Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		// The cStorVolume resource may no longer exist, in which case we stop
 		// processing.
@@ -439,7 +440,7 @@ func (c *CStorVolumeController) addResizeConditions(
 	updatedCVObj, err := c.clientset.
 		CstorV1().
 		CStorVolumes(cvObj.Namespace).
-		Update(cvObj)
+		Update(context.TODO(), cvObj, metav1.UpdateOptions{})
 	if err != nil {
 		// Generate event and return
 		eventMessage = fmt.Sprintf(
@@ -589,7 +590,7 @@ func (c *CStorVolumeController) triggerScaleDownProcess(
 		cStorVolumeAPI, err = c.clientset.
 			CstorV1().
 			CStorVolumes(cStorVolumeAPI.Namespace).
-			Update(cStorVolumeAPI)
+			Update(context.TODO(), cStorVolumeAPI, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to update cstorvolume")
 		}
@@ -606,7 +607,7 @@ func (c *CStorVolumeController) triggerScaleDownProcess(
 	cStorVolumeAPI, err = c.clientset.
 		CstorV1().
 		CStorVolumes(cStorVolumeAPI.Namespace).
-		Update(cStorVolumeAPI)
+		Update(context.TODO(), cStorVolumeAPI, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"failed to update cstorvolume status with scaledown replica information",
@@ -655,7 +656,7 @@ func (c *CStorVolumeController) resizeCStorVolume(
 	newCV, cvUpdateErr := c.clientset.
 		CstorV1().
 		CStorVolumes(copyCV.Namespace).
-		Update(copyCV)
+		Update(context.TODO(), copyCV, metav1.UpdateOptions{})
 	if cvUpdateErr == nil && isResizeSuccess {
 		eventMessage = fmt.Sprintf(
 			"successfully resized volume from %s to %s",
@@ -726,7 +727,7 @@ func (c *CStorVolumeController) reconcileVersion(cv *apis.CStorVolume) (*apis.CS
 		if cv.VersionDetails.Status.State != apis.ReconcileInProgress {
 			cvObject.VersionDetails.Status.SetInProgressStatus()
 			cvObject, err = c.clientset.CstorV1().
-				CStorVolumes(cvObject.Namespace).Update(cvObject)
+				CStorVolumes(cvObject.Namespace).Update(context.TODO(), cvObject, metav1.UpdateOptions{})
 			if err != nil {
 				return cv, err
 			}
@@ -748,7 +749,7 @@ func (c *CStorVolumeController) reconcileVersion(cv *apis.CStorVolume) (*apis.CS
 		cv = cvObject.DeepCopy()
 		cvObject.VersionDetails.SetSuccessStatus()
 		cvObject, err = c.clientset.CstorV1().
-			CStorVolumes(cvObject.Namespace).Update(cvObject)
+			CStorVolumes(cvObject.Namespace).Update(context.TODO(), cvObject, metav1.UpdateOptions{})
 		if err != nil {
 			return cv, err
 		}

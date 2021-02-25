@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	openebsiov1alpha1 "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
@@ -61,13 +62,13 @@ func NewFilteredBlockDeviceClaimInformer(client versioned.Interface, namespace s
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenebsV1alpha1().BlockDeviceClaims(namespace).List(options)
+				return client.OpenebsV1alpha1().BlockDeviceClaims(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenebsV1alpha1().BlockDeviceClaims(namespace).Watch(options)
+				return client.OpenebsV1alpha1().BlockDeviceClaims(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&openebsiov1alpha1.BlockDeviceClaim{},

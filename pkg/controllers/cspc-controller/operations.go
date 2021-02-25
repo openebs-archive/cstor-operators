@@ -17,6 +17,8 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"context"
+
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	openebsapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/v2/pkg/apis/types"
@@ -51,7 +53,7 @@ func (pc *PoolConfig) replaceBlockDevice() error {
 			pc.updateExistingCSPI(&pool, cspiObj)
 			_, err = pc.Controller.clientset.CstorV1().
 				CStorPoolInstances(pc.AlgorithmConfig.Namespace).
-				Update(cspiObj)
+				Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
 			if err != nil {
 				klog.Errorf("could not replace block device in cspi %s: %s", cspiObj.Name, err.Error())
 			}
@@ -85,7 +87,7 @@ func (pc *PoolConfig) expandPool() error {
 		// Pool expansion for striped raid group
 		pc.expandExistingStripedGroup(&pool, cspiObj)
 
-		_, err = pc.Controller.clientset.CstorV1().CStorPoolInstances(pc.AlgorithmConfig.Namespace).Update(cspiObj)
+		_, err = pc.Controller.clientset.CstorV1().CStorPoolInstances(pc.AlgorithmConfig.Namespace).Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("could not update cspi %s: %s", cspiObj.Name, err.Error())
 		}
@@ -315,7 +317,7 @@ func (pc *PoolConfig) getCSPIWithNodeName(nodeName string) (*cstor.CStorPoolInst
 	cspiList, _ := pc.Controller.
 		clientset.CstorV1().
 		CStorPoolInstances(pc.AlgorithmConfig.Namespace).
-		List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + pc.AlgorithmConfig.CSPC.Name})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + pc.AlgorithmConfig.CSPC.Name})
 
 	cspiFilteredList := cspiList.Filter(cstor.HasNodeName(nodeName))
 	if len(cspiFilteredList.Items) == 1 {
@@ -331,7 +333,7 @@ func (pc *PoolConfig) isBDUsable(bdName string) error {
 	bdObj, err := pc.Controller.clientset.
 		OpenebsV1alpha1().
 		BlockDevices(pc.AlgorithmConfig.Namespace).
-		Get(bdName, metav1.GetOptions{})
+		Get(context.TODO(), bdName, metav1.GetOptions{})
 	isBDUsable, err := pc.AlgorithmConfig.IsClaimedBDUsable(*bdObj)
 	if err != nil {
 		return errors.Wrapf(err, "bd %s cannot be used as could not get claim status", bdName)
@@ -358,7 +360,7 @@ func (pc *PoolConfig) ClaimBD(bdName string) error {
 	bdObj, err := pc.Controller.clientset.
 		OpenebsV1alpha1().
 		BlockDevices(pc.AlgorithmConfig.Namespace).
-		Get(bdName, metav1.GetOptions{})
+		Get(context.TODO(), bdName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "could not get bd object %s", bdName)
 	}

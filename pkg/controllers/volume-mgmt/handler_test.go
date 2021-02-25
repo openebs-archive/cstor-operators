@@ -15,6 +15,7 @@
 package volumemgmt
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -93,7 +94,7 @@ func TestGetVolumeResource(t *testing.T) {
 	}
 	for desc, ut := range testVolumeResource {
 		// Create Volume resource
-		_, err := volumeController.clientset.CstorV1().CStorVolumes(string(DefaultNameSpace)).Create(ut.test)
+		_, err := volumeController.clientset.CstorV1().CStorVolumes(string(DefaultNameSpace)).Create(context.TODO(), ut.test, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("Desc:%v, Unable to create resource : %v", desc, ut.test.ObjectMeta.Name)
 		}

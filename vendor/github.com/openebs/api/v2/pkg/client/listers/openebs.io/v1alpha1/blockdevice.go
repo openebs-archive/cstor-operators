@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import (
 )
 
 // BlockDeviceLister helps list BlockDevices.
+// All objects returned here must be treated as read-only.
 type BlockDeviceLister interface {
 	// List lists all BlockDevices in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.BlockDevice, err error)
 	// BlockDevices returns an object that can list and get BlockDevices.
 	BlockDevices(namespace string) BlockDeviceNamespaceLister
@@ -58,10 +60,13 @@ func (s *blockDeviceLister) BlockDevices(namespace string) BlockDeviceNamespaceL
 }
 
 // BlockDeviceNamespaceLister helps list and get BlockDevices.
+// All objects returned here must be treated as read-only.
 type BlockDeviceNamespaceLister interface {
 	// List lists all BlockDevices in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.BlockDevice, err error)
 	// Get retrieves the BlockDevice from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.BlockDevice, error)
 	BlockDeviceNamespaceListerExpansion
 }

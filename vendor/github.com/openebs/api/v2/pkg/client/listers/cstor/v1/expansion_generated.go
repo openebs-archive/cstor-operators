@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -65,6 +65,14 @@ type CStorVolumeListerExpansion interface{}
 // CStorVolumeNamespaceListerExpansion allows custom methods to be added to
 // CStorVolumeNamespaceLister.
 type CStorVolumeNamespaceListerExpansion interface{}
+
+// CStorVolumeAttachmentListerExpansion allows custom methods to be added to
+// CStorVolumeAttachmentLister.
+type CStorVolumeAttachmentListerExpansion interface{}
+
+// CStorVolumeAttachmentNamespaceListerExpansion allows custom methods to be added to
+// CStorVolumeAttachmentNamespaceLister.
+type CStorVolumeAttachmentNamespaceListerExpansion interface{}
 
 // CStorVolumeConfigListerExpansion allows custom methods to be added to
 // CStorVolumeConfigLister.

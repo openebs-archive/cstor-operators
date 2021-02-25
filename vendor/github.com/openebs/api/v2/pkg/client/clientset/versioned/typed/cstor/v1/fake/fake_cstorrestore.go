@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	cstorv1 "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var cstorrestoresResource = schema.GroupVersionResource{Group: "cstor.openebs.io
 var cstorrestoresKind = schema.GroupVersionKind{Group: "cstor.openebs.io", Version: "v1", Kind: "CStorRestore"}
 
 // Get takes name of the cStorRestore, and returns the corresponding cStorRestore object, and an error if there is any.
-func (c *FakeCStorRestores) Get(name string, options v1.GetOptions) (result *cstorv1.CStorRestore, err error) {
+func (c *FakeCStorRestores) Get(ctx context.Context, name string, options v1.GetOptions) (result *cstorv1.CStorRestore, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cstorrestoresResource, c.ns, name), &cstorv1.CStorRestore{})
 
@@ -50,7 +52,7 @@ func (c *FakeCStorRestores) Get(name string, options v1.GetOptions) (result *cst
 }
 
 // List takes label and field selectors, and returns the list of CStorRestores that match those selectors.
-func (c *FakeCStorRestores) List(opts v1.ListOptions) (result *cstorv1.CStorRestoreList, err error) {
+func (c *FakeCStorRestores) List(ctx context.Context, opts v1.ListOptions) (result *cstorv1.CStorRestoreList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(cstorrestoresResource, cstorrestoresKind, c.ns, opts), &cstorv1.CStorRestoreList{})
 
@@ -72,14 +74,14 @@ func (c *FakeCStorRestores) List(opts v1.ListOptions) (result *cstorv1.CStorRest
 }
 
 // Watch returns a watch.Interface that watches the requested cStorRestores.
-func (c *FakeCStorRestores) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCStorRestores) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(cstorrestoresResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a cStorRestore and creates it.  Returns the server's representation of the cStorRestore, and an error, if there is any.
-func (c *FakeCStorRestores) Create(cStorRestore *cstorv1.CStorRestore) (result *cstorv1.CStorRestore, err error) {
+func (c *FakeCStorRestores) Create(ctx context.Context, cStorRestore *cstorv1.CStorRestore, opts v1.CreateOptions) (result *cstorv1.CStorRestore, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(cstorrestoresResource, c.ns, cStorRestore), &cstorv1.CStorRestore{})
 
@@ -90,7 +92,7 @@ func (c *FakeCStorRestores) Create(cStorRestore *cstorv1.CStorRestore) (result *
 }
 
 // Update takes the representation of a cStorRestore and updates it. Returns the server's representation of the cStorRestore, and an error, if there is any.
-func (c *FakeCStorRestores) Update(cStorRestore *cstorv1.CStorRestore) (result *cstorv1.CStorRestore, err error) {
+func (c *FakeCStorRestores) Update(ctx context.Context, cStorRestore *cstorv1.CStorRestore, opts v1.UpdateOptions) (result *cstorv1.CStorRestore, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cstorrestoresResource, c.ns, cStorRestore), &cstorv1.CStorRestore{})
 
@@ -101,7 +103,7 @@ func (c *FakeCStorRestores) Update(cStorRestore *cstorv1.CStorRestore) (result *
 }
 
 // Delete takes name of the cStorRestore and deletes it. Returns an error if one occurs.
-func (c *FakeCStorRestores) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCStorRestores) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(cstorrestoresResource, c.ns, name), &cstorv1.CStorRestore{})
 
@@ -109,15 +111,15 @@ func (c *FakeCStorRestores) Delete(name string, options *v1.DeleteOptions) error
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeCStorRestores) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(cstorrestoresResource, c.ns, listOptions)
+func (c *FakeCStorRestores) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cstorrestoresResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &cstorv1.CStorRestoreList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cStorRestore.
-func (c *FakeCStorRestores) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *cstorv1.CStorRestore, err error) {
+func (c *FakeCStorRestores) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *cstorv1.CStorRestore, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cstorrestoresResource, c.ns, name, pt, data, subresources...), &cstorv1.CStorRestore{})
 

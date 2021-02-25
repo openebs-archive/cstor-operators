@@ -17,6 +17,8 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"context"
+
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/controllers/cspc-controller/util"
@@ -40,7 +42,7 @@ func (c *Controller) UpdateStatusEventually(cspc *cstor.CStorPoolCluster) error 
 		for maxRetry > 0 {
 			cspcNew, err := c.GetStoredCStorVersionClient().
 				CStorPoolClusters(cspc.Namespace).
-				Get(cspc.Name, metav1.GetOptions{})
+				Get(context.TODO(), cspc.Name, metav1.GetOptions{})
 
 			if err != nil {
 				// this is possible due to etcd unavailability so do not retry more here
@@ -68,7 +70,7 @@ func (c *Controller) UpdateStatus(cspc *cstor.CStorPoolCluster) error {
 		return errors.Wrapf(err, "failed to calculate cspc %s status", cspc.Name)
 	}
 	cspc.Status = status
-	_, err = c.GetStoredCStorVersionClient().CStorPoolClusters(cspc.Namespace).Update(cspc)
+	_, err = c.GetStoredCStorVersionClient().CStorPoolClusters(cspc.Namespace).Update(context.TODO(), cspc, metav1.UpdateOptions{})
 
 	if err != nil {
 		return errors.Wrapf(err, "failed to update cspc %s in namespace %s", cspc.Name, cspc.Namespace)
@@ -88,7 +90,7 @@ func (c *Controller) calculateStatus(cspc *cstor.CStorPoolCluster) (cstor.CStorP
 	poolManagerList, err := c.kubeclientset.
 		AppsV1().
 		Deployments(cspc.Namespace).
-		List(metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name})
 	if err != nil {
 		return cstor.CStorPoolClusterStatus{}, errors.Wrapf(err, "failed to list pool-manager deployments for cspc %s in namespace %s", cspc.Name, cspc.Namespace)
 	}

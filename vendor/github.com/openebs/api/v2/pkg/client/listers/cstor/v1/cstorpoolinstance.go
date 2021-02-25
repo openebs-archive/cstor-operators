@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import (
 )
 
 // CStorPoolInstanceLister helps list CStorPoolInstances.
+// All objects returned here must be treated as read-only.
 type CStorPoolInstanceLister interface {
 	// List lists all CStorPoolInstances in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.CStorPoolInstance, err error)
 	// CStorPoolInstances returns an object that can list and get CStorPoolInstances.
 	CStorPoolInstances(namespace string) CStorPoolInstanceNamespaceLister
@@ -58,10 +60,13 @@ func (s *cStorPoolInstanceLister) CStorPoolInstances(namespace string) CStorPool
 }
 
 // CStorPoolInstanceNamespaceLister helps list and get CStorPoolInstances.
+// All objects returned here must be treated as read-only.
 type CStorPoolInstanceNamespaceLister interface {
 	// List lists all CStorPoolInstances in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.CStorPoolInstance, err error)
 	// Get retrieves the CStorPoolInstance from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.CStorPoolInstance, error)
 	CStorPoolInstanceNamespaceListerExpansion
 }

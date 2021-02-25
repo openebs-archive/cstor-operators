@@ -111,7 +111,8 @@ deps:
 .PHONY: test
 test:
 	go fmt ./...
-	go test $(PACKAGES)
+	@echo "--> Running go test" ;
+	@go test $(PACKAGES)
 
 .PHONY: build
 build:

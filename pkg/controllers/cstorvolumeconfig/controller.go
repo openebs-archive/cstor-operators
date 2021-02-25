@@ -17,6 +17,7 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -24,6 +25,7 @@ import (
 
 	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	apitypes "github.com/openebs/api/v2/pkg/apis/types"
+	"github.com/openebs/api/v2/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/util/hash"
 	"github.com/openebs/cstor-operators/pkg/version"
 	errors "github.com/pkg/errors"
@@ -43,7 +45,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	ref "k8s.io/client-go/tools/reference"
-	"k8s.io/kubernetes/pkg/util/slice"
 )
 
 const (
@@ -180,7 +181,7 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 			"Failed to reconcile cvc version",
 			err,
 		)
-		_, err = c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(cvc)
+		_, err = c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(context.TODO(), cvc, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("failed to update versionDetails status for cvc %s:%s", cvc.Name, err.Error())
 		}
@@ -272,7 +273,7 @@ func (c *CVCController) updateCVCObj(
 				cv.Name)
 	}
 
-	_, err := c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(cvcCopy)
+	_, err := c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(context.TODO(), cvcCopy, metav1.UpdateOptions{})
 
 	if err == nil {
 		c.recorder.Event(cvc, corev1.EventTypeNormal,
@@ -389,7 +390,7 @@ func (c *CVCController) syncPolicySpec(cvc *apis.CStorVolumeConfig) error {
 		}
 		// update the hash value in cvc labels generated for new policy changes
 		addPolicySpecHash(cvcCopy)
-		_, err = c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(cvcCopy)
+		_, err = c.clientset.CstorV1().CStorVolumeConfigs(cvc.Namespace).Update(context.TODO(), cvcCopy, metav1.UpdateOptions{})
 		if err != nil {
 			c.recorder.Event(cvcCopy, corev1.EventTypeWarning,
 				string("PolicySync"),
@@ -406,14 +407,14 @@ func (c *CVCController) syncPolicySpec(cvc *apis.CStorVolumeConfig) error {
 }
 
 func (c *CVCController) patchTargetDeploymentSpec(cvc *apis.CStorVolumeConfig) error {
-	orignalDeployObj, err := c.kubeclientset.AppsV1().Deployments(cvc.Namespace).Get(cvc.Name+"-target", metav1.GetOptions{})
+	orignalDeployObj, err := c.kubeclientset.AppsV1().Deployments(cvc.Namespace).Get(context.TODO(), cvc.Name+"-target", metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get target deployment for volume %s in namespace %s", cvc.Name, cvc.Namespace)
 	}
 
 	klog.V(4).Infof("Syncing cvc policy spec \n: %+v", cvc)
 
-	vol, err := c.clientset.CstorV1().CStorVolumes(cvc.Namespace).Get(cvc.Name, metav1.GetOptions{})
+	vol, err := c.clientset.CstorV1().CStorVolumes(cvc.Namespace).Get(context.TODO(), cvc.Name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cstorvolume {%v}", cvc.Name)
 	}
@@ -442,7 +443,7 @@ func (c *CVCController) patchTargetDeploymentSpec(cvc *apis.CStorVolumeConfig) e
 		return errors.Wrap(err, "failed to create strategic merge patch data")
 	}
 
-	_, err = c.kubeclientset.AppsV1().Deployments(cvc.Namespace).Patch(orignalDeployObj.Name, types.StrategicMergePatchType, patchBytes)
+	_, err = c.kubeclientset.AppsV1().Deployments(cvc.Namespace).Patch(context.TODO(), orignalDeployObj.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to patch volume target deployment")
 	}
@@ -463,7 +464,7 @@ func (c *CVCController) getVolumePolicy(
 
 	if policyName != "" {
 		klog.Infof("uses cstorvolume policy %q to configure volume %q", policyName, cvc.Name)
-		volumePolicy, err = c.clientset.CstorV1().CStorVolumePolicies(openebsNamespace).Get(policyName, metav1.GetOptions{})
+		volumePolicy, err = c.clientset.CstorV1().CStorVolumePolicies(openebsNamespace).Get(context.TODO(), policyName, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.Wrapf(
 				err,
@@ -515,7 +516,7 @@ func (c *CVCController) distributePendingCVRs(
 // isClaimDeletionCandidate checks if a cstorvolumeconfig is a deletion candidate.
 func (c *CVCController) isClaimDeletionCandidate(cvc *apis.CStorVolumeConfig) bool {
 	return cvc.ObjectMeta.DeletionTimestamp != nil &&
-		slice.ContainsString(cvc.ObjectMeta.Finalizers, CStorVolumeConfigFinalizer, nil)
+		util.ContainsString(cvc.ObjectMeta.Finalizers, CStorVolumeConfigFinalizer)
 }
 
 // removeFinalizer removes finalizers present in CStorVolumeConfig resource
@@ -551,7 +552,7 @@ func (c *CVCController) removeClaimFinalizer(
 	_, err = c.clientset.
 		CstorV1().
 		CStorVolumeConfigs(cvc.Namespace).
-		Patch(cvc.Name, types.JSONPatchType, cvcPatchBytes)
+		Patch(context.TODO(), cvc.Name, types.JSONPatchType, cvcPatchBytes, metav1.PatchOptions{})
 	if err != nil {
 		return errors.Wrapf(
 			err,
@@ -589,7 +590,7 @@ func (c *CVCController) getCurrentReplicaCount(cvc *apis.CStorVolumeConfig) (int
 	cvrList, err := c.clientset.
 		CstorV1().
 		CStorVolumeReplicas(cvc.Namespace).
-		List(metav1.ListOptions{LabelSelector: pvLabel})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: pvLabel})
 
 	if err != nil {
 		return 0, errors.Errorf("unable to get current replica count: %v", err)
@@ -636,7 +637,7 @@ func (c *CVCController) resizeCVC(cvc *apis.CStorVolumeConfig) error {
 	var updatedCVC *apis.CStorVolumeConfig
 	var err error
 	cv, err := c.clientset.CstorV1().CStorVolumes(cvc.Namespace).
-		Get(cvc.Name, metav1.GetOptions{})
+		Get(context.TODO(), cvc.Name, metav1.GetOptions{})
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("falied to get cv %s: %v", cvc.Name, err))
 		return err
@@ -752,7 +753,7 @@ func (c *CVCController) PatchCVCStatus(oldCVC,
 		return nil, fmt.Errorf("can't patch status of CVC %s as generate path data failed: %v", oldCVC.Name, err)
 	}
 	updatedClaim, updateErr := c.clientset.CstorV1().CStorVolumeConfigs(oldCVC.Namespace).
-		Patch(oldCVC.Name, types.MergePatchType, patchBytes)
+		Patch(context.TODO(), oldCVC.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 
 	if updateErr != nil {
 		return nil, fmt.Errorf("can't patch status of CVC %s with %v", oldCVC.Name, updateErr)
@@ -786,7 +787,7 @@ func (c *CVCController) resizeCV(cv *apis.CStorVolume, newCapacity resource.Quan
 		return fmt.Errorf("can't update capacity of CV %s as generate patch data failed: %v", cv.Name, err)
 	}
 	_, updateErr := c.clientset.CstorV1().CStorVolumes(openebsNamespace).
-		Patch(cv.Name, types.MergePatchType, patchBytes)
+		Patch(context.TODO(), cv.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 	if updateErr != nil {
 		return updateErr
 	}
@@ -801,14 +802,14 @@ func (c *CVCController) deletePDBIfNotInUse(cvc *apis.CStorVolumeConfig) error {
 	pdbName := getPDBName(cvc)
 	cvcLabelSelector := string(apitypes.PodDisruptionBudgetKey) + "=" + pdbName
 	cvcList, err := c.clientset.CstorV1().CStorVolumeConfigs(openebsNamespace).
-		List(metav1.ListOptions{LabelSelector: cvcLabelSelector})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: cvcLabelSelector})
 	if err != nil {
 		return errors.Wrapf(err,
 			"failed to list volumes refering to PDB %s", pdbName)
 	}
 	if len(cvcList.Items) == 1 {
 		err = c.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(openebsNamespace).
-			Delete(pdbName, &metav1.DeleteOptions{})
+			Delete(context.TODO(), pdbName, metav1.DeleteOptions{})
 		if k8serror.IsNotFound(err) {
 			klog.Infof("pdb %s of volume %s was already deleted", pdbName, cvc.Name)
 			return nil
@@ -882,7 +883,7 @@ func (c *CVCController) reconcileVersion(cvc *apis.CStorVolumeConfig) (*apis.CSt
 		cvcObj := cvc.DeepCopy()
 		if cvc.VersionDetails.Status.State != apis.ReconcileInProgress {
 			cvcObj.VersionDetails.Status.SetInProgressStatus()
-			cvcObj, err = c.clientset.CstorV1().CStorVolumeConfigs(cvcObj.Namespace).Update(cvcObj)
+			cvcObj, err = c.clientset.CstorV1().CStorVolumeConfigs(cvcObj.Namespace).Update(context.TODO(), cvcObj, metav1.UpdateOptions{})
 			if err != nil {
 				return cvc, err
 			}
@@ -905,7 +906,7 @@ func (c *CVCController) reconcileVersion(cvc *apis.CStorVolumeConfig) (*apis.CSt
 		}
 		cvc = cvcObj.DeepCopy()
 		cvcObj.VersionDetails.SetSuccessStatus()
-		cvcObj, err = c.clientset.CstorV1().CStorVolumeConfigs(cvcObj.Namespace).Update(cvcObj)
+		cvcObj, err = c.clientset.CstorV1().CStorVolumeConfigs(cvcObj.Namespace).Update(context.TODO(), cvcObj, metav1.UpdateOptions{})
 		if err != nil {
 			return cvc, errors.Wrap(err, "failed to update cvc")
 		}
@@ -925,7 +926,7 @@ func (c *CVCController) populateVersion(cvc *apis.CStorVolumeConfig) (*apis.CSto
 		cvc.VersionDetails.Status.DependentsUpgraded = true
 		obj, err := c.clientset.CstorV1().
 			CStorVolumeConfigs(cvc.Namespace).
-			Update(cvc)
+			Update(context.TODO(), cvc, metav1.UpdateOptions{})
 
 		if err != nil {
 			return nil, errors.Wrapf(

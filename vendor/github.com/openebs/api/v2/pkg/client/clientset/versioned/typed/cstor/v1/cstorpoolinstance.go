@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"time"
 
 	v1 "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -37,14 +38,14 @@ type CStorPoolInstancesGetter interface {
 
 // CStorPoolInstanceInterface has methods to work with CStorPoolInstance resources.
 type CStorPoolInstanceInterface interface {
-	Create(*v1.CStorPoolInstance) (*v1.CStorPoolInstance, error)
-	Update(*v1.CStorPoolInstance) (*v1.CStorPoolInstance, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
-	Get(name string, options metav1.GetOptions) (*v1.CStorPoolInstance, error)
-	List(opts metav1.ListOptions) (*v1.CStorPoolInstanceList, error)
-	Watch(opts metav1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.CStorPoolInstance, err error)
+	Create(ctx context.Context, cStorPoolInstance *v1.CStorPoolInstance, opts metav1.CreateOptions) (*v1.CStorPoolInstance, error)
+	Update(ctx context.Context, cStorPoolInstance *v1.CStorPoolInstance, opts metav1.UpdateOptions) (*v1.CStorPoolInstance, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.CStorPoolInstance, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v1.CStorPoolInstanceList, error)
+	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.CStorPoolInstance, err error)
 	CStorPoolInstanceExpansion
 }
 
@@ -63,20 +64,20 @@ func newCStorPoolInstances(c *CstorV1Client, namespace string) *cStorPoolInstanc
 }
 
 // Get takes name of the cStorPoolInstance, and returns the corresponding cStorPoolInstance object, and an error if there is any.
-func (c *cStorPoolInstances) Get(name string, options metav1.GetOptions) (result *v1.CStorPoolInstance, err error) {
+func (c *cStorPoolInstances) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.CStorPoolInstance, err error) {
 	result = &v1.CStorPoolInstance{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("cstorpoolinstances").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of CStorPoolInstances that match those selectors.
-func (c *cStorPoolInstances) List(opts metav1.ListOptions) (result *v1.CStorPoolInstanceList, err error) {
+func (c *cStorPoolInstances) List(ctx context.Context, opts metav1.ListOptions) (result *v1.CStorPoolInstanceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -87,13 +88,13 @@ func (c *cStorPoolInstances) List(opts metav1.ListOptions) (result *v1.CStorPool
 		Resource("cstorpoolinstances").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested cStorPoolInstances.
-func (c *cStorPoolInstances) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+func (c *cStorPoolInstances) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -104,71 +105,74 @@ func (c *cStorPoolInstances) Watch(opts metav1.ListOptions) (watch.Interface, er
 		Resource("cstorpoolinstances").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a cStorPoolInstance and creates it.  Returns the server's representation of the cStorPoolInstance, and an error, if there is any.
-func (c *cStorPoolInstances) Create(cStorPoolInstance *v1.CStorPoolInstance) (result *v1.CStorPoolInstance, err error) {
+func (c *cStorPoolInstances) Create(ctx context.Context, cStorPoolInstance *v1.CStorPoolInstance, opts metav1.CreateOptions) (result *v1.CStorPoolInstance, err error) {
 	result = &v1.CStorPoolInstance{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("cstorpoolinstances").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cStorPoolInstance).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a cStorPoolInstance and updates it. Returns the server's representation of the cStorPoolInstance, and an error, if there is any.
-func (c *cStorPoolInstances) Update(cStorPoolInstance *v1.CStorPoolInstance) (result *v1.CStorPoolInstance, err error) {
+func (c *cStorPoolInstances) Update(ctx context.Context, cStorPoolInstance *v1.CStorPoolInstance, opts metav1.UpdateOptions) (result *v1.CStorPoolInstance, err error) {
 	result = &v1.CStorPoolInstance{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("cstorpoolinstances").
 		Name(cStorPoolInstance.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(cStorPoolInstance).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the cStorPoolInstance and deletes it. Returns an error if one occurs.
-func (c *cStorPoolInstances) Delete(name string, options *metav1.DeleteOptions) error {
+func (c *cStorPoolInstances) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("cstorpoolinstances").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *cStorPoolInstances) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+func (c *cStorPoolInstances) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("cstorpoolinstances").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched cStorPoolInstance.
-func (c *cStorPoolInstances) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.CStorPoolInstance, err error) {
+func (c *cStorPoolInstances) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.CStorPoolInstance, err error) {
 	result = &v1.CStorPoolInstance{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("cstorpoolinstances").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

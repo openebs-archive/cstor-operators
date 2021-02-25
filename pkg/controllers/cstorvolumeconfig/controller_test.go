@@ -17,6 +17,7 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"reflect"
@@ -244,11 +245,11 @@ func TestCVCFinalizerRemoval(t *testing.T) {
 		test.cvc.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 		t.Run(name, func(t *testing.T) {
 			// Create a CVC to persist it in a fake store
-			f.openebsClient.CstorV1().CStorVolumeConfigs("openebs").Create(test.cvc)
+			f.openebsClient.CstorV1().CStorVolumeConfigs("openebs").Create(context.TODO(), test.cvc, metav1.CreateOptions{})
 
 			f.run_(testutil.GetKey(test.cvc, t), true, test.expectError, test.testConfig)
 
-			cvc, err := f.openebsClient.CstorV1().CStorVolumeConfigs(test.cvc.Namespace).Get(test.cvc.Name, metav1.GetOptions{})
+			cvc, err := f.openebsClient.CstorV1().CStorVolumeConfigs(test.cvc.Namespace).Get(context.TODO(), test.cvc.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("error getting cvc %s: %v", test.cvc.Name, err)
 			}
@@ -324,14 +325,14 @@ func TestVolumeProvisioning(t *testing.T) {
 			f.fakePoolsCreator(test.cspcName, 2)
 			// Create a CVC to persist it in a fake store
 			test.cvc.Kind = "CStorVolumeConfig"
-			_, err := f.openebsClient.CstorV1().CStorVolumeConfigs("openebs").Create(test.cvc)
+			_, err := f.openebsClient.CstorV1().CStorVolumeConfigs("openebs").Create(context.TODO(), test.cvc, metav1.CreateOptions{})
 			if err != nil {
 				t.Errorf("error creating cvc %s: %v", test.cvc.Name, err)
 			}
 			f.cvcLister = append(f.cvcLister, test.cvc)
 
 			f.run_(testutil.GetKey(test.cvc, t), true, false, test.testConfig)
-			_, err = f.openebsClient.CstorV1().CStorVolumeConfigs(test.cvc.Namespace).Get(test.cvc.Name, metav1.GetOptions{})
+			_, err = f.openebsClient.CstorV1().CStorVolumeConfigs(test.cvc.Namespace).Get(context.TODO(), test.cvc.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("error getting cvc %s: %v", test.cvc.Name, err)
 			}
@@ -486,7 +487,7 @@ func ParseQuantity(capacity string) corev1.ResourceList {
 
 func (f *fixture) getCVRCount(cvcName, cvcNamespace string) int {
 	cvrList, err := f.openebsClient.CstorV1().CStorVolumeReplicas(cvcNamespace).
-		List(metav1.ListOptions{LabelSelector: "cstorvolume.openebs.io/name" + "=" + cvcName})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: "cstorvolume.openebs.io/name" + "=" + cvcName})
 	if err != nil {
 		f.t.Errorf("failed to list cvrs for cvc %s:%s", cvcName, err)
 	}
@@ -495,7 +496,7 @@ func (f *fixture) getCVRCount(cvcName, cvcNamespace string) int {
 
 func (f *fixture) getVolumeTargetCount(cvcName, cvcNamespace string) int {
 	deployList, err := f.k8sClient.AppsV1().Deployments(cvcNamespace).
-		List(metav1.ListOptions{LabelSelector: "openebs.io/persistent-volume" + "=" + cvcName})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: "openebs.io/persistent-volume" + "=" + cvcName})
 	if err != nil {
 		f.t.Errorf("failed to list volume target deployments for cvc %s:%s", cvcName, err)
 	}
@@ -503,7 +504,7 @@ func (f *fixture) getVolumeTargetCount(cvcName, cvcNamespace string) int {
 }
 
 func (f *fixture) fakePoolsCreator(cspcName string, poolCount int) error {
-	nodeList, err := f.k8sClient.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := f.k8sClient.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -522,7 +523,7 @@ func (f *fixture) fakePoolsCreator(cspcName string, poolCount int) error {
 			WithNodeName(nodeList.Items[i].Name).
 			WithLabelsNew(labels)
 		cspi.Status.Phase = apis.CStorPoolStatusOnline
-		_, err := f.openebsClient.CstorV1().CStorPoolInstances(namespace).Create(cspi)
+		_, err := f.openebsClient.CstorV1().CStorPoolInstances(namespace).Create(context.TODO(), cspi, metav1.CreateOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to create fake cspi")
 		}
@@ -542,12 +543,12 @@ func (f *fixture) fakeNodeCreator(nodeCount int) {
 		labels["kubernetes.io/hostname"] = node.Name
 		node.Labels = labels
 		node.Status.Conditions = []corev1.NodeCondition{}
-		_, err := f.k8sClient.CoreV1().Nodes().Create(node)
+		_, err := f.k8sClient.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
 		if err != nil && !k8serror.IsAlreadyExists(err) {
 			klog.Error(err)
 			continue
 		}
-		_, err = f.k8sClient.CoreV1().Nodes().Update(node)
+		_, err = f.k8sClient.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Error(err)
 		}

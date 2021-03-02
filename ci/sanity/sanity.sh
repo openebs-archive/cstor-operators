@@ -94,7 +94,7 @@ function getBD(){
 nodeName=$1
 BD_RETRY=$2
 for i in $(seq 1 $BD_RETRY) ; do
- bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[1].metadata.name}')
+ bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[?(@.spec.details.deviceType=="sparse")].metadata.name}')
  if [ "$bdName" != "" ]; then
  echo "Got BD $bdName"
  break
@@ -125,7 +125,7 @@ echo "<-------------------------------------------------------------------------
 echo "Applying the prepared CSPC YAML"
 kubectl apply -f ./ci/sanity/cspc.yaml
 
-IsPoolHealthy 30
+IsPoolHealthy 50
 
 ## Once the pool is healthy verify whether cachefile stored in persistent path
 ## Get the CSPC name

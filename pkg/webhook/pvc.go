@@ -15,6 +15,7 @@
 package webhook
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -68,7 +69,7 @@ func (wh *webhook) validatePVCDeleteRequest(req *v1beta1.AdmissionRequest) *v1be
 	//}
 
 	// fetch the pvc specifications
-	pvc, err := wh.kubeClient.CoreV1().PersistentVolumeClaims(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	pvc, err := wh.kubeClient.CoreV1().PersistentVolumeClaims(req.Namespace).Get(context.TODO(), req.Name, metav1.GetOptions{})
 	if err != nil {
 		response.Allowed = false
 		response.Result = &metav1.Status{
@@ -133,12 +134,12 @@ func (wh *webhook) validatePVCDeleteRequest(req *v1beta1.AdmissionRequest) *v1be
 
 // getCstorVolumes gets the list of CstorVolumes based in the source-volume labels
 func (wh *webhook) getCstorVolumes(listOptions metav1.ListOptions) (*cstor.CStorVolumeList, error) {
-	return wh.clientset.CstorV1().CStorVolumes("").List(listOptions)
+	return wh.clientset.CstorV1().CStorVolumes("").List(context.TODO(), listOptions)
 }
 
 // getCstorVolumeClaims gets the list of CstorVolumeclaims based in the source-volume labels
 func (wh *webhook) getCstorVolumeClaims(listOptions metav1.ListOptions) (*cstor.CStorVolumeConfigList, error) {
-	return wh.clientset.CstorV1().CStorVolumeConfigs("").List(listOptions)
+	return wh.clientset.CstorV1().CStorVolumeConfigs("").List(context.TODO(), listOptions)
 }
 
 // validatePVCCreateRequest validates persistentvolumeclaim(PVC) create request

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	cstorv1 "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var cstorvolumereplicasResource = schema.GroupVersionResource{Group: "cstor.open
 var cstorvolumereplicasKind = schema.GroupVersionKind{Group: "cstor.openebs.io", Version: "v1", Kind: "CStorVolumeReplica"}
 
 // Get takes name of the cStorVolumeReplica, and returns the corresponding cStorVolumeReplica object, and an error if there is any.
-func (c *FakeCStorVolumeReplicas) Get(name string, options v1.GetOptions) (result *cstorv1.CStorVolumeReplica, err error) {
+func (c *FakeCStorVolumeReplicas) Get(ctx context.Context, name string, options v1.GetOptions) (result *cstorv1.CStorVolumeReplica, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cstorvolumereplicasResource, c.ns, name), &cstorv1.CStorVolumeReplica{})
 
@@ -50,7 +52,7 @@ func (c *FakeCStorVolumeReplicas) Get(name string, options v1.GetOptions) (resul
 }
 
 // List takes label and field selectors, and returns the list of CStorVolumeReplicas that match those selectors.
-func (c *FakeCStorVolumeReplicas) List(opts v1.ListOptions) (result *cstorv1.CStorVolumeReplicaList, err error) {
+func (c *FakeCStorVolumeReplicas) List(ctx context.Context, opts v1.ListOptions) (result *cstorv1.CStorVolumeReplicaList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(cstorvolumereplicasResource, cstorvolumereplicasKind, c.ns, opts), &cstorv1.CStorVolumeReplicaList{})
 
@@ -72,14 +74,14 @@ func (c *FakeCStorVolumeReplicas) List(opts v1.ListOptions) (result *cstorv1.CSt
 }
 
 // Watch returns a watch.Interface that watches the requested cStorVolumeReplicas.
-func (c *FakeCStorVolumeReplicas) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCStorVolumeReplicas) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(cstorvolumereplicasResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a cStorVolumeReplica and creates it.  Returns the server's representation of the cStorVolumeReplica, and an error, if there is any.
-func (c *FakeCStorVolumeReplicas) Create(cStorVolumeReplica *cstorv1.CStorVolumeReplica) (result *cstorv1.CStorVolumeReplica, err error) {
+func (c *FakeCStorVolumeReplicas) Create(ctx context.Context, cStorVolumeReplica *cstorv1.CStorVolumeReplica, opts v1.CreateOptions) (result *cstorv1.CStorVolumeReplica, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(cstorvolumereplicasResource, c.ns, cStorVolumeReplica), &cstorv1.CStorVolumeReplica{})
 
@@ -90,7 +92,7 @@ func (c *FakeCStorVolumeReplicas) Create(cStorVolumeReplica *cstorv1.CStorVolume
 }
 
 // Update takes the representation of a cStorVolumeReplica and updates it. Returns the server's representation of the cStorVolumeReplica, and an error, if there is any.
-func (c *FakeCStorVolumeReplicas) Update(cStorVolumeReplica *cstorv1.CStorVolumeReplica) (result *cstorv1.CStorVolumeReplica, err error) {
+func (c *FakeCStorVolumeReplicas) Update(ctx context.Context, cStorVolumeReplica *cstorv1.CStorVolumeReplica, opts v1.UpdateOptions) (result *cstorv1.CStorVolumeReplica, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cstorvolumereplicasResource, c.ns, cStorVolumeReplica), &cstorv1.CStorVolumeReplica{})
 
@@ -101,7 +103,7 @@ func (c *FakeCStorVolumeReplicas) Update(cStorVolumeReplica *cstorv1.CStorVolume
 }
 
 // Delete takes name of the cStorVolumeReplica and deletes it. Returns an error if one occurs.
-func (c *FakeCStorVolumeReplicas) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCStorVolumeReplicas) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(cstorvolumereplicasResource, c.ns, name), &cstorv1.CStorVolumeReplica{})
 
@@ -109,15 +111,15 @@ func (c *FakeCStorVolumeReplicas) Delete(name string, options *v1.DeleteOptions)
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeCStorVolumeReplicas) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(cstorvolumereplicasResource, c.ns, listOptions)
+func (c *FakeCStorVolumeReplicas) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cstorvolumereplicasResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &cstorv1.CStorVolumeReplicaList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cStorVolumeReplica.
-func (c *FakeCStorVolumeReplicas) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *cstorv1.CStorVolumeReplica, err error) {
+func (c *FakeCStorVolumeReplicas) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *cstorv1.CStorVolumeReplica, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cstorvolumereplicasResource, c.ns, name, pt, data, subresources...), &cstorv1.CStorVolumeReplica{})
 

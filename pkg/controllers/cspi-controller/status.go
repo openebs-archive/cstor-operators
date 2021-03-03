@@ -17,6 +17,7 @@ limitations under the License.
 package cspicontroller
 
 import (
+	"context"
 	"time"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -46,7 +47,7 @@ func (c *CStorPoolInstanceController) UpdateStatusConditionEventually(
 			newCSPI, err := c.clientset.
 				CstorV1().
 				CStorPoolInstances(cspi.Namespace).
-				Get(cspi.Name, metav1.GetOptions{})
+				Get(context.TODO(), cspi.Name, metav1.GetOptions{})
 			if err != nil {
 				// This is possible due to etcd unavailability so do not retry more here
 				return cspi, errors.Wrapf(err, "failed to update cspi status")
@@ -76,7 +77,7 @@ func (c *CStorPoolInstanceController) UpdateStatusCondition(
 	updatedCSPI, err := c.clientset.
 		CstorV1().
 		CStorPoolInstances(cspi.Namespace).
-		Update(cspi)
+		Update(context.TODO(), cspi, metav1.UpdateOptions{})
 	if err != nil {
 		// cspi object has already updated with the conditions so returning
 		// same object may or maynot make sense

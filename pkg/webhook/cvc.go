@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -222,7 +223,7 @@ func getCVCObject(name, namespace string,
 	clientset clientset.Interface) (*cstor.CStorVolumeConfig, error) {
 	return clientset.CstorV1().
 		CStorVolumeConfigs(namespace).
-		Get(name, metav1.GetOptions{})
+		Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 // IsUniqueList returns true if values in list are not repeated else return

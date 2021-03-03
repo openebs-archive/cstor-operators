@@ -17,6 +17,7 @@ limitations under the License.
 package backupcontroller
 
 import (
+	"context"
 	"fmt"
 
 	cstorapis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -57,14 +58,14 @@ func (c *BackupController) syncHandler(key string, operation common.QueueOperati
 		return nil
 	}
 
-	nbkp, err := c.clientset.CstorV1().CStorBackups(bkp.Namespace).Get(bkp.Name, metav1.GetOptions{})
+	nbkp, err := c.clientset.CstorV1().CStorBackups(bkp.Namespace).Get(context.TODO(), bkp.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	nbkp.Status = bkp.Status
 
-	_, err = c.clientset.CstorV1().CStorBackups(nbkp.Namespace).Update(nbkp)
+	_, err = c.clientset.CstorV1().CStorBackups(nbkp.Namespace).Update(context.TODO(), nbkp, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,7 @@ func (c *BackupController) syncEventHandler(bkp *cstorapis.CStorBackup) (string,
 	// If the backup is in init state then only we will complete the backup
 	if bkp.IsInInit() {
 		bkp.Status = cstorapis.BKPCStorStatusInProgress
-		_, err := c.clientset.CstorV1().CStorBackups(bkp.Namespace).Update(bkp)
+		_, err := c.clientset.CstorV1().CStorBackups(bkp.Namespace).Update(context.TODO(), bkp, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("Failed to update backup:%s status : %v", bkp.Name, err.Error())
 			return "", err
@@ -136,7 +137,7 @@ func (c *BackupController) getCStorBackupResource(key string) (*cstorapis.CStorB
 		return nil, nil
 	}
 
-	bkp, err := c.clientset.CstorV1().CStorBackups(ns).Get(name, metav1.GetOptions{})
+	bkp, err := c.clientset.CstorV1().CStorBackups(ns).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			runtime.HandleError(fmt.Errorf("bkp '%s' in work queue no longer exists", key))
@@ -168,7 +169,7 @@ func (c *BackupController) updateCStorCompletedBackup(bkp *cstorapis.CStorBackup
 	// cstor pools. In such cases if backup is for scheduled backup then and completed
 	// backup belongs to the pool that supports v1alpha1 then we have to update v1alpha1
 	// completed backup resource
-	completedBackup, err := c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Get(lastbkpname, metav1.GetOptions{})
+	completedBackup, err := c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Get(context.TODO(), lastbkpname, metav1.GetOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
 		klog.Errorf("failed to get completed backup for %s vol: %v error: %v", bkp.Spec.BackupName, bkp.Spec.VolumeName, err)
 	}
@@ -180,7 +181,7 @@ func (c *BackupController) updateCStorCompletedBackup(bkp *cstorapis.CStorBackup
 		// PrevSnapName store the name of last backed up snapshot<Paste>
 		completedBackup.Spec.PrevSnapName = bkp.Spec.SnapName
 
-		_, err = c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Update(completedBackup)
+		_, err = c.clientset.OpenebsV1alpha1().CStorCompletedBackups(bkp.Namespace).Update(context.TODO(), completedBackup, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("Failed to update lastbackup for %s", completedBackup.Name)
 			return err
@@ -188,7 +189,7 @@ func (c *BackupController) updateCStorCompletedBackup(bkp *cstorapis.CStorBackup
 		return nil
 	}
 
-	bkplast, err := c.clientset.CstorV1().CStorCompletedBackups(bkp.Namespace).Get(lastbkpname, metav1.GetOptions{})
+	bkplast, err := c.clientset.CstorV1().CStorCompletedBackups(bkp.Namespace).Get(context.TODO(), lastbkpname, metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("Failed to get last completed backup for %s vol:%v error: %v", bkp.Spec.BackupName, bkp.Spec.VolumeName, err)
 		return nil
@@ -199,7 +200,7 @@ func (c *BackupController) updateCStorCompletedBackup(bkp *cstorapis.CStorBackup
 
 	// LastSnapName store the name of last backed up snapshot
 	bkplast.Spec.LastSnapName = bkp.Spec.SnapName
-	_, err = c.clientset.CstorV1().CStorCompletedBackups(bkp.Namespace).Update(bkplast)
+	_, err = c.clientset.CstorV1().CStorCompletedBackups(bkp.Namespace).Update(context.TODO(), bkplast, metav1.UpdateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to update lastbackup for %s", bkplast.Name)
 		return err

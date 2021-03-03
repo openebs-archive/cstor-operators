@@ -17,6 +17,7 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
 	"os"
 	"strconv"
 
@@ -349,7 +350,7 @@ func (c *CVCController) getOrCreateCStorTargetDeployment(
 ) (*appsv1.Deployment, error) {
 
 	deployObj, err := c.kubeclientset.AppsV1().Deployments(openebsNamespace).
-		Get(vol.Name+"-target", metav1.GetOptions{})
+		Get(context.TODO(), vol.Name+"-target", metav1.GetOptions{})
 
 	if err != nil && !k8serror.IsNotFound(err) {
 		return nil, errors.Wrapf(
@@ -365,7 +366,7 @@ func (c *CVCController) getOrCreateCStorTargetDeployment(
 			return nil, errors.Wrapf(err, "failed to build deployment object")
 		}
 
-		deployObj, err = c.kubeclientset.AppsV1().Deployments(openebsNamespace).Create(deployObj)
+		deployObj, err = c.kubeclientset.AppsV1().Deployments(openebsNamespace).Create(context.TODO(), deployObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create deployment object")
 		}

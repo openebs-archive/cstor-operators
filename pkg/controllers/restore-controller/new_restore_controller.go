@@ -17,6 +17,7 @@ limitations under the License.
 package restorecontroller
 
 import (
+	"context"
 	"os"
 
 	"github.com/openebs/api/v2/pkg/apis/types"
@@ -205,7 +206,7 @@ func (c *RestoreController) cleanupOldRestore(clientset clientset.Interface) {
 	rstlistop := metav1.ListOptions{
 		LabelSelector: rstlabel,
 	}
-	rstlist, err := clientset.CstorV1().CStorRestores(metav1.NamespaceAll).List(rstlistop)
+	rstlist, err := clientset.CstorV1().CStorRestores(metav1.NamespaceAll).List(context.TODO(), rstlistop)
 	if err != nil {
 		return
 	}
@@ -225,7 +226,7 @@ func (c *RestoreController) cleanupOldRestore(clientset clientset.Interface) {
 func updateRestoreStatus(clientset clientset.Interface, rst cstorapis.CStorRestore, status cstorapis.CStorRestoreStatus) {
 	rst.Status = status
 
-	_, err := clientset.CstorV1().CStorRestores(rst.Namespace).Update(&rst)
+	_, err := clientset.CstorV1().CStorRestores(rst.Namespace).Update(context.TODO(), &rst, metav1.UpdateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to update restore(%s) status(%s)", status, rst.Name)
 		return

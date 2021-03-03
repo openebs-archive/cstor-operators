@@ -17,6 +17,7 @@ limitations under the License.
 package algorithm
 
 import (
+	"context"
 	"reflect"
 	"strconv"
 	"testing"
@@ -26,7 +27,7 @@ import (
 	"github.com/openebs/api/v2/pkg/apis/types"
 	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	core "k8s.io/client-go/testing"
@@ -363,7 +364,7 @@ func TestConfig_ClaimBD(t *testing.T) {
 				return
 			}
 			isBdcCreated := false
-			ob, _ := ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Get(tt.args.bdObj.Name+string(tt.args.bdObj.UID), v1.GetOptions{})
+			ob, _ := ac.clientset.OpenebsV1alpha1().BlockDeviceClaims(ac.Namespace).Get(context.TODO(), tt.args.bdObj.Name+string(tt.args.bdObj.UID), v1.GetOptions{})
 			if ob != nil {
 				isBdcCreated = true
 			}

@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/api/admission/v1beta1"
@@ -57,7 +58,7 @@ func (wh *webhook) validateNamespaceDeleteRequest(req *v1beta1.AdmissionRequest)
 	// delete openebs namespace
 	err := wh.kubeClient.AdmissionregistrationV1().
 		ValidatingWebhookConfigurations().
-		Delete(validatorWebhook, &metav1.DeleteOptions{})
+		Delete(context.TODO(), validatorWebhook, metav1.DeleteOptions{})
 	if err != nil {
 		response.Allowed = false
 		response.Result = &metav1.Status{

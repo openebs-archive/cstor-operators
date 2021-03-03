@@ -17,6 +17,7 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
 	"net/http"
 
 	"encoding/json"
@@ -355,7 +356,7 @@ func (bOps *backupAPIOps) getBackupInterface(backupName,
 
 	backupObj, err := bOps.clientset.OpenebsV1alpha1().
 		CStorBackups(backupNamespace).
-		Get(backupName, metav1.GetOptions{})
+		Get(context.TODO(), backupName, metav1.GetOptions{})
 	if err == nil {
 		backupInterface := newV1Alpha1BackupWrapper(bOps.clientset).setBackup(backupObj)
 		return backupInterface, nil
@@ -363,7 +364,7 @@ func (bOps *backupAPIOps) getBackupInterface(backupName,
 	if k8serror.IsNotFound(err) {
 		backupObj, err := bOps.clientset.CstorV1().
 			CStorBackups(backupNamespace).
-			Get(backupName, metav1.GetOptions{})
+			Get(context.TODO(), backupName, metav1.GetOptions{})
 		if err != nil {
 			if !k8serror.IsNotFound(err) {
 				return nil, errors.Wrapf(err, "failed to fetch %s backup v1 version also", backupName)
@@ -410,7 +411,7 @@ func findHealthyCVR(
 		LabelSelector: cstortypes.PersistentVolumeLabelKey + "=" + volume,
 	}
 
-	cvrList, err := openebsClient.CstorV1().CStorVolumeReplicas(namespace).List(listOptions)
+	cvrList, err := openebsClient.CstorV1().CStorVolumeReplicas(namespace).List(context.TODO(), listOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -445,7 +446,7 @@ func (bOps *backupAPIOps) getLastBackupSnap(backup *cstorapis.CStorBackup) (stri
 	lastbkpName := backup.Spec.BackupName + "-" + backup.Spec.VolumeName
 	b, err := bOps.clientset.OpenebsV1alpha1().
 		CStorCompletedBackups(backup.Namespace).
-		Get(lastbkpName, metav1.GetOptions{})
+		Get(context.TODO(), lastbkpName, metav1.GetOptions{})
 	if err != nil {
 		if k8serror.IsNotFound(err) {
 			// Build CStorCompletedBackup which will helpful for incremental backups
@@ -461,7 +462,7 @@ func (bOps *backupAPIOps) getLastBackupSnap(backup *cstorapis.CStorBackup) (stri
 				},
 			}
 
-			_, err := bOps.clientset.OpenebsV1alpha1().CStorCompletedBackups(bk.Namespace).Create(bk)
+			_, err := bOps.clientset.OpenebsV1alpha1().CStorCompletedBackups(bk.Namespace).Create(context.TODO(), bk, metav1.CreateOptions{})
 			if err != nil {
 				klog.Errorf("Error creating last completed-backup resource for backup:%v err:%v", bk.Spec.BackupName, err)
 				return "", err
@@ -477,7 +478,7 @@ func (bOps *backupAPIOps) getLastBackupSnap(backup *cstorapis.CStorBackup) (stri
 }
 
 func getPoolVersion(cspiName, cspiNamespace string, clientset clientset.Interface) (string, error) {
-	cspi, err := clientset.CstorV1().CStorPoolInstances(cspiNamespace).Get(cspiName, metav1.GetOptions{})
+	cspi, err := clientset.CstorV1().CStorPoolInstances(cspiNamespace).Get(context.TODO(), cspiName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

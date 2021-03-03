@@ -17,6 +17,7 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"context"
 	"fmt"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -61,7 +62,7 @@ func (pc *PoolConfig) CreateCSPI(cspc *cstor.CStorPoolCluster) error {
 	}
 	// The cpsi variable is written back here, This is important as cspi uid is passed to pool deployment
 	// The uid does not exist before cspi creation.
-	cspi, err = pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).Create(cspi)
+	cspi, err = pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).Create(context.TODO(), cspi, metav1.CreateOptions{})
 
 	if err != nil {
 		return err
@@ -88,7 +89,7 @@ func (pc *PoolConfig) createDeployForCSPList(cspc *cstor.CStorPoolCluster, cspLi
 // CreateStoragePool creates the required resource to provision a cStor pool
 func (pc *PoolConfig) CreateCSPIDeployment(cspc *cstor.CStorPoolCluster, cspi *cstor.CStorPoolInstance) error {
 	deploy := pc.AlgorithmConfig.GetPoolDeploySpec(cspi)
-	_, err := pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Create(deploy)
+	_, err := pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Create(context.TODO(), deploy, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -113,7 +114,7 @@ func (pc *PoolConfig) ScaleDown(cspc *cstor.CStorPoolCluster) {
 
 		// TODO : As part of deleting a CSP, do we need to delete associated BDCs ?
 		needsStatusUpdate = true
-		err := pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).Delete(cspiName, &metav1.DeleteOptions{})
+		err := pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).Delete(context.TODO(), cspiName, metav1.DeleteOptions{})
 		if err != nil {
 			pc.Controller.recorder.Event(cspc, corev1.EventTypeWarning,
 				"DownScale", "De-provisioning pool "+cspiName+"failed")
@@ -137,6 +138,7 @@ func (pc *PoolConfig) getOrphanedCStorPools(cspc *cstor.CStorPoolCluster) ([]str
 		return []string{}, errors.Wrap(err, "could not get node names of pool config present on CSPC")
 	}
 	cspList, err := pc.Controller.GetStoredCStorVersionClient().CStorPoolInstances(cspc.Namespace).List(
+		context.TODO(),
 		metav1.ListOptions{LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspc.Name})
 
 	if err != nil {

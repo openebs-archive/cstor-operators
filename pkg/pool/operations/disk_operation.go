@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"context"
 	"fmt"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -24,6 +25,7 @@ import (
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -174,7 +176,7 @@ func (oc *OperationsConfig) updateNewVdevFromCSPI(
 		updatedCSPI, updateErr := oc.openebsclientset.
 			CstorV1().
 			CStorPoolInstances(cspi.Namespace).
-			Update(cspi)
+			Update(context.TODO(), cspi, metav1.UpdateOptions{})
 		if updateErr != nil {
 			return cspiCopy, errors.Wrapf(
 				updateErr,

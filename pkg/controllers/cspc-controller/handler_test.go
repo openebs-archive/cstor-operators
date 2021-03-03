@@ -17,6 +17,7 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"context"
 	"reflect"
 	"strconv"
 	"testing"
@@ -128,7 +129,7 @@ func (f *fixture) FakeDiskCreator(totalDisk, totalNode int) {
 				State: openebscore.BlockDeviceActive,
 			},
 		}
-		_, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Create(bdObj)
+		_, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Create(context.TODO(), bdObj, metav1.CreateOptions{})
 		if err != nil {
 			klog.Error(err)
 		}
@@ -145,7 +146,7 @@ func (f *fixture) fakeNodeCreator(nodeCount int) {
 		labels := make(map[string]string)
 		labels["kubernetes.io/hostname"] = node.Name
 		node.Labels = labels
-		_, err := f.k8sClient.CoreV1().Nodes().Create(node)
+		_, err := f.k8sClient.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
 		if err != nil {
 			klog.Error(err)
 		}
@@ -172,19 +173,19 @@ func (f *fixture) fakePoolManagerRoutine(signal <-chan bool) {
 		}
 		poolManagerList, err := f.k8sClient.AppsV1().
 			Deployments("openebs").
-			List(metav1.ListOptions{LabelSelector: "app=cstor-pool"})
+			List(context.TODO(), metav1.ListOptions{LabelSelector: "app=cstor-pool"})
 		if err != nil {
 			klog.Infof("Failed to list pool managers error: %v", err)
 			continue
 		}
 		for _, poolManagerObj := range poolManagerList.Items {
 			cspiName := poolManagerObj.Name
-			_, err := f.openebsClient.CstorV1().CStorPoolInstances("openebs").Get(cspiName, metav1.GetOptions{})
+			_, err := f.openebsClient.CstorV1().CStorPoolInstances("openebs").Get(context.TODO(), cspiName, metav1.GetOptions{})
 			if err == nil {
 				continue
 			}
 			if k8serror.IsNotFound(err) {
-				err = f.k8sClient.AppsV1().Deployments("openebs").Delete(cspiName, &metav1.DeleteOptions{})
+				err = f.k8sClient.AppsV1().Deployments("openebs").Delete(context.TODO(), cspiName, metav1.DeleteOptions{})
 				if err != nil {
 					klog.Errorf("failed to delete %s pool manager", cspiName)
 					continue
@@ -197,12 +198,12 @@ func (f *fixture) fakePoolManagerRoutine(signal <-chan bool) {
 func (f *fixture) fakeNDMRoutine() {
 	NDMStarted = true
 	for {
-		bdcList, err := f.openebsClient.OpenebsV1alpha1().BlockDeviceClaims("openebs").List(metav1.ListOptions{})
+		bdcList, err := f.openebsClient.OpenebsV1alpha1().BlockDeviceClaims("openebs").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			klog.Error(err)
 		}
 
-		bdList, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").List(metav1.ListOptions{})
+		bdList, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			klog.Error(err)
 		}
@@ -227,7 +228,7 @@ func (f *fixture) fakeNDMRoutine() {
 				bd.Spec.ClaimRef = &v1.ObjectReference{
 					Name: bdNames[bd.Name],
 				}
-				bd, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Update(&bd)
+				bd, err := f.openebsClient.OpenebsV1alpha1().BlockDevices("openebs").Update(context.TODO(), &bd, metav1.UpdateOptions{})
 				if err != nil {
 					klog.Errorf("bd not claimed %s: %s", bd.Name, err.Error())
 				}
@@ -247,7 +248,7 @@ func (f *fixture) verifyBlockDevicesOfCSPCClaimState(cspc *cstor.CStorPoolCluste
 			for _, cspiBD := range rg.CStorPoolInstanceBlockDevices {
 				bdObj, err := f.openebsClient.OpenebsV1alpha1().
 					BlockDevices(cspc.Namespace).
-					Get(cspiBD.BlockDeviceName, metav1.GetOptions{})
+					Get(context.TODO(), cspiBD.BlockDeviceName, metav1.GetOptions{})
 				if err != nil {
 					return errors.Wrapf(err, "failed to get blcodkevice name %s", bdObj.Name)
 				}
@@ -264,7 +265,7 @@ func (f *fixture) verifyBlockDevicesOfCSPCClaimState(cspc *cstor.CStorPoolCluste
 
 func (f *fixture) getCSPICount(cspcName, cspcNamespace string) int {
 	cspiList, err := f.openebsClient.CstorV1().CStorPoolInstances(cspcNamespace).
-		List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
 	if err != nil {
 		f.t.Errorf("failed to list cspi for cspc %s:%s", cspcName, err)
 	}
@@ -273,7 +274,7 @@ func (f *fixture) getCSPICount(cspcName, cspcNamespace string) int {
 
 func (f *fixture) getPoolManagerCount(cspcName, cspcNamespace string) int {
 	deployList, err := f.k8sClient.AppsV1().Deployments(cspcNamespace).
-		List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
 	if err != nil {
 		f.t.Errorf("failed to list pool manager deployments for cspc %s:%s", cspcName, err)
 	}
@@ -434,7 +435,7 @@ func TestCSPCFinalizerAdd(t *testing.T) {
 
 	f.run(testutil.GetKey(cspc, t))
 
-	cspc, err := f.openebsClient.CstorV1().CStorPoolClusters(cspc.Namespace).Get(cspc.Name, metav1.GetOptions{})
+	cspc, err := f.openebsClient.CstorV1().CStorPoolClusters(cspc.Namespace).Get(context.TODO(), cspc.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Errorf("error getting cspc %s: %v", cspc.Name, err)
 	}
@@ -592,7 +593,7 @@ func TestCSPCProvisionSingleNode(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			test.CSPC.Kind = "CStorPoolCluster"
 			// Create a CSPC to persist it in a fake store
-			fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(test.CSPC)
+			fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(context.TODO(), test.CSPC, metav1.CreateOptions{})
 			// Add the cspc to the cspc lister
 			fixture.cspcLister = append(fixture.cspcLister, test.CSPC)
 			// We do not want to track the API calls here for provisioning rather the state of the system
@@ -615,7 +616,7 @@ func TestCSPCProvisionSingleNode(t *testing.T) {
 			}
 			cspiList, err := fixture.openebsClient.CstorV1().
 				CStorPoolInstances("openebs").
-				List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + test.CSPC.Name})
+				List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + test.CSPC.Name})
 
 			if err != nil {
 				t.Errorf("[Test Case:%s] fake client failed to list cspi for cspc %s:%s", name, test.CSPC.Name, err)
@@ -972,7 +973,7 @@ func TestCSPCProvisionMultipleNode(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			test.CSPC.Kind = "CStorPoolCluster"
 			// Create a CSPC to persist it in a fake store
-			fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(test.CSPC)
+			fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(context.TODO(), test.CSPC, metav1.CreateOptions{})
 			// Add the cspc to the cspc lister
 			fixture.cspcLister = append(fixture.cspcLister, test.CSPC)
 			// We do not want to track the API calls here for provisioning rather the state of the system
@@ -995,7 +996,7 @@ func TestCSPCProvisionMultipleNode(t *testing.T) {
 			}
 			cspiList, err := fixture.openebsClient.CstorV1().
 				CStorPoolInstances("openebs").
-				List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + test.CSPC.Name})
+				List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + test.CSPC.Name})
 
 			if err != nil {
 				t.Errorf("[Test Case:%s] fake client failed to list cspi for cspc %s:%s", name, test.CSPC.Name, err)
@@ -1109,13 +1110,13 @@ func TestPoolScaleUp(t *testing.T) {
 			test.CSPC.Kind = "CStorPoolCluster"
 			// Create a CSPC to persist it in a fake store
 			if test.CSPCApply {
-				_, err := fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Update(test.CSPC)
+				_, err := fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Update(context.TODO(), test.CSPC, metav1.UpdateOptions{})
 				if err != nil {
 					t.Errorf("[Test Case:%s] failed to update cspc %s", test.TestName, test.CSPC.Name)
 
 				}
 			} else {
-				_, err := fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(test.CSPC)
+				_, err := fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(context.TODO(), test.CSPC, metav1.CreateOptions{})
 				if err != nil {
 					t.Errorf("[Test Case:%s] failed to create cspc %s", test.TestName, test.CSPC.Name)
 
@@ -1144,7 +1145,7 @@ func TestPoolScaleUp(t *testing.T) {
 			}
 			cspiList, err := fixture.openebsClient.CstorV1().
 				CStorPoolInstances("openebs").
-				List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + test.CSPC.Name})
+				List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + test.CSPC.Name})
 
 			if err != nil {
 				t.Errorf("[Test Case:%s] fake client failed to list cspi for cspc %s:%s", test.TestName, test.CSPC.Name, err)
@@ -1425,13 +1426,13 @@ func TestPoolPoolExpansion(t *testing.T) {
 			var gotCSPC *cstor.CStorPoolCluster
 			var errCSPC error
 			if test.CSPCApply {
-				gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Update(test.CSPC)
+				gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Update(context.TODO(), test.CSPC, metav1.UpdateOptions{})
 				if errCSPC != nil {
 					t.Errorf("[Test Case:%s] failed to update cspc %s:%s", test.TestName, test.CSPC.Name, errCSPC)
 
 				}
 			} else {
-				gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(test.CSPC)
+				gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(context.TODO(), test.CSPC, metav1.CreateOptions{})
 				if errCSPC != nil {
 					t.Errorf("[Test Case:%s] failed to create cspc %s:%s", test.TestName, test.CSPC.Name, errCSPC)
 
@@ -1460,7 +1461,7 @@ func TestPoolPoolExpansion(t *testing.T) {
 			}
 			cspiList, err := fixture.openebsClient.CstorV1().
 				CStorPoolInstances("openebs").
-				List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + test.CSPC.Name})
+				List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + test.CSPC.Name})
 
 			if err != nil {
 				t.Errorf("[Test Case:%s] fake client failed to list cspi for cspc %s:%s", test.TestName, test.CSPC.Name, err)
@@ -1879,13 +1880,13 @@ func TestCSPCNodeNameChanges(t *testing.T) {
 		var errCSPC error
 		hostNamesMap := map[string]int{}
 		if test.CSPCApply {
-			gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Update(test.CSPC)
+			gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Update(context.TODO(), test.CSPC, metav1.UpdateOptions{})
 			if errCSPC != nil {
 				t.Errorf("[Test Case:%s] failed to update cspc %s:%s", test.testName, test.CSPC.Name, errCSPC)
 
 			}
 		} else {
-			gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(test.CSPC)
+			gotCSPC, errCSPC = fixture.openebsClient.CstorV1().CStorPoolClusters("openebs").Create(context.TODO(), test.CSPC, metav1.CreateOptions{})
 			if errCSPC != nil {
 				t.Errorf("[Test Case:%s] failed to create cspc %s:%s", test.testName, test.CSPC.Name, errCSPC)
 			}
@@ -1900,7 +1901,7 @@ func TestCSPCNodeNameChanges(t *testing.T) {
 			bdObj, err := fixture.openebsClient.
 				OpenebsV1alpha1().
 				BlockDevices("openebs").
-				Get(bdName, metav1.GetOptions{})
+				Get(context.TODO(), bdName, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("[Test Case: %s] failed to get the blockdevice error: %v", test.testName, err)
 			}
@@ -1935,7 +1936,7 @@ func TestCSPCNodeNameChanges(t *testing.T) {
 
 		cspiList, err := fixture.openebsClient.CstorV1().
 			CStorPoolInstances("openebs").
-			List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + gotCSPC.Name})
+			List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + gotCSPC.Name})
 		if err != nil {
 			t.Errorf("[Test Case:%s] fake client failed to list cspi for cspc %s:%s", test.testName, gotCSPC.Name, err)
 		}
@@ -1964,7 +1965,7 @@ func TestCSPCNodeNameChanges(t *testing.T) {
 			poolManager, err := fixture.k8sClient.
 				AppsV1().
 				Deployments(test.CSPC.Namespace).
-				Get(cspi.Name, metav1.GetOptions{})
+				Get(context.TODO(), cspi.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("failed to get pool manager %s, err: %v", cspi.Name, err)
 			}

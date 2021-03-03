@@ -17,6 +17,7 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/openebs/api/v2/pkg/apis/types"
@@ -107,8 +108,8 @@ func (c *Controller) enqueue(cspc *cstor.CStorPoolCluster) {
 func (c *Controller) GetCSPIListForCSPC(cspc *cstor.CStorPoolCluster) (*cstor.CStorPoolInstanceList, error) {
 	return c.GetStoredCStorVersionClient().
 		CStorPoolInstances(cspc.Namespace).
-		List(metav1.
-			ListOptions{
-			LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspc.Name,
-		})
+		List(context.TODO(),
+			metav1.ListOptions{
+				LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspc.Name,
+			})
 }

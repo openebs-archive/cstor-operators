@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -109,7 +110,7 @@ func getLabelSelectorString(selector map[string]string) string {
 
 // GetHostNameFromLabelSelector returns the node name selected by provided labels
 func GetHostNameFromLabelSelector(labels map[string]string, kubeClient kubernetes.Interface) (string, error) {
-	nodeList, err := kubeClient.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: getLabelSelectorString(labels)})
+	nodeList, err := kubeClient.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{LabelSelector: getLabelSelectorString(labels)})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get node list from the node selector")
 	}
@@ -139,7 +140,7 @@ func getCommonPoolSpecs(cspcNew, cspcOld *cstor.CStorPoolCluster, kubeClient kub
 		var oldNodeName string
 		nodeList, err := kubeClient.CoreV1().
 			Nodes().
-			List(metav1.ListOptions{LabelSelector: getLabelSelectorString(oldPoolSpec.NodeSelector)})
+			List(context.TODO(), metav1.ListOptions{LabelSelector: getLabelSelectorString(oldPoolSpec.NodeSelector)})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get node list from the node selector")
 		}
@@ -300,11 +301,11 @@ func (pOps *PoolOperations) validateNewBDCapacity(newRG, oldRG *cstor.RaidGroup)
 	newToOldBlockDeviceMap := GetNewBDFromRaidGroups(newRG, oldRG)
 	bdClient := pOps.clientset.OpenebsV1alpha1().BlockDevices(pOps.OldCSPC.Namespace)
 	for newBDName, oldBDName := range newToOldBlockDeviceMap {
-		newBDObj, err := bdClient.Get(newBDName, metav1.GetOptions{})
+		newBDObj, err := bdClient.Get(context.TODO(), newBDName, metav1.GetOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to get capacity of replaced block device: %s", newBDName)
 		}
-		oldBDObj, err := bdClient.Get(oldBDName, metav1.GetOptions{})
+		oldBDObj, err := bdClient.Get(context.TODO(), oldBDName, metav1.GetOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to get capacity of existing block device: %s", oldBDName)
 		}
@@ -419,7 +420,7 @@ func (pOps *PoolOperations) GetPredecessorBDIfAny(cspcOld *cstor.CStorPoolCluste
 
 // GetBDCOfBD returns the BDC object for corresponding BD.
 func (pOps *PoolOperations) GetBDCOfBD(bdName string) (*openebsapis.BlockDeviceClaim, error) {
-	bdcList, err := pOps.clientset.OpenebsV1alpha1().BlockDeviceClaims(pOps.OldCSPC.Namespace).List(v1.ListOptions{})
+	bdcList, err := pOps.clientset.OpenebsV1alpha1().BlockDeviceClaims(pOps.OldCSPC.Namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		return nil, errors.Errorf("failed to list bdc: %s", err.Error())
 	}
@@ -443,7 +444,7 @@ func (pOps *PoolOperations) GetBDCOfBD(bdName string) (*openebsapis.BlockDeviceC
 }
 
 func (pOps *PoolOperations) createBDC(newBD, oldBD string) error {
-	bdObj, err := pOps.clientset.OpenebsV1alpha1().BlockDevices(pOps.OldCSPC.Namespace).Get(newBD, v1.GetOptions{})
+	bdObj, err := pOps.clientset.OpenebsV1alpha1().BlockDevices(pOps.OldCSPC.Namespace).Get(context.TODO(), newBD, v1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -509,9 +510,9 @@ func (pOps *PoolOperations) ClaimBD(newBdObj *openebsapis.BlockDevice, oldBD str
 	}
 
 	bdcClient := pOps.clientset.OpenebsV1alpha1().BlockDeviceClaims(newBdObj.Namespace)
-	bdcObj, err := bdcClient.Get(newBDCObj.Name, v1.GetOptions{})
+	bdcObj, err := bdcClient.Get(context.TODO(), newBDCObj.Name, v1.GetOptions{})
 	if k8serror.IsNotFound(err) {
-		_, err = bdcClient.Create(newBDCObj)
+		_, err = bdcClient.Create(context.TODO(), newBDCObj, metav1.CreateOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to create block device claim for bd {%s}", newBdObj.Name)
 		}
@@ -526,7 +527,7 @@ func (pOps *PoolOperations) ClaimBD(newBdObj *openebsapis.BlockDevice, oldBD str
 	}
 
 	_, err = bdcClient.
-		Update(bdcObj)
+		Update(context.TODO(), bdcObj, metav1.UpdateOptions{})
 	return err
 }
 

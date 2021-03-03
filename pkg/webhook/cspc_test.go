@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"os"
 	"strconv"
 	"testing"
@@ -116,7 +117,7 @@ func (f *fixture) fakeNodeCreator(nodeCount int) {
 	for i := 1; i <= nodeCount; i++ {
 		name := "worker-" + strconv.Itoa(i)
 		nodeObj := getfakeNodeSpec(name)
-		_, err := f.wh.kubeClient.CoreV1().Nodes().Create(nodeObj)
+		_, err := f.wh.kubeClient.CoreV1().Nodes().Create(context.TODO(), nodeObj, metav1.CreateOptions{})
 		if err != nil {
 			klog.Error(err)
 		}
@@ -185,7 +186,7 @@ func (f *fixture) fakeBlockDeviceCreator(totalDisk, totalNodeCount int, fsType s
 				State: openebsapi.BlockDeviceActive,
 			},
 		}
-		_, err := f.wh.clientset.OpenebsV1alpha1().BlockDevices("openebs").Create(bdObj)
+		_, err := f.wh.clientset.OpenebsV1alpha1().BlockDevices("openebs").Create(context.TODO(), bdObj, metav1.CreateOptions{})
 		if err != nil {
 			klog.Error(err)
 		}
@@ -199,7 +200,7 @@ func (f *fixture) markBlockDeviceWithReplacementMarks(
 		bdObj, err := f.wh.clientset.
 			OpenebsV1alpha1().
 			BlockDevices("openebs").
-			Get(newBD, metav1.GetOptions{})
+			Get(context.TODO(), newBD, metav1.GetOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to get blockdevice %s", newBD)
 		}
@@ -231,7 +232,7 @@ func (f *fixture) markBlockDeviceWithReplacementMarks(
 		_, err = f.wh.clientset.
 			OpenebsV1alpha1().
 			BlockDeviceClaims("openebs").
-			Create(bdcObj)
+			Create(context.TODO(), bdcObj, metav1.CreateOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to create claim for blockdevice %s", newBD)
 		}
@@ -245,7 +246,7 @@ func (f *fixture) markBlockDeviceWithReplacementMarks(
 		_, err = f.wh.clientset.
 			OpenebsV1alpha1().
 			BlockDevices("openebs").
-			Update(bdObj)
+			Update(context.TODO(), bdObj, metav1.UpdateOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to mark blockdevice %s as claimed", newBD)
 		}
@@ -711,17 +712,17 @@ func TestValidateCSPCUpdateRequest(t *testing.T) {
 			os.Setenv("OPENEBS_NAMESPACE", "openebs")
 			// Create fake node object in etcd
 			_, err := f.wh.kubeClient.CoreV1().Nodes().
-				Create(getfakeNodeSpec("node1"))
+				Create(context.TODO(), getfakeNodeSpec("node1"), metav1.CreateOptions{})
 			// Create fake bd objects in etcd
 			for _, bd := range getfakeBDs("node1", test.blockdevicePrefix, 7) {
 				_, err = f.wh.clientset.OpenebsV1alpha1().
 					BlockDevices(bd.Namespace).
-					Create(bd)
+					Create(context.TODO(), bd, metav1.CreateOptions{})
 			}
 			// Create fake object in etcd
 			_, err = f.wh.clientset.CstorV1().
 				CStorPoolClusters(test.existingObj.Namespace).
-				Create(test.existingObj)
+				Create(context.TODO(), test.existingObj, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatalf(
 					"failed to create fake CSPC %s Object in Namespace %s error: %v",
@@ -735,13 +736,13 @@ func TestValidateCSPCUpdateRequest(t *testing.T) {
 			if test.shouldChangeBlockDeviceNodeName {
 				// Create updated fake node object in etcd
 				_, err = f.wh.kubeClient.CoreV1().Nodes().
-					Create(getfakeNodeSpec(test.updatedHostName))
+					Create(context.TODO(), getfakeNodeSpec(test.updatedHostName), metav1.CreateOptions{})
 
 				// Fetch blockdevice details and update
 				for _, bd := range getfakeBDs(test.updatedHostName, test.blockdevicePrefix, 7) {
 					_, err = f.wh.clientset.OpenebsV1alpha1().
 						BlockDevices(bd.Namespace).
-						Update(bd)
+						Update(context.TODO(), bd, metav1.UpdateOptions{})
 				}
 			}
 			resp := f.wh.validateCSPCUpdateRequest(ar, test.getCSPCObj)
@@ -1014,7 +1015,7 @@ func TestBlockDeviceReplacement(t *testing.T) {
 			// Create fake object in etcd
 			_, err := f.wh.clientset.CstorV1().
 				CStorPoolClusters(test.existingObj.Namespace).
-				Create(test.existingObj)
+				Create(context.TODO(), test.existingObj, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatalf(
 					"failed to create fake CSPC %s Object in Namespace %s error: %v",
@@ -1413,7 +1414,7 @@ func TestCSPCScaleDown(t *testing.T) {
 			// Create fake object in etcd
 			_, err := f.wh.clientset.CstorV1().
 				CStorPoolClusters(test.existingObj.Namespace).
-				Create(test.existingObj)
+				Create(context.TODO(), test.existingObj, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatalf(
 					"failed to create fake CSPC %s Object in Namespace %s error: %v",
@@ -1425,7 +1426,7 @@ func TestCSPCScaleDown(t *testing.T) {
 			for _, cspi := range test.existingCSPIs {
 				_, err := f.wh.clientset.CstorV1().
 					CStorPoolInstances(cspi.Namespace).
-					Create(cspi)
+					Create(context.TODO(), cspi, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatalf(
 						"failed to create fake CSPI %s Object in Namespace %s error: %v",
@@ -1438,7 +1439,7 @@ func TestCSPCScaleDown(t *testing.T) {
 			for _, cvr := range test.existingCVRs {
 				_, err := f.wh.clientset.CstorV1().
 					CStorVolumeReplicas(cvr.Namespace).
-					Create(cvr)
+					Create(context.TODO(), cvr, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatalf(
 						"failed to create fake CVR %s Object in Namespace %s error: %v",

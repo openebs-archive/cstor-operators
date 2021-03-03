@@ -15,6 +15,8 @@
 package snapshot
 
 import (
+	"context"
+
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	v1proto "github.com/openebs/api/v2/pkg/proto"
 	"github.com/pkg/errors"
@@ -79,7 +81,7 @@ func (s *Snapshot) DeleteSnapshot(clientset clientset.Interface) (*v1proto.Volum
 func getVolumeIP(volumeName, namespace string, clientset clientset.Interface) (string, error) {
 	// Fetch the corresponding cstorvolume
 	cstorvolume, err := clientset.CstorV1().CStorVolumes(namespace).
-		Get(volumeName, metav1.GetOptions{})
+		Get(context.TODO(), volumeName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

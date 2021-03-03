@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -115,7 +116,7 @@ func (c *client) createWebhookService(
 ) error {
 
 	_, err := c.kubeClient.CoreV1().Services(namespace).
-		Get(serviceName, metav1.GetOptions{})
+		Get(context.TODO(), serviceName, metav1.GetOptions{})
 
 	if err == nil {
 		return nil
@@ -159,7 +160,7 @@ func (c *client) createWebhookService(
 		},
 	}
 	_, err = c.kubeClient.CoreV1().Services(namespace).
-		Create(svcObj)
+		Create(context.TODO(), svcObj, metav1.CreateOptions{})
 	return err
 }
 
@@ -250,7 +251,7 @@ func (c *client) createAdmissionValidatingConfig(
 	}
 
 	_, err = c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
-		Create(validator)
+		Create(context.TODO(), validator, metav1.CreateOptions{})
 
 	return err
 }
@@ -309,7 +310,7 @@ func (c *client) createCertsSecret(
 		},
 	}
 
-	return c.kubeClient.CoreV1().Secrets(namespace).Create(secretObj)
+	return c.kubeClient.CoreV1().Secrets(namespace).Create(context.TODO(), secretObj, metav1.CreateOptions{})
 }
 
 // GetValidatorWebhook fetches the webhook validator resource in
@@ -318,7 +319,7 @@ func GetValidatorWebhook(
 	validator string, kubeClient kubernetes.Interface,
 ) (*admissionregistration.ValidatingWebhookConfiguration, error) {
 
-	return kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(validator, metav1.GetOptions{})
+	return kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(context.TODO(), validator, metav1.GetOptions{})
 }
 
 // StrPtr convert a string to a pointer
@@ -424,7 +425,7 @@ func GetSecret(
 	kubeClient kubernetes.Interface,
 ) (*corev1.Secret, error) {
 
-	return kubeClient.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
+	return kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 }
 
 // getOpenebsNamespace gets the namespace OPENEBS_NAMESPACE env value which is
@@ -468,7 +469,7 @@ func GetAdmissionReference(kubeClient kubernetes.Interface) (*metav1.OwnerRefere
 
 	// Fetch our admission server deployment object
 	admdeployList, err := kubeClient.AppsV1().Deployments(openebsNamespace).
-		List(metav1.ListOptions{LabelSelector: webhookLabel})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: webhookLabel})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list admission deployment: %s", err.Error())
 	}
@@ -489,7 +490,7 @@ func GetAdmissionReference(kubeClient kubernetes.Interface) (*metav1.OwnerRefere
 // preUpgrade checks for the required older webhook configs,older
 // then 1.4.0 if exists delete them.
 func (c *client) preUpgrade(openebsNamespace string) error {
-	secretlist, err := c.kubeClient.CoreV1().Secrets(openebsNamespace).List(metav1.ListOptions{LabelSelector: webhookLabel})
+	secretlist, err := c.kubeClient.CoreV1().Secrets(openebsNamespace).List(context.TODO(), metav1.ListOptions{LabelSelector: webhookLabel})
 	if err != nil {
 		return fmt.Errorf("failed to list old secret: %s", err.Error())
 	}
@@ -501,14 +502,14 @@ func (c *client) preUpgrade(openebsNamespace string) error {
 				t(&newScrt)
 			}
 			newScrt.Labels[types.OpenEBSVersionLabelKey] = version.Current()
-			_, err = c.kubeClient.CoreV1().Secrets(openebsNamespace).Update(&newScrt)
+			_, err = c.kubeClient.CoreV1().Secrets(openebsNamespace).Update(context.TODO(), &newScrt, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to update old secret %s: %s", scrt.Name, err.Error())
 			}
 		}
 	}
 
-	svcList, err := c.kubeClient.CoreV1().Services(openebsNamespace).List(metav1.ListOptions{LabelSelector: webhooksvcLabel})
+	svcList, err := c.kubeClient.CoreV1().Services(openebsNamespace).List(context.TODO(), metav1.ListOptions{LabelSelector: webhooksvcLabel})
 	if err != nil {
 		return fmt.Errorf("failed to list old service: %s", err.Error())
 	}
@@ -520,14 +521,14 @@ func (c *client) preUpgrade(openebsNamespace string) error {
 				t(&newSvc)
 			}
 			newSvc.Labels[types.OpenEBSVersionLabelKey] = version.Current()
-			_, err = c.kubeClient.CoreV1().Services(openebsNamespace).Update(&newSvc)
+			_, err = c.kubeClient.CoreV1().Services(openebsNamespace).Update(context.TODO(), &newSvc, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to update old service %s: %s", service.Name, err.Error())
 			}
 		}
 	}
 	webhookConfigList, err := c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
-		List(metav1.ListOptions{LabelSelector: webhookLabel})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: webhookLabel})
 	if err != nil {
 		return fmt.Errorf("failed to list older webhook config: %s", err.Error())
 	}
@@ -540,7 +541,7 @@ func (c *client) preUpgrade(openebsNamespace string) error {
 			}
 			newConfig.Labels[types.OpenEBSVersionLabelKey] = version.Current()
 			_, err = c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
-				Update(&newConfig)
+				Update(context.TODO(), &newConfig, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to update older webhook config %s: %s", config.Name, err.Error())
 			}

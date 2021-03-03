@@ -16,8 +16,11 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
+
 	openebsapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
 	cstortypes "github.com/openebs/api/v2/pkg/apis/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -45,7 +48,7 @@ func (rOps *restoreAPIOps) getV1Alpha1CStorRestoreStatus(
 				// Restore for given CVR may failed due to node failure or pool failure
 				// Let's update status for given CVR's restore to failed
 				restore.Status = rstStatus
-				_, err := rOps.clientset.OpenebsV1alpha1().CStorRestores(restore.Namespace).Update(&restore)
+				_, err := rOps.clientset.OpenebsV1alpha1().CStorRestores(restore.Namespace).Update(context.TODO(), &restore, metav1.UpdateOptions{})
 				if err != nil {
 					klog.Errorf("Failed to update restore:%s with status:%v", restore.Name, rstStatus)
 				}

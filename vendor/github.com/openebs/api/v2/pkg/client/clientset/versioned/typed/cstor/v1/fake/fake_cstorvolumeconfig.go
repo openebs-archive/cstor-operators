@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	cstorv1 "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var cstorvolumeconfigsResource = schema.GroupVersionResource{Group: "cstor.opene
 var cstorvolumeconfigsKind = schema.GroupVersionKind{Group: "cstor.openebs.io", Version: "v1", Kind: "CStorVolumeConfig"}
 
 // Get takes name of the cStorVolumeConfig, and returns the corresponding cStorVolumeConfig object, and an error if there is any.
-func (c *FakeCStorVolumeConfigs) Get(name string, options v1.GetOptions) (result *cstorv1.CStorVolumeConfig, err error) {
+func (c *FakeCStorVolumeConfigs) Get(ctx context.Context, name string, options v1.GetOptions) (result *cstorv1.CStorVolumeConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cstorvolumeconfigsResource, c.ns, name), &cstorv1.CStorVolumeConfig{})
 
@@ -50,7 +52,7 @@ func (c *FakeCStorVolumeConfigs) Get(name string, options v1.GetOptions) (result
 }
 
 // List takes label and field selectors, and returns the list of CStorVolumeConfigs that match those selectors.
-func (c *FakeCStorVolumeConfigs) List(opts v1.ListOptions) (result *cstorv1.CStorVolumeConfigList, err error) {
+func (c *FakeCStorVolumeConfigs) List(ctx context.Context, opts v1.ListOptions) (result *cstorv1.CStorVolumeConfigList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(cstorvolumeconfigsResource, cstorvolumeconfigsKind, c.ns, opts), &cstorv1.CStorVolumeConfigList{})
 
@@ -72,14 +74,14 @@ func (c *FakeCStorVolumeConfigs) List(opts v1.ListOptions) (result *cstorv1.CSto
 }
 
 // Watch returns a watch.Interface that watches the requested cStorVolumeConfigs.
-func (c *FakeCStorVolumeConfigs) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCStorVolumeConfigs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(cstorvolumeconfigsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a cStorVolumeConfig and creates it.  Returns the server's representation of the cStorVolumeConfig, and an error, if there is any.
-func (c *FakeCStorVolumeConfigs) Create(cStorVolumeConfig *cstorv1.CStorVolumeConfig) (result *cstorv1.CStorVolumeConfig, err error) {
+func (c *FakeCStorVolumeConfigs) Create(ctx context.Context, cStorVolumeConfig *cstorv1.CStorVolumeConfig, opts v1.CreateOptions) (result *cstorv1.CStorVolumeConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(cstorvolumeconfigsResource, c.ns, cStorVolumeConfig), &cstorv1.CStorVolumeConfig{})
 
@@ -90,7 +92,7 @@ func (c *FakeCStorVolumeConfigs) Create(cStorVolumeConfig *cstorv1.CStorVolumeCo
 }
 
 // Update takes the representation of a cStorVolumeConfig and updates it. Returns the server's representation of the cStorVolumeConfig, and an error, if there is any.
-func (c *FakeCStorVolumeConfigs) Update(cStorVolumeConfig *cstorv1.CStorVolumeConfig) (result *cstorv1.CStorVolumeConfig, err error) {
+func (c *FakeCStorVolumeConfigs) Update(ctx context.Context, cStorVolumeConfig *cstorv1.CStorVolumeConfig, opts v1.UpdateOptions) (result *cstorv1.CStorVolumeConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cstorvolumeconfigsResource, c.ns, cStorVolumeConfig), &cstorv1.CStorVolumeConfig{})
 
@@ -102,7 +104,7 @@ func (c *FakeCStorVolumeConfigs) Update(cStorVolumeConfig *cstorv1.CStorVolumeCo
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCStorVolumeConfigs) UpdateStatus(cStorVolumeConfig *cstorv1.CStorVolumeConfig) (*cstorv1.CStorVolumeConfig, error) {
+func (c *FakeCStorVolumeConfigs) UpdateStatus(ctx context.Context, cStorVolumeConfig *cstorv1.CStorVolumeConfig, opts v1.UpdateOptions) (*cstorv1.CStorVolumeConfig, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(cstorvolumeconfigsResource, "status", c.ns, cStorVolumeConfig), &cstorv1.CStorVolumeConfig{})
 
@@ -113,7 +115,7 @@ func (c *FakeCStorVolumeConfigs) UpdateStatus(cStorVolumeConfig *cstorv1.CStorVo
 }
 
 // Delete takes name of the cStorVolumeConfig and deletes it. Returns an error if one occurs.
-func (c *FakeCStorVolumeConfigs) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCStorVolumeConfigs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(cstorvolumeconfigsResource, c.ns, name), &cstorv1.CStorVolumeConfig{})
 
@@ -121,15 +123,15 @@ func (c *FakeCStorVolumeConfigs) Delete(name string, options *v1.DeleteOptions) 
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeCStorVolumeConfigs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(cstorvolumeconfigsResource, c.ns, listOptions)
+func (c *FakeCStorVolumeConfigs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cstorvolumeconfigsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &cstorv1.CStorVolumeConfigList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cStorVolumeConfig.
-func (c *FakeCStorVolumeConfigs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *cstorv1.CStorVolumeConfig, err error) {
+func (c *FakeCStorVolumeConfigs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *cstorv1.CStorVolumeConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cstorvolumeconfigsResource, c.ns, name, pt, data, subresources...), &cstorv1.CStorVolumeConfig{})
 

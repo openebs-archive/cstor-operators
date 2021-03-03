@@ -17,6 +17,8 @@ limitations under the License.
 package cstorvolumeconfig
 
 import (
+	"context"
+
 	openebsapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
 	cstortypes "github.com/openebs/api/v2/pkg/apis/types"
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
@@ -62,7 +64,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) findLastBackupStat() string {
 	lastbkpname := backupWrapper.backup.Spec.BackupName + "-" + backupWrapper.backup.Spec.VolumeName
 	lastbkp, err := backupWrapper.clientset.OpenebsV1alpha1().
 		CStorCompletedBackups(backupWrapper.backup.Namespace).
-		Get(lastbkpname, metav1.GetOptions{})
+		Get(context.TODO(), lastbkpname, metav1.GetOptions{})
 	if err != nil {
 		// Unable to fetch the last backup, so we will return fail state
 		klog.Errorf("Failed to fetch last completed-backup:%s error:%s", lastbkpname, err.Error())
@@ -86,7 +88,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) updateBackupStatus(
 
 	_, err := backupWrapper.clientset.
 		OpenebsV1alpha1().
-		CStorBackups(backupWrapper.backup.Namespace).Update(backupWrapper.backup)
+		CStorBackups(backupWrapper.backup.Namespace).Update(context.TODO(), backupWrapper.backup, metav1.UpdateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to update backup:%s with status:%v", backupWrapper.backup.Name, backupStatus)
 	}
@@ -99,7 +101,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) deleteCompletedBackup(name, namespac
 	lastbkp, err := backupWrapper.clientset.
 		OpenebsV1alpha1().
 		CStorCompletedBackups(namespace).
-		Get(name, metav1.GetOptions{})
+		Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
 		return errors.Wrapf(err, "failed to fetch last-completed-backup=%s resource", name)
 	}
@@ -109,7 +111,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) deleteCompletedBackup(name, namespac
 	// completedBackup doesn't have successful backup(len(lastbkp.Spec.PrevSnapName) == 0) then we will delete the lastbkp CR
 	// Deleting this CR make sure that next backup of the schedule will be full backup
 	if lastbkp != nil && (lastbkp.Spec.PrevSnapName == snapName || len(lastbkp.Spec.PrevSnapName) == 0) {
-		err := backupWrapper.clientset.OpenebsV1alpha1().CStorCompletedBackups(namespace).Delete(name, &metav1.DeleteOptions{})
+		err := backupWrapper.clientset.OpenebsV1alpha1().CStorCompletedBackups(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 		if err != nil && !k8serror.IsNotFound(err) {
 			return errors.Wrapf(err, "failed to delete last-completed-backup=%s resource", name)
 		}
@@ -118,7 +120,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) deleteCompletedBackup(name, namespac
 }
 
 func (backupWrapper *v1Alpha1BackupWrapper) deleteBackup(name, namespace string) error {
-	err := backupWrapper.clientset.OpenebsV1alpha1().CStorBackups(namespace).Delete(name, &metav1.DeleteOptions{})
+	err := backupWrapper.clientset.OpenebsV1alpha1().CStorBackups(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
 		return errors.Wrapf(err, "failed to delete cstorbackup: %s resource", name)
 	}
@@ -136,7 +138,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) getOrCreateLastBackupSnap() (string,
 	// backup then we need to check for v1 version of completed backup to get last snapshot name
 	completedBackup, err := backupWrapper.clientset.CstorV1().
 		CStorCompletedBackups(backupWrapper.backup.Namespace).
-		Get(lastbkpName, metav1.GetOptions{})
+		Get(context.TODO(), lastbkpName, metav1.GetOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
 		return "", errors.Wrapf(err, "failed to get v1 completed backup %s", lastbkpName)
 	}
@@ -146,7 +148,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) getOrCreateLastBackupSnap() (string,
 
 	b, err := backupWrapper.clientset.OpenebsV1alpha1().
 		CStorCompletedBackups(backupWrapper.backup.Namespace).
-		Get(lastbkpName, metav1.GetOptions{})
+		Get(context.TODO(), lastbkpName, metav1.GetOptions{})
 	if err != nil {
 		if k8serror.IsNotFound(err) {
 			// Build CStorCompletedBackup which will helpful for incremental backups
@@ -162,7 +164,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) getOrCreateLastBackupSnap() (string,
 				},
 			}
 
-			_, err := backupWrapper.clientset.OpenebsV1alpha1().CStorCompletedBackups(bk.Namespace).Create(bk)
+			_, err := backupWrapper.clientset.OpenebsV1alpha1().CStorCompletedBackups(bk.Namespace).Create(context.TODO(), bk, metav1.CreateOptions{})
 			if err != nil {
 				klog.Errorf("Error creating last completed-backup resource for backup:%v err:%v", bk.Spec.BackupName, err)
 				return "", err
@@ -190,7 +192,7 @@ func (backupWrapper *v1Alpha1BackupWrapper) setLastSnapshotName(snapName string)
 func (backupWrapper *v1Alpha1BackupWrapper) createBackupResource() (backupHelper, error) {
 	_, err := backupWrapper.clientset.OpenebsV1alpha1().
 		CStorBackups(backupWrapper.backup.Namespace).
-		Create(backupWrapper.backup)
+		Create(context.TODO(), backupWrapper.backup, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("Failed to create backup: error '%s'", err.Error())
 		return backupWrapper, errors.Wrapf(err, "failed to create backup %s", backupWrapper.backup.Name)

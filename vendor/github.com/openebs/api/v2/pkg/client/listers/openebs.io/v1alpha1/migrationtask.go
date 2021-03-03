@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import (
 )
 
 // MigrationTaskLister helps list MigrationTasks.
+// All objects returned here must be treated as read-only.
 type MigrationTaskLister interface {
 	// List lists all MigrationTasks in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.MigrationTask, err error)
 	// MigrationTasks returns an object that can list and get MigrationTasks.
 	MigrationTasks(namespace string) MigrationTaskNamespaceLister
@@ -58,10 +60,13 @@ func (s *migrationTaskLister) MigrationTasks(namespace string) MigrationTaskName
 }
 
 // MigrationTaskNamespaceLister helps list and get MigrationTasks.
+// All objects returned here must be treated as read-only.
 type MigrationTaskNamespaceLister interface {
 	// List lists all MigrationTasks in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.MigrationTask, err error)
 	// Get retrieves the MigrationTask from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.MigrationTask, error)
 	MigrationTaskNamespaceListerExpansion
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	cstorv1 "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var cstorvolumepoliciesResource = schema.GroupVersionResource{Group: "cstor.open
 var cstorvolumepoliciesKind = schema.GroupVersionKind{Group: "cstor.openebs.io", Version: "v1", Kind: "CStorVolumePolicy"}
 
 // Get takes name of the cStorVolumePolicy, and returns the corresponding cStorVolumePolicy object, and an error if there is any.
-func (c *FakeCStorVolumePolicies) Get(name string, options v1.GetOptions) (result *cstorv1.CStorVolumePolicy, err error) {
+func (c *FakeCStorVolumePolicies) Get(ctx context.Context, name string, options v1.GetOptions) (result *cstorv1.CStorVolumePolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cstorvolumepoliciesResource, c.ns, name), &cstorv1.CStorVolumePolicy{})
 
@@ -50,7 +52,7 @@ func (c *FakeCStorVolumePolicies) Get(name string, options v1.GetOptions) (resul
 }
 
 // List takes label and field selectors, and returns the list of CStorVolumePolicies that match those selectors.
-func (c *FakeCStorVolumePolicies) List(opts v1.ListOptions) (result *cstorv1.CStorVolumePolicyList, err error) {
+func (c *FakeCStorVolumePolicies) List(ctx context.Context, opts v1.ListOptions) (result *cstorv1.CStorVolumePolicyList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(cstorvolumepoliciesResource, cstorvolumepoliciesKind, c.ns, opts), &cstorv1.CStorVolumePolicyList{})
 
@@ -72,14 +74,14 @@ func (c *FakeCStorVolumePolicies) List(opts v1.ListOptions) (result *cstorv1.CSt
 }
 
 // Watch returns a watch.Interface that watches the requested cStorVolumePolicies.
-func (c *FakeCStorVolumePolicies) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCStorVolumePolicies) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(cstorvolumepoliciesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a cStorVolumePolicy and creates it.  Returns the server's representation of the cStorVolumePolicy, and an error, if there is any.
-func (c *FakeCStorVolumePolicies) Create(cStorVolumePolicy *cstorv1.CStorVolumePolicy) (result *cstorv1.CStorVolumePolicy, err error) {
+func (c *FakeCStorVolumePolicies) Create(ctx context.Context, cStorVolumePolicy *cstorv1.CStorVolumePolicy, opts v1.CreateOptions) (result *cstorv1.CStorVolumePolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(cstorvolumepoliciesResource, c.ns, cStorVolumePolicy), &cstorv1.CStorVolumePolicy{})
 
@@ -90,7 +92,7 @@ func (c *FakeCStorVolumePolicies) Create(cStorVolumePolicy *cstorv1.CStorVolumeP
 }
 
 // Update takes the representation of a cStorVolumePolicy and updates it. Returns the server's representation of the cStorVolumePolicy, and an error, if there is any.
-func (c *FakeCStorVolumePolicies) Update(cStorVolumePolicy *cstorv1.CStorVolumePolicy) (result *cstorv1.CStorVolumePolicy, err error) {
+func (c *FakeCStorVolumePolicies) Update(ctx context.Context, cStorVolumePolicy *cstorv1.CStorVolumePolicy, opts v1.UpdateOptions) (result *cstorv1.CStorVolumePolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cstorvolumepoliciesResource, c.ns, cStorVolumePolicy), &cstorv1.CStorVolumePolicy{})
 
@@ -102,7 +104,7 @@ func (c *FakeCStorVolumePolicies) Update(cStorVolumePolicy *cstorv1.CStorVolumeP
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCStorVolumePolicies) UpdateStatus(cStorVolumePolicy *cstorv1.CStorVolumePolicy) (*cstorv1.CStorVolumePolicy, error) {
+func (c *FakeCStorVolumePolicies) UpdateStatus(ctx context.Context, cStorVolumePolicy *cstorv1.CStorVolumePolicy, opts v1.UpdateOptions) (*cstorv1.CStorVolumePolicy, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(cstorvolumepoliciesResource, "status", c.ns, cStorVolumePolicy), &cstorv1.CStorVolumePolicy{})
 
@@ -113,7 +115,7 @@ func (c *FakeCStorVolumePolicies) UpdateStatus(cStorVolumePolicy *cstorv1.CStorV
 }
 
 // Delete takes name of the cStorVolumePolicy and deletes it. Returns an error if one occurs.
-func (c *FakeCStorVolumePolicies) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCStorVolumePolicies) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(cstorvolumepoliciesResource, c.ns, name), &cstorv1.CStorVolumePolicy{})
 
@@ -121,15 +123,15 @@ func (c *FakeCStorVolumePolicies) Delete(name string, options *v1.DeleteOptions)
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeCStorVolumePolicies) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(cstorvolumepoliciesResource, c.ns, listOptions)
+func (c *FakeCStorVolumePolicies) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cstorvolumepoliciesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &cstorv1.CStorVolumePolicyList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cStorVolumePolicy.
-func (c *FakeCStorVolumePolicies) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *cstorv1.CStorVolumePolicy, err error) {
+func (c *FakeCStorVolumePolicies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *cstorv1.CStorVolumePolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cstorvolumepoliciesResource, c.ns, name, pt, data, subresources...), &cstorv1.CStorVolumePolicy{})
 

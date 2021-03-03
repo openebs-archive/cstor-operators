@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import (
 )
 
 // CStorVolumeReplicaLister helps list CStorVolumeReplicas.
+// All objects returned here must be treated as read-only.
 type CStorVolumeReplicaLister interface {
 	// List lists all CStorVolumeReplicas in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.CStorVolumeReplica, err error)
 	// CStorVolumeReplicas returns an object that can list and get CStorVolumeReplicas.
 	CStorVolumeReplicas(namespace string) CStorVolumeReplicaNamespaceLister
@@ -58,10 +60,13 @@ func (s *cStorVolumeReplicaLister) CStorVolumeReplicas(namespace string) CStorVo
 }
 
 // CStorVolumeReplicaNamespaceLister helps list and get CStorVolumeReplicas.
+// All objects returned here must be treated as read-only.
 type CStorVolumeReplicaNamespaceLister interface {
 	// List lists all CStorVolumeReplicas in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.CStorVolumeReplica, err error)
 	// Get retrieves the CStorVolumeReplica from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.CStorVolumeReplica, error)
 	CStorVolumeReplicaNamespaceListerExpansion
 }

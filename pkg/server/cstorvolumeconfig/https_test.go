@@ -18,6 +18,7 @@ package cstorvolumeconfig
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -91,12 +92,12 @@ func (f *fixture) fakeNodeCreator(nodeCount int) {
 		labels["kubernetes.io/hostname"] = node.Name
 		node.Labels = labels
 		node.Status.Conditions = []corev1.NodeCondition{}
-		_, err := f.k8sClient.CoreV1().Nodes().Create(node)
+		_, err := f.k8sClient.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
 		if err != nil && !k8serror.IsAlreadyExists(err) {
 			klog.Error(err)
 			continue
 		}
-		_, err = f.k8sClient.CoreV1().Nodes().Update(node)
+		_, err = f.k8sClient.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{})
 		if err != nil {
 			klog.Error(err)
 		}
@@ -104,7 +105,7 @@ func (f *fixture) fakeNodeCreator(nodeCount int) {
 }
 
 func (f *fixture) fakePoolsCreator(cspcName string, poolVersions []string, poolCount int) error {
-	nodeList, err := f.k8sClient.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := f.k8sClient.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,7 @@ func (f *fixture) fakePoolsCreator(cspcName string, poolVersions []string, poolC
 			WithLabelsNew(labels).
 			WithNewVersion(copyPoolVersions[i])
 		cspi.Status.Phase = cstorapis.CStorPoolStatusOnline
-		cspiObj, err := f.openebsClient.CstorV1().CStorPoolInstances(namespace).Create(cspi)
+		cspiObj, err := f.openebsClient.CstorV1().CStorPoolInstances(namespace).Create(context.TODO(), cspi, metav1.CreateOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to create fake cspi")
 		}
@@ -175,7 +176,7 @@ func (f *fixture) createFakePoolPod(cspi *cstorapis.CStorPoolInstance) error {
 			},
 		},
 	}
-	_, err := f.k8sClient.CoreV1().Pods(namespace).Create(pod)
+	_, err := f.k8sClient.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -185,7 +186,7 @@ func (f *fixture) createFakePoolPod(cspi *cstorapis.CStorPoolInstance) error {
 // createFakeVolumeReplicas will create fake CVRs on cstorPools
 func (f *fixture) createFakeVolumeReplicas(
 	cspcName, volumeName string, replicaCount int, phase cstorapis.CStorVolumeReplicaPhase) error {
-	cspiList, err := f.openebsClient.CstorV1().CStorPoolInstances(namespace).List(metav1.ListOptions{
+	cspiList, err := f.openebsClient.CstorV1().CStorPoolInstances(namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: openebstypes.CStorPoolClusterLabelKey + "=" + cspcName,
 	})
 	if err != nil {
@@ -204,7 +205,7 @@ func (f *fixture) createFakeVolumeReplicas(
 			WithName(volumeName + "-" + cspiList.Items[i].Name).
 			WithLabelsNew(labels).
 			WithStatusPhase(phase)
-		_, err := f.openebsClient.CstorV1().CStorVolumeReplicas(namespace).Create(cvr)
+		_, err := f.openebsClient.CstorV1().CStorVolumeReplicas(namespace).Create(context.TODO(), cvr, metav1.CreateOptions{})
 		if err != nil && !k8serror.IsAlreadyExists(err) {
 			return err
 		}
@@ -221,7 +222,7 @@ func (f *fixture) createFakeCStorVolume(volumeName string) error {
 		WithNamespace(namespace).
 		WithName(volumeName).
 		WithLabelsNew(labels)
-	_, err := f.openebsClient.CstorV1().CStorVolumes(namespace).Create(cv)
+	_, err := f.openebsClient.CstorV1().CStorVolumes(namespace).Create(context.TODO(), cv, metav1.CreateOptions{})
 	if err != nil && !k8serror.IsAlreadyExists(err) {
 		return err
 	}
@@ -244,7 +245,7 @@ func (f *fixture) createCStorCompletedBackup(backup *openebsapis.CStorBackup, pr
 			PrevSnapName: previousSnapshot,
 		},
 	}
-	_, err := f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(bk.Namespace).Create(bk)
+	_, err := f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(bk.Namespace).Create(context.TODO(), bk, metav1.CreateOptions{})
 	return err
 }
 
@@ -252,7 +253,7 @@ func (f *fixture) fakeCVCRoutine(channel chan int) {
 	fmt.Printf("Fake CVC routine has started")
 	channel <- 1
 	for {
-		cvcList, err := f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).List(metav1.ListOptions{})
+		cvcList, err := f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			klog.Error(err)
 		}
@@ -277,7 +278,7 @@ func (f *fixture) fakeCVCRoutine(channel chan int) {
 					continue
 				}
 				cvcObj.Status.Phase = cstorapis.CStorVolumeConfigPhaseBound
-				_, err = f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).Update(&cvcObj)
+				_, err = f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).Update(context.TODO(), &cvcObj, metav1.UpdateOptions{})
 				if err != nil {
 					klog.Error(err)
 				}
@@ -310,7 +311,7 @@ func executeCreateBackup(
 }
 
 func verifyExistenceOfPendingV1Alpha1Backup(name, namespace string, openebsClient clientset.Interface) error {
-	backUp, err := openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(name, metav1.GetOptions{})
+	backUp, err := openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -325,7 +326,7 @@ func verifyExistenceOfPendingV1Alpha1Backup(name, namespace string, openebsClien
 }
 
 func verifyExistenceOfPendingV1Backup(name, namespace string, openebsClient clientset.Interface) error {
-	backUp, err := openebsClient.CstorV1().CStorBackups(namespace).Get(name, metav1.GetOptions{})
+	backUp, err := openebsClient.CstorV1().CStorBackups(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -340,7 +341,7 @@ func verifyExistenceOfPendingV1Backup(name, namespace string, openebsClient clie
 }
 
 func backupShouldNotExist(name, namespace string, openebsClient clientset.Interface) error {
-	_, err := openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(name, metav1.GetOptions{})
+	_, err := openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if k8serror.IsNotFound(err) {
 		return nil
 	}
@@ -583,16 +584,16 @@ func TestBackupPostEndPoint(t *testing.T) {
 			}
 			if test.checkExistenceOfCStorCompletedBackup {
 				if test.isV1Version {
-					_, err = f.openebsClient.CstorV1().CStorCompletedBackups(namespace).Get(lastbkpName, metav1.GetOptions{})
+					_, err = f.openebsClient.CstorV1().CStorCompletedBackups(namespace).Get(context.TODO(), lastbkpName, metav1.GetOptions{})
 				} else {
-					_, err = f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(namespace).Get(lastbkpName, metav1.GetOptions{})
+					_, err = f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(namespace).Get(context.TODO(), lastbkpName, metav1.GetOptions{})
 				}
 				if err != nil {
 					t.Errorf("failed to verify cstorcompleted backup existence error: %s", err.Error())
 				}
 			}
 			if test.isScheduledBackup {
-				backupObj, err := f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(backupName, metav1.GetOptions{})
+				backupObj, err := f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(context.TODO(), backupName, metav1.GetOptions{})
 				if err != nil {
 					t.Errorf("failed to get details of backup error: %v", err)
 				}
@@ -691,7 +692,7 @@ func TestBackupGetEndPoint(t *testing.T) {
 			}
 
 			// ================================= Change according to the test configurations =========================
-			backupObj, err := f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(backupName, metav1.GetOptions{})
+			backupObj, err := f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(context.TODO(), backupName, metav1.GetOptions{})
 			if err == nil && test.shouldMarkPoolPodDown {
 				cspiName := backupObj.Labels[openebstypes.CStorPoolInstanceNameLabelKey]
 				poolManager, err := getPoolManager(f.k8sClient, cspiName, namespace)
@@ -700,7 +701,7 @@ func TestBackupGetEndPoint(t *testing.T) {
 						if containerstatus.Name == "cstor-pool-mgmt" {
 							poolManager.Status.ContainerStatuses[i].Ready = false
 						}
-						f.k8sClient.CoreV1().Pods(namespace).Update(poolManager)
+						f.k8sClient.CoreV1().Pods(namespace).Update(context.TODO(), poolManager, metav1.UpdateOptions{})
 					}
 
 				}
@@ -709,13 +710,13 @@ func TestBackupGetEndPoint(t *testing.T) {
 				cspiName := backupObj.Labels[openebstypes.CStorPoolInstanceNameLabelKey]
 				poolManager, err := getPoolManager(f.k8sClient, cspiName, namespace)
 				if err == nil {
-					node, err := f.k8sClient.CoreV1().Nodes().Get(poolManager.Spec.NodeName, metav1.GetOptions{})
+					node, err := f.k8sClient.CoreV1().Nodes().Get(context.TODO(), poolManager.Spec.NodeName, metav1.GetOptions{})
 					if err == nil {
 						node.Status.Conditions = append(node.Status.Conditions, corev1.NodeCondition{
 							Type:   corev1.NodeReady,
 							Status: corev1.ConditionFalse,
 						})
-						f.k8sClient.CoreV1().Nodes().Update(node)
+						f.k8sClient.CoreV1().Nodes().Update(context.TODO(), node, metav1.UpdateOptions{})
 					}
 				}
 			}
@@ -737,7 +738,7 @@ func TestBackupGetEndPoint(t *testing.T) {
 				t.Errorf("failed to backup return code %d error: %s", rr.Code, string(data))
 			}
 
-			backupObj, err = f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(backupName, metav1.GetOptions{})
+			backupObj, err = f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(context.TODO(), backupName, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("failed to get details of backup error: %v", err)
 			}
@@ -938,13 +939,13 @@ func TestBackupDeleteEndPoint(t *testing.T) {
 			f.createFakeVolumeReplicas(test.cspcName, test.cstorBackup.Spec.VolumeName, 3, cstorapis.CVRStatusOnline)
 			f.createFakeCStorVolume(test.cstorBackup.Spec.VolumeName)
 			if test.cstorCompletedBackup != nil {
-				_, err := f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(namespace).Create(test.cstorCompletedBackup)
+				_, err := f.openebsClient.OpenebsV1alpha1().CStorCompletedBackups(namespace).Create(context.TODO(), test.cstorCompletedBackup, metav1.CreateOptions{})
 				if err != nil {
 					t.Errorf("failed to create completed backup error: %v", err)
 				}
 			}
 			if test.cstorCompletedBackupV1 != nil {
-				_, err := f.openebsClient.CstorV1().CStorCompletedBackups(namespace).Create(test.cstorCompletedBackupV1)
+				_, err := f.openebsClient.CstorV1().CStorCompletedBackups(namespace).Create(context.TODO(), test.cstorCompletedBackupV1, metav1.CreateOptions{})
 				if err != nil {
 					t.Errorf("failed to create completed backup error: %v", err)
 				}
@@ -994,9 +995,9 @@ func TestBackupDeleteEndPoint(t *testing.T) {
 
 			// Verifying CStorBackup based on flag
 			if test.isV1Version {
-				_, err = f.openebsClient.CstorV1().CStorBackups(namespace).Get(backupName, metav1.GetOptions{})
+				_, err = f.openebsClient.CstorV1().CStorBackups(namespace).Get(context.TODO(), backupName, metav1.GetOptions{})
 			} else {
-				_, err = f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(backupName, metav1.GetOptions{})
+				_, err = f.openebsClient.OpenebsV1alpha1().CStorBackups(namespace).Get(context.TODO(), backupName, metav1.GetOptions{})
 			}
 			if err != nil {
 				if !k8serror.IsNotFound(err) {
@@ -1014,11 +1015,11 @@ func TestBackupDeleteEndPoint(t *testing.T) {
 			if test.isV1Version {
 				_, err = f.openebsClient.CstorV1().
 					CStorCompletedBackups(namespace).
-					Get(lastCompletedBackup, metav1.GetOptions{})
+					Get(context.TODO(), lastCompletedBackup, metav1.GetOptions{})
 			} else {
 				_, err = f.openebsClient.OpenebsV1alpha1().
 					CStorCompletedBackups(namespace).
-					Get(lastCompletedBackup, metav1.GetOptions{})
+					Get(context.TODO(), lastCompletedBackup, metav1.GetOptions{})
 			}
 			if err != nil {
 				if !k8serror.IsNotFound(err) {
@@ -1322,7 +1323,7 @@ func TestRestoreEndPoint(t *testing.T) {
 			f.fakeNodeCreator(5)
 			f.fakePoolsCreator(test.cspcName, []string{test.poolVersion}, 5)
 			if test.cvcObj != nil {
-				_, err := f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).Create(test.cvcObj)
+				_, err := f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).Create(context.TODO(), test.cvcObj, metav1.CreateOptions{})
 				if err != nil {
 					t.Errorf("Failed to create CVC %s", test.cvcObj.Name)
 				}
@@ -1330,7 +1331,7 @@ func TestRestoreEndPoint(t *testing.T) {
 			}
 			// Create storageclass
 			if test.storageClass != nil {
-				_, err := f.k8sClient.StorageV1().StorageClasses().Create(test.storageClass)
+				_, err := f.k8sClient.StorageV1().StorageClasses().Create(context.TODO(), test.storageClass, metav1.CreateOptions{})
 				if err != nil {
 					t.Errorf("Failed to create SC %s", test.storageClass.Name)
 				}
@@ -1367,13 +1368,13 @@ func TestRestoreEndPoint(t *testing.T) {
 					LabelSelector: cstortypes.PersistentVolumeLabelKey + "=" + test.cstorRestore.Spec.VolumeName,
 				}
 				if test.isV1Version {
-					restoreList, err := f.openebsClient.CstorV1().CStorRestores(namespace).List(restoreLabelSelector)
+					restoreList, err := f.openebsClient.CstorV1().CStorRestores(namespace).List(context.TODO(), restoreLabelSelector)
 					if err != nil {
 						t.Errorf("Failed to list cstorRestore of volume %s", test.cvcObj.Name)
 					}
 					gotReplicaCount = len(restoreList.Items)
 				} else {
-					restoreList, err := f.openebsClient.OpenebsV1alpha1().CStorRestores(namespace).List(restoreLabelSelector)
+					restoreList, err := f.openebsClient.OpenebsV1alpha1().CStorRestores(namespace).List(context.TODO(), restoreLabelSelector)
 					if err != nil {
 						t.Errorf("Failed to list cstorRestore of volume %s", test.cvcObj.Name)
 					}
@@ -1490,14 +1491,14 @@ func TestRestoreWithDifferentPoolVersions(t *testing.T) {
 			f.fakeNodeCreator(5)
 			f.fakePoolsCreator(test.cspcName, test.poolVersions, len(test.poolVersions))
 			if test.cvcObj != nil {
-				_, err := f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).Create(test.cvcObj)
+				_, err := f.openebsClient.CstorV1().CStorVolumeConfigs(namespace).Create(context.TODO(), test.cvcObj, metav1.CreateOptions{})
 				if err != nil {
 					t.Errorf("Failed to create CVC %s", test.cvcObj.Name)
 				}
 			}
 			// Create storageclass
 			if test.storageClass != nil {
-				_, err := f.k8sClient.StorageV1().StorageClasses().Create(test.storageClass)
+				_, err := f.k8sClient.StorageV1().StorageClasses().Create(context.TODO(), test.storageClass, metav1.CreateOptions{})
 				if err != nil {
 					t.Errorf("Failed to create SC %s", test.storageClass.Name)
 				}
@@ -1530,11 +1531,11 @@ func TestRestoreWithDifferentPoolVersions(t *testing.T) {
 			restoreLabelSelector := metav1.ListOptions{
 				LabelSelector: cstortypes.PersistentVolumeLabelKey + "=" + test.cstorRestore.Spec.VolumeName,
 			}
-			v1RestoreList, err := f.openebsClient.CstorV1().CStorRestores(namespace).List(restoreLabelSelector)
+			v1RestoreList, err := f.openebsClient.CstorV1().CStorRestores(namespace).List(context.TODO(), restoreLabelSelector)
 			if err != nil {
 				t.Errorf("Failed to list cstorRestore of volume %s", test.cvcObj.Name)
 			}
-			v1Alpha1RestoreList, err := f.openebsClient.OpenebsV1alpha1().CStorRestores(namespace).List(restoreLabelSelector)
+			v1Alpha1RestoreList, err := f.openebsClient.OpenebsV1alpha1().CStorRestores(namespace).List(context.TODO(), restoreLabelSelector)
 			if err != nil {
 				t.Errorf("Failed to list cstorRestore of volume %s", test.cvcObj.Name)
 			}

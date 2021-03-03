@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
 	"testing"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -762,7 +763,7 @@ func TestValidateCVCUpdateRequest(t *testing.T) {
 			// Create fake object in etcd
 			_, err := f.wh.clientset.CstorV1().
 				CStorVolumeConfigs(test.existingObj.Namespace).
-				Create(test.existingObj)
+				Create(context.TODO(), test.existingObj, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatalf(
 					"failed to create fake CVC %s Object in Namespace %s error: %v",

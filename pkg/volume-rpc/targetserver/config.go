@@ -15,6 +15,7 @@ limitations under the License.
 package targetserver
 
 import (
+	"context"
 	"fmt"
 
 	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -103,7 +104,7 @@ func (csr *CVReplicationDetails) UpdateCVWithReplicationDetails(openebsClient cl
 	if err != nil {
 		return errors.Wrapf(err, "validate errors")
 	}
-	cv, err := openebsClient.CstorV1().CStorVolumes(util.GetNamespace()).Get(csr.VolumeName, metav1.GetOptions{})
+	cv, err := openebsClient.CstorV1().CStorVolumes(util.GetNamespace()).Get(context.TODO(), csr.VolumeName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cstorvolume")
 	}
@@ -139,7 +140,7 @@ func (csr *CVReplicationDetails) UpdateCVWithReplicationDetails(openebsClient cl
 	// Updating both spec and status known replica list
 	cv.Spec.ReplicaDetails.KnownReplicas[apis.ReplicaID(csr.ReplicaID)] = csr.ReplicaGUID
 	cv.Status.ReplicaDetails.KnownReplicas[apis.ReplicaID(csr.ReplicaID)] = csr.ReplicaGUID
-	_, err = openebsClient.CstorV1().CStorVolumes(util.GetNamespace()).Update(cv)
+	_, err = openebsClient.CstorV1().CStorVolumes(util.GetNamespace()).Update(context.TODO(), cv, metav1.UpdateOptions{})
 	if err == nil {
 		klog.Infof("Successfully updated %s volume with following replication "+
 			"information replication fator: from %d to %d, consistencyFactor from "+

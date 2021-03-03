@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The OpenEBS Authors
+Copyright 2021 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ type Interface interface {
 	CStorRestores() CStorRestoreInformer
 	// CStorVolumes returns a CStorVolumeInformer.
 	CStorVolumes() CStorVolumeInformer
+	// CStorVolumeAttachments returns a CStorVolumeAttachmentInformer.
+	CStorVolumeAttachments() CStorVolumeAttachmentInformer
 	// CStorVolumeConfigs returns a CStorVolumeConfigInformer.
 	CStorVolumeConfigs() CStorVolumeConfigInformer
 	// CStorVolumePolicies returns a CStorVolumePolicyInformer.
@@ -83,6 +85,11 @@ func (v *version) CStorRestores() CStorRestoreInformer {
 // CStorVolumes returns a CStorVolumeInformer.
 func (v *version) CStorVolumes() CStorVolumeInformer {
 	return &cStorVolumeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CStorVolumeAttachments returns a CStorVolumeAttachmentInformer.
+func (v *version) CStorVolumeAttachments() CStorVolumeAttachmentInformer {
+	return &cStorVolumeAttachmentInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // CStorVolumeConfigs returns a CStorVolumeConfigInformer.

@@ -17,6 +17,8 @@ limitations under the License.
 package cspccontroller
 
 import (
+	"context"
+
 	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 
@@ -49,7 +51,7 @@ func (c *Controller) cleanupCSPIResources(cspiList *apis.CStorPoolInstanceList) 
 			}
 
 			cspiObj.Finalizers = util.RemoveString(cspiObj.Finalizers, types.CSPCFinalizer)
-			_, err := c.GetStoredCStorVersionClient().CStorPoolInstances(cspiItem.Namespace).Update(&cspiObj)
+			_, err := c.GetStoredCStorVersionClient().CStorPoolInstances(cspiItem.Namespace).Update(context.TODO(), &cspiObj, metav1.UpdateOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "failed to remove finalizer from cspi %s", cspiItem.Name)
 			}
@@ -113,6 +115,7 @@ type cspiCleanupOptions func(apis.CStorPoolInstance) error
 // cleanupBDC deletes the BDCs for the CSPI which has been deleted or downscaled
 func (c *Controller) cleanupBDC(cspiObj apis.CStorPoolInstance) error {
 	bdcList, err := c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspiObj.Namespace).List(
+		context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: string(types.CStorPoolClusterLabelKey) + "=" + cspiObj.Labels[string(types.CStorPoolClusterLabelKey)],
 		},
@@ -131,11 +134,11 @@ func (c *Controller) cleanupBDC(cspiObj apis.CStorPoolInstance) error {
 		if cspiBDMap[bdcItem.Spec.BlockDeviceName] {
 			bdcObj := &bdcItem
 			bdcObj.Finalizers = util.RemoveString(bdcObj.Finalizers, types.CSPCFinalizer)
-			bdcObj, err = c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspiObj.Namespace).Update(bdcObj)
+			bdcObj, err = c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspiObj.Namespace).Update(context.TODO(), bdcObj, metav1.UpdateOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "failed to remove finalizers from bdc %s", bdcItem.Name)
 			}
-			err = c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspiObj.Namespace).Delete(bdcObj.Name, &metav1.DeleteOptions{})
+			err = c.GetStoredOpenebsVersionClient().BlockDeviceClaims(cspiObj.Namespace).Delete(context.TODO(), bdcObj.Name, metav1.DeleteOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "failed to delete bdc %s", bdcObj.Name)
 			}

@@ -2,32 +2,55 @@
 
 ## Prerequisites
 
-Before setting up cStor operators make sure your Kubernetes Cluster
+Before setting up cStor operators make sure your Kubernetes cluster
 meets the following prerequisites:
 
-1. You will need to have Kubernetes version 1.17 or higher.
-2. iSCSI initiator utils installed on all the worker nodes(If you are using rancher based cluster perform steps mentioned [here](troubleshooting/rancher_prerequisite.md)).
+1. Kubernetes version 1.17 or higher
+2. iSCSI initiator utils installed on all the worker nodes (If you are using a Rancher-based cluster, perform the steps mentioned [here](troubleshooting/rancher_prerequisite.md)).
 
 
 | OPERATING SYSTEM | iSCSI PACKAGE         | Commands to install iSCSI                                | Verify iSCSI Status         |
 | ---------------- | --------------------- | -------------------------------------------------------- | --------------------------- |
-| RHEL/CentOS      | iscsi-initiator-utils | <ul><li>sudo yum install iscsi-initiator-utils -y</li><li>sudo systemctl enable --now iscsid</li><li>modprobe iscsi_tcp</li><li>echo iscsi_tcp >/etc/modules-load.d/iscsi-tcp.conf</li></ul> | sudo systemctl status iscsid.service |
-| Ununtu/ Debian   | open-iscsi            |  <ul><li>sudo apt install open-iscsi</li><li>sudo systemctl enable --now iscsid</li><li>modprobe iscsi_tcp</li><li>echo iscsi_tcp >/etc/modules-load.d/iscsi-tcp.conf</li></ui>| sudo systemctl status iscsid.service |
-| RancherOS        | open-iscsi            |  <ul><li>sudo ros s enable open-iscsi</li><li>sudo ros s up open-iscsi</li></ui>| ros service list iscsi |
+| RHEL/CentOS      | iscsi-initiator-utils | <ul><li>sudo yum install iscsi-initiator-utils -y</li><li>sudo systemctl enable --now iscsid</li></ul> | sudo systemctl status iscsid.service |
+| Ubuntu/Debian   | open-iscsi            |  <ul><li>sudo apt install open-iscsi -y</li><li>sudo systemctl enable --now iscsid</li></ui>| sudo systemctl status iscsid.service |
 
+**Note: RancherOS is not a supported platform.**
 
-3. You have access to install RBAC components into kube-system namespace.
-4. You have disks attached to nodes to provision storage.
+3. You have disks attached to nodes to provision storage.
 
 ## Install
 
+
+Check for existing NDM components in your openebs namespace. Execute the following command:
+```sh
+$ kubectl -n openebs get pods -l openebs.io/component-name=ndm
+
+NAME                                                              READY   STATUS    RESTARTS   AGE
+openebs-ndm-gctb7                                                 1/1     Running   0          6d7h
+openebs-ndm-sfczv                                                 1/1     Running   0          6d7h
+openebs-ndm-vgdnv                                                 1/1     Running   0          6d6h
+```
+
+If you have got an output as displayed above, then it is recommended that you proceed with installation using the [CStor operators helm chart](https://openebs.github.io/cstor-operators). You will have to exclude `openebs-ndm` charts from the installation. Sample command:
+```sh
+helm install openebs-cstor openebs-cstor/cstor -n openebs --set openebsNDM.enabled=false
+```
+
+If you did not get any meaningful output (as above), then you do not have NDM components installed. Proceed with any one of the installation options below.
+
 ### Using Helm Charts:
  
-Install CStor operators and CSI driver components using [cstor helm charts](https://github.com/openebs/cstor-operators/tree/master/deploy/helm/charts).
+Install CStor operators and CSI driver components using the [CStor Operators helm charts](https://openebs.github.io/cstor-operators). Sample command:
+
+```sh
+helm install openebs-cstor openebs-cstor/cstor -n openebs --create-namespace
+```
+
+Visit openebs.github.io/cstor-operators for detailed instructions.
 
 ### Using Operator:
 
-Install the [latest release](https://github.com/openebs/cstor-operators/releases) using CStor Operator yaml.
+Install the latest release using CStor Operator yaml.
 
 ```
 kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
@@ -35,7 +58,7 @@ kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
 
 ### Local Development:
 
-Alternatively you can also install the development version  of cstor operators using:
+Alternatively, you may also install the development version  of CStor Operators using:
 
 ```bash
 $ git clone https://github.com/openebs/cstor-operators.git
@@ -49,7 +72,7 @@ $ kubectl create -f deploy/csi-operator.yaml
 
  **Note: If running on K8s version lesser than 1.17, you will need to comment the `priorityClassName: system-cluster-critical` in the csi-operator.yaml**
  
-Once installed using any of the above methods, verify that NDM and cStor operators are running. 
+Once installed using any of the above methods, verify that all NDM and CStor operators pods are running. 
 
 ```bash
 $ kubectl get pod -n openebs
@@ -84,9 +107,9 @@ NOTE:
 2. For a blockdevice to appear, you must have disks attached to node.
 
 
-## Provision a cStor Pool
+## Provision a CStorPoolCluster
 
-For simplicity, this guide will provision a stripe pool on one node.
+For simplicity, this guide will provision a stripe pool on three nodes. A minimum of 3 replicas (on 3 nodes) is recommended for high-availability.
 
 1. Use the CSPC file from [examples/cspc/cspc-single.yaml](/examples/cspc/cspc-single.yaml) and modify by performing
 follwing steps:
@@ -137,26 +160,42 @@ follwing steps:
    
    Finally the CSPC YAML looks like the following :
    ```yaml
-       apiVersion: cstor.openebs.io/v1
-       kind: CStorPoolCluster
-       metadata:
-         name: cspc-stripe
-         namespace: openebs
-       spec:
-         pools:
-           - nodeSelector:
-               kubernetes.io/hostname: "worker1"
-             dataRaidGroups:
-             - blockDevices:
-                 - blockDeviceName: "blockdevice-10ad9f484c299597ed1e126d7b857967"
-             poolConfig:
-               dataRaidGroupType: "stripe"
+   apiVersion: cstor.openebs.io/v1
+   kind: CStorPoolCluster
+   metadata:
+     name: cspc-stripe
+     namespace: openebs
+   spec:
+     pools:
+       - nodeSelector:
+           kubernetes.io/hostname: "worker-1"
+         dataRaidGroups:
+           - blockDevices:
+               - blockDeviceName: "blockdevice-10ad9f484c299597ed1e126d7b857967"
+         poolConfig:
+           dataRaidGroupType: "stripe"
+   
+       - nodeSelector:
+           kubernetes.io/hostname: "worker-2" 
+         dataRaidGroups:
+           - blockDevices:
+               - blockDeviceName: "blockdevice-3ec130dc1aa932eb4c5af1db4d73ea1b"
+         poolConfig:
+           dataRaidGroupType: "stripe"
+      
+       - nodeSelector:
+           kubernetes.io/hostname: "worker-3"
+         dataRaidGroups:
+           - blockDevices:
+               - blockDeviceName: "blockdevice-01afcdbe3a9c9e3b281c7133b2af1b68"
+         poolConfig:
+           dataRaidGroupType: "stripe"
    ```
 
 2.  Apply the modified CSPC YAML.
 
     ```bash
-    kubectl apply -f examples/cspc/cspc-single.yaml
+    kubectl apply -f cspc-stripe.yaml
     ```
 3. Check if the pool has came online.
 
@@ -177,11 +216,13 @@ follwing steps:
     ```bash
     NAME               HOSTNAME           ALLOCATED   FREE     CAPACITY   STATUS   AGE
     cspc-stripe-vn92   worker1            260k        19900M   19900M     ONLINE   2m17s
+    cspc-stripe-al65   worker2            260k        19900M   19900M     ONLINE   2m17s
+    cspc-stripe-y7pn   worker3            260k        19900M   19900M     ONLINE   2m17s
     ```
 
 4. Once your pool has came online, we are ready with volume provisioning.
-    Create a Storage Class to dynamically provision volumes using OpenEBS CSI provisioner.
-    A sample storage class looks like:
+    Create a storageClass to dynamically provision volumes using OpenEBS CSI provisioner.
+    A sample storageClass looks like:
 
    ```yaml
    kind: StorageClass
@@ -193,13 +234,13 @@ follwing steps:
    parameters:
      cas-type: cstor
      cstorPoolCluster: cspc-stripe
-     replicaCount: "1"
+     replicaCount: "3"
    ```
 
    Create StorageClass using above example
 
    ```bash
-    $ kubectl apply -f csi-cstor-sc.yaml
+   kubectl apply -f csi-cstor-sc.yaml
    ```
 
    You will need to specify the correct cStor CSPC from your cluster
@@ -223,7 +264,7 @@ follwing steps:
      ```
 
     Apply the above created pvc yaml to dynamically create volume and verify that
-    the PVC has been successfully created and bound to a PersistentVolume(PV)
+    the PVC has been successfully created and bound to a PersistentVolume (PV)
 
     ```bash
     $ kubectl get pvc
@@ -237,7 +278,7 @@ follwing steps:
     ```bash
     $ kubectl get cstorvolumeconfig -n openebs
     NAME                                         CAPACITY   STATUS    AGE
-    pvc-52d88903-0518-11ea-b887-42010a80006c2    5Gi        Bound   60s
+    pvc-52d88903-0518-11ea-b887-42010a80006c2    5Gi        Bound     60s
     ```
 
     Verify volume and its replicas are `Healthy` state
@@ -252,6 +293,8 @@ follwing steps:
     $ kubectl get cstorvolumereplica -n openebs
     NAME                                                        ALLOCATED   USED    STATUS    AGE
     pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-vn92   6K          6K      Healthy   60s
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-al65   6K          6K      Healthy   60s
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-y7pn   6K          6K      Healthy   60s
     ```
 
 7. Create an application and use the above created PVC

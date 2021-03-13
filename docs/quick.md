@@ -163,7 +163,7 @@ follwing steps:
    apiVersion: cstor.openebs.io/v1
    kind: CStorPoolCluster
    metadata:
-     name: cspc-stripe
+     name: cstor-storage
      namespace: openebs
    spec:
      pools:
@@ -195,9 +195,9 @@ follwing steps:
 2.  Apply the modified CSPC YAML.
 
     ```bash
-    kubectl apply -f cspc-stripe.yaml
+    kubectl apply -f cstor-storage.yaml
     ```
-3. Check if the pool has came online.
+3. Check if the pool instances report their status as 'ONLINE'.
 
     ```bash
     kubectl get cspc -n openebs
@@ -205,7 +205,7 @@ follwing steps:
 
     ```bash
     NAME          HEALTHYINSTANCES   PROVISIONEDINSTANCES   DESIREDINSTANCES   AGE
-    cspc-stripe   1                  1                      1                  2m2s
+    cstor-storage 1                  1                      1                  2m2s
 
     ```
 
@@ -215,14 +215,14 @@ follwing steps:
 
     ```bash
     NAME               HOSTNAME           ALLOCATED   FREE     CAPACITY   STATUS   AGE
-    cspc-stripe-vn92   worker1            260k        19900M   19900M     ONLINE   2m17s
-    cspc-stripe-al65   worker2            260k        19900M   19900M     ONLINE   2m17s
-    cspc-stripe-y7pn   worker3            260k        19900M   19900M     ONLINE   2m17s
+    cstor-storage-vn92 worker1            260k        19900M   19900M     ONLINE   2m17s
+    cstor-storage-al65 worker2            260k        19900M   19900M     ONLINE   2m17s
+    cstor-storage-y7pn worker3            260k        19900M   19900M     ONLINE   2m17s
     ```
 
-4. Once your pool has came online, we are ready with volume provisioning.
+4. Once your pool instances have come online, you can proceed with volume provisioning.
     Create a storageClass to dynamically provision volumes using OpenEBS CSI provisioner.
-    A sample storageClass looks like:
+    A sample storageClass:
 
    ```yaml
    kind: StorageClass
@@ -233,11 +233,11 @@ follwing steps:
    allowVolumeExpansion: true
    parameters:
      cas-type: cstor
-     cstorPoolCluster: cspc-stripe
+     cstorPoolCluster: cstor-storage
      replicaCount: "3"
    ```
 
-   Create StorageClass using above example
+   Create a storageClass using above example.
 
    ```bash
    kubectl apply -f csi-cstor-sc.yaml
@@ -245,7 +245,7 @@ follwing steps:
 
    You will need to specify the correct cStor CSPC from your cluster
    and specify the desired `replicaCount` for the volume. The `replicaCount`
-   should be less than or equal to the max pools available.
+   should be less than or equal to the max pool instances available.
 
 5. Create a PVC yaml using above created StorageClass name
 
@@ -263,8 +263,8 @@ follwing steps:
           storage: 5Gi
      ```
 
-    Apply the above created pvc yaml to dynamically create volume and verify that
-    the PVC has been successfully created and bound to a PersistentVolume (PV)
+    Apply the above pvc yaml to dynamically create volume and verify that
+    the PVC has been successfully created and bound to a PersistentVolume (PV).
 
     ```bash
     $ kubectl get pvc
@@ -272,8 +272,8 @@ follwing steps:
     demo-cstor-vol    Bound    pvc-52d88903-0518-11ea-b887-42010a80006c   5Gi        RWO            cstor-csi-stripe   10s
     ```
 
-6. Verify that the all volume specific resources has been created
-    successfully, check cstorvolumeconfig(cvc) should be in `Bound` state.
+6. Verify that the all volume-specific resources have been created
+    successfully. Check if CStorColumeConfig(cvc) is in `Bound` state.
 
     ```bash
     $ kubectl get cstorvolumeconfig -n openebs
@@ -281,7 +281,7 @@ follwing steps:
     pvc-52d88903-0518-11ea-b887-42010a80006c2    5Gi        Bound     60s
     ```
 
-    Verify volume and its replicas are `Healthy` state
+    Verify volume and its replicas are in `Healthy` state.
 
     ```bash
     $ kubectl get cstorvolume -n openebs
@@ -297,7 +297,7 @@ follwing steps:
     pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-y7pn   6K          6K      Healthy   60s
     ```
 
-7. Create an application and use the above created PVC
+7. Create an application and use the above created PVC.
 
     ```yaml
     apiVersion: v1
@@ -323,7 +323,7 @@ follwing steps:
           claimName: demo-cstor-vol
     ```
 
-    Verify that the pods is running and is able to write the data.
+    Verify that the pod is running and is able to write data to the volume.
 
     ```bash
     $ kubectl get pods
@@ -331,8 +331,8 @@ follwing steps:
     busybox   1/1     Running   0          97s
     ```
 
-    The example busybox application is instructed to write the date when it starts into the
-    mounted path at `/mnt/openebs-csi/date.txt`
+    The example busybox application will write the current date into the
+    mounted path at `/mnt/openebs-csi/date.txt` when it starts.
 
     ```bash
     $ kubectl exec -it busybox -- cat /mnt/openebs-csi/date.txt

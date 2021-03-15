@@ -73,6 +73,17 @@ $ helm upgrade [RELEASE_NAME] [CHART] --install
 
 The following table lists the configurable parameters of the OpenEBS CStor chart and their default values.
 
+You can modify different parameters by specifying the desired value in the `helm install` command by using the `--set` and/or the `--set-string` flag(s). You can modify the parameters of the [Node Disk Manager chart](https://openebs.github.io/node-disk-manager) by adding `openebs-ndm` before the desired parameter in the `helm install` command.
+
+In the following sample command we modify `csiNode.nodeSelector` from the cstor chart and `ndm.nodeSelector` from the openebs-ndm chart to only schedule pods on nodes labelled with `openebs.io/data-plane=true`. We also enable the 'Use OS-disk' feature gate using the `featureGates.UseOSDisk.enabled` parameter from the openebs-ndm chart.
+
+```bash
+helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-namespace \
+	--set-string csiNode.nodeSelector."openebs\.io/data-plane"=true \
+	--set-string openebs-ndm.ndm.nodeSelector."openebs\.io/data-plane"=true \
+	--set openebs-ndm.featureGates.UseOSDisk.enabled=true
+```
+
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | admissionServer.annotations | object | `{}` | Admission webhook annotations |
@@ -185,63 +196,21 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | imagePullSecrets | string | `nil` | Image registry pull secrets |
 | openebsNDM.enabled | bool | `true` | Enable OpenEBS NDM dependency |
 | openebs-ndm.featureGates.APIService.enabled | bool | `true` | Enable 'API Service' feature gate for NDM |
-| openebs-ndm.featureGates.APIService.address | string | `true` | 'API Service' feature gate address for NDM |
-| openebs-ndm.featureGates.enabled | bool | `true` | Enable NDM feature gates  |
 | openebs-ndm.featureGates.GPTBasedUUID.enabled | bool | `true` | Enable 'GPT-based UUID' feature gate for NDM |
-| openebs-ndm.featureGates.UseOSDisk.enabled | bool | `true` | Enable 'Use OS-disk' feature gate for NDM |
+| openebs-ndm.featureGates.UseOSDisk.enabled | bool | `false` | Enable 'Use OS-disk' feature gate for NDM |
 | openebs-ndm.helperPod.image.registry | string | `nil` | Registry for helper image |
-| openebs-ndm.helperPod.image.repository | string | `openebs/linux-utils` | Image for helper pod |
-| openebs-ndm.helperPod.image.pullPolicy | string | `"IfNotPresent"` | Pull policy for helper pod |
-| openebs-ndm.helperPod.image.tag | string | `2.7.0` | Image tag for helper image |
-| openebs-ndm.ndm.annotations | object | `{}` | Annotations for NDM daemonset metadata |
-| openebs-ndm.ndm.componentName | string | `ndm` | Node Disk Manager component name |
-| openebs-ndm.ndm.enabled | bool | `true` | Enable Node Disk Manager |
+| openebs-ndm.helperPod.image.repository | string | `openebs/linux-utils` | Image repository for helper pod |
 | openebs-ndm.ndm.filters.enableOsDiskExcludeFilter | bool | `true` | Enable filters of OS disk exclude |
 | openebs-ndm.ndm.filters.enableVendorFilter | bool | `true` | Enable filters of venders |
 | openebs-ndm.ndm.filters.excludeVendors | string | `"CLOUDBYT,OpenEBS"` | Exclude devices with specified vendor |
 | openebs-ndm.ndm.filters.enablePathFilter | bool | `true` | Enable filters of paths |
 | openebs-ndm.ndm.filters.includePaths | string | `""` | Include devices with specified path patterns |
 | openebs-ndm.ndm.filters.excludePaths | string | `"loop,fd0,sr0,/dev/ram,/dev/dm-,/dev/md,/dev/rbd,/dev/zd"` | Exclude devices with specified path patterns |
-| openebs-ndm.ndm.healthCheck.initialDelaySeconds | string | `30` | Delay before liveness probe is initiated |
-| openebs-ndm.ndm.healthCheck.periodSeconds | string | `60` | How often to perform the liveness probe |
 | openebs-ndm.ndm.image.registry | string | `nil` | Registry for Node Disk Manager image |
 | openebs-ndm.ndm.image.repository | string | `openebs/node-disk-manager` | Image repository for Node Disk Manager |
-| openebs-ndm.ndm.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for Node Disk Manager |
-| openebs-ndm.ndm.image.tag | string | `1.3.0` | Image tag for Node Disk Manager |
 | openebs-ndm.ndm.nodeSelector | object | `{}` | Nodeselector for daemonset pods |
-| openebs-ndm.ndm.podAnnotations | object | `{}` | Annotations for NDM daemonset's pods metadata |
-| openebs-ndm.ndm.podLabels | object | `{}` | Appends labels to the pods |
-| openebs-ndm.ndm.probes.enableSeachest | bool | `false` | Enable Seachest probe for NDM |
-| openebs-ndm.ndm.probes.enableUdevProbe | bool | `true` | Enable Udev probe for NDM |
-| openebs-ndm.ndm.probes.enableSmartProbe | bool | `true` | Enable Smart probe for NDM |
-| openebs-ndm.ndm.resources | object | `{}` | Resource and request and limit for containers |
-| openebs-ndm.ndm.securityContext | object | `{}` | Seurity context for NDM daemonset container |
-| openebs-ndm.ndm.sparse.count | string | `"0"` | Number of sparse files to be created |
-| openebs-ndm.ndm.sparse.path | string | `"/var/openebs/sparse"` | Directory where Sparse files are created |
-| openebs-ndm.ndm.sparse.size | string | `"10737418240"` | Size of the sparse file in bytes |
-| openebs-ndm.ndm.tolerations | list | `[]` | NDM daemonset's pod toleration values |
-| openebs-ndm.ndm.updateStrategy.type | string | `RollingUpdate` | Update strategy for NDM daemonset |
-| openebs-ndm.ndmOperator.annotations | object | `{}` | Annotations for NDM operator metadata |
-| openebs-ndm.ndmOperator.enabled | bool | `true` | Enable NDM Operator |
-| openebs-ndm.ndmOperator.healthCheck.initialDelaySeconds | string | `30` | Delay before liveness probe is initiated |
-| openebs-ndm.ndmOperator.healthCheck.periodSeconds | string | `60` | How often to perform the liveness probe |
 | openebs-ndm.ndmOperator.image.registry | string | `nil` | Registry for NDM operator image |
 | openebs-ndm.ndmOperator.image.repository | string | `openebs/node-disk-operator` | Image repository for NDM operator |
-| openebs-ndm.ndmOperator.image.pullPolicy | string | `IfNotPresent` | Image pull policy for NDM operator |
-| openebs-ndm.ndmOperator.image.tag | string | `1.3.0` |  Image tag for NDM operator |
-| openebs-ndm.ndmOperator.nodeSelector | object | `{}` | Nodeselector for operator pods |
-| openebs-ndm.ndmOperator.podAnnotations | object | `{}` | Annotations for NDM operator's pods metadata |
-| openebs-ndm.ndmOperator.podLabels | object | `{}` | Appends labels to the pods |
-| openebs-ndm.ndmOperator.readinessCheck.initialDelaySeconds | string | `4` | Delay before readiness probe is initiated |
-| openebs-ndm.ndmOperator.readinessCheck.periodSeconds | string | `10` | How often to perform the readiness probe |
-| openebs-ndm.ndmOperator.readinessCheck.failureThreshold | string | `1` | Failure threshold for the readiness probe |
-| openebs-ndm.ndmOperator.replicas | string | `1` | Pod replica count for NDM operator |
-| openebs-ndm.ndmOperator.resources | object | `{}` | Resource and request and limit for containers |
-| openebs-ndm.ndmOperator.securityContext | object | `{}` | Seurity context for container |
-| openebs-ndm.ndmOperator.tolerations | list | `[]` | NDM operator's pod toleration values |
-| openebs-ndm.serviceAccount.create | bool | `true` | Create a service account or not |
-| openebs-ndm.serviceAccount.name | string | `openebs-ndm` | Name for the service account |
-| openebs-ndm.varDirectoryPath.baseDir | string | `"/var/openebs"` | Directory to store debug info and so forth |
 | rbac.create | bool | `true` | Enable RBAC |
 | rbac.pspEnabled | bool | `false` | Enable PodSecurityPolicy |
 | release.version | string | `"2.7.0"` | Openebs CStor release version |

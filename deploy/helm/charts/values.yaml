@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 release:
-  version: "2.6.0"
+  version: "2.7.0"
 
 # If false, openebs NDM sub-chart will not be installed
 openebsNDM:
@@ -29,7 +29,7 @@ openebs-ndm:
       repository: openebs/node-disk-manager
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
-      tag: 1.2.0
+      tag: 1.3.0
     sparse:
       path: "/var/openebs/sparse"
       size: "10737418240"
@@ -74,7 +74,7 @@ openebs-ndm:
       repository: openebs/node-disk-operator
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
-      tag: 1.2.0
+      tag: 1.3.0
     podLabels:
       name: openebs-ndm-operator
     annotations: {}
@@ -98,7 +98,7 @@ openebs-ndm:
       repository: openebs/linux-utils
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
-      tag: 2.6.0
+      tag: 2.7.0
 
   featureGates:
     enabled: true
@@ -131,17 +131,17 @@ cspcOperator:
     image:
       registry:
       repository: openebs/cstor-pool-manager
-      tag: 2.6.0
+      tag: 2.7.0
   cstorPool:
     image:
       registry:
       repository: openebs/cstor-pool
-      tag: 2.6.0
+      tag: 2.7.0
   cstorPoolExporter:
     image:
       registry:
       repository: openebs/m-exporter
-      tag: 2.6.0
+      tag: 2.7.0
   image:
     # Make sure that registry name end with a '/'.
     # For example : quay.io/ is a correct value here and quay.io is incorrect
@@ -149,7 +149,7 @@ cspcOperator:
     repository: openebs/cspc-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 2.6.0
+    tag: 2.7.0
   annotations: {}
   resyncInterval: "30"
   podAnnotations: {}
@@ -165,17 +165,17 @@ cvcOperator:
     image:
       registry:
       repository: openebs/cstor-istgt
-      tag: 2.6.0
+      tag: 2.7.0
   volumeMgmt:
     image:
       registry:
       repository: openebs/cstor-volume-manager
-      tag: 2.6.0
+      tag: 2.7.0
   volumeExporter:
     image:
       registry:
       repository: openebs/m-exporter
-      tag: 2.6.0
+      tag: 2.7.0
   image:
     # Make sure that registry name end with a '/'.
     # For example : quay.io/ is a correct value here and quay.io is incorrect
@@ -183,7 +183,7 @@ cvcOperator:
     repository: openebs/cvc-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 2.6.0
+    tag: 2.7.0
   annotations: {}
   resyncInterval: "30"
   podAnnotations: {}
@@ -262,7 +262,7 @@ cstorCSIPlugin:
     repository: openebs/cstor-csi-driver
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 2.6.0
+    tag: 2.7.0
   remount: "true"
 
 csiNode:
@@ -310,7 +310,7 @@ admissionServer:
     repository: openebs/cstor-webhook
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 2.6.0
+    tag: 2.7.0
   failurePolicy: "Fail"
   annotations: {}
   podAnnotations: {}

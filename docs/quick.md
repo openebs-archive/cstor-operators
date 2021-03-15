@@ -13,8 +13,7 @@ meets the following prerequisites:
 | ---------------- | --------------------- | -------------------------------------------------------- | --------------------------- |
 | RHEL/CentOS      | iscsi-initiator-utils | <ul><li>sudo yum install iscsi-initiator-utils -y</li><li>sudo systemctl enable --now iscsid</li></ul> | sudo systemctl status iscsid.service |
 | Ubuntu/Debian   | open-iscsi            |  <ul><li>sudo apt install open-iscsi -y</li><li>sudo systemctl enable --now iscsid</li></ui>| sudo systemctl status iscsid.service |
-
-**Note: RancherOS is not a supported platform.**
+| RancherOS        | open-iscsi            |  <ul><li>sudo ros s enable open-iscsi</li><li>sudo ros s up open-iscsi</li></ui>| ros service list iscsi |
 
 3. You have disks attached to nodes to provision storage.
 

@@ -45,7 +45,7 @@ By default this chart installs additional, dependent charts:
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://openebs.github.io/node-disk-manager | openebs-ndm | 1.2.0 |
+| https://openebs.github.io/node-disk-manager | openebs-ndm | 1.3.0 |
 
 To disable the dependency during installation, set `openebsNDM.enabled` to `false`.
 
@@ -73,6 +73,17 @@ $ helm upgrade [RELEASE_NAME] [CHART] --install
 
 The following table lists the configurable parameters of the OpenEBS CStor chart and their default values.
 
+You can modify different parameters by specifying the desired value in the `helm install` command by using the `--set` and/or the `--set-string` flag(s). You can modify the parameters of the [Node Disk Manager chart](https://openebs.github.io/node-disk-manager) by adding `openebs-ndm` before the desired parameter in the `helm install` command.
+
+In the following sample command we modify `csiNode.nodeSelector` from the cstor chart and `ndm.nodeSelector` from the openebs-ndm chart to only schedule pods on nodes labelled with `openebs.io/data-plane=true`. We also enable the 'Use OS-disk' feature gate using the `featureGates.UseOSDisk.enabled` parameter from the openebs-ndm chart.
+
+```bash
+helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-namespace \
+	--set-string csiNode.nodeSelector."openebs\.io/data-plane"=true \
+	--set-string openebs-ndm.ndm.nodeSelector."openebs\.io/data-plane"=true \
+	--set openebs-ndm.featureGates.UseOSDisk.enabled=true
+```
+
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | admissionServer.annotations | object | `{}` | Admission webhook annotations |
@@ -81,7 +92,7 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | admissionServer.image.pullPolicy | string | `"IfNotPresent"` | Admission webhook image pull policy |
 | admissionServer.image.registry | string | `nil` | Admission webhook image registry |
 | admissionServer.image.repository | string | `"openebs/cstor-webhook"` | Admission webhook image repo |
-| admissionServer.image.tag | string | `"2.6.0"` | Admission webhook image tag |
+| admissionServer.image.tag | string | `"2.7.0"` | Admission webhook image tag |
 | admissionServer.nodeSelector | object | `{}` | Admission webhook pod node selector |
 | admissionServer.podAnnotations | object | `{}` |  Admission webhook pod annotations |
 | admissionServer.resources | object | `{}` | Admission webhook pod resources |
@@ -138,19 +149,19 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | cspcOperator.componentName | string | `"cspc-operator"` | CSPC operator component name |
 | cspcOperator.cstorPool.image.registry | string | `nil` | CStor pool image registry |
 | cspcOperator.cstorPool.image.repository | string | `"openebs/cstor-pool"` | CStor pool image repository|
-| cspcOperator.cstorPool.image.tag | string | `"2.6.0"` | CStor pool image tag |
+| cspcOperator.cstorPool.image.tag | string | `"2.7.0"` | CStor pool image tag |
 | cspcOperator.cstorPoolExporter.image.registry | string | `nil` | CStor pool exporter image registry |
 | cspcOperator.cstorPoolExporter.image.repository | string | `"openebs/m-exporter"` | CStor pool exporter image repositry |
-| cspcOperator.cstorPoolExporter.image.tag | string | `"2.6.0"` | CStor pool exporter image tag |
+| cspcOperator.cstorPoolExporter.image.tag | string | `"2.7.0"` | CStor pool exporter image tag |
 | cspcOperator.image.pullPolicy | string | `"IfNotPresent"` | CSPC operator image pull policy |
 | cspcOperator.image.registry | string | `nil` | CSPC operator image registry |
 | cspcOperator.image.repository | string | `"openebs/cspc-operator"` | CSPC operator image repository |
-| cspcOperator.image.tag | string | `"2.6.0"` |  CSPC operator image tag |
+| cspcOperator.image.tag | string | `"2.7.0"` |  CSPC operator image tag |
 | cspcOperator.nodeSelector | object | `{}` |  CSPC operator pod nodeSelector|
 | cspcOperator.podAnnotations | object | `{}` | CSPC operator pod annotations |
 | cspcOperator.poolManager.image.registry | string | `nil` | CStor Pool Manager image registry  |
 | cspcOperator.poolManager.image.repository | string | `"openebs/cstor-pool-manager"` | CStor Pool Manager image repository |
-| cspcOperator.poolManager.image.tag | string | `"2.6.0"` | CStor Pool Manager image tag |
+| cspcOperator.poolManager.image.tag | string | `"2.7.0"` | CStor Pool Manager image tag |
 | cspcOperator.resources | object | `{}` | CSPC operator pod resources |
 | cspcOperator.resyncInterval | string | `"30"` | CSPC operator resync interval |
 | cspcOperator.securityContext | object | `{}` | CSPC operator security context |
@@ -158,7 +169,7 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | cstorCSIPlugin.image.pullPolicy | string | `"IfNotPresent"` | CStor CSI driver image pull policy |
 | cstorCSIPlugin.image.registry | string | `nil` | CStor CSI driver image registry |
 | cstorCSIPlugin.image.repository | string | `"openebs/cstor-csi-driver"` |  CStor CSI driver image repository |
-| cstorCSIPlugin.image.tag | string | `"2.6.0"` | CStor CSI driver image tag |
+| cstorCSIPlugin.image.tag | string | `"2.7.0"` | CStor CSI driver image tag |
 | cstorCSIPlugin.name | string | `"cstor-csi-plugin"` | CStor CSI driver container name |
 | cstorCSIPlugin.remount | string | `"true"` | Enable/disable auto-remount when volume recovers from read-only state |
 | cvcOperator.annotations | object | `{}` | CVC operator annotations |
@@ -166,7 +177,7 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | cvcOperator.image.pullPolicy | string | `"IfNotPresent"` | CVC operator image pull policy  |
 | cvcOperator.image.registry | string | `nil` | CVC operator image registry |
 | cvcOperator.image.repository | string | `"openebs/cvc-operator"` | CVC operator image repository |
-| cvcOperator.image.tag | string | `"2.6.0"` | CVC operator image tag |
+| cvcOperator.image.tag | string | `"2.7.0"` | CVC operator image tag |
 | cvcOperator.nodeSelector | object | `{}` | CVC operator pod nodeSelector |
 | cvcOperator.podAnnotations | object | `{}` | CVC operator pod annotations |
 | cvcOperator.resources | object | `{}` |CVC operator pod resources  |
@@ -174,19 +185,35 @@ The following table lists the configurable parameters of the OpenEBS CStor chart
 | cvcOperator.securityContext | object | `{}` | CVC operator security context |
 | cvcOperator.target.image.registry | string | `nil` | Volume Target image registry  |
 | cvcOperator.target.image.repository | string | `"openebs/cstor-istgt"` | Volume Target image repository |
-| cvcOperator.target.image.tag | string | `"2.6.0"` | Volume Target image tag |
+| cvcOperator.target.image.tag | string | `"2.7.0"` | Volume Target image tag |
 | cvcOperator.tolerations | list | `[]` | CVC operator pod tolerations |
 | cvcOperator.volumeExporter.image.registry | string | `nil` | Volume exporter image registry |
 | cvcOperator.volumeExporter.image.repository | string | `"openebs/m-exporter"` | Volume exporter image repository |
-| cvcOperator.volumeExporter.image.tag | string | `"2.6.0"` | Volume exporter image tag |
+| cvcOperator.volumeExporter.image.tag | string | `"2.7.0"` | Volume exporter image tag |
 | cvcOperator.volumeMgmt.image.registry | string | `nil` | Volume mgmt image registry |
 | cvcOperator.volumeMgmt.image.repository | string | `"openebs/cstor-volume-manager"` | Volume mgmt image repository |
-| cvcOperator.volumeMgmt.image.tag | string | `"2.6.0"` |  Volume mgmt image tag|
+| cvcOperator.volumeMgmt.image.tag | string | `"2.7.0"` |  Volume mgmt image tag|
 | imagePullSecrets | string | `nil` | Image registry pull secrets |
 | openebsNDM.enabled | bool | `true` | Enable OpenEBS NDM dependency |
+| openebs-ndm.featureGates.APIService.enabled | bool | `true` | Enable 'API Service' feature gate for NDM |
+| openebs-ndm.featureGates.GPTBasedUUID.enabled | bool | `true` | Enable 'GPT-based UUID' feature gate for NDM |
+| openebs-ndm.featureGates.UseOSDisk.enabled | bool | `false` | Enable 'Use OS-disk' feature gate for NDM |
+| openebs-ndm.helperPod.image.registry | string | `nil` | Registry for helper image |
+| openebs-ndm.helperPod.image.repository | string | `openebs/linux-utils` | Image repository for helper pod |
+| openebs-ndm.ndm.filters.enableOsDiskExcludeFilter | bool | `true` | Enable filters of OS disk exclude |
+| openebs-ndm.ndm.filters.enableVendorFilter | bool | `true` | Enable filters of venders |
+| openebs-ndm.ndm.filters.excludeVendors | string | `"CLOUDBYT,OpenEBS"` | Exclude devices with specified vendor |
+| openebs-ndm.ndm.filters.enablePathFilter | bool | `true` | Enable filters of paths |
+| openebs-ndm.ndm.filters.includePaths | string | `""` | Include devices with specified path patterns |
+| openebs-ndm.ndm.filters.excludePaths | string | `"loop,fd0,sr0,/dev/ram,/dev/dm-,/dev/md,/dev/rbd,/dev/zd"` | Exclude devices with specified path patterns |
+| openebs-ndm.ndm.image.registry | string | `nil` | Registry for Node Disk Manager image |
+| openebs-ndm.ndm.image.repository | string | `openebs/node-disk-manager` | Image repository for Node Disk Manager |
+| openebs-ndm.ndm.nodeSelector | object | `{}` | Nodeselector for daemonset pods |
+| openebs-ndm.ndmOperator.image.registry | string | `nil` | Registry for NDM operator image |
+| openebs-ndm.ndmOperator.image.repository | string | `openebs/node-disk-operator` | Image repository for NDM operator |
 | rbac.create | bool | `true` | Enable RBAC |
 | rbac.pspEnabled | bool | `false` | Enable PodSecurityPolicy |
-| release.version | string | `"2.6.0"` | Openebs CStor release version |
+| release.version | string | `"2.7.0"` | Openebs CStor release version |
 | serviceAccount.annotations | object | `{}` | Service Account annotations |
 | serviceAccount.csiController.create | bool | `true` | Enable CSI Controller ServiceAccount |
 | serviceAccount.csiController.name | string | `"openebs-cstor-csi-controller-sa"` | CSI Controller ServiceAccount name |

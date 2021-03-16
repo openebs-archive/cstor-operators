@@ -1,3 +1,17 @@
+v2.7.0 / 2021-03-11
+========================
+* refact(deps): bump k8s and client-go deps to version v0.20.2 ([#257](https://github.com/openebs/cstor-operators/pull/257),[@prateekpandey14](https://github.com/prateekpandey14))
+
+
+v2.7.0-RC2 / 2021-03-10
+========================
+
+
+v2.7.0-RC1 / 2021-03-08
+========================
+* refact(deps): bump k8s and client-go deps to version v0.20.2 ([#257](https://github.com/openebs/cstor-operators/pull/257),[@prateekpandey14](https://github.com/prateekpandey14))
+
+
 # Changelog
 
 ## [v2.6.0](https://github.com/openebs/cstor-operators/tree/v2.6.0) (2021-02-13)

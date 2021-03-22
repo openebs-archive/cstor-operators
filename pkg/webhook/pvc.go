@@ -20,19 +20,19 @@ import (
 	"net/http"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	"k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
-func (wh *webhook) validatePVC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
+func (wh *webhook) validatePVC(ar *v1.AdmissionReview) *v1.AdmissionResponse {
 	req := ar.Request
-	response := &v1beta1.AdmissionResponse{}
+	response := &v1.AdmissionResponse{}
 	response.Allowed = true
 	// validates only if requested operation is CREATE or DELETE
-	if req.Operation == v1beta1.Create {
+	if req.Operation == v1.Create {
 		return wh.validatePVCCreateRequest(req)
-	} else if req.Operation == v1beta1.Delete {
+	} else if req.Operation == v1.Delete {
 		return wh.validatePVCDeleteRequest(req)
 	}
 	klog.V(2).Infof("Admission wehbook for PVC module not "+
@@ -41,8 +41,8 @@ func (wh *webhook) validatePVC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionRe
 }
 
 // validatePVCDeleteRequest validates the persistentvolumeclaim(PVC) delete request
-func (wh *webhook) validatePVCDeleteRequest(req *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
-	response := &v1beta1.AdmissionResponse{}
+func (wh *webhook) validatePVCDeleteRequest(req *v1.AdmissionRequest) *v1.AdmissionResponse {
+	response := &v1.AdmissionResponse{}
 	response.Allowed = true
 
 	// ignore the Delete request of PVC if resource name is empty which
@@ -143,9 +143,9 @@ func (wh *webhook) getCstorVolumeClaims(listOptions metav1.ListOptions) (*cstor.
 }
 
 // validatePVCCreateRequest validates persistentvolumeclaim(PVC) create request
-func (wh *webhook) validatePVCCreateRequest(req *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
+func (wh *webhook) validatePVCCreateRequest(req *v1.AdmissionRequest) *v1.AdmissionResponse {
 	klog.Infof("Recieved PVC Create Request")
-	response := &v1beta1.AdmissionResponse{}
+	response := &v1.AdmissionResponse{}
 	response.Allowed = true
 	// 	var pvc corev1.PersistentVolumeClaim
 	// 	err := json.Unmarshal(req.Object.Raw, &pvc)

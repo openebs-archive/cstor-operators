@@ -25,9 +25,9 @@ import (
 	"net/http"
 
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	"k8s.io/api/admission/v1beta1"
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
-	v1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/admission/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
@@ -83,10 +83,10 @@ type Parameters struct {
 
 func init() {
 	_ = corev1.AddToScheme(runtimeScheme)
-	_ = admissionregistrationv1beta1.AddToScheme(runtimeScheme)
+	_ = admissionregistrationv1.AddToScheme(runtimeScheme)
 	// defaulting with webhooks:
 	// https://github.com/kubernetes/kubernetes/issues/57982
-	_ = v1.AddToScheme(runtimeScheme)
+	_ = appsv1.AddToScheme(runtimeScheme)
 }
 
 // New creates a new instance of a webhook. Prior to
@@ -183,9 +183,9 @@ func validationRequired(ignoredList []string, metadata *metav1.ObjectMeta) bool 
 }
 
 // validate validates the different openebs resource related operations
-func (wh *webhook) validate(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
+func (wh *webhook) validate(ar *v1.AdmissionReview) *v1.AdmissionResponse {
 	req := ar.Request
-	response := &v1beta1.AdmissionResponse{}
+	response := &v1.AdmissionResponse{}
 	response.Allowed = true
 	klog.Info("Admission webhook request received")
 	switch req.Kind.Kind {
@@ -230,11 +230,11 @@ func (wh *webhook) Serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var admissionResponse *v1beta1.AdmissionResponse
-	ar := v1beta1.AdmissionReview{}
+	var admissionResponse *v1.AdmissionResponse
+	ar := v1.AdmissionReview{}
 	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
 		klog.Errorf("Can't decode body: %v", err)
-		admissionResponse = &v1beta1.AdmissionResponse{
+		admissionResponse = &v1.AdmissionResponse{
 			Result: &metav1.Status{
 				Message: err.Error(),
 			},
@@ -245,7 +245,7 @@ func (wh *webhook) Serve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	admissionReview := v1beta1.AdmissionReview{}
+	admissionReview := v1.AdmissionReview{}
 	if admissionResponse != nil {
 		admissionReview.Response = admissionResponse
 		if ar.Request != nil {

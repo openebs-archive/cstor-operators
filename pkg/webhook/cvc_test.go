@@ -24,7 +24,7 @@ import (
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
 	"github.com/pkg/errors"
-	"k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -754,8 +754,8 @@ func TestValidateCVCUpdateRequest(t *testing.T) {
 	for name, test := range tests {
 		name, test := name, test
 		t.Run(name, func(t *testing.T) {
-			ar := &v1beta1.AdmissionRequest{
-				Operation: v1beta1.Create,
+			ar := &v1.AdmissionRequest{
+				Operation: v1.Create,
 				Object: runtime.RawExtension{
 					Raw: serialize(test.requestedObj),
 				},

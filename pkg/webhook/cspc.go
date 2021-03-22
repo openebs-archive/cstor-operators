@@ -32,7 +32,7 @@ import (
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	"github.com/openebs/api/v2/pkg/util"
 	"github.com/pkg/errors"
-	"k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog"
@@ -112,17 +112,17 @@ func (b *Builder) withCSPCName(cspcName string) *Builder {
 }
 
 // validateCSPC validates CSPC spec for Create, Update and Delete operation of the object.
-func (wh *webhook) validateCSPC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
+func (wh *webhook) validateCSPC(ar *v1.AdmissionReview) *v1.AdmissionResponse {
 	req := ar.Request
-	response := &v1beta1.AdmissionResponse{}
+	response := &v1.AdmissionResponse{}
 	// validates only if requested operation is CREATE or UPDATE
-	if req.Operation == v1beta1.Update {
+	if req.Operation == v1.Update {
 		klog.V(5).Infof("Admission webhook update request for type %s", req.Kind.Kind)
 		return wh.validateCSPCUpdateRequest(req, getCSPCObject)
-	} else if req.Operation == v1beta1.Create {
+	} else if req.Operation == v1.Create {
 		klog.V(5).Infof("Admission webhook create request for type %s", req.Kind.Kind)
 		return wh.validateCSPCCreateRequest(req)
-	} else if req.Operation == v1beta1.Delete {
+	} else if req.Operation == v1.Delete {
 		klog.V(5).Infof("Admission webhook delete request for type %s", req.Kind.Kind)
 		return wh.validateCSPCDeleteRequest(req)
 	}
@@ -131,7 +131,7 @@ func (wh *webhook) validateCSPC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionR
 }
 
 // validateCSPCCreateRequest validates CSPC create request
-func (wh *webhook) validateCSPCCreateRequest(req *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
+func (wh *webhook) validateCSPCCreateRequest(req *v1.AdmissionRequest) *v1.AdmissionResponse {
 	response := NewAdmissionResponse().SetAllowed().WithResultAsSuccess(http.StatusAccepted).AR
 	var cspc cstor.CStorPoolCluster
 	err := json.Unmarshal(req.Object.Raw, &cspc)
@@ -150,7 +150,7 @@ func (wh *webhook) validateCSPCCreateRequest(req *v1beta1.AdmissionRequest) *v1b
 
 // validateCSPCDeleteRequest validates CSPC delete request
 // if any cvrs exist on the cspc pools then deletion is invalid
-func (wh *webhook) validateCSPCDeleteRequest(req *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
+func (wh *webhook) validateCSPCDeleteRequest(req *v1.AdmissionRequest) *v1.AdmissionResponse {
 	response := NewAdmissionResponse().SetAllowed().WithResultAsSuccess(http.StatusAccepted).AR
 	cspiList, err := wh.clientset.CstorV1().CStorPoolInstances(req.Namespace).List(
 		context.TODO(),
@@ -487,7 +487,7 @@ func (poolValidator *PoolValidator) blockDeviceClaimValidation(bdcName, bdName s
 
 // validateCSPCUpdateRequest validates CSPC update request
 // ToDo: Remove repetitive code.
-func (wh *webhook) validateCSPCUpdateRequest(req *v1beta1.AdmissionRequest, getCSPC getCSPC) *v1beta1.AdmissionResponse {
+func (wh *webhook) validateCSPCUpdateRequest(req *v1.AdmissionRequest, getCSPC getCSPC) *v1.AdmissionResponse {
 	response := NewAdmissionResponse().SetAllowed().WithResultAsSuccess(http.StatusAccepted).AR
 	var cspcNew cstor.CStorPoolCluster
 	err := json.Unmarshal(req.Object.Raw, &cspcNew)

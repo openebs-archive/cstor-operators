@@ -25,7 +25,7 @@ import (
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	util "github.com/openebs/api/v2/pkg/util"
 	"github.com/pkg/errors"
-	"k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -35,12 +35,12 @@ type validateFunc func(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error
 
 type getCVC func(name, namespace string, clientset clientset.Interface) (*cstor.CStorVolumeConfig, error)
 
-func (wh *webhook) validateCVC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
+func (wh *webhook) validateCVC(ar *v1.AdmissionReview) *v1.AdmissionResponse {
 	req := ar.Request
-	response := &v1beta1.AdmissionResponse{}
+	response := &v1.AdmissionResponse{}
 	response.Allowed = true
 	// validates only if requested operation is UPDATE
-	if req.Operation == v1beta1.Update {
+	if req.Operation == v1.Update {
 		return wh.validateCVCUpdateRequest(req, getCVCObject)
 	}
 	klog.V(4).Info("Admission wehbook for CVC module not " +
@@ -48,7 +48,7 @@ func (wh *webhook) validateCVC(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionRe
 	return response
 }
 
-func (wh *webhook) validateCVCUpdateRequest(req *v1beta1.AdmissionRequest, getCVC getCVC) *v1beta1.AdmissionResponse {
+func (wh *webhook) validateCVCUpdateRequest(req *v1.AdmissionRequest, getCVC getCVC) *v1.AdmissionResponse {
 	response := NewAdmissionResponse().
 		SetAllowed().
 		WithResultAsSuccess(http.StatusAccepted).AR

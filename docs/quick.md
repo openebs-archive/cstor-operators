@@ -194,7 +194,7 @@ follwing steps:
 2.  Apply the modified CSPC YAML.
 
     ```bash
-    kubectl apply -f cstor-storage.yaml
+    kubectl apply -f cspc-single.yaml
     ```
 3. Check if the pool instances report their status as 'ONLINE'.
 
@@ -233,6 +233,7 @@ follwing steps:
    parameters:
      cas-type: cstor
      cstorPoolCluster: cstor-storage
+     # replicaCount should be <= no. of CSPI
      replicaCount: "3"
    ```
 
@@ -291,9 +292,9 @@ follwing steps:
     ```bash
     $ kubectl get cstorvolumereplica -n openebs
     NAME                                                        ALLOCATED   USED    STATUS    AGE
-    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-vn92   6K          6K      Healthy   60s
-    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-al65   6K          6K      Healthy   60s
-    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-y7pn   6K          6K      Healthy   60s
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cstor-storage-vn92   6K          6K      Healthy   60s
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cstor-storage-al65   6K          6K      Healthy   60s
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cstor-storage-y7pn   6K          6K      Healthy   60s
     ```
 
 7. Create an application and use the above created PVC.

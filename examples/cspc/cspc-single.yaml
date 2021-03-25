@@ -1,7 +1,7 @@
 apiVersion: cstor.openebs.io/v1
 kind: CStorPoolCluster
 metadata:
-  name: cspc-stripe
+  name: cstor-storage
   namespace: openebs
 spec:
   pools:

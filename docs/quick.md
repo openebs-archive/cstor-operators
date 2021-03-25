@@ -194,7 +194,7 @@ follwing steps:
 2.  Apply the modified CSPC YAML.
 
     ```bash
-    kubectl apply -f cstor-storage.yaml
+    kubectl apply -f cspc-single.yaml
     ```
 3. Check if the pool instances report their status as 'ONLINE'.
 
@@ -203,8 +203,8 @@ follwing steps:
     ```
 
     ```bash
-    NAME          HEALTHYINSTANCES   PROVISIONEDINSTANCES   DESIREDINSTANCES   AGE
-    cstor-storage 1                  1                      1                  2m2s
+    NAME            HEALTHYINSTANCES   PROVISIONEDINSTANCES   DESIREDINSTANCES   AGE
+    cstor-storage   1                  1                      1                  2m2s
 
     ```
 
@@ -213,10 +213,10 @@ follwing steps:
     ```
 
     ```bash
-    NAME               HOSTNAME           ALLOCATED   FREE     CAPACITY   STATUS   AGE
-    cstor-storage-vn92 worker1            260k        19900M   19900M     ONLINE   2m17s
-    cstor-storage-al65 worker2            260k        19900M   19900M     ONLINE   2m17s
-    cstor-storage-y7pn worker3            260k        19900M   19900M     ONLINE   2m17s
+    NAME                 HOSTNAME           ALLOCATED   FREE     CAPACITY   STATUS   AGE
+    cstor-storage-vn92   worker1            260k        19900M   19900M     ONLINE   2m17s
+    cstor-storage-al65   worker2            260k        19900M   19900M     ONLINE   2m17s
+    cstor-storage-y7pn   worker3            260k        19900M   19900M     ONLINE   2m17s
     ```
 
 4. Once your pool instances have come online, you can proceed with volume provisioning.
@@ -227,12 +227,14 @@ follwing steps:
    kind: StorageClass
    apiVersion: storage.k8s.io/v1
    metadata:
-     name: cstor-csi-stripe
+     name: cstor-csi
    provisioner: cstor.csi.openebs.io
    allowVolumeExpansion: true
    parameters:
      cas-type: cstor
+     # cstorPoolCluster should have the name of the CSPC
      cstorPoolCluster: cstor-storage
+     # replicaCount should be <= no. of CSPI
      replicaCount: "3"
    ```
 
@@ -254,7 +256,7 @@ follwing steps:
     metadata:
       name: demo-cstor-vol
     spec:
-      storageClassName: cstor-csi-stripe
+      storageClassName: cstor-csi
       accessModes:
         - ReadWriteOnce
       resources:
@@ -290,10 +292,10 @@ follwing steps:
 
     ```bash
     $ kubectl get cstorvolumereplica -n openebs
-    NAME                                                        ALLOCATED   USED    STATUS    AGE
-    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-vn92   6K          6K      Healthy   60s
-    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-al65   6K          6K      Healthy   60s
-    pvc-52d88903-0518-11ea-b887-42010a80006c-cspc-stripe-y7pn   6K          6K      Healthy   60s
+    NAME                                                          ALLOCATED   USED    STATUS    AGE
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cstor-storage-vn92   6K          6K      Healthy   60s
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cstor-storage-al65   6K          6K      Healthy   60s
+    pvc-52d88903-0518-11ea-b887-42010a80006c-cstor-storage-y7pn   6K          6K      Healthy   60s
     ```
 
 7. Create an application and use the above created PVC.

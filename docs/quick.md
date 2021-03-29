@@ -21,7 +21,7 @@ meets the following prerequisites:
 
 
 Check for existing NDM components in your openebs namespace. Execute the following command:
-```sh
+```bash
 $ kubectl -n openebs get pods -l openebs.io/component-name=ndm
 
 NAME                                                              READY   STATUS    RESTARTS   AGE
@@ -31,9 +31,16 @@ openebs-ndm-vgdnv                                                 1/1     Runnin
 ```
 
 If you have got an output as displayed above, then it is recommended that you proceed with installation using the [CStor operators helm chart](https://openebs.github.io/cstor-operators). You will have to exclude `openebs-ndm` charts from the installation. Sample command:
-```sh
+```bash
 helm install openebs-cstor openebs-cstor/cstor -n openebs --set openebsNDM.enabled=false
 ```
+<details>
+  <summary>Click here if you're using MicroK8s.</summary>
+
+  ```bash
+  microk8s helm3 install openebs-cstor openebs-cstor/cstor -n openebs --set-string csiNode.kubeletDir="/var/snap/microk8s/common/var/lib/kubelet/" --set openebsNDM.enabled=false
+  ```
+</details>
 
 If you did not get any meaningful output (as above), then you do not have NDM components installed. Proceed with any one of the installation options below.
 
@@ -41,19 +48,35 @@ If you did not get any meaningful output (as above), then you do not have NDM co
  
 Install CStor operators and CSI driver components using the [CStor Operators helm charts](https://openebs.github.io/cstor-operators). Sample command:
 
-```sh
+```bash
 helm install openebs-cstor openebs-cstor/cstor -n openebs --create-namespace
 ```
+<details>
+  <summary>Click here if you're using MicroK8s.</summary>
 
-Visit openebs.github.io/cstor-operators for detailed instructions.
+  ```bash
+  microk8s helm3 install openebs-cstor openebs-cstor/cstor -n openebs --create-namespace --set-string csiNode.kubeletDir="/var/snap/microk8s/common/var/lib/kubelet/"
+  ```
+</details>
+
+
+[Click here](https://github.com/openebs/cstor-operators/blob/master/deploy/helm/charts/README.md) for detailed instructions.
 
 ### Using Operator:
 
 Install the latest release using CStor Operator yaml.
 
-```
+```bash
 kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
 ```
+<details>
+  <summary>Click here if you're using MicroK8s.</summary>
+
+  ```bash
+  microk8s kubectl apply -f https://openebs.github.io/charts/microk8s-cstor-operator.yaml
+  ```
+</details>
+
 
 ### Local Development:
 
@@ -136,7 +159,7 @@ follwing steps:
    In this guide, worker1 is picked. Modify the CSPC yaml to use this worker.
    (Note: Use the value from labels kubernetes.io/hostname=worker1 as this label value and node name could be different in some platforms)
 
-   ```yml
+   ```yaml
    kubernetes.io/hostname: "worker1"
    ```
 
@@ -148,12 +171,12 @@ follwing steps:
    
    ```bash
    NAME                                           NODENAME           SIZE          CLAIMSTATE   STATUS   AGE
-   blockdevice-01afcdbe3a9c9e3b281c7133b2af1b68    worker3            21474836480   Unclaimed    Active   2m10s
-   blockdevice-10ad9f484c299597ed1e126d7b857967    worker1            21474836480   Unclaimed    Active   2m17s
-   blockdevice-3ec130dc1aa932eb4c5af1db4d73ea1b    worker2            21474836480   Unclaimed    Active   2m12s
+   blockdevice-01afcdbe3a9c9e3b281c7133b2af1b68   worker3            21474836480   Unclaimed    Active   2m10s
+   blockdevice-10ad9f484c299597ed1e126d7b857967   worker1            21474836480   Unclaimed    Active   2m17s
+   blockdevice-3ec130dc1aa932eb4c5af1db4d73ea1b   worker2            21474836480   Unclaimed    Active   2m12s
    ```
     
-   ```yml
+   ```yaml
    - blockDeviceName: "blockdevice-10ad9f484c299597ed1e126d7b857967"
    ```
    

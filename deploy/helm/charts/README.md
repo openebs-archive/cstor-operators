@@ -31,8 +31,15 @@ Please visit the [link](https://openebs.github.io/cstor-operators) for install i
 
 ```console
 # Helm
-$ helm install [RELEASE_NAME] openebs-cstor/cstor
+$ helm install [RELEASE_NAME] openebs-cstor/cstor --namespace [NAMESPACE]
 ```
+<details>
+  <summary>Click here if you're using MicroK8s.</summary>
+
+  ```console
+  microk8s helm3 install [RELEASE_NAME] openebs-cstor/cstor --namespace [NAMESPACE] --set-string csiNode.kubeletDir="/var/snap/microk8s/common/var/lib/kubelet/"
+  ```
+</details>
 
 _See [configuration](#configuration) below._
 
@@ -55,7 +62,7 @@ _See [helm dependency](https://helm.sh/docs/helm/helm_dependency/) for command d
 
 ```console
 # Helm
-$ helm uninstall [RELEASE_NAME]
+$ helm uninstall [RELEASE_NAME] --namespace [NAMESPACE]
 ```
 
 This removes all the Kubernetes components associated with the chart and deletes the release.
@@ -66,7 +73,7 @@ _See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command doc
 
 ```console
 # Helm
-$ helm upgrade [RELEASE_NAME] [CHART] --install
+$ helm upgrade [RELEASE_NAME] [CHART] --install --namespace [NAMESPACE]
 ```
 
 ## Configuration
@@ -77,12 +84,22 @@ You can modify different parameters by specifying the desired value in the `helm
 
 In the following sample command we modify `csiNode.nodeSelector` from the cstor chart and `ndm.nodeSelector` from the openebs-ndm chart to only schedule pods on nodes labelled with `openebs.io/data-plane=true`. We also enable the 'Use OS-disk' feature gate using the `featureGates.UseOSDisk.enabled` parameter from the openebs-ndm chart.
 
-```bash
+
+```console
 helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-namespace \
 	--set-string csiNode.nodeSelector."openebs\.io/data-plane"=true \
 	--set-string openebs-ndm.ndm.nodeSelector."openebs\.io/data-plane"=true \
 	--set openebs-ndm.featureGates.UseOSDisk.enabled=true
 ```
+<details>
+  <summary>Click here if you're using MicroK8s.</summary>
+
+  If you are using MicroK8s, it is necessary to add the following flag:
+
+  ```console
+  --set-string csiNode.kubeletDir="/var/snap/microk8s/common/var/lib/kubelet/"
+  ```
+</details>
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|

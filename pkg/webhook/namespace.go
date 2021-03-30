@@ -20,14 +20,14 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
-func (wh *webhook) validateNamespace(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
+func (wh *webhook) validateNamespace(ar *v1.AdmissionReview) *v1.AdmissionResponse {
 	req := ar.Request
-	response := &v1beta1.AdmissionResponse{}
+	response := &v1.AdmissionResponse{}
 	response.Allowed = true
 	openebsNamespace, err := getOpenebsNamespace()
 	if err != nil {
@@ -38,7 +38,7 @@ func (wh *webhook) validateNamespace(ar *v1beta1.AdmissionReview) *v1beta1.Admis
 		return response
 	}
 	// validates only if requested operation is DELETE
-	if openebsNamespace == req.Name && req.Operation == v1beta1.Delete {
+	if openebsNamespace == req.Name && req.Operation == v1.Delete {
 		return wh.validateNamespaceDeleteRequest(req)
 	}
 	klog.V(2).Info("Admission wehbook for Namespace module not " +
@@ -46,8 +46,8 @@ func (wh *webhook) validateNamespace(ar *v1beta1.AdmissionReview) *v1beta1.Admis
 	return response
 }
 
-func (wh *webhook) validateNamespaceDeleteRequest(req *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
-	response := &v1beta1.AdmissionResponse{}
+func (wh *webhook) validateNamespaceDeleteRequest(req *v1.AdmissionRequest) *v1.AdmissionResponse {
+	response := &v1.AdmissionResponse{}
 	response.Allowed = true
 
 	// ignore the Delete request of Namespace if resource name is empty

@@ -28,7 +28,7 @@ import (
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	openebsapifake "github.com/openebs/api/v2/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1/fake"
 	"github.com/pkg/errors"
-	"k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -702,8 +702,8 @@ func TestValidateCSPCUpdateRequest(t *testing.T) {
 	for name, test := range tests {
 		name, test := name, test
 		t.Run(name, func(t *testing.T) {
-			ar := &v1beta1.AdmissionRequest{
-				Operation: v1beta1.Create,
+			ar := &v1.AdmissionRequest{
+				Operation: v1.Create,
 				Object: runtime.RawExtension{
 					Raw: serialize(test.requestedObj),
 				},
@@ -1006,8 +1006,8 @@ func TestBlockDeviceReplacement(t *testing.T) {
 	for name, test := range tests {
 		name, test := name, test
 		t.Run(name, func(t *testing.T) {
-			ar := &v1beta1.AdmissionRequest{
-				Operation: v1beta1.Create,
+			ar := &v1.AdmissionRequest{
+				Operation: v1.Create,
 				Object: runtime.RawExtension{
 					Raw: serialize(test.requestedObj),
 				},
@@ -1405,8 +1405,8 @@ func TestCSPCScaleDown(t *testing.T) {
 	for name, test := range tests {
 		name, test := name, test
 		t.Run(name, func(t *testing.T) {
-			ar := &v1beta1.AdmissionRequest{
-				Operation: v1beta1.Create,
+			ar := &v1.AdmissionRequest{
+				Operation: v1.Create,
 				Object: runtime.RawExtension{
 					Raw: serialize(test.requestedObj),
 				},
@@ -2025,12 +2025,12 @@ func TestCSPCProvisioning(t *testing.T) {
 			// Since we are not claiming the blockdevices so
 			// we can reuse the blockdevices
 			f.fakeBlockDeviceCreator(90, 3, test.fsType)
-			ar := &v1beta1.AdmissionReview{
-				Request: &v1beta1.AdmissionRequest{
+			ar := &v1.AdmissionReview{
+				Request: &v1.AdmissionRequest{
 					Kind: metav1.GroupVersionKind{
 						Kind: "CStorPoolCluster",
 					},
-					Operation: v1beta1.Create,
+					Operation: v1.Create,
 					Object: runtime.RawExtension{
 						Raw: serialize(test.requestedObj),
 					},

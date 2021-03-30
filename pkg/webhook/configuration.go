@@ -26,8 +26,7 @@ import (
 	"github.com/openebs/api/v2/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
-	"k8s.io/api/admissionregistration/v1beta1"
-	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
+	admissionregistration "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
@@ -75,7 +74,7 @@ var (
 	// Fail means that an error calling the webhook causes the admission to fail.
 	Fail = admissionregistration.Fail
 	// SideEffectClassNone means that calling the webhook will have no side effects.
-	SideEffectClassNone = v1beta1.SideEffectClassNone
+	SideEffectClassNone = admissionregistration.SideEffectClassNone
 	// WebhookFailurePolicye represents failure policy env name to make it configurable
 	// via ENV
 	WebhookFailurePolicy = "ADMISSION_WEBHOOK_FAILURE_POLICY"
@@ -85,21 +84,21 @@ var (
 	transformConfig = []transformConfigFunc{
 		addNSWithDeleteRule,
 	}
-	cvcRuleWithOperations = v1beta1.RuleWithOperations{
-		Operations: []v1beta1.OperationType{
-			v1beta1.Update,
+	cvcRuleWithOperations = admissionregistration.RuleWithOperations{
+		Operations: []admissionregistration.OperationType{
+			admissionregistration.Update,
 		},
-		Rule: v1beta1.Rule{
+		Rule: admissionregistration.Rule{
 			APIGroups:   []string{"cstor.openebs.io"},
 			APIVersions: []string{"v1"},
 			Resources:   []string{"cstorvolumeconfigs"},
 		},
 	}
-	nsRuleWithOperations = v1beta1.RuleWithOperations{
-		Operations: []v1beta1.OperationType{
-			v1beta1.Delete,
+	nsRuleWithOperations = admissionregistration.RuleWithOperations{
+		Operations: []admissionregistration.OperationType{
+			admissionregistration.Delete,
 		},
-		Rule: v1beta1.Rule{
+		Rule: admissionregistration.Rule{
 			APIGroups:   []string{"*"},
 			APIVersions: []string{"*"},
 			Resources:   []string{"namespaces"},
@@ -250,7 +249,7 @@ func (c *client) createAdmissionValidatingConfig(
 		Webhooks: []admissionregistration.ValidatingWebhook{webhookHandler},
 	}
 
-	_, err = c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
+	_, err = c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().
 		Create(context.TODO(), validator, metav1.CreateOptions{})
 
 	return err
@@ -319,7 +318,7 @@ func GetValidatorWebhook(
 	validator string, kubeClient kubernetes.Interface,
 ) (*admissionregistration.ValidatingWebhookConfiguration, error) {
 
-	return kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(context.TODO(), validator, metav1.GetOptions{})
+	return kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(context.TODO(), validator, metav1.GetOptions{})
 }
 
 // StrPtr convert a string to a pointer
@@ -439,7 +438,7 @@ func getOpenebsNamespace() (string, error) {
 	return ns, nil
 }
 
-func addNSWithDeleteRule(config *v1beta1.ValidatingWebhookConfiguration) {
+func addNSWithDeleteRule(config *admissionregistration.ValidatingWebhookConfiguration) {
 	if IsCurrentLessThanNewVersion(config.Labels[string(types.OpenEBSVersionLabelKey)], "2.5.0") {
 		config.Webhooks[0].Rules = append(config.Webhooks[0].Rules, nsRuleWithOperations)
 	}
@@ -527,7 +526,7 @@ func (c *client) preUpgrade(openebsNamespace string) error {
 			}
 		}
 	}
-	webhookConfigList, err := c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
+	webhookConfigList, err := c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().
 		List(context.TODO(), metav1.ListOptions{LabelSelector: webhookLabel})
 	if err != nil {
 		return fmt.Errorf("failed to list older webhook config: %s", err.Error())
@@ -540,7 +539,7 @@ func (c *client) preUpgrade(openebsNamespace string) error {
 				t(&newConfig)
 			}
 			newConfig.Labels[types.OpenEBSVersionLabelKey] = version.Current()
-			_, err = c.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().
+			_, err = c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().
 				Update(context.TODO(), &newConfig, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to update older webhook config %s: %s", config.Name, err.Error())

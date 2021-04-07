@@ -84,11 +84,11 @@ CSTOR_BASE_IMAGE_AMD64= ${IMAGE_ORG}/cstor-base-amd64:${BASE_TAG}
 export CSTOR_BASE_IMAGE_AMD64
 
 # Specify the name of the docker repo for amd64
-CSPC_OPERATOR_REPO_NAME=cspc-operator-amd64
-CVC_OPERATOR_REPO_NAME=cvc-operator-amd64
-POOL_MANAGER_REPO_NAME=cstor-pool-manager-amd64
-VOLUME_MANAGER_REPO_NAME=cstor-volume-manager-amd64
-CSTOR_WEBHOOK_REPO_NAME=cstor-webhook-amd64
+CSPC_OPERATOR_REPO_NAME=cspc-operator
+CVC_OPERATOR_REPO_NAME=cvc-operator
+POOL_MANAGER_REPO_NAME=cstor-pool-manager
+VOLUME_MANAGER_REPO_NAME=cstor-volume-manager
+CSTOR_WEBHOOK_REPO_NAME=cstor-webhook
 
 # Specify the directory location of main package after bin directory
 # e.g. bin/{DIRECTORY_NAME_OF_APP}

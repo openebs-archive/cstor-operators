@@ -226,10 +226,10 @@ func (c *client) createAdmissionValidatingConfig(
 			},
 			CABundle: signingCert,
 		},
-		SideEffects: &SideEffectClassNone,
-		// AdmissionReviewVersions: []string{"v1"},
-		TimeoutSeconds: &five,
-		FailurePolicy:  failurePolicy(),
+		SideEffects:             &SideEffectClassNone,
+		AdmissionReviewVersions: []string{"v1"},
+		TimeoutSeconds:          &five,
+		FailurePolicy:           failurePolicy(),
 	}
 
 	validator := &admissionregistration.ValidatingWebhookConfiguration{
@@ -534,15 +534,22 @@ func (c *client) preUpgrade(openebsNamespace string) error {
 
 	for _, config := range webhookConfigList.Items {
 		if config.Labels[types.OpenEBSVersionLabelKey] != version.Current() {
-			newConfig := config
-			for _, t := range transformConfig {
-				t(&newConfig)
-			}
-			newConfig.Labels[types.OpenEBSVersionLabelKey] = version.Current()
-			_, err = c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().
-				Update(context.TODO(), &newConfig, metav1.UpdateOptions{})
-			if err != nil {
-				return fmt.Errorf("failed to update older webhook config %s: %s", config.Name, err.Error())
+			if IsCurrentLessThanNewVersion(config.Labels[string(types.OpenEBSVersionLabelKey)], "2.8.0") {
+				err = c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Delete(context.TODO(), config.Name, metav1.DeleteOptions{})
+				if err != nil {
+					return fmt.Errorf("failed to delete older webhook config %s: %s", config.Name, err.Error())
+				}
+			} else {
+				newConfig := config
+				for _, t := range transformConfig {
+					t(&newConfig)
+				}
+				newConfig.Labels[types.OpenEBSVersionLabelKey] = version.Current()
+				_, err = c.kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().
+					Update(context.TODO(), &newConfig, metav1.UpdateOptions{})
+				if err != nil {
+					return fmt.Errorf("failed to update older webhook config %s: %s", config.Name, err.Error())
+				}
 			}
 		}
 	}

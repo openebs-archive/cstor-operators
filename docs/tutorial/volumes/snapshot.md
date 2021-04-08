@@ -52,7 +52,7 @@ metadata:
     snapshot.storage.kubernetes.io/is-default-class: "true"
 driver: cstor.csi.openebs.io
 deletionPolicy: Delete
-
+```
 
 ### Create a Snapshot of a Volume
 

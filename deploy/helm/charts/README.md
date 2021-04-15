@@ -109,7 +109,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | admissionServer.image.pullPolicy | string | `"IfNotPresent"` | Admission webhook image pull policy |
 | admissionServer.image.registry | string | `nil` | Admission webhook image registry |
 | admissionServer.image.repository | string | `"openebs/cstor-webhook"` | Admission webhook image repo |
-| admissionServer.image.tag | string | `"2.7.0"` | Admission webhook image tag |
+| admissionServer.image.tag | string | `"2.8.0"` | Admission webhook image tag |
 | admissionServer.nodeSelector | object | `{}` | Admission webhook pod node selector |
 | admissionServer.podAnnotations | object | `{}` |  Admission webhook pod annotations |
 | admissionServer.resources | object | `{}` | Admission webhook pod resources |
@@ -166,19 +166,19 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cspcOperator.componentName | string | `"cspc-operator"` | CSPC operator component name |
 | cspcOperator.cstorPool.image.registry | string | `nil` | CStor pool image registry |
 | cspcOperator.cstorPool.image.repository | string | `"openebs/cstor-pool"` | CStor pool image repository|
-| cspcOperator.cstorPool.image.tag | string | `"2.7.0"` | CStor pool image tag |
+| cspcOperator.cstorPool.image.tag | string | `"2.8.0"` | CStor pool image tag |
 | cspcOperator.cstorPoolExporter.image.registry | string | `nil` | CStor pool exporter image registry |
 | cspcOperator.cstorPoolExporter.image.repository | string | `"openebs/m-exporter"` | CStor pool exporter image repositry |
-| cspcOperator.cstorPoolExporter.image.tag | string | `"2.7.0"` | CStor pool exporter image tag |
+| cspcOperator.cstorPoolExporter.image.tag | string | `"2.8.0"` | CStor pool exporter image tag |
 | cspcOperator.image.pullPolicy | string | `"IfNotPresent"` | CSPC operator image pull policy |
 | cspcOperator.image.registry | string | `nil` | CSPC operator image registry |
 | cspcOperator.image.repository | string | `"openebs/cspc-operator"` | CSPC operator image repository |
-| cspcOperator.image.tag | string | `"2.7.0"` |  CSPC operator image tag |
+| cspcOperator.image.tag | string | `"2.8.0"` |  CSPC operator image tag |
 | cspcOperator.nodeSelector | object | `{}` |  CSPC operator pod nodeSelector|
 | cspcOperator.podAnnotations | object | `{}` | CSPC operator pod annotations |
 | cspcOperator.poolManager.image.registry | string | `nil` | CStor Pool Manager image registry  |
 | cspcOperator.poolManager.image.repository | string | `"openebs/cstor-pool-manager"` | CStor Pool Manager image repository |
-| cspcOperator.poolManager.image.tag | string | `"2.7.0"` | CStor Pool Manager image tag |
+| cspcOperator.poolManager.image.tag | string | `"2.8.0"` | CStor Pool Manager image tag |
 | cspcOperator.resources | object | `{}` | CSPC operator pod resources |
 | cspcOperator.resyncInterval | string | `"30"` | CSPC operator resync interval |
 | cspcOperator.securityContext | object | `{}` | CSPC operator security context |
@@ -186,7 +186,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cstorCSIPlugin.image.pullPolicy | string | `"IfNotPresent"` | CStor CSI driver image pull policy |
 | cstorCSIPlugin.image.registry | string | `nil` | CStor CSI driver image registry |
 | cstorCSIPlugin.image.repository | string | `"openebs/cstor-csi-driver"` |  CStor CSI driver image repository |
-| cstorCSIPlugin.image.tag | string | `"2.7.0"` | CStor CSI driver image tag |
+| cstorCSIPlugin.image.tag | string | `"2.8.0"` | CStor CSI driver image tag |
 | cstorCSIPlugin.name | string | `"cstor-csi-plugin"` | CStor CSI driver container name |
 | cstorCSIPlugin.remount | string | `"true"` | Enable/disable auto-remount when volume recovers from read-only state |
 | cvcOperator.annotations | object | `{}` | CVC operator annotations |
@@ -194,7 +194,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cvcOperator.image.pullPolicy | string | `"IfNotPresent"` | CVC operator image pull policy  |
 | cvcOperator.image.registry | string | `nil` | CVC operator image registry |
 | cvcOperator.image.repository | string | `"openebs/cvc-operator"` | CVC operator image repository |
-| cvcOperator.image.tag | string | `"2.7.0"` | CVC operator image tag |
+| cvcOperator.image.tag | string | `"2.8.0"` | CVC operator image tag |
 | cvcOperator.nodeSelector | object | `{}` | CVC operator pod nodeSelector |
 | cvcOperator.podAnnotations | object | `{}` | CVC operator pod annotations |
 | cvcOperator.resources | object | `{}` |CVC operator pod resources  |
@@ -202,14 +202,14 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cvcOperator.securityContext | object | `{}` | CVC operator security context |
 | cvcOperator.target.image.registry | string | `nil` | Volume Target image registry  |
 | cvcOperator.target.image.repository | string | `"openebs/cstor-istgt"` | Volume Target image repository |
-| cvcOperator.target.image.tag | string | `"2.7.0"` | Volume Target image tag |
+| cvcOperator.target.image.tag | string | `"2.8.0"` | Volume Target image tag |
 | cvcOperator.tolerations | list | `[]` | CVC operator pod tolerations |
 | cvcOperator.volumeExporter.image.registry | string | `nil` | Volume exporter image registry |
 | cvcOperator.volumeExporter.image.repository | string | `"openebs/m-exporter"` | Volume exporter image repository |
-| cvcOperator.volumeExporter.image.tag | string | `"2.7.0"` | Volume exporter image tag |
+| cvcOperator.volumeExporter.image.tag | string | `"2.8.0"` | Volume exporter image tag |
 | cvcOperator.volumeMgmt.image.registry | string | `nil` | Volume mgmt image registry |
 | cvcOperator.volumeMgmt.image.repository | string | `"openebs/cstor-volume-manager"` | Volume mgmt image repository |
-| cvcOperator.volumeMgmt.image.tag | string | `"2.7.0"` |  Volume mgmt image tag|
+| cvcOperator.volumeMgmt.image.tag | string | `"2.8.0"` |  Volume mgmt image tag|
 | imagePullSecrets | string | `nil` | Image registry pull secrets |
 | openebsNDM.enabled | bool | `true` | Enable OpenEBS NDM dependency |
 | openebs-ndm.featureGates.APIService.enabled | bool | `true` | Enable 'API Service' feature gate for NDM |
@@ -230,7 +230,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | openebs-ndm.ndmOperator.image.repository | string | `openebs/node-disk-operator` | Image repository for NDM operator |
 | rbac.create | bool | `true` | Enable RBAC |
 | rbac.pspEnabled | bool | `false` | Enable PodSecurityPolicy |
-| release.version | string | `"2.7.0"` | Openebs CStor release version |
+| release.version | string | `"2.8.0"` | Openebs CStor release version |
 | serviceAccount.annotations | object | `{}` | Service Account annotations |
 | serviceAccount.csiController.create | bool | `true` | Enable CSI Controller ServiceAccount |
 | serviceAccount.csiController.name | string | `"openebs-cstor-csi-controller-sa"` | CSI Controller ServiceAccount name |

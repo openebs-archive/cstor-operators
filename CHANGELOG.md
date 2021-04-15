@@ -1,3 +1,24 @@
+v2.8.0 / 2021-03-14
+========================
+* fix(webhook): fix admission review response apis ([#275](https://github.com/openebs/cstor-operators/pull/275),[@prateekpandey14](https://github.com/prateekpandey14))
+* fix(webhook): populate admissionReviewVersions as a required value ([#273](https://github.com/openebs/cstor-operators/pull/267),[@prateekpandey14](https://github.com/prateekpandey14))
+* chore(k8s): updated csi driver version to v1 ([#270](https://github.com/openebs/cstor-operators/pull/270) ([shubham14bajpai](https://github.com/shubham14bajpai))
+* refact(webhook): use v1 admission apis for webhook specific configs ([#267](https://github.com/openebs/cstor-operators/pull/267),[@prateekpandey14](https://github.com/prateekpandey14))
+* chore(docs): Update cStor quickstart with multi-pool example ([#263](https://github.com/openebs/cstor-operators/pull/263),[@niladrih](https://github.com/niladrih))
+
+v2.8.0-RC2 / 2021-04-12
+========================
+
+
+v2.8.0-RC1 / 2021-04-07
+========================
+* fix(webhook): fix admission review response apis ([#275](https://github.com/openebs/cstor-operators/pull/275),[@prateekpandey14](https://github.com/prateekpandey14))
+* fix(webhook): populate admissionReviewVersions as a required value ([#273](https://github.com/openebs/cstor-operators/pull/267),[@prateekpandey14](https://github.com/prateekpandey14))
+* chore(k8s): updated csi driver version to v1 ([#270](https://github.com/openebs/cstor-operators/pull/270) ([shubham14bajpai](https://github.com/shubham14bajpai))
+* refact(webhook): use v1 admission apis for webhook specific configs ([#267](https://github.com/openebs/cstor-operators/pull/267),[@prateekpandey14](https://github.com/prateekpandey14))
+* chore(docs): Update cStor quickstart with multi-pool example ([#263](https://github.com/openebs/cstor-operators/pull/263),[@niladrih](https://github.com/niladrih))
+
+
 v2.7.0 / 2021-03-11
 ========================
 * refact(deps): bump k8s and client-go deps to version v0.20.2 ([#257](https://github.com/openebs/cstor-operators/pull/257),[@prateekpandey14](https://github.com/prateekpandey14))

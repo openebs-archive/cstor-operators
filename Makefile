@@ -160,7 +160,7 @@ pool-manager-image:
 	@echo "----------------------------"
 	@PNAME=${POOL_MANAGER} CTLNAME=${POOL_MANAGER} sh -c "'$(PWD)/build/build.sh'"
 	@cp bin/${POOL_MANAGER}/${POOL_MANAGER} build/pool-manager/
-	@cd build/${POOL_MANAGER} && sudo docker build -t ${IMAGE_ORG}/${POOL_MANAGER_REPO_NAME}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE_AMD64} ${DBUILD_ARGS} . --no-cache
+	@cd build/${POOL_MANAGER} && sudo docker build -t ${IMAGE_ORG}/${POOL_MANAGER_REPO_NAME}:${IMAGE_TAG} --build-arg BASE_IMAGE=${CSTOR_BASE_IMAGE} ${DBUILD_ARGS} . --no-cache
 	@rm build/${POOL_MANAGER}/${POOL_MANAGER}
 
 .PHONY: cstor-webhook-image

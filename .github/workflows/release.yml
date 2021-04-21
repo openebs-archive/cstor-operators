@@ -260,6 +260,7 @@ jobs:
             DBUILD_REPO_URL=https://github.com/openebs/cstor-operators
             DBUILD_SITE_URL=https://openebs.io
             RELEASE_TAG=${{ env.RELEASE_TAG }}
+            BASE_IMAGE=${{ env.IMAGE_ORG }}/cstor-base:${{ env.RELEASE_TAG }}
 
   volume-manager:
     runs-on: ubuntu-latest

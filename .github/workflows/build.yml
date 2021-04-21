@@ -354,6 +354,7 @@ jobs:
             DBUILD_REPO_URL=https://github.com/openebs/cspc-operators
             DBUILD_SITE_URL=https://openebs.io
             BRANCH=${{ env.BRANCH }}
+            BASE_IMAGE=${{ env.IMAGE_ORG }}/cstor-base:${{ env.TAG }}
   
   volume-manager:
     runs-on: ubuntu-latest

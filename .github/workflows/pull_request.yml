@@ -125,6 +125,8 @@ jobs:
           platforms: linux/amd64, linux/arm64
           tags: |
             openebs/cstor-pool-manager:ci
+          build-args: |
+            BASE_IMAGE=openebs/cstor-base:ci
 
   volume-manager:
     runs-on: ubuntu-latest

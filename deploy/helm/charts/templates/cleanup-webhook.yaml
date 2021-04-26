@@ -27,7 +27,6 @@ spec:
           {{- /* bitnami maintains an image for all k8s versions */}}
           {{- /* see: https://hub.docker.com/r/bitnami/kubectl */}}
           image: {{ printf "%s/%s:%s.%s" "bitnami" "kubectl" .Capabilities.KubeVersion.Major $kubeMinor }}
-          imagePullPolicy: "{{ .Values.hyperkubeImage.pullPolicy }}"
           command:
           - /bin/sh
           - -c

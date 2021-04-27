@@ -232,10 +232,3 @@ analytics:
   enabled: true
   # Specify in hours the duration after which a ping event needs to be sent.
   pingInterval: "24h"
-
-# this is to cleanup the validatingwebhook after deletion of the charts
-# via a pre-delete webhook job
-hyperkubeImage:
-  repository: "k8s.gcr.io/hyperkube"
-  tag: "v1.12.1"
-  pullPolicy: "IfNotPresent"

@@ -23,7 +23,6 @@ on:
 jobs:  
   cspc-operator:
     runs-on: ubuntu-latest
-    needs: ['e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -103,7 +102,6 @@ jobs:
 
   cvc-operator:
     runs-on: ubuntu-latest
-    needs: ['e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -183,7 +181,6 @@ jobs:
 
   pool-manager:
     runs-on: ubuntu-latest
-    needs: ['e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -264,7 +261,6 @@ jobs:
 
   volume-manager:
     runs-on: ubuntu-latest
-    needs: ['e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -344,7 +340,6 @@ jobs:
 
   cstor-webhook:
     runs-on: ubuntu-latest
-    needs: ['e2e-tests']
     steps:
       - name: Checkout
         uses: actions/checkout@v2

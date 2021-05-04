@@ -84,11 +84,6 @@ func (f *fixture) expectListCSPIAction(cspc *cstor.CStorPoolCluster) {
 	f.actions = append(f.actions, action)
 }
 
-func (f *fixture) expectGetBDAction(cspc *cstor.CStorPoolCluster, bdName string) {
-	action := core.NewGetAction(schema.GroupVersionResource{Resource: "blockdevices"}, cspc.Namespace, bdName)
-	f.actions = append(f.actions, action)
-}
-
 func (f *fixture) FakeDiskCreator(totalDisk, totalNode int) {
 	// Create some fake block device objects over nodes.
 	var key, diskLabel string

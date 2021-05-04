@@ -49,7 +49,6 @@ var (
 // Command line flags
 var (
 	kubeconfig              = flag.String("kubeconfig", "", "Absolute path to the kubeconfig file. Required only when running out of cluster.")
-	resyncPeriod            = flag.Duration("resync-period", 60*time.Second, "Resync interval of the controller.")
 	leaderElection          = flag.Bool("leader-election", false, "Enables leader election.")
 	leaderElectionNamespace = flag.String("leader-election-namespace", "", "The namespace where the leader election resource exists. Defaults to the pod namespace if not set.")
 	bindAddr                = flag.String("bind", "", "IP Address to bind for CVC-Operator Server")
@@ -57,8 +56,6 @@ var (
 
 // ServerOptions holds information to start the CVC server
 type ServerOptions struct {
-	// Address on which CVC server will serve the requests
-	bindAddress string
 	// httpServer holds the CVC Server configurations
 	httpServer *cvcserver.HTTPServer
 }

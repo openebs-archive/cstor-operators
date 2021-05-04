@@ -34,7 +34,6 @@ import (
 )
 
 var (
-	masterURL  string
 	kubeconfig string
 )
 

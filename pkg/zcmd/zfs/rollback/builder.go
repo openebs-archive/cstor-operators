@@ -17,7 +17,6 @@ limitations under the License.
 package vrollback
 
 import (
-	"fmt"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -123,18 +122,18 @@ func (v *VolumeRollback) Build() (*VolumeRollback, error) {
 	var c strings.Builder
 	v = v.Validate()
 	v.appendCommand(&c, bin.ZFS)
-	v.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	v.appendCommand(&c, " "+Operation+" ")
 
 	if IsDestroySet()(v) {
-		v.appendCommand(&c, fmt.Sprintf(" -R "))
+		v.appendCommand(&c, " -R ")
 		if IsForceUnmountSet()(v) {
-			v.appendCommand(&c, fmt.Sprintf(" -f "))
+			v.appendCommand(&c, " -f ")
 		}
 
 	}
 
 	if IsDestroySnapSet()(v) {
-		v.appendCommand(&c, fmt.Sprintf(" -r "))
+		v.appendCommand(&c, " -r ")
 	}
 
 	v.appendCommand(&c, v.Snapshot)

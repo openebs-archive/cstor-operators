@@ -17,7 +17,6 @@ limitations under the License.
 package poffline
 
 import (
-	"fmt"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -137,17 +136,17 @@ func (p *PoolOffline) Build() (*PoolOffline, error) {
 	var c strings.Builder
 	p = p.Validate()
 	p.appendCommand(&c, bin.ZPOOL)
-	p.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	p.appendCommand(&c, " "+Operation+" ")
 
 	if IsTemporarySet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -t "))
+		p.appendCommand(&c, " -t ")
 	}
 
-	p.appendCommand(&c, fmt.Sprintf(" %s ", p.Pool))
+	p.appendCommand(&c, " "+p.Pool+" ")
 
 	if IsDevicelistSet()(p) {
 		for _, d := range p.Devicelist {
-			p.appendCommand(&c, fmt.Sprintf(" %s ", d))
+			p.appendCommand(&c, " "+d+" ")
 		}
 	}
 	p.Command = c.String()

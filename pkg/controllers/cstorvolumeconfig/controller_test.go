@@ -71,7 +71,6 @@ type fixture struct {
 
 	// Actions expected to happen on the client. Objects from here are also
 	// preloaded into NewSimpleFake.
-	actions        []core.Action
 	k8sObjects     []runtime.Object
 	openebsObjects []runtime.Object
 }

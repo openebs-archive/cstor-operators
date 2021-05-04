@@ -103,11 +103,6 @@ func (f *fixture) SetFakeClient() {
 	f.openebsClient = openebsFakeClientset.NewSimpleClientset(f.openebsObjects...)
 }
 
-func (f *fixture) expectUpdateCVCAction(cvc *apis.CStorVolumeConfig) {
-	action := core.NewUpdateAction(schema.GroupVersionResource{Resource: "cstorvolumeconfigs"}, cvc.Namespace, cvc)
-	f.actions = append(f.actions, action)
-}
-
 func (f *fixture) expectListCVRAction(cvc *apis.CStorVolumeConfig) {
 	action := core.NewListAction(schema.GroupVersionResource{Resource: "cstorvolumereplicas"},
 		schema.GroupVersionKind{Kind: "cstorvolumereplicas"}, cvc.Namespace, metav1.ListOptions{})

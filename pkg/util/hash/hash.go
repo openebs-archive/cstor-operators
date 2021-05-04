@@ -17,7 +17,7 @@ limitations under the License.
 package hash
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -35,7 +35,7 @@ func Hash(obj interface{}) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to convert the object to json encoded format")
 	}
-	hashBytes := md5.Sum(jsonEncodedValues)
+	hashBytes := sha256.Sum256(jsonEncodedValues)
 	return hex.EncodeToString(hashBytes[:]), nil
 }
 

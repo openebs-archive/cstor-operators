@@ -17,7 +17,6 @@ limitations under the License.
 package pexport
 
 import (
-	"fmt"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -128,14 +127,14 @@ func (p *PoolExport) Build() (*PoolExport, error) {
 	var c strings.Builder
 	p = p.Validate()
 	p.appendCommand(&c, bin.ZPOOL)
-	p.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	p.appendCommand(&c, " "+Operation+" ")
 
 	if IsForcefullySet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -f "))
+		p.appendCommand(&c, " -f ")
 	}
 
 	for _, i := range p.PoolList {
-		p.appendCommand(&c, fmt.Sprintf(" %s ", i))
+		p.appendCommand(&c, " "+i+" ")
 	}
 
 	p.Command = c.String()

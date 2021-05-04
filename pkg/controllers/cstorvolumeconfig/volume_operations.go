@@ -18,8 +18,8 @@ package cstorvolumeconfig
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 

@@ -17,8 +17,8 @@ limitations under the License.
 package zpool
 
 import (
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 

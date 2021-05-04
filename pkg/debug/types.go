@@ -17,7 +17,7 @@ limitations under the License.
 package debug
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"net/http"
 	"net/url"
 	"time"

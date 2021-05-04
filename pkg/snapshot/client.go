@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strings"
 
 	v1proto "github.com/openebs/api/v2/pkg/proto"
@@ -48,7 +49,7 @@ type SnapClient struct{}
 //CreateSnapshot creates snapshot by executing gRPC call
 func (s *SnapClient) CreateSnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapCreateResponse, error) {
 	var conn *grpc.ClientConn
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", ip, VolumeGrpcListenPort), grpc.WithInsecure())
+	conn, err := grpc.Dial(net.JoinHostPort(ip, fmt.Sprintf("%d", VolumeGrpcListenPort)), grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.Errorf("Unable to dial gRPC server on port %d error : %s", VolumeGrpcListenPort, err)
 	}
@@ -80,7 +81,7 @@ func (s *SnapClient) CreateSnapshot(ip, volName, snapName string) (*v1proto.Volu
 //DestroySnapshot destroys snapshots by executing gRPC calls
 func (s *SnapClient) DestroySnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapDeleteResponse, error) {
 	var conn *grpc.ClientConn
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", ip, VolumeGrpcListenPort), grpc.WithInsecure())
+	conn, err := grpc.Dial(net.JoinHostPort(ip, fmt.Sprintf("%d", VolumeGrpcListenPort)), grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.Errorf("Unable to dial gRPC server on port error : %s", err)
 	}

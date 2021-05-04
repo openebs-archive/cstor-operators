@@ -17,7 +17,6 @@ limitations under the License.
 package vget
 
 import (
-	"fmt"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -169,37 +168,37 @@ func (v *VolumeGetProperty) Build() (*VolumeGetProperty, error) {
 	v = v.Validate()
 	v.appendCommand(&c, bin.ZFS)
 
-	v.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	v.appendCommand(&c, string(Operation))
 
 	if IsScriptedModeSet()(v) {
-		v.appendCommand(&c, fmt.Sprintf(" -H "))
+		v.appendCommand(&c, " -H ")
 	}
 
 	if IsParsableModeSet()(v) {
-		v.appendCommand(&c, fmt.Sprintf(" -p "))
+		v.appendCommand(&c, " -p ")
 	}
 
 	if IsFieldListSet()(v) {
-		v.appendCommand(&c, fmt.Sprintf(" -o "))
+		v.appendCommand(&c, " -o ")
 		for _, f := range v.FieldList {
-			v.appendCommand(&c, fmt.Sprintf("%s,", f))
+			v.appendCommand(&c, string(f))
 		}
 		// add space to separate next arg
-		v.appendCommand(&c, fmt.Sprintf(" "))
+		v.appendCommand(&c, " ")
 	}
 
 	if IsProplistSet()(v) {
 		for _, p := range v.Proplist {
-			v.appendCommand(&c, fmt.Sprintf("%s,", p))
+			v.appendCommand(&c, string(p))
 		}
 		// add space to separate next arg
-		v.appendCommand(&c, fmt.Sprintf(" "))
+		v.appendCommand(&c, " ")
 	}
 
 	v.appendCommand(&c, v.Dataset)
 
 	if IsSnapshotSet()(v) {
-		v.appendCommand(&c, fmt.Sprintf("@%s", v.Snapshot))
+		v.appendCommand(&c, string(v.Snapshot))
 	}
 
 	v.Command = c.String()

@@ -99,7 +99,6 @@ func (v *VolumeListSnapshot) Execute() (SnapshotList, error) {
 	}
 
 	err = json.Unmarshal(ret, &snapshotList)
-
 	return snapshotList, err
 }
 

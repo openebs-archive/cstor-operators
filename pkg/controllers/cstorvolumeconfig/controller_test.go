@@ -114,14 +114,6 @@ func (f *fixture) expectListCVRAction(cvc *apis.CStorVolumeConfig) {
 	f.actions = append(f.actions, action)
 }
 
-func (f *fixture) run(cvcName string) {
-	testConfig := testConfig{
-		loopCount: 1,
-		loopDelay: time.Second * 0,
-	}
-	f.run_(cvcName, true, false, testConfig)
-}
-
 func (f *fixture) run_(cvcName string, startInformers bool, expectError bool, testConfig testConfig) {
 	c, informers, recorder, err := f.newCVCController()
 	if err != nil {

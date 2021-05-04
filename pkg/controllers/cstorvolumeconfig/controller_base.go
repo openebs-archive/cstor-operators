@@ -140,13 +140,6 @@ func (cb *CVCControllerBuilder) withCVRInformerSync(sl informers.SharedInformerF
 	return cb
 }
 
-// withCSPLister fills csp lister to controller object.
-func (cb *CVCControllerBuilder) withCSPLister(sl informers.SharedInformerFactory) *CVCControllerBuilder {
-	cspiInformer := sl.Cstor().V1().CStorPoolInstances()
-	cb.CVCController.cspiLister = cspiInformer.Lister()
-	return cb
-}
-
 // withCVCLister returns a Store implemented simply with a map and a lock.
 func (cb *CVCControllerBuilder) withCVCStore() *CVCControllerBuilder {
 	cb.CVCController.cvcStore = cache.NewStore(cache.DeletionHandlingMetaNamespaceKeyFunc)

@@ -504,10 +504,8 @@ func (c *CVCController) distributePendingCVRs(
 		return err
 	}
 	err = c.distributeCVRs(pendingReplicaCount, cvc, service, cv, policy)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 // isClaimDeletionCandidate checks if a cstorvolumeconfig is a deletion candidate.

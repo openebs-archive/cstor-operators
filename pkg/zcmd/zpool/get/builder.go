@@ -17,7 +17,6 @@ limitations under the License.
 package pget
 
 import (
-	"fmt"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -153,35 +152,35 @@ func (p *PoolGProperty) Build() (*PoolGProperty, error) {
 	p = p.Validate()
 	p.appendCommand(&c, bin.ZPOOL)
 
-	p.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	p.appendCommand(&c, " "+Operation+" ")
 
 	if IsScriptedModeSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -H "))
+		p.appendCommand(&c, " -H ")
 	}
 
 	if IsParsableModeSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -p "))
+		p.appendCommand(&c, " -p ")
 	}
 
 	if IsFieldListSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -o "))
+		p.appendCommand(&c, " -o ")
 		for _, f := range p.FieldList {
-			p.appendCommand(&c, fmt.Sprintf("%s,", f))
+			p.appendCommand(&c, f+", ")
 		}
 		// add space to separate next arg
-		p.appendCommand(&c, fmt.Sprintf(" "))
+		p.appendCommand(&c, " ")
 	}
 
 	if IsPropListSet()(p) {
 		for _, v := range p.PropList {
-			p.appendCommand(&c, fmt.Sprintf("%s,", v))
+			p.appendCommand(&c, v+", ")
 		}
 		// add space to separate next arg
-		p.appendCommand(&c, fmt.Sprintf(" "))
+		p.appendCommand(&c, " ")
 	}
 
 	if IsPoolSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" %s ", p.Pool))
+		p.appendCommand(&c, " "+p.Pool+" ")
 	}
 
 	p.Command = c.String()

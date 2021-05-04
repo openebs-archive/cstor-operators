@@ -89,9 +89,7 @@ func (r TestRunner) RunStdoutPipe(command string, args ...string) ([]byte, error
 	cmd = exec.Command(os.Args[0], cs...)
 	switch args[0] {
 	case "get":
-		cs = []string{"-test.run=TestGetterProcess", "--"}
 		cmd.Env = []string{"poolName=cstor-123abc"}
-		break
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

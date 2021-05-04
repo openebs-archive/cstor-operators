@@ -56,8 +56,7 @@ type CVCController struct {
 
 	cvrLister listers.CStorVolumeReplicaLister
 
-	cvrSynced  cache.InformerSynced
-	cspiLister listers.CStorPoolInstanceLister
+	cvrSynced cache.InformerSynced
 	// cvcSynced is used for caches sync to get populated
 	cvcSynced cache.InformerSynced
 

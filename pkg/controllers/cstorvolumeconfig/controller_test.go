@@ -79,7 +79,6 @@ type fixture struct {
 // testConfig contains the extra information required to run the test
 type testConfig struct {
 	// isDay2OperationNeedToPerform is set then above operations will be performed
-	isDay2OperationNeedToPerform bool
 	// loopCount times reconcile function will be called
 	loopCount int
 	// time interval to trigger reconciliation

@@ -1,0 +1,9 @@
+tasks:
+  - init: make all
+github:
+  prebuilds:
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: true
+    addCheck: true

@@ -165,11 +165,11 @@ func (p *PoolImport) Build() (*PoolImport, error) {
 	var c strings.Builder
 	p = p.Validate()
 	p.appendCommand(&c, bin.ZPOOL)
-	p.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	p.appendCommand(&c, " "+Operation+" ")
 
 	if IsPropertySet()(p) {
 		for _, v := range p.Property {
-			p.appendCommand(&c, fmt.Sprintf(" -o %s ", v))
+			p.appendCommand(&c, " -o "+v+" ")
 		}
 	}
 
@@ -186,16 +186,16 @@ func (p *PoolImport) Build() (*PoolImport, error) {
 	}
 
 	if IsForceImportSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -f "))
+		p.appendCommand(&c, " -f ")
 	}
 
 	if IsImportAllSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -a "))
+		p.appendCommand(&c, " -a ")
 	} else {
-		p.appendCommand(&c, fmt.Sprintf(p.Pool))
+		p.appendCommand(&c, " "+p.Pool+" ")
 
 		if IsNewPoolSet()(p) {
-			p.appendCommand(&c, fmt.Sprintf(" %s ", p.NewPool))
+			p.appendCommand(&c, " "+p.NewPool+" ")
 		}
 	}
 

@@ -17,8 +17,6 @@ limitations under the License.
 package app
 
 import (
-	"fmt"
-
 	"github.com/openebs/api/v2/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -26,7 +24,7 @@ import (
 
 var (
 	cmdName = "cstor-volume-mgmt"
-	usage   = fmt.Sprintf("%s", cmdName)
+	usage   = cmdName
 )
 
 // NewCStorVolumeMgmt creates a new CStorVolume CRD watcher and grpc command.

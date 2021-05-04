@@ -57,10 +57,8 @@ func (oc *OperationsConfig) addRaidGroup(r cstor.RaidGroup, dType, pType string)
 		WithVdevList(vdevlist).
 		WithExecutor(oc.zcmdExecutor).
 		Execute()
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 // TODO: Get better naming convention from reviews

@@ -177,10 +177,7 @@ func (rOps *restoreAPIOps) createVolumeForRestore(restoreObj *cstorapis.CStorRes
 	// In case of CStor CSI volumes, if CVC.Status.Phase is marked as Bound then
 	// all the resources are created.
 	err := waitForCVCBoundState(restoreObj.Spec.VolumeName, rOps.namespace, rOps.clientset)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // getRestoreStatus returns the status of CStorRestore

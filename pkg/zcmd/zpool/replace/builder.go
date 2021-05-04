@@ -153,10 +153,10 @@ func (p *PoolDiskReplace) Build() (*PoolDiskReplace, error) {
 	var c strings.Builder
 	p = p.Validate()
 	p.appendCommand(&c, bin.ZPOOL)
-	p.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	p.appendCommand(&c, " "+Operation+" ")
 
 	if IsForcefullySet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -f "))
+		p.appendCommand(&c, " -f ")
 	}
 
 	if IsPropertySet()(p) {
@@ -166,8 +166,8 @@ func (p *PoolDiskReplace) Build() (*PoolDiskReplace, error) {
 	}
 
 	p.appendCommand(&c, p.Pool)
-	p.appendCommand(&c, fmt.Sprintf(" %s", p.OldVdev))
-	p.appendCommand(&c, fmt.Sprintf(" %s", p.NewVdev))
+	p.appendCommand(&c, " "+p.OldVdev)
+	p.appendCommand(&c, " "+p.NewVdev)
 
 	p.Command = c.String()
 	return p, p.err

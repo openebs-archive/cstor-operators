@@ -150,10 +150,7 @@ func (c *BackupController) getCStorBackupResource(key string) (*cstorapis.CStorB
 
 // IsDestroyEvent is to check if the call is for backup destroy.
 func IsDestroyEvent(bkp *cstorapis.CStorBackup) bool {
-	if bkp.ObjectMeta.DeletionTimestamp != nil {
-		return true
-	}
-	return false
+	return bkp.ObjectMeta.DeletionTimestamp != nil
 }
 
 // updateCStorCompletedBackup updates the CStorCompletedBackups resource for the given backup

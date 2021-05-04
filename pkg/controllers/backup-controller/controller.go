@@ -170,11 +170,8 @@ func (c *BackupController) enqueueCStorBackup(obj *cstorapis.CStorBackup, q comm
 
 // IsRightCStorPoolInstanceMgmt is to check if the backup request is for this cstor-pool or not.
 func IsRightCStorPoolInstanceMgmt(bkp *cstorapis.CStorBackup) bool {
-	if os.Getenv(OpenEBSIOCSPIID) ==
-		bkp.GetLabels()[openebstypes.CStorPoolInstanceUIDLabelKey] {
-		return true
-	}
-	return false
+	return os.Getenv(OpenEBSIOCSPIID) ==
+		bkp.GetLabels()[openebstypes.CStorPoolInstanceUIDLabelKey]
 }
 
 // cleanupOldBackup set fail status to old pending backup

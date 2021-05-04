@@ -144,8 +144,5 @@ func (c *Controller) calculateStatus(cspc *cstor.CStorPoolCluster) (cstor.CStorP
 }
 
 func IsPoolMangerAvailable(pm appsv1.Deployment) bool {
-	if pm.Status.ReadyReplicas < 1 {
-		return false
-	}
-	return true
+	return pm.Status.ReadyReplicas >= 1
 }

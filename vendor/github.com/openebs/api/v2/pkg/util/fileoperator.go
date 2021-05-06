@@ -119,7 +119,7 @@ func (r RealFileOperator) UpdateOrAppendMultipleLines(fileName string,
 			newLines = append(newLines[:index], newLines[index+1:]...)
 			continue
 		}
-		if found == false {
+		if !found {
 			newLines = append(newLines, updatedValue)
 		}
 	}

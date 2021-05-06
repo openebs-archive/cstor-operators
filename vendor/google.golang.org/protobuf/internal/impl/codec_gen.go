@@ -63,7 +63,7 @@ var coderBool = pointerCoderFuncs{
 // The zero value is not encoded.
 func sizeBoolNoZero(p pointer, f *coderFieldInfo, _ marshalOptions) (size int) {
 	v := *p.Bool()
-	if v == false {
+	if !v {
 		return 0
 	}
 	return f.tagsize + protowire.SizeVarint(protowire.EncodeBool(v))
@@ -73,7 +73,7 @@ func sizeBoolNoZero(p pointer, f *coderFieldInfo, _ marshalOptions) (size int) {
 // The zero value is not encoded.
 func appendBoolNoZero(b []byte, p pointer, f *coderFieldInfo, _ marshalOptions) ([]byte, error) {
 	v := *p.Bool()
-	if v == false {
+	if !v {
 		return b, nil
 	}
 	b = protowire.AppendVarint(b, f.wiretag)

@@ -34,11 +34,11 @@ func CanReadCertAndKey(certPath, keyPath string) (bool, error) {
 		return false, nil
 	}
 
-	if certReadable == false {
+	if !certReadable {
 		return false, fmt.Errorf("error reading %s, certificate and key must be supplied as a pair", certPath)
 	}
 
-	if keyReadable == false {
+	if !keyReadable {
 		return false, fmt.Errorf("error reading %s, certificate and key must be supplied as a pair", keyPath)
 	}
 

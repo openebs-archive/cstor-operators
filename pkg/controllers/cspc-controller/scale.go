@@ -67,9 +67,7 @@ func (pc *PoolConfig) CreateCSPI(cspc *cstor.CStorPoolCluster) error {
 	if err != nil {
 		return err
 	}
-      return pc.CreateCSPIDeployment(cspc, cspi)
-
-	return err
+	return pc.CreateCSPIDeployment(cspc, cspi)
 }
 
 func (pc *PoolConfig) createDeployForCSPList(cspc *cstor.CStorPoolCluster, cspList []cstor.CStorPoolInstance) {

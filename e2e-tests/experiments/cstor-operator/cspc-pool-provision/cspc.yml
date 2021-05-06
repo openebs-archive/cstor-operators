@@ -1,0 +1,22 @@
+apiVersion: cstor.openebs.io/v1
+kind: CStorPoolCluster
+metadata:
+  name: pool-name
+  namespace: operator_ns
+spec:
+  pools:
+
+
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: sc-name
+  annotations:
+    openebs.io/cas-type: cstor
+provisioner: cstor.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  replicaCount: "3"
+  cas-type: cstor
+  cstorPoolCluster: pool-name

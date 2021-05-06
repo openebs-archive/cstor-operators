@@ -1,0 +1,174 @@
+- name: Downloading velero binary
+  get_url:
+    url: "{{ velero_binary_url }}"
+    dest: "./"
+    force: yes
+  register: result
+  until:  "'OK' in result.msg"
+  delay: 5
+  retries: 3
+
+- name: Installing velero inside e2e container
+  shell: |
+    tar -xvf velero-{{ velero_version }}-linux-amd64.tar.gz
+    mv velero-{{ velero_version }}-linux-amd64/velero /usr/local/bin/
+
+- name: Checking the velero version
+  shell: velero version
+  register: velero
+  failed_when: "velero_version not in velero.stdout"
+
+- name: Replacing Profile name in credential file
+  replace:
+    path: /e2e-tests/experiments/functional/backup_and_restore/credentials-velero
+    regexp: "add-profile"
+    replace: "{{ profile_name }}"
+  when: lookup('env','PROFILE') != "default"
+
+- block:
+
+   - name: Installing minio s3-bucket
+     shell: kubectl apply -f velero-{{ velero_version }}-linux-amd64/examples/minio/00-minio-deployment.yaml
+
+   - name: Checking for minio pod status
+     shell: kubectl get pod -n velero -l component=minio -ojsonpath='{.items[0].status.phase}'
+     register: minio_status
+     until: "'Running' in minio_status.stdout"
+     delay: 5
+     retries: 15
+
+   - name: Waiting for minio job to create bucket
+     shell: kubectl get pod -n velero -l job-name=minio-setup -o jsonpath='{.items[*].status.phase}'
+     register: minio_job_status
+     until: "'Succeeded' in minio_job_status.stdout"
+     delay: 5
+     retries: 10
+
+  when: bucket_type == "minio"
+
+- block:
+
+   - name: Fetching service account key.json from configmap
+     shell: kubectl get cm gcp-key -n e2e -o jsonpath='{.data.key\.json}' > ./key.json
+
+   - name: Authenticating using gcp service account
+     shell: gcloud auth activate-service-account --key-file key.json
+
+   - name: Setting up the project ID
+     shell: gcloud config set project {{ gcp_project_id }}
+
+   - name: Deleting GCP bucket if exist
+     shell: gsutil rm -r gs://e2e-gcp-bucket
+     args:
+       executable: /bin/bash
+     ignore_errors: true
+
+   - name: Creating gcp bucket
+     shell: gsutil mb gs://e2e-gcp-bucket/
+
+  when: bucket_type == "GCP"
+
+- block:
+
+  - name: Installing velero server inside cluster
+    shell: >
+      velero install \
+        --provider aws \
+        --bucket velero \
+        --secret-file /e2e-tests/experiments/functional/backup_and_restore/credentials-velero \
+        --use-volume-snapshots=false \
+        --backup-location-config region=minio,s3ForcePathStyle="true",s3Url=http://minio.velero.svc:9000,profile={{ profile_name }}
+    when: velero_version == "v1.1.0"
+
+  - name: Installing velero server inside cluster
+    shell: >
+      velero install \
+        --provider aws \
+        --bucket velero \
+        --secret-file /e2e-tests/experiments/functional/backup_and_restore/credentials-velero \
+        --use-volume-snapshots=false \
+        --plugins velero/velero-plugin-for-aws:v1.0.0 \
+        --backup-location-config region=minio,s3ForcePathStyle="true",s3Url=http://minio.velero.svc:9000,profile={{ profile_name }}
+    when: velero_version >= "v1.2.0" 
+
+  when: bucket_type == "minio"
+
+- block:
+
+  - name: Installing velero server inside cluster
+    shell: >
+      velero install \
+        --provider gcp \
+        --bucket e2e-gcp-bucket \
+        --use-volume-snapshots=false \
+        --secret-file ./key.json
+    when: velero_version == "v1.1.0"
+
+  - name: Installing velero server inside cluster
+    shell: >
+      velero install \
+        --provider gcp \
+        --plugins velero/velero-plugin-for-gcp:v1.0.0 \
+        --bucket e2e-gcp-bucket \
+        --use-volume-snapshots=false \
+        --secret-file ./key.json
+    when: velero_version >= "v1.2.0"
+
+  when: bucket_type == "GCP"
+
+- name: Checking for velero server status
+  shell: kubectl get pod -n velero -l component=velero -ojsonpath='{.items[0].status.phase}'
+  register: velero_status
+  until: "'Running' in velero_status.stdout"
+  delay: 5
+  retries: 20
+
+- name: Replacing profile spec in volumesnapshotlocation.yml
+  replace:
+    path: /e2e-tests/experiments/functional/backup_and_restore/minio-volume-snapshot-location.yml
+    regexp: "#profile: new-profile"
+    replace: "profile: {{ profile_name }}"
+  when: lookup('env','PROFILE') != "default"
+
+- name: Creating volume snapshot location
+  shell: kubectl apply -f /e2e-tests/experiments/functional/backup_and_restore/minio-volume-snapshot-location.yml
+  register: volume_snapshot_location
+  failed_when: "'created' not in volume_snapshot_location.stdout"
+  when: bucket_type == "minio" and lookup('env','LOCAL_SNAPSHOT') == "false"
+
+- name: Creating volume snapshot location
+  shell: kubectl apply -f /e2e-tests/experiments/functional/backup_and_restore/gcp-volume-snapshot-location.yml
+  register: volume_snapshot_location
+  failed_when: "'created' not in volume_snapshot_location.stdout"
+  when: bucket_type == "GCP" and lookup('env','LOCAL_SNAPSHOT') == "false"
+
+- name: Creating volume snapshot location
+  shell: kubectl apply -f /e2e-tests/experiments/functional/backup_and_restore/local-volume-snapshot-location.yml
+  register: volume_snapshot_location
+  failed_when: "'created' not in volume_snapshot_location.stdout"
+  when: lookup('env','LOCAL_SNAPSHOT') == "true"
+
+- name: Installing development image of OpenEBS velero-plugin
+  shell: velero plugin add {{ velero_plugin_name }}
+
+#After installing pugin velero a new velero pod comes up with the older one in Running state which later terminates.
+- name: Waiting for new velero server pod to come up
+  shell: kubectl get pod -n velero --no-headers -l deploy=velero | wc -l
+  register: velero_pod_run
+  until: "'1' in velero_pod_run.stdout"
+  delay: 5
+  retries: 20
+
+- name: Checking for velero server status
+  shell: kubectl get pod -n velero -l component=velero -ojsonpath='{.items[0].status.phase}'
+  register: velero_status_post_update
+  until: "'Running' in velero_status_post_update.stdout"
+  delay: 5
+  retries: 20
+
+- name: Checking for velero server container status
+  shell: kubectl get pod -n velero -l component=velero -ojsonpath='{.items[0].status.containerStatuses[0].ready}'
+  register: velero_container_status
+  until: "'true' in velero_container_status.stdout"
+  delay: 5
+  retries: 20

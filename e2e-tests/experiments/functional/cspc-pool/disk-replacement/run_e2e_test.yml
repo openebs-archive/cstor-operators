@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: disk-replace
+  namespace: e2e
+data:
+  parameters.yml: |
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: e2e-disk-replacement-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      labels:
+        app: disk-replacement
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+            # Namespace for the application to check data persistence
+          - name: APP_NAMESPACE
+            value: ""
+
+            # Lable for the Application
+          - name: APP_LABEL
+            value: ""
+
+            # Namespace where the OpenEBS components are deployed
+          - name: OPERATOR_NS
+            value: ""
+
+            # Name of the Application PVC
+          - name: APP_PVC
+            value: ""
+
+            # Name of the Pool to perform the block device Replacement 
+          - name: POOL_NAME
+            value: ""
+
+            # Data accessibility & integrity verification. 
+            # To check against busybox set value: "busybox" and for percona, set value: "mysql"
+          - name: DATA_PERSISTENCE
+            value: ""
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/functional/cspc-pool/disk-replacement/test.yml -i /etc/ansible/hosts -v; exit 0"]
+        volumeMounts:
+        - name: parameters
+          mountPath: /mnt/
+      volumes:
+        - name: parameters
+          configMap:
+            name: disk-replace

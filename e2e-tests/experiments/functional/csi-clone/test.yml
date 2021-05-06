@@ -1,0 +1,113 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+    - /mnt/parameters.yml
+    
+  tasks:
+    - block:
+
+        ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+        ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+        
+        - name: Generate the yaml file to deploy busybox
+          template:
+            src: busybox.j2
+            dest: busybox.yml
+            
+        - block:
+            - name: Generate the yaml file to clone the snapshot
+              template:
+                src: clone.j2
+                dest: clone.yml
+            
+            - name: create the Clone
+              shell: >
+                kubectl create -f clone.yml -n {{ namespace }}
+              args:
+                executable: /bin/bash
+              register: status
+              failed_when: "status.rc != 0"
+
+            ## Deploy busybox app to check if the snapshot is cloned 
+            - name: Check if the pvc is bound
+              shell: >
+                kubectl get pvc {{ cloned_pvc }} -n {{ namespace }} 
+                --no-headers -o custom-columns=:.status.phase
+              args:
+                executable: /bin/bash
+              register: pvc_status
+              until: "'Bound' in pvc_status.stdout"
+              delay: 30
+              retries: 5
+            
+              ## Cloned PV is mounted in this app
+            - name: Deploying the busybox app
+              shell: >
+                kubectl create -f busybox.yml -n {{ namespace }}
+              args:
+                executable: /bin/bash
+            
+            - name: Get the app pod name
+              shell: >
+                kubectl get pods -n {{ namespace }} -l app={{ app_label }} 
+                --no-headers -o custom-columns=:.metadata.name
+              args: 
+                executable: /bin/bash
+              register: app_pod_name
+
+            - name: Verify if the app is in Running state
+              shell: >
+                kubectl get po -n {{ namespace }} -l app={{ app_label }} 
+                --no-headers -o custom-columns=:.status.phase
+              args:
+                executable: /bin/bash
+              register: app_status
+              until: "'Running' in app_status.stdout"
+              delay: 30
+              retries: 15
+                  
+            - block:
+              - name: Check the md5sum of stored data file
+                shell: >
+                  kubectl exec {{ app_pod_name.stdout }} -n {{ namespace }}
+                  -- sh -c "md5sum /busybox/{{ testfile }} > /busybox/{{ testfile }}-post-clone-md5"
+                args:
+                  executable: /bin/bash
+                register: status 
+                failed_when: "status.rc != 0"
+
+              - name: Verify whether data is consistent
+                shell: >
+                      kubectl exec {{ app_pod_name.stdout }} -n {{ namespace }}
+                      -- sh -c "diff /busybox/{{ testfile }}-pre-chaos-md5 /busybox/{{ testfile }}-post-clone-md5"
+                args:
+                  executable: /bin/bash
+                register: result 
+                failed_when: "result.rc != 0 or result.stdout != ''"
+              when: data_persistence != ''
+            
+          when: lookup('env','ACTION') == 'provision'    
+
+        - include_tasks: /e2e-tests/utils/scm/openebs/delete_cstor_csi_clone.yml
+          when: lookup('env','ACTION') == 'deprovision'
+            
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'

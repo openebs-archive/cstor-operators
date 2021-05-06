@@ -1,0 +1,32 @@
+---
+
+    - name: Getting the node name for the targeted cspi
+      shell: >
+        kubectl get cspi -n {{ operator_ns }} {{ targeted_cspi }} -o custom-columns=:.spec.hostName --no-headers
+      args:
+        executable: /bin/bash
+      register: node_name
+
+    - name: Getting the used block-device by CSPI
+      shell: >
+        kubectl get cspi -n {{ operator_ns }} {{ targeted_cspi }} 
+        -o custom-columns=:.spec.dataRaidGroup[*].blockDevices[*].blockDeviceName --no-headers
+      register: blockDevice
+
+    - name: Obtain the cspc pool spec in json format
+      shell: kubectl get cspc -n {{ operator_ns }} {{ pool_name }} -o json > ./cspc-pool-scaledown.json
+      args:
+       executable: /bin/bash
+
+    - name: Obtain the index position of the nodes from cspc json spec
+      shell: ./node_index_count {{ node_name.stdout }} ./cspc-pool-scaledown.json
+      register: index_count
+
+    - name: Patch the CSPC to scaledown the pool
+      shell: >
+        kubectl patch cspc -n {{ operator_ns }} {{ pool_name }} --type='json' 
+        -p='[{"op": "remove", "path": "/spec/pools/{{ index_count.stdout }}"}]'
+      args:
+        executable: /bin/bash
+      register: patch_cspc
+      failed_when: "'volume still exists on pool' not in patch_cspc.stderr"

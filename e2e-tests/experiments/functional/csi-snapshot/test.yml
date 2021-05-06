@@ -1,0 +1,132 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+    - /mnt/parameters.yml
+    
+  tasks:
+    - block:
+
+        ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+        ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+        
+        - block:
+            - name: Get the application pod name
+              shell: >
+                kubectl get po -n {{ namespace }} --no-headers -o custom-columns=:.metadata.name
+              args:
+                executable: /bin/bash
+              register: app_pod_name
+
+            - name: Check if the application pod is in running state
+              shell: >
+                kubectl get pods -n {{ namespace }} --no-headers -o custom-columns=:.status.phase
+              args:
+                executable: /bin/bash
+              register: pod_status
+              failed_when: "'Running' not in pod_status.stdout"
+
+            - name: Create some test data
+              include_tasks: "/e2e-tests/utils/scm/applications/busybox/busybox_data_persistence.yml"
+              vars:
+                status: 'LOAD'
+                ns: "{{ namespace }}"
+                pod_name: "{{ app_pod_name.stdout }}"  
+              when: data_persistence != ''
+          
+            - name: generating yaml file for snapshot
+              template: 
+                src: snapshot.j2
+                dest: snapshot.yml
+
+            - name: create snapshot    
+              shell: >
+                kubectl create -f snapshot.yml -n "{{ namespace }}"
+              args:
+                executable: /bin/bash
+              register: status
+              failed_when: "status.rc != 0"
+
+          #  Verify if the snapshot created successfully
+            - name: Get the uid of the snapshot taken
+              shell: >
+                kubectl get volumesnapshot.snapshot {{ snapshot_name }} -n {{ namespace }} 
+                --no-headers -o custom-columns=:.metadata.uid
+              args:
+                executable: /bin/bash
+              register: snapcontent
+              
+            - set_fact:
+                volume_snapshot: "{{ snapcontent.stdout }}"
+              
+            - name: Derive PV name from PVC
+              shell: >
+                kubectl get pvc {{ pvc_name }} -n {{ namespace }}
+                --no-headers -o custom-columns=:spec.volumeName
+              args:
+                executable: /bin/bash
+              register: pv
+
+            - name: Obtaining the CVR from PV
+              shell: >
+                kubectl get cvr -n {{ operator_ns }} -l cstorvolume.openebs.io/name={{ pv.stdout }} 
+                --no-headers  -o custom-columns=:metadata.name
+              args:
+                executable: /bin/bash
+              register: cvr
+            
+            - name: Obtaining the pools where CVRs are mounted
+              shell: >
+                kubectl get cvr {{ item }} -n {{ operator_ns }} --no-headers 
+                -o jsonpath='{.metadata.labels.cstorpoolinstance\.openebs\.io/name}{"\n"}'
+              args:
+                executable: /bin/bash
+              register: pools
+              with_items:
+                - "{{ cvr.stdout_lines }}"
+            
+            - name: Obtaining the pool pods
+              shell: >
+                kubectl get po -n {{ operator_ns }} -l openebs.io/cstor-pool-instance={{ item.stdout }} 
+                --no-headers -o custom-columns=:.metadata.name
+              args:
+                executable: /bin/bash
+              register: pool_pods
+              with_items:
+                - "{{ pools.results }}"
+
+            - name: Checking if the snapshot is created in all the pool pods.
+              shell: kubectl exec -ti {{ item.stdout }} -n {{ operator_ns }} -c cstor-pool -- zfs list -t snapshot | grep {{volume_snapshot}}
+              args:
+                executable: /bin/bash
+              register: snap
+              until: "snap.stdout != ''"
+              retries: 5
+              delay: 10
+              with_items:
+                - "{{ pool_pods.results }}"
+
+          when: lookup('env','ACTION') == 'provision'
+
+        - include_tasks: /e2e-tests/utils/scm/openebs/delete_cstor_csi_snapshot.yml    
+          when: lookup('env','ACTION') == 'deprovision'
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'

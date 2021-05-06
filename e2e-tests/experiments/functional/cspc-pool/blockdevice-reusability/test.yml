@@ -1,0 +1,278 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+    - block:
+
+         ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+         ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - block:
+
+            - name: Obtain the node name from the csp
+              shell: >
+                kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ old_cspc_pool }}
+                -o jsonpath='{range.items[*]}{.metadata.labels.kubernetes\.io\/hostname}{"\n"}{end}'
+              args:
+                executable: /bin/bash
+              register: nodes
+
+            # Creating the blockdevice template from blockdevice.j2 jinja template for each node
+            - name: Add node labels for each nodes and create blockdevice template
+              template:
+                src: ./blockdevice.j2
+                dest: ./blockdevice-{{ item[0] }}.yml
+              with_together:
+                - "{{ nodes.stdout_lines }}"
+
+            - name: Add the block devices for each node's block device template
+              include_tasks: add_blockdevice.yml
+              with_items: "{{ nodes.stdout_lines }}"
+              loop_control:
+                loop_var: outer_item
+
+            # Insert the blockdevice template created for each nodes into cspc spec
+            # blockinfile module will insert the external_files/block.
+            # marker line template will be replaced with the values in marker_begin (default="BEGIN") and marker_end (default="END").
+            - name: Include the blockdevice template in the CSPC spec
+              blockinfile:
+                dest: ./cspc.yml
+                marker_end: "## {{ item }} Ansible Config ##"
+                insertafter: pools
+                state: present
+                block: |
+                  {{ lookup('file', './blockdevice-{{ item }}.yml') }}
+              with_items:
+                - "{{ nodes.stdout_lines }}"
+
+            - name: Replacing the pool name in CSPC spec
+              replace:
+                path: ./cspc.yml
+                regexp: "cspc-pool-name"
+                replace: "{{ new_cspc_pool }}"
+
+            - name: Replacing the namespace in CSPC spec
+              replace:
+                path: ./cspc.yml
+                regexp: "operator_ns"
+                replace: "{{ operator_ns }}"
+
+            - name: Replacing the pool type in CSPC spec
+              replace:
+                path: ./cspc.yml
+                regexp: "pool-type"
+                replace: "{{ pool_type }}"
+
+            - name: Replacing the storage class name in CSPC spec
+              replace:
+                path: ./cspc.yml
+                regexp: "sc-name"
+                replace: "{{ sc_name }}"
+
+            - name: Display cspc.yml for verification
+              debug: var=item
+              with_file:
+                - "cspc.yml"
+
+            - name: Obtain the claimed blockDevice list from bdc
+              shell: >
+                kubectl get bdc -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ old_cspc_pool }}
+                -o custom-columns=:.spec.blockDeviceName --no-headers
+              args:
+                executable: /bin/bash
+              register: blockdevice_name
+
+            - name: Remove the CSPC pool
+              shell: kubectl delete cspc {{ old_cspc_pool }} -n  {{ operator_ns }}
+              args:
+                executable: /bin/bash
+                  
+            - name: Verify if the CSPC is deleted
+              shell: kubectl get cspc -n {{ operator_ns }}
+              args:
+                executable: /bin/bash
+              register: cspc_status
+              until: '"{{ old_cspc_pool }}" not in cspc_status.stdout'
+              retries: 30
+              delay: 10
+
+            - name: Verify if the CSPI is getting removed
+              shell: kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ old_cspc_pool }}
+              args:
+                executable: /bin/bash
+              register: cspi_status
+              until: "'No resources found.' in cspi_status.stderr"
+              retries: 30
+              delay: 10
+
+            - name: Verify if the cStor pool pods are deleted
+              shell: kubectl get pods -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ old_cspc_pool }}
+              args:
+                executable: /bin/bash
+              register: pool_status
+              until: "'No resources found.' in pool_status.stderr"
+              retries: 30
+              delay: 10
+
+            - name: Verify if the BDC are deleted
+              shell: kubectl get bdc -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ old_cspc_pool }}
+              args:
+                executable: /bin/bash
+              register: bdc_status
+              until: "'No resources found.' in bdc_status.stderr"
+              retries: 30
+              delay: 10
+
+            - name: Verify if the blockDevices are unclaimed
+              shell: >
+                kubectl get blockdevices -n {{ operator_ns }} 
+                -o jsonpath='{.items[?(@.metadata.name=="{{ item }}")].status.claimState}'
+              args:
+                executable: /bin/bash
+              register: bd_status
+              with_items: "{{ blockdevice_name.stdout_lines }}"
+              until: "'Unclaimed' in bd_status.stdout"
+              retries: 30
+              delay: 10        
+
+            - name: Create cstor cspc disk pool
+              shell: kubectl apply -f cspc.yml
+              args:
+                executable: /bin/bash
+
+            - name: Check whether cspc is created
+              shell: >
+                kubectl get cspc -n {{ operator_ns }} -o custom-columns=:.metadata.name --no-headers
+              args:
+                executable: /bin/bash
+              register: cspc_name
+              until: "new_cspc_pool in cspc_name.stdout"
+              delay: 30
+              retries: 10
+
+            - name: Verify the status of CSPI
+              shell: >
+                kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ new_cspc_pool }}
+                -o custom-columns=:.status.phase --no-headers
+              args:
+                executable: /bin/bash
+              register: cspi_status
+              until: "((cspi_status.stdout_lines|unique)|length) == 1 and 'ONLINE' in cspi_status.stdout"
+              delay: 5
+              retries: 60
+
+            - name: Obtain the CSPI name to verify the status
+              shell: >
+                kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ new_cspc_pool }}
+                -o custom-columns=:.metadata.name --no-headers
+              args:
+                executable: /bin/bash
+              register: cspi_name
+
+            - name: Verify if the cStor Pool pods are Running
+              shell: >
+                kubectl get pods -n {{ operator_ns }} -l openebs.io/cstor-pool-instance={{ item }}
+                --no-headers -o custom-columns=:status.phase
+              args:
+                executable: /bin/bash
+              register: poolcount
+              with_items: "{{ cspi_name.stdout_lines }}"
+              until: "((poolcount.stdout_lines|unique)|length) == 1 and 'Running' in poolcount.stdout"
+              retries: 30
+              delay: 10
+
+            - name: Get cStor Pool pod names to verify the container statuses.
+              shell: >
+                kubectl get pods -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ new_cspc_pool }}
+                --no-headers -o=custom-columns=NAME:".metadata.name"
+              args:
+                executable: /bin/bash
+              register: cstor_pool_pod
+
+            - name: Get the runningStatus of pool pod containers
+              shell: >
+                kubectl get pod {{ item }} -n {{ operator_ns }}
+                -o=jsonpath='{range .status.containerStatuses[*]}{.state}{"\n"}{end}' |
+                grep -w running | wc -l
+              args:
+                executable: /bin/bash
+              register: runningStatusCount
+              with_items: "{{ cstor_pool_pod.stdout_lines }}"
+              until: "runningStatusCount.stdout == '3'"
+              delay: 30
+              retries: 10
+
+          when: action == 'provision'
+            
+        - block:
+            - name: Remove the cStor Pool Cluster
+              shell: >
+                kubectl delete cspc {{ new_cspc_pool }} -n {{ operator_ns }}
+              args:
+                executable: /bin/bash
+
+            - name: Remove the Storage class created as part of the test
+              shell: kubectl delete sc {{ sc_name }}
+              args:
+                executable: /bin/bash
+
+            - name: Remove the Storage class created as part of the test
+              shell: kubectl get sc
+              args:
+                executable: /bin/bash
+              register: sc_status
+              until: '"{{ sc_name }}" not in sc_status.stdout'
+              retries: 3
+              delay: 5
+
+            - name: Verify if the cStor Pool Cluster is deleted
+              shell: >
+                kubectl get cspc -n {{ operator_ns }}
+              register: cspc_status
+              until: '"{{ new_cspc_pool }}" not in cspc_status.stdout'
+              retries: 30
+              delay: 10
+
+            - name: Verify if the CSPI is getting removed
+              shell: >
+                kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ new_cspc_pool }}
+              args:
+                executable: /bin/bash
+              register: cspi_status
+              until: "'No resources found.' in cspi_status.stderr"
+              retries: 30
+              delay: 10
+
+            - name: Verify if the cStor pool pods are deleted
+              shell:
+                kubectl get pods -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ new_cspc_pool }}
+              args:
+                executable: /bin/bash
+              register: pool_status
+              until: "'No resources found.' in pool_status.stderr"
+              retries: 30
+              delay: 10
+          when: action == 'deprovision'
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+          - set_fact:
+              flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+          - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+            vars:
+              status: 'EOT'

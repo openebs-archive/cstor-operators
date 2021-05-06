@@ -1,0 +1,118 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+    - block:
+
+         ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+         ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Check if the application is in running status
+          shell: >
+            kubectl get pods -n {{ app_ns }} -l {{ app_label }} --no-headers
+            -o custom-columns=:status.phase
+          args:
+            executable: /bin/bash
+          register: result
+          until: "'Running' in result.stdout"
+          delay: 30
+          retries: 15
+
+        - name: Obtain the Persistent Volume name
+          shell: kubectl get pvc  -n {{ app_ns }} --no-headers -o custom-columns=:.spec.volumeName
+          args:
+            executable: /bin/bash
+          register: pv
+          failed_when: 'pv.stdout == ""'
+
+        - name: Check if the CVRs status before deleting the pool
+          shell: >
+            kubectl get cvr -n {{ operator_ns }} -l openebs.io/persistent-volume={{ pv.stdout }}
+            -o custom-columns=:.status.phase --no-headers
+          args:
+            executable: /bin/bash
+          register: cvr_status
+
+        - name: Obtain the cspi name from the volume replicas
+          shell: >
+            kubectl get cvr -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.openebs\.io\/persistent-volume=="{{ pv.stdout }}")].metadata.labels.cstorpoolinstance\.openebs\.io\/name}' | tr " " "\n"
+          args:
+            executable: /bin/bash
+          register: cspi_name
+
+        - name: Select random cspi from the list of cspi to get the cspc pool name
+          set_fact:
+            target_cspi: "{{ item }}"
+          with_random_choice: "{{ cspi_name.stdout_lines }}"
+
+        - name: Obtain the cspc name from the cspi
+          shell: >
+            kubectl get cspi -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.name=="{{ target_cspi }}")].metadata.labels.openebs\.io\/cstor-pool-cluster}'
+          args:
+            executable: /bin/bash
+          register: cspc_name
+
+        - name: Delete the cspc pool when the volume is present
+          shell: kubectl delete cspc {{ cspc_name.stdout }} -n {{ operator_ns }}
+          args:
+            executable: /bin/bash
+          register: cspc_status
+          failed_when: "'volume still exists on pool' not in cspc_status.stderr"
+
+        - name: Check the status of CStorPoolInstance
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ cspc_name.stdout }}
+            -o custom-columns=:.status.phase --no-headers
+          args:
+            executable: /bin/bash
+          register: cspi_status
+          until: "((cspi_status.stdout_lines|unique)|length) == 1 and 'ONLINE' in cspi_status.stdout"
+          retries: 30
+          delay: 10
+
+        - name: Check the status of pool pods after attempting to delete the pool
+          shell: >
+            kubectl get po -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ cspc_name.stdout }}
+            --no-headers -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: pool_pod_status
+          until: "((pool_pod_status.stdout_lines|unique)|length) == 1 and 'Running' in pool_pod_status.stdout"
+          retries: 12
+          delay: 5
+
+        - name: Check if the CVRs are in healthy state
+          shell: >
+            kubectl get cvr -n {{ operator_ns }} -l openebs.io/persistent-volume={{ pv.stdout }}
+            -o custom-columns=:.status.phase --no-headers
+          args:
+            executable: /bin/bash
+          register: cvr_status_aft
+          until: "((cvr_status_aft.stdout_lines|unique)|length) == 1 and 'Healthy' in cvr_status_aft.stdout"
+          retries: 12
+          delay: 5
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+          - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+            vars:
+              status: 'EOT'

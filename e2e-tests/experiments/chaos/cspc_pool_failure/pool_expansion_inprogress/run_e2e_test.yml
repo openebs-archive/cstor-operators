@@ -1,0 +1,39 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: cspc-pool-failure-expansion-inprogress-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      name: e2e
+      labels:
+        app: cspc-failure-pool-expansion
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+            # Provide CSPC_NAME to expand
+          - name: CSPC_NAME
+            value: ''
+
+           # Provide the value for POOL_TYPE to expand
+           # stripe,mirror,raidz1,raidz2
+          - name: POOL_TYPE
+            value: ''
+
+           # Namespace where the OpenEBS components are deployed
+          - name: OPERATOR_NS
+            value: ''
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/chaos/cspc_pool_failure/pool_expansion_inprogress/test.yml -i /etc/ansible/hosts -v; exit 0"]

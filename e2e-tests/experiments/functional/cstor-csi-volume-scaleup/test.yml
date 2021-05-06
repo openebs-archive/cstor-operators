@@ -1,0 +1,202 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+    - /mnt/parameters.yml
+    
+  tasks:
+
+    - block:
+
+        ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+        ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Identify the data consistency util to be invoked
+          template:
+            src: data_persistence.j2
+            dest: data_persistence.yml
+
+        - include_vars:
+            file: data_persistence.yml
+
+        - name: Record the data consistency util path
+          set_fact:
+            data_consistency_util_path: "{{ consistencyutil }}"
+          when: data_persistence != ''
+        
+        - name: Get the application pod name
+          shell: >
+            kubectl get pod -n {{ namespace }} -l {{ label }} --no-headers -o custom-columns=:.metadata.name
+          args:
+            executable: /bin/bash
+          register: app_pod_name
+
+        - name: Check if the application pod is in running state
+          shell: >
+            kubectl get pods -n {{ namespace }} -l {{ label }} --no-headers -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: pod_status
+          failed_when: "'Running' not in pod_status.stdout"
+
+        - name: Generate data on the specified application.
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'LOAD'
+            ns: "{{ namespace }}"
+            pod_name: "{{ app_pod_name.stdout }}"
+          when: data_persistence != ''
+
+        - name: Derive PV name from PVC.
+          shell: >
+            kubectl get pvc "{{ pvc_name }}" -n "{{ namespace }}"
+            --no-headers -o custom-columns=:spec.volumeName
+          args:
+            executable: /bin/bash
+          register: pv
+
+        - name: Get CVC name, note that CVC name is same as PV.
+          set_fact:
+            cvc_name: "{{ pv.stdout }}"
+
+        - name: Obtain the CVC manifest into a file
+          shell: >
+            kubectl get cvc "{{ cvc_name }}" -n "{{ openebs_ns }}" -o yaml > cvc.yml
+          args:
+            executable: /bin/bash
+          register: result
+          failed_when: "result.rc != 0"
+
+        - name: Get the current replica count
+          shell: >
+            kubectl get cstorvolume "{{ cvc_name }}" -n "{{ openebs_ns }}" --no-headers 
+            -o custom-columns=:spec.replicationFactor
+          args:
+            executable: /bin/bash
+          register: current_replica
+
+        - name: Obtaining the CVR from PV
+          shell: >
+            kubectl get cvr -n {{ openebs_ns }} -l cstorvolume.openebs.io/name={{ pv.stdout }} 
+            --no-headers  -o custom-columns=:metadata.name
+          args:
+            executable: /bin/bash
+          register: cvr
+            
+        - name: Obtaining the pools where CVRs are mounted
+          shell: >
+            kubectl get cvr {{ cvr.stdout }} -n {{ openebs_ns }} --no-headers 
+            -o jsonpath='{.metadata.labels.cstorpoolinstance\.openebs\.io/name}{"\n"}'
+          args:
+            executable: /bin/bash
+          register: pool
+            
+        - name: Obtaining the pool pods where replicas are created
+          shell: >
+            kubectl get pod -n {{ openebs_ns }} -l openebs.io/cstor-pool-instance={{ pool.stdout }} 
+            --no-headers -o custom-columns=:.metadata.name
+          args:
+            executable: /bin/bash
+          register: pool_pod
+
+        - name: Obtain the CSPC name from pool pod
+          shell: >
+            kubectl get pods "{{ pool_pod.stdout }}" -n "{{ openebs_ns }}" 
+            --no-headers -o jsonpath='{.metadata.labels.openebs\.io/cstor-pool-cluster}'
+          args:
+            executable: /bin/bash
+          register: cspc
+
+        - name: Obtain the CSPI name from pool pod
+          shell: >
+            kubectl get pods "{{ pool_pod.stdout }}" -n "{{ openebs_ns }}" --no-headers 
+            -o jsonpath='{.metadata.labels.openebs\.io/cstor-pool-instance}'
+          args:
+            executable: /bin/bash
+          register: cspi
+
+        - name: Get the cspi where replica is not created
+          shell: >
+            kubectl get cspi -n "{{ openebs_ns }}" -l openebs.io/cstor-pool-cluster="{{ cspc.stdout }}"
+            --no-headers -o custom-columns=:metadata.name| grep -v "{{cspi.stdout}}" | awk '{print $1}' | awk 'NR==1{print $1}'
+          args:
+            executable: /bin/bash
+          register: target_cspi
+
+        - name: Append the target cspi into cvc manifest
+          lineinfile:
+            path: cvc.yml
+            line: "    - poolName: {{ target_cspi.stdout }}"
+            insertafter: "replicaPoolInfo:"
+
+        - name: Scale the replicas by configuring cvc
+          shell: kubectl apply -f cvc.yml
+          args:
+            executable: /bin/bash
+          register: result
+          failed_when: result.rc != 0
+
+        - name: Check the replica count
+          shell: >
+            kubectl get cstorvolume "{{ cvc_name }}" -n "{{ openebs_ns }}" --no-headers
+            -o custom-columns=:spec.replicationFactor
+          args:
+            executable: /bin/bash
+          register: updated_replica
+          until: "current_replica.stdout < updated_replica.stdout"
+          delay: 10
+          retries: 20
+
+        - name: Delete the application pod
+          shell: kubectl delete pod "{{ app_pod_name.stdout }}" -n "{{ namespace }}"
+          args:
+            executable: /bin/bash
+          register: result
+          failed_when: "result.rc != 0"
+
+        - name: Get the application pod name
+          shell: >
+            kubectl get pod -n {{ namespace }} -l {{ label }} --no-headers -o custom-columns=:.metadata.name
+          args:
+            executable: /bin/bash
+          register: rescheduled_pod_name
+
+        - name: Check if the application pod is in running state
+          shell: >
+            kubectl get pods "{{ rescheduled_pod_name.stdout }}" -n "{{ namespace }}" 
+            --no-headers -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: pod_status
+          until: "'Running' in pod_status.stdout"
+          delay: 10
+          retries: 30
+
+        - name: Verify application data persistence
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'VERIFY'
+            ns: "{{ namespace }}"
+            pod_name: "{{ rescheduled_pod_name.stdout }}"
+          when: data_persistence != ''
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'
+    

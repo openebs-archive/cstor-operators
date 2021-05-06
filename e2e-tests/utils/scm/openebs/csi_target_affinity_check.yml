@@ -1,0 +1,118 @@
+---
+- name: Obtain node where app pod resides
+  shell: >
+    kubectl get pods -l {{ app_label }} -n {{ app_ns }}
+    --no-headers -o custom-columns=:spec.nodeName
+  args:
+    executable: /bin/bash
+  register: app_node
+
+- name: Derive PV from application PVC
+  shell: >
+    kubectl get pvc {{ app_pvc }}
+    -o custom-columns=:spec.volumeName -n {{ app_ns }} --no-headers
+  args:
+    executable: /bin/bash
+  register: pv
+
+- name: Obtain the node where PV target pod resides
+  shell: >
+    kubectl get pod -n {{ operator_ns }}
+    -o jsonpath='{.items[?(@.metadata.labels.openebs\.io\/persistent-volume=="{{ pv.stdout }}")].spec.nodeName}'
+  args:
+    executable: /bin/bash
+  register: target_node
+
+- name: Verify whether the app & target pod co-exist on same node
+  debug:
+    msg: "App and Target affinity is maintained"
+  failed_when: target_node.stdout != app_node.stdout
+
+- name: Obtain the application pod name
+  shell: >
+    kubectl get pods -l {{ app_label }} -n {{ app_ns }}
+    --no-headers -o custom-columns=:.metadata.name
+  args:
+    executable: /bin/bash
+  register: app_pod_name
+
+- name: Restart the application pod
+  shell: >
+    kubectl delete pods -n {{ app_ns }} {{ app_pod_name.stdout }}
+  args:
+    executable: /bin/bash
+
+- name: Check if the Application pod got deleted
+  shell: >
+    kubectl get pods -l {{ app_label }} -n {{ app_ns }}
+    --no-headers -o custom-columns=:.metadata.name
+  args:
+    executable: /bin/bash
+  register: new_app_pod_name
+  until: "app_pod_name.stdout not in new_app_pod_name.stdout"
+  delay: 10
+  retries: 30
+
+- name: Check if the application pod is in Running state
+  shell: >
+     kubectl get pods {{ new_app_pod_name.stdout }}
+     -n {{ app_ns }} -o custom-columns=:.status.phase --no-headers
+  args:
+    executable: /bin/bash
+  register: app_pod_status
+  until: "'Running' in app_pod_status.stdout"
+
+- name: Obtain node where app pod resides after restart
+  shell: >
+    kubectl get pods {{ new_app_pod_name.stdout }} -n {{ app_ns }}
+    --no-headers -o custom-columns=:spec.nodeName
+  args:
+    executable: /bin/bash
+  register: new_app_node
+
+- name: Obtain the cstor csi target pod name
+  shell: >
+    kubectl get pods -n {{ operator_ns }}
+    -o jsonpath='{.items[?(@.metadata.labels.openebs\.io\/persistent-volume=="{{ pv.stdout }}")].metadata.name}'
+  args:
+    executable: /bin/bash
+  register: target_name
+
+- name: Restart the csi target pod
+  shell: >
+    kubectl delete pods -n {{ operator_ns }} {{ target_name.stdout }}
+  args:
+    executable: /bin/bash
+
+- name: Check if the csi target pod got deleted
+  shell: >
+    kubectl get pods -n {{ operator_ns }}
+    -o jsonpath='{.items[?(@.metadata.labels.openebs\.io\/persistent-volume=="{{ pv.stdout }}")].metadata.name}'
+  args:
+    executable: /bin/bash
+  register: new_target_pod_name
+  until: "target_name.stdout not in new_target_pod_name.stdout"
+  delay: 10
+  retries: 30
+
+- name: Check if the target is in Running state
+  shell: >
+     kubectl get pods {{ new_target_pod_name.stdout }}
+     -n {{ operator_ns }} -o custom-columns=:.status.phase --no-headers
+  args:
+    executable: /bin/bash
+  register: target_pod_status
+  until: "'Running' in target_pod_status.stdout"
+
+- name: Obtain node where target pod resides after restart
+  shell: >
+    kubectl get pod -n {{ operator_ns }}
+    -o jsonpath='{.items[?(@.metadata.labels.openebs\.io\/persistent-volume=="{{ pv.stdout }}")].spec.nodeName}'
+  args:
+    executable: /bin/bash
+  register: new_target_node
+
+- name: Verify whether the app & target pod co-exist on same node
+  debug:
+    msg: "App and Target affinity is maintained"
+  failed_when: new_target_node.stdout != new_app_node.stdout

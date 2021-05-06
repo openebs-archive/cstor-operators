@@ -1,0 +1,85 @@
+---
+     ##{{ outer_item }} is name of the list of blockdevices, the values will passed as a loop variable in test.yml    
+  
+    - name: Getting the device path from the blockdevice 
+      shell: kubectl get blockdevice -n {{ operator_ns }} {{ outer_item }} -o custom-columns=:.spec.path --no-headers
+      register: bd_path
+
+    - block: 
+
+        - name: Create the filesystem from the targeted disks
+          shell: sshpass -p {{ password }} ssh -o StrictHostKeyChecking=no {{ user_name }}@{{ node_ip.stdout }} "echo '"{{ password }}"' | sudo -S mkfs.ext4 {{ bd_path.stdout }}"
+          register: fs_create
+          until: "'Writing superblocks and filesystem accounting information' in fs_create.stdout"
+          retries: 12
+          delay: 5
+              
+      when: "file_system == 'create'"
+
+    - block: 
+
+        - name: Remove the filesystem from the targeted disks
+          shell: sshpass -p {{ password }} ssh -o StrictHostKeyChecking=no {{ user_name }}@{{ node_ip.stdout }} "echo '"{{ password }}"' | sudo -S wipefs -a {{ bd_path.stdout }}"
+          register: fs_delete
+          until: "'erased' in fs_delete.stdout"
+          retries: 12
+          delay: 5
+              
+      when: "file_system == 'delete'"
+
+    - name: Obtain the daemonset pod name for the targeted node
+      shell: >
+        kubectl get pods -n {{ operator_ns }} -l name=openebs-ndm 
+        -o jsonpath='{.items[?(@.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[*].matchFields[*].values[*]=="{{ target_node }}")].metadata.name}'
+      args:
+        executable: /bin/bash
+      register: ndm_pod_name
+
+    - name: Restart the ndm daemonset pod for the targeted node
+      shell: kubectl delete pods -n {{ operator_ns }} {{ ndm_pod_name.stdout }} 
+      args:
+        executable: /bin/bash
+
+    - name: check if the NDM daemonset pod is deleted
+      shell: kubectl get pods -n {{ operator_ns }} -l name=openebs-ndm
+      args:
+        executable: /bin/bash
+      register: pod_list
+      until: "'{{ ndm_pod_name.stdout }}' not in pod_list.stdout"
+
+    - name: Check the ndm daemonset pod is in running state
+      shell: >
+        kubectl get pods -n {{ operator_ns }} -l name=openebs-ndm 
+        -o jsonpath='{.items[?(@.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[*].matchFields[*].values[*]=="{{ target_node }}")].status.phase}'
+      args:
+        executable: /bin/bash
+      register: ndm_pod_status
+      until: "'Running' in ndm_pod_status.stdout"
+      delay: 5
+      retries: 30
+
+    - block:
+
+        - name: Verify if the blockdevice has the filesystem in it
+          shell: kubectl get blockdevice -n {{ operator_ns }} {{ outer_item }} --no-headers -o custom-columns=:.spec.filesystem
+          args:
+            executable: /bin/bash
+          register: fs_status
+          until: "'fsType' in fs_status.stdout"
+          delay: 5
+          retries: 30
+
+      when: "file_system == 'create'"
+
+    - block:
+
+        - name: Verify if the filesystem has been removed
+          shell: kubectl get blockdevice -n {{ operator_ns }} {{ outer_item }} --no-headers -o custom-columns=:.spec.filesystem
+          args:
+            executable: /bin/bash
+          register: fs_status
+          until: "'fsType' not in fs_status.stdout"
+          delay: 5
+          retries: 30
+
+      when: "file_system == 'delete'" 

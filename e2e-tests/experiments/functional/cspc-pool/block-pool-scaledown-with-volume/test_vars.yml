@@ -1,0 +1,5 @@
+# Test-specific parameters
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+test_name: cstor-cspc-pool-scaledown
+pool_name: "{{ lookup('env','POOL_NAME') }}"
+

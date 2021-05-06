@@ -1,0 +1,120 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+    - block:
+
+         ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+         ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Obtain the kubernetes host names from cspc
+          shell: >
+            kubectl get cspc -n {{ operator_ns }}
+            -o jsonpath='{range .items[?(@.metadata.name=="{{ pool_name }}")]}{range .spec.pools[*].nodeSelector}{.kubernetes\.io\/hostname}{"\n"}{end}'
+          register: nodes
+
+        - name: Obtain the CSPI name to verify the status
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            -o custom-columns=:.metadata.name --no-headers
+          args:
+            executable: /bin/bash
+          register: cspi_name
+
+        - name: Verify the status of CSPI before the pool scaleup
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -o jsonpath='{.items[?(@.metadata.name=="{{ item }}")].status.phase}'
+          args:
+            executable: /bin/bash
+          register: cspi_status
+          with_items: "{{ cspi_name.stdout_lines }}"
+          until: "'ONLINE' in cspi_status.stdout"
+          delay: 5
+          retries: 30
+
+        - name: Obtain the names of all worker nodes
+          shell: kubectl get nodes --no-headers -o custom-columns=:.metadata.name | grep -v master
+          args:
+            executable: /bin/bash
+          register: node_name
+      
+        - name: Obtain the node which are free to create to pools
+          set_fact:
+             free_node: "{{ node_name.stdout_lines | difference(nodes.stdout_lines) }}"
+
+        - name: Select random node from the list of nodes as target node
+          set_fact:
+            target_node: "{{ item }}"
+          with_random_choice: "{{ free_node }}"              
+         
+        - name: set the value for the disk count to fetch the unclaimed blockDevice from each node
+          set_fact:
+             disk_count: "{{ item.value.count }}"
+          loop: "{{ lookup('dict', bd_count) }}"
+          when: "'{{ pool_type }}' in item.key"
+
+        - name: Add the block devices and patch the CSPC to scaleup the pool
+          include_tasks: add_blockdevice.yml
+          with_items: "{{ target_node }}"
+          loop_control:
+            loop_var: outer_item
+
+        - name: Verify the status of newly created CSPI
+          shell: kubectl get cspi -n {{ operator_ns }} -l 'kubernetes.io/hostname in ({{ item }}),openebs.io/cstor-pool-cluster in ({{ pool_name }})' --no-headers -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: new_cspi_status
+          with_items: "{{ target_node }}"
+          until: "'ONLINE' in new_cspi_status.stdout"
+          delay: 5
+          retries: 30          
+
+        - name: Verify the status of existing CSPI after the pool scaleup
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -o jsonpath='{.items[?(@.metadata.name=="{{ item }}")].status.phase}'
+          args:
+            executable: /bin/bash
+          register: cspi_status
+          with_items: "{{ cspi_name.stdout_lines }}"
+          until: "'ONLINE' in cspi_status.stdout"
+          delay: 5
+          retries: 30
+
+        - name: Verify the status of newly created CSPI
+          shell: kubectl get cspi -n {{ operator_ns }} -l 'kubernetes.io/hostname in ({{ target_node }}),openebs.io/cstor-pool-cluster in ({{ pool_name }})' --no-headers -o custom-columns=:.metadata.name
+          args:
+            executable: /bin/bash
+          register: new_cspi_name
+
+        - name: Verify if new cStor Pool pod is Running 
+          shell: >
+            kubectl get pods -n {{ operator_ns }} -l 'openebs.io/cstor-pool-instance in ({{ new_cspi_name.stdout }}),openebs.io/cstor-pool-cluster in ({{ pool_name }})' --no-headers -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: new_pool_pod
+          until: "'Running' in new_pool_pod.stdout"
+          retries: 30
+          delay: 10
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+          - set_fact:
+              flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+          - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+            vars:
+              status: 'EOT'

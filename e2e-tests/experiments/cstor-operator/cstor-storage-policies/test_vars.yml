@@ -1,0 +1,6 @@
+# Test-specific parameters
+test_name: cstor-storage-policies
+pool_name: "{{ lookup('env','POOL_NAME') }}"
+csi_storage_policies:
+  - csi-cstor-xfs-sc.yml
+  - csi-cstor-sc.yml

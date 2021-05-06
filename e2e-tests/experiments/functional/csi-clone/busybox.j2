@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ app_name }}"
+  namespace: "{{ namespace }}"
+  labels:
+    app: "{{ app_label }}"
+spec:
+  selector:
+    matchLabels:
+      app: "{{ app_label }}"
+  template:
+    metadata:
+      labels:
+        app: "{{ app_label }}"
+    spec:
+      containers:
+      - name: app-busybox
+        imagePullPolicy: IfNotPresent
+        image: gcr.io/google-containers/busybox
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do sleep 10;done"]
+        env:
+        volumeMounts:
+        - name: data-vol
+          mountPath: /busybox
+      volumes:
+      - name: data-vol
+        persistentVolumeClaim:
+          claimName: "{{ cloned_pvc }}"

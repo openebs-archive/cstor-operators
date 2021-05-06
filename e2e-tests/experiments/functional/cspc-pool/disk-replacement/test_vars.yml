@@ -1,0 +1,10 @@
+---
+## TEST-SPECIFIC PARAMS
+test_name: blockdevice-replacement
+app_namespace: "{{ lookup('env','APP_NAMESPACE') }}"
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+label: "{{ lookup('env','APP_LABEL') }}"
+app_pvc: "{{ lookup('env','APP_PVC') }}"
+pool_name: "{{ lookup('env','POOL_NAME') }}"
+data_persistence: "{{ lookup('env','DATA_PERSISTENCE') }}"
+

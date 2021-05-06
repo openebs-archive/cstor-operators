@@ -1,0 +1,68 @@
+---
+    - name: Get the cspi name to get the pool pod
+      shell: >
+         kubectl get cspi -n {{ operator_ns }} -l kubernetes.io/hostname={{ outer_item }},openebs.io/cstor-pool-cluster={{ pool_name }} 
+         -o custom-columns=:.metadata.name --no-headers
+      register: cspiname
+
+    - name: Getting the Claimed block-device from each node
+      shell: >
+        kubectl get blockdevice -n {{ operator_ns }} -l kubernetes.io/hostname={{ outer_item }} 
+        -o jsonpath='{.items[?(@.status.claimState=="Claimed")].metadata.name}' | tr " " "\n" | grep -v sparse | head -n "{{ disk_count }}"
+      register: blockDevice
+      until: "((blockDevice.stdout_lines|unique)|length) == (disk_count)|int"
+      delay: 5
+      retries: 10
+     
+    - name: Obtain the index position of the nodes from cspc json spec
+      shell: ./node_index_count {{ outer_item }} ./cspc-pool-expansion.json
+      register: index_count
+
+    - block:
+        - name: Patch the CSPC to expand the pool size
+          shell: >
+            kubectl patch cspc -n {{ operator_ns }} {{ pool_name }} --type='json' -p='[{"op": "add", "path": "/spec/pools/{{ index_count.stdout }}/dataRaidGroups/0/blockDevices/0", "value": {"blockDeviceName": "'{{ blockDevice.stdout_lines[0] }}'"}}]'
+          args:
+            executable: /bin/bash
+          register: patch_cspc
+          failed_when: "'has duplicate blockdevices entries' not in patch_cspc.stderr and patch_cspc.rc == 0"
+      when: pool_type == "stripe"
+
+    - block:
+        - name: Patch the CSPC to expand the pool size
+          shell: >
+            kubectl patch cspc -n {{ operator_ns }} {{ pool_name }} --type='json' -p='[{"op": "add", "path": "/spec/pools/{{ index_count.stdout }}/dataRaidGroups/0", "value": {"blockDevices": [{"blockDeviceName": "'{{ blockDevice.stdout_lines[0] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[1] }}'"}],"type": "mirror"}}]'                  
+          args:
+            executable: /bin/bash
+          register: patch_cspc
+          failed_when: "'has duplicate blockdevices entries' not in patch_cspc.stderr and patch_cspc.rc == 0"
+      when: pool_type == "mirror"
+
+    - block:
+        - name: Patch the CSPC to expand the pool size
+          shell: >
+            kubectl patch cspc -n {{ operator_ns }}
+            {{ pool_name }} --type='json' -p='[{"op": "add", "path": "/spec/pools/{{ index_count.stdout }}/dataRaidGroups/0",
+            "value": {"blockDevices": [{"blockDeviceName": "'{{ blockDevice.stdout_lines[0] }}'"},
+            {"blockDeviceName": "'{{ blockDevice.stdout_lines[1] }}'"},
+            {"blockDeviceName": "'{{ blockDevice.stdout_lines[2] }}'"}],"type": "raidz"}}]'
+          args:
+            executable: /bin/bash
+          register: patch_cspc
+          failed_when: "'has duplicate blockdevices entries' not in patch_cspc.stderr and patch_cspc.rc == 0"
+      when: pool_type == "raidz1"
+
+    - block:
+        - name: Patch the CSPC to expand the pool size
+          shell: >
+            kubectl patch cspc -n {{ operator_ns }} {{ pool_name }}
+            --type='json' -p='[{"op": "add", "path": "/spec/pools/{{ index_count.stdout }}/dataRaidGroups/0",
+            "value": {"blockDevices": [{"blockDeviceName": "'{{ blockDevice.stdout_lines[0] }}'"},
+            {"blockDeviceName": "'{{ blockDevice.stdout_lines[1] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[2] }}'"},
+            {"blockDeviceName": "'{{ blockDevice.stdout_lines[3] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[4] }}'"},
+            {"blockDeviceName": "'{{ blockDevice.stdout_lines[5] }}'"}],"type": "raidz2"}}]'
+          args:
+            executable: /bin/bash
+          register: patch_cspc
+          failed_when: "'has duplicate blockdevices entries' not in patch_cspc.stderr and patch_cspc.rc == 0"
+      when: pool_type == "raidz2"

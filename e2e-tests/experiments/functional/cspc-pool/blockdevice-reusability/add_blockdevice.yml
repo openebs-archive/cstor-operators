@@ -1,0 +1,15 @@
+---
+    ##{{ outer_item }} is name of the node, the values will passed as a loop variable in test.yml
+
+    - name: Getting the Block-device from each node of existing spc pool
+      shell: >
+        kubectl get bdc -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ old_cspc_pool }} -o json | jq '.items[] | select(.spec.blockDeviceNodeAttributes.hostName=="{{ outer_item }}") | .spec.blockDeviceName' | tr "\"" " " 
+      register: blockDevice
+
+    - name: Add the block devices
+      lineinfile:
+        path: ./blockdevice-{{ outer_item }}.yml
+        insertafter: ' blockDevices:'
+        line: '        - blockDeviceName: {{ item }}'
+      with_items:
+          - "{{ blockDevice.stdout_lines }}"            

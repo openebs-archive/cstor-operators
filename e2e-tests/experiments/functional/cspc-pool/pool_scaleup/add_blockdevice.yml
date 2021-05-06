@@ -1,0 +1,64 @@
+---
+    ## TODO: Obtain the blockdevice based on the state as Active and the disk size
+
+    - name: Getting the Unclaimed block-device from each node
+      shell: >
+        kubectl get blockdevice -n {{ operator_ns }} -l kubernetes.io/hostname={{ outer_item }} 
+        -o jsonpath='{.items[?(@.status.claimState=="Unclaimed")].metadata.name}' | tr " " "\n" | grep -v sparse | head -n "{{ disk_count }}"
+      register: blockDevice
+      until: "((blockDevice.stdout_lines|unique)|length) == {{ disk_count }}"
+      delay: 5
+      retries: 10
+
+    - block:
+        - name: Patch the CSPC to expand the pool size
+          shell: >
+             kubectl patch cspc -n {{ operator_ns }} {{ pool_name }} --type='json' -p='[{"op": "add", "path": "/spec/pools/0", "value": {"dataRaidGroups": [{"blockDevices": [{"blockDeviceName": "'{{ blockDevice.stdout_lines[0] }}'" }]}], "nodeSelector": {"kubernetes.io/hostname": "'{{ outer_item }}'"},   "poolConfig": {"dataRaidGroupType": "stripe"}}}]'
+          args:
+            executable: /bin/bash
+          register: patch_cspc
+          failed_when: "'patched' not in patch_cspc.stdout"
+      when: pool_type == "stripe"
+
+    - block:
+        - name: Patch the CSPC to expand the pool size
+          shell: >
+             kubectl patch cspc -n {{ operator_ns }} {{ pool_name }} --type='json' -p='[{"op": "add", "path": "/spec/pools/0", "value": {"dataRaidGroups": [{"blockDevices": [{"blockDeviceName": "'{{ blockDevice.stdout_lines[0] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[1] }}'"}]}], "nodeSelector": {"kubernetes.io/hostname": "'{{ outer_item }}'"},   "poolConfig": {"dataRaidGroupType": "mirror"}}}]'
+          args:
+            executable: /bin/bash
+          register: patch_cspc
+          failed_when: "'patched' not in patch_cspc.stdout"
+      when: pool_type == "mirror"
+
+    - block:
+        - name: Patch the CSPC to expand the pool size
+          shell: >
+             kubectl patch cspc -n {{ operator_ns }} {{ pool_name }} --type='json' -p='[{"op": "add", "path": "/spec/pools/0", "value": {"dataRaidGroups": [{"blockDevices": [{"blockDeviceName": "'{{ blockDevice.stdout_lines[0] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[1] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[2] }}'"}]}], "nodeSelector": {"kubernetes.io/hostname": "'{{ outer_item }}'"},   "poolConfig": {"dataRaidGroupType": "raidz"}}}]'
+          args:
+            executable: /bin/bash
+          register: patch_cspc
+          failed_when: "'patched' not in patch_cspc.stdout"
+      when: pool_type == "raidz1"
+
+    - block:
+        - name: Patch the CSPC to expand the pool size
+          shell: >
+             kubectl patch cspc -n {{ operator_ns }} {{ pool_name }} --type='json' -p='[{"op": "add", "path": "/spec/pools/0", "value": {"dataRaidGroups": [{"blockDevices": [{"blockDeviceName": "'{{ blockDevice.stdout_lines[0] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[1] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[2] }}'"},{"blockDeviceName": "'{{ blockDevice.stdout_lines[3] }}'"}]}], "nodeSelector": {"kubernetes.io/hostname": "'{{ outer_item }}'"},   "poolConfig": {"dataRaidGroupType": "raidz2"}}}]'
+          args:
+            executable: /bin/bash
+          register: patch_cspc
+          failed_when: "'patched' not in patch_cspc.stdout"
+      when: pool_type == "raidz2"
+
+    - name: Check if the newly added Blockdevice is in Claimed state
+      shell: >
+        kubectl get blockdevice -n {{ operator_ns }} {{ item }}
+        --no-headers -o custom-columns=:.status.claimState
+      args:
+        executable: /bin/bash
+      register: bd_state
+      with_items:
+        - "{{ blockDevice.stdout_lines }}"
+      until: "'Claimed' in bd_state.stdout"
+      delay: 5
+      retries: 60

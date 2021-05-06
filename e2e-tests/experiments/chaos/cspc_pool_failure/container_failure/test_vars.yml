@@ -1,0 +1,9 @@
+test_name: cspc-pool-container-failure
+namespace: "{{ lookup('env','APP_NAMESPACE') }}"
+label: "{{ lookup('env','APP_LABEL') }}"
+pvc: "{{ lookup('env','APP_PVC') }}"
+data_persistence: "{{ lookup('env','DATA_PERSISTENCE') }}"
+operator_ns: "{{ lookup('env','OPENEBS_NAMESPACE') }}"
+chaos_duration: 240
+cri: "{{ lookup('env','CONTAINER_RUNTIME') }}"
+container_name: "{{ lookup('env','CONTAINER_NAME') }}"

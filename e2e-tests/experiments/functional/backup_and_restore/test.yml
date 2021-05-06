@@ -1,0 +1,229 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+
+    - block:
+
+         # GENERATING THE TEST NAME
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+         ##  RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Verify that the AUT is running
+          include_tasks: /e2e-tests/utils/k8s/check_deployment_status.yml
+
+        - include_tasks: "./setup_dependency.yml"
+
+        - name: Get Application pod details
+          shell: >
+            kubectl get pods -n {{ app_ns }} -l {{ app_label }}
+            --no-headers -o custom-columns=:metadata.name
+          register: app_pod
+
+        - name: Create new database in the mysql
+          include_tasks: "/e2e-tests/utils/scm/applications/mysql/mysql_data_persistence.yml"
+          vars:
+            status: 'LOAD'
+            ns: "{{ app_ns }}"
+            pod_name: "{{ app_pod.stdout }}"
+            dbuser: 'root'
+            dbpassword: 'k8sDem0'
+            dbname: "backup"
+
+        - block:
+
+            - name: Creating Backup for the provided application
+              include_tasks: "./backup-restore.yml"
+              vars:
+                action: 'BACKUP'
+                velero_backup_name: "{{ backup_name }}"
+
+            - name: Getting state of backup
+              include_tasks: "./backup-restore.yml"
+              vars:
+                action: 'BACKUP_STATE'
+                velero_backup_name: "{{ backup_name }}"
+
+            - name: Verifying for local snaphot deletion
+              include_tasks: "./additional_verification.yml"
+              vars:
+                back_up_name: "{{ backup_name }}"
+                action: 'SNAPSHOT_DELETE'
+              when: lookup('env','LOCAL_SNAPSHOT') == 'false'
+
+          when: lookup('env','COMPONENT_FAILURE') == ''
+
+        - block:
+
+            - name: Getting the application mount point
+              shell: >
+                kubectl get pod {{ app_pod.stdout }} -n {{ app_ns }}
+                -o jsonpath='{.spec.containers[0].volumeMounts[0].mountPath}'
+              register: app_mount_path
+
+              #Writing approx 2.5G of data at mount point
+            - name: Writing data on application mount point
+              shell: >
+                kubectl exec -it {{ app_pod.stdout }} -n {{ app_ns }}
+                -- sh -c "cd {{ app_mount_path.stdout }} && dd if=/dev/urandom of=test.txt bs=4k count=655360"
+
+            - include_tasks: "./backup-restore.yml"
+              vars:
+                action: 'SCHEDULE'
+
+            - name: Getting the backup name
+              shell: kubectl get backup -n velero -o jsonpath='{.items[0].metadata.name}'
+              register: backup_name_initial
+
+            - name: Getting the state of backup
+              shell: kubectl get backup {{ backup_name_initial.stdout }} -n velero -o jsonpath='{.status.phase}'
+              register: backup_state
+              until: "'InProgress' in backup_state.stdout"
+              delay: 5
+              retries: 60
+
+            - include_tasks: "./additional_verification.yml"
+              vars:
+                back_up_name: "{{ backup_name_initial.stdout }}"
+                action: "{{ failure_type }}"
+
+            - name: Waiting for completed backup
+              shell: velero backup get | grep Completed
+              register: completed_backup
+              until: "completed_backup.stdout != ''"
+              delay: 5
+              retries: 100
+
+            - name: Getting the base backup name
+              shell: velero backup get | grep Completed | tail -1 | awk '{print $1}'
+              register: basebackup_name
+
+          when:
+            - lookup('env','COMPONENT_FAILURE') != ''
+
+        - block:
+
+            - name: Deleting Application
+              shell: |
+                kubectl delete pvc,deploy,svc --all -n {{ app_ns }}
+                kubectl delete ns {{ app_ns }}
+
+            - name: Checking whether namespace is deleted
+              shell: >
+                kubectl get ns
+                --no-headers
+                -o custom-columns=:metadata.name
+              args:
+                executable: /bin/bash
+              register: ns_list
+              until: "app_ns not in ns_list.stdout_lines"
+              delay: 5
+              retries: 15
+
+          when: lookup('env','LOCAL_SNAPSHOT') == "false"
+
+        - block:
+
+            - name: Restoring Application
+              include_tasks: "./backup-restore.yml"
+              vars:
+                action: 'RESTORE'
+                velero_backup_name: "{{ backup_name }}"
+
+            - name: Getting state of restore
+              include_tasks: "./backup-restore.yml"
+              vars:
+                action: 'RESTORE_STATE'
+                velero_backup_name: "{{ backup_name }}"                
+          when: lookup('env','COMPONENT_FAILURE') == ''
+
+        - block:
+
+            - name: Restoring Application
+              include_tasks: "./backup-restore.yml"
+              vars:
+                action: 'RESTORE'
+                velero_backup_name: "{{ basebackup_name.stdout }}"
+
+            - name: Getting state of restore
+              include_tasks: "./backup-restore.yml"
+              vars:
+                action: 'RESTORE_STATE'
+                velero_backup_name: "{{ basebackup_name.stdout }}"                
+          when: lookup('env','COMPONENT_FAILURE') != ''
+
+        - block:
+
+            - name: Waiting for application to be in running state
+              shell: kubectl get pod {{ app_pod.stdout }} -n {{ app_ns }} -o jsonpath='{.status.phase}'
+              register: app_pod_status
+              until: "'Running' in app_pod_status.stdout"
+              delay: 5
+              retries: 30
+
+            - name: Verifying Data persistense
+              include_tasks: "/e2e-tests/utils/scm/applications/mysql/mysql_data_persistence.yml"
+              vars:
+                status: 'VERIFY'
+                ns: "{{ app_ns }}"
+                pod_name: "{{ app_pod.stdout }}"
+                dbuser: 'root'
+                dbpassword: 'k8sDem0'
+                dbname: "backup"
+                label: "{{ app_label }}"
+
+          when:
+            - lookup('env','LOCAL_SNAPSHOT') == "false"
+            - lookup('env','RESTORE_IN_DIFF_NAMESPACE') == "false"
+
+        - block:
+
+            - name: Waiting for application to be in running state
+              shell: kubectl get pod {{ app_pod.stdout }} -n {{ app_ns_new }} -o jsonpath='{.status.phase}'
+              register: app_pod_status
+              until: "'Running' in app_pod_status.stdout"
+              delay: 5
+              retries: 30
+
+            - name: Verifying Data persistense
+              include_tasks: "/e2e-tests/utils/scm/applications/mysql/mysql_data_persistence.yml"
+              vars:
+                status: 'VERIFY'
+                ns: "{{ app_ns_new }}"
+                pod_name: "{{ app_pod.stdout }}"
+                dbuser: 'root'
+                dbpassword: 'k8sDem0'
+                dbname: "backup"
+                label: "{{ app_label }}"
+
+          when: lookup('env','LOCAL_SNAPSHOT') == "true" or lookup('env','RESTORE_IN_DIFF_NAMESPACE') == "true"
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'
+
+        - name: Deleting GCP bucket
+          shell: gsutil rm -r gs://e2e-gcp-bucket
+          when:
+            - "bucket_type == 'GCP'"
+            - lookup('env','DEPROVISION_VELERO') == 'true'
+
+        - name: Deprovisioning Velero server
+          shell: kubectl delete namespace velero
+          when: lookup('env','DEPROVISION_VELERO') == 'true'

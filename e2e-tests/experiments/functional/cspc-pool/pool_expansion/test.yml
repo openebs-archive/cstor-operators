@@ -1,0 +1,114 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+    - block:
+
+         ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+         ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Obtain the kubernetes host names from cspc
+          shell: >
+            kubectl get cspc -n {{ operator_ns }}
+            -o jsonpath='{range .items[?(@.metadata.name=="{{ pool_name }}")]}{range .spec.pools[*].nodeSelector}{.kubernetes\.io\/hostname}{"\n"}{end}'
+          register: nodes
+
+        - name: Obtain the CSPI name to verify the status
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            -o custom-columns=:.metadata.name --no-headers
+          args:
+            executable: /bin/bash
+          register: cspi_name
+
+        - name: Obtain the CSPI size before expand the pool
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            -o custom-columns=:.status.capacity.total --no-headers | tr -d G | tr -d M | tr -d k
+          args:
+            executable: /bin/bash
+          register: cspi_bfr_expansion
+
+        - name: Obtain the cspc pool spec in json format
+          shell: kubectl get cspc -n {{ operator_ns }} {{ pool_name }} -o json > ./cspc-pool-expansion.json
+          args:
+            executable: /bin/bash
+
+        - name: set the value for the disk count to fetch the unclaimed blockDevice from each node
+          set_fact:
+            disk_count: "{{ item.value.count }}"
+          loop: "{{ lookup('dict', bd_count) }}"
+          when: "'{{ pool_type }}' in item.key"
+
+        - name: Add the block devices and patch the CSPC to expand the pool
+          include_tasks: add_blockdevice.yml
+          with_items: "{{ nodes.stdout_lines }}"
+          loop_control:
+            loop_var: outer_item
+
+        - name: Verify the status of CSPI after expanding the pool
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -o jsonpath='{.items[?(@.metadata.name=="{{ item }}")].status.phase}'
+          args:
+            executable: /bin/bash
+          register: cspi_status
+          with_items: "{{ cspi_name.stdout_lines }}"
+          until: "'ONLINE' in cspi_status.stdout"
+          delay: 5
+          retries: 30
+
+        - name: Verify if cStor Pool pods are Running after pool expansion
+          shell: >
+            kubectl get pods -n {{ operator_ns }} -l openebs.io/cstor-pool-instance={{ item }}
+            --no-headers -o custom-columns=:status.phase
+          args:
+            executable: /bin/bash
+          register: pool_count
+          with_items: "{{ cspi_name.stdout_lines }}"
+          until: "((pool_count.stdout_lines|unique)|length) == 1 and 'Running' in pool_count.stdout"
+          retries: 30
+          delay: 10
+
+        - name: sleep for 120 seconds and continue with play
+          wait_for: timeout=120
+
+        - name: Obtain the CSPI size after expand the pool
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            -o custom-columns=:.status.capacity.total --no-headers | tr -d G | tr -d M | tr -d k
+          args:
+            executable: /bin/bash
+          register: cspi_after_expansion
+
+        - name: check if the CSPC pool has been expanded
+          shell: if (( $(echo "{{ item[1] }} > {{ item[0] }}" | bc -l) )) ; then echo "pass"; else echo "fail";fi;
+          args:
+            executable: /bin/bash
+          register: pool_status
+          failed_when: "'pass' not in pool_status.stdout"
+          with_together:
+             - "{{ cspi_bfr_expansion.stdout_lines }}"
+             - "{{ cspi_after_expansion.stdout_lines }}"
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+          - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+            vars:
+              status: 'EOT'

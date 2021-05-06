@@ -1,0 +1,56 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: csi-replica-scaledown
+  namespace: e2e
+data:
+  parameters.yml: |
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: cstor-csi-replica-scaledown-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      labels:
+        name: cstor-csi-replica-scaledown
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+          - name: APP_NAMESPACE
+            value: '' 
+            
+          - name: APP_PVC
+            value: ''
+
+          - name: APP_LABEL
+            value: ''
+            
+          - name: OPENEBS_NAMESPACE
+            value: "openebs"
+
+          - name: DATA_PERSISTENCE
+            value: ""
+       
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/functional/cstor-csi-volume-scaledown/test.yml -i /etc/ansible/hosts -vv; exit 0"]
+
+        volumeMounts:
+        - name: parameters
+          mountPath: /mnt/
+      volumes:
+        - name: parameters
+          configMap:
+            name: csi-replica-scaledown

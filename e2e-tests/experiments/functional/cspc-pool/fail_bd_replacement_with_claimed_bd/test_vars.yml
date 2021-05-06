@@ -1,0 +1,6 @@
+---
+## TEST-SPECIFIC PARAMS
+test_name: fail-blockdevice-replacement-with-claimed-bd
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+pool_name: "{{ lookup('env','POOL_NAME') }}"
+

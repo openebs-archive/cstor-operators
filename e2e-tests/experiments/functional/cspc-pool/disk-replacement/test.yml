@@ -1,0 +1,257 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+    - /mnt/parameters.yml      
+
+  tasks:
+    - block:
+
+          ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+          ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'SOT'
+
+        - name: Identify the data consistency util to be invoked
+          template:
+            src: data_persistence.j2
+            dest: data_persistence.yml
+
+        - include_vars:
+            file: data_persistence.yml
+
+        - name: Record the data consistency util path
+          set_fact:
+            data_consistency_util_path: "{{ consistencyutil }}"
+          when: data_persistence != ''
+
+        - name: Get application pod name
+          shell: >
+            kubectl get pods -n {{ app_namespace }} -l {{ label }} --no-headers
+            -o=custom-columns=NAME:".metadata.name"
+          args:
+            executable: /bin/bash
+          register: app_pod_name           
+
+        - name: Create some test data
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'LOAD'
+            ns: "{{ app_namespace }}"
+            pod_name: "{{ app_pod_name.stdout }}"
+          when: data_persistence != ''          
+
+        - name: Check the status of CStorPoolInstance
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            -o custom-columns=:.status.phase --no-headers
+          args:
+            executable: /bin/bash
+          register: cspi_status
+          until: "((cspi_status.stdout_lines|unique)|length) == 1 and 'ONLINE' in cspi_status.stdout"
+          retries: 30
+          delay: 10
+
+        - name: Obtain the name of CStorPoolInstance
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            -o custom-columns=:.metadata.name --no-headers
+          args:
+            executable: /bin/bash
+          register: cspi_name
+
+        - name: Get cStor Disk Pool names to verify the container statuses
+          shell: >
+            kubectl get pods -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            --no-headers -o=custom-columns=NAME:".metadata.name"
+          args:
+            executable: /bin/bash
+          register: cstor_pool_pod
+
+        - name: Verify if the Pool pod containers are running
+          shell: >
+            kubectl get pod {{ item }} -n {{ operator_ns }}
+            -o=jsonpath='{range .status.containerStatuses[*]}{.state}{"\n"}{end}' |
+            cut -d "[" -f2 | cut -d ":" -f1
+          args:
+            executable: /bin/bash
+          register: pool_pod_status
+          with_items: "{{ cstor_pool_pod.stdout_lines }}"
+          until: "((pool_pod_status.stdout_lines|unique)|length) == 1 and 'running' in pool_pod_status.stdout"
+          delay: 30
+          retries: 10
+
+        - name: Verify that the AUT (Application Under Test) is running
+          include_tasks: "/e2e-tests/utils/k8s/status_app_pod.yml"
+          vars:
+            app_ns: "{{ app_namespace }}"
+            app_lkey: "{{ label.split('=')[0] }}"
+            app_lvalue: "{{ label.split('=')[1] }}"
+            delay: 5
+            retries: 60
+
+        - name: Derive PV from application PVC
+          shell: >
+            kubectl get pvc {{ app_pvc }}
+            -o custom-columns=:spec.volumeName -n {{ app_namespace }}
+            --no-headers
+          args:
+            executable: /bin/bash
+          register: pv
+
+        - name: Check if the cStor target is in Running state
+          shell: >
+             kubectl get pods -n {{ operator_ns }} --no-headers -l openebs.io/persistent-volume={{ pv.stdout }}
+             -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: target_status
+          until: "'Running' in target_status.stdout"
+          delay: 5
+          retries: 60
+
+        - name: Obtain the cStorVolume status
+          shell: >
+            kubectl get cstorvolume -n {{ operator_ns }} --no-headers -l openebs.io/persistent-volume={{ pv.stdout }}
+            -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: cv_status
+          until: "'Healthy' in cv_status.stdout"
+          delay: 5
+          retries: 60
+
+        - name: Check the status of CVR
+          shell: >
+            kubectl get cvr -n {{ operator_ns }} -l openebs.io/persistent-volume={{ pv.stdout }}
+            --no-headers -o custom-columns=:.status.phase
+          register: cvr_status
+          until: "((cvr_status.stdout_lines|unique)|length) == 1 and 'Healthy' in cvr_status.stdout"
+          delay: 5
+          retries: 60
+
+        - name: Select random cspi from the list of cspi as target cspi to perform disk replacement
+          set_fact:
+            target_cspi: "{{ item }}"
+          with_random_choice: "{{ cspi_name.stdout_lines }}"
+
+        - name: Obtain the node name of the targeted cspi
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} {{ target_cspi }}
+            -o custom-columns=:.spec.hostName --no-headers
+          args:
+            executable: /bin/bash
+          register: cspi_node_name
+          failed_when: 'cspi_node_name.stdout == ""'
+
+        - name: Obtain the cspc pool spec in json format
+          shell: kubectl get cspc -n {{ operator_ns }} {{ pool_name }} -o json > ./cspc-disk-replacement.json
+          args:
+            executable: /bin/bash
+
+        - name: Add the block devices and patch the CSPC to expand the pool
+          include_tasks: add_blockdevice.yml
+          with_items: "{{ cspi_node_name.stdout_lines }}"
+          loop_control:
+            loop_var: outer_item
+
+        - name: Verify if the Pool pod containers are running
+          shell: >
+            kubectl get pod {{ item }} -n {{ operator_ns }}
+            -o=jsonpath='{range .status.containerStatuses[*]}{.state}{"\n"}{end}' |
+            cut -d "[" -f2 | cut -d ":" -f1
+          args:
+            executable: /bin/bash
+          register: pool_pod_status
+          with_items: "{{ cstor_pool_pod.stdout_lines }}"
+          until: "((pool_pod_status.stdout_lines|unique)|length) == 1 and 'running' in pool_pod_status.stdout"
+          delay: 30
+          retries: 10
+
+        - name: Verify that the AUT (Application Under Test) is running
+          include_tasks: "/e2e-tests/utils/k8s/status_app_pod.yml"
+          vars:
+            app_ns: "{{ app_namespace }}"
+            app_lkey: "{{ label.split('=')[0] }}"
+            app_lvalue: "{{ label.split('=')[1] }}"
+            delay: 5
+            retries: 60
+
+        - name: Check if the cStor target is in Running state
+          shell: >
+             kubectl get pods -n {{ operator_ns }} --no-headers -l openebs.io/persistent-volume={{ pv.stdout }}
+             -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: target_status
+          until: "'Running' in target_status.stdout"
+          delay: 5
+          retries: 60
+
+        - name: Obtain the cStorVolume status
+          shell: >
+            kubectl get cstorvolume -n {{ operator_ns }} --no-headers -l openebs.io/persistent-volume={{ pv.stdout }}
+            -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: cv_status
+          until: "'Healthy' in cv_status.stdout"
+          delay: 5
+          retries: 60
+
+        - name: Check the status of CVR
+          shell:
+            kubectl get cvr -n {{ operator_ns }} -l openebs.io/persistent-volume={{ pv.stdout }}
+            --no-headers -o custom-columns=:.status.phase
+          register: cvr_status
+          until: "((cvr_status.stdout_lines|unique)|length) == 1 and 'Healthy' in cvr_status.stdout"
+          delay: 5
+          retries: 60
+
+        - name: Check the status of CStorPoolInstance
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            -o custom-columns=:.status.phase --no-headers
+          args:
+            executable: /bin/bash
+          register: cspi_status_aftr
+          until: "((cspi_status_aftr.stdout_lines|unique)|length) == 1 and 'ONLINE' in cspi_status_aftr.stdout"
+          retries: 60
+          delay: 5
+
+        - name: Get application pod name
+          shell: >
+            kubectl get pods -n {{ app_namespace }} -l {{ label }} --no-headers
+            -o=custom-columns=NAME:".metadata.name"
+          args:
+            executable: /bin/bash
+          register: rescheduled_app_pod  
+
+        - name: Verify application data persistence
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'VERIFY'
+            ns: "{{ app_namespace }}"
+            pod_name: "{{ rescheduled_app_pod.stdout }}"                 
+          when: data_persistence != ''          
+
+        - name: Setting pass flag
+          set_fact:
+            flag: "Pass"
+
+      rescue:
+        - name: Setting fail flag
+          set_fact:
+            flag: "Fail"
+
+      always:
+        ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'

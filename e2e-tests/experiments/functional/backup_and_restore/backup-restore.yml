@@ -1,0 +1,117 @@
+---
+- block:
+
+    - name: Creating Backup using minio bucket
+      shell: >
+        velero backup create {{ velero_backup_name }} --include-namespaces={{ app_ns }} 
+        --snapshot-volumes --volume-snapshot-locations=minio
+      args:
+        executable: /bin/bash
+      when: bucket_type == "minio" and lookup('env','LOCAL_SNAPSHOT') == "false"
+
+    - name: Creating Backup using GCP bucket
+      shell: >
+        velero backup create {{ velero_backup_name }} --include-namespaces={{ app_ns }} 
+        --snapshot-volumes --volume-snapshot-locations=gcp-bucket
+      args:
+        executable: /bin/bash
+      when: bucket_type == "GCP" and lookup('env','LOCAL_SNAPSHOT') == "false"
+
+    - name: Creating Local Backup
+      shell: >
+        velero backup create {{ velero_backup_name }} --include-namespaces={{ app_ns }} 
+        --snapshot-volumes --volume-snapshot-locations=local
+      args:
+        executable: /bin/bash
+      when: lookup('env','LOCAL_SNAPSHOT') == "true"
+
+  when: action == "BACKUP"
+
+
+- block:
+     # Schedule creates a cron job for backup. Notation "--schedule=*/2 * * * *" applies same as kubernetes cron job here.
+   - name: Creating schedule using minio bucket
+     shell: >
+        velero create schedule newschedule --schedule="*/2 * * * *" --snapshot-volumes 
+        --include-namespaces={{ app_ns }} --volume-snapshot-locations=minio
+     when: bucket_type == "minio"
+
+   - name: Creating schedule using GCP bucket
+     shell: >
+       velero create schedule newschedule --schedule="*/2 * * * *" --snapshot-volumes 
+       --include-namespaces={{ app_ns }} --volume-snapshot-locations=gcp-bucket
+     when: bucket_type == "GCP"
+
+  when: action == "SCHEDULE"
+
+- block:
+   
+   - name: Getting the state of Backup
+     shell: kubectl get backup {{ velero_backup_name }} -n velero -o jsonpath='{.status.phase}'
+     register: backup_state
+     until: "'Completed' in backup_state.stdout"
+     delay: 5
+     retries: 100
+
+  when: action == "BACKUP_STATE"
+   
+- block:
+
+   - block: 
+      
+      - name: Creating application namespace
+        shell: kubectl create ns {{ app_ns }}
+        register: app_ns_create_status
+        failed_when: "'created' not in app_ns_create_status.stdout"
+
+      - name: Restoring application 
+        shell: >
+          velero restore create --from-backup {{ velero_backup_name }} --restore-volumes=true
+        args:
+          executable: /bin/bash
+   
+     when: lookup('env','LOCAL_SNAPSHOT') == "false" and lookup('env','RESTORE_IN_DIFF_NAMESPACE') == "false"
+
+   - block:
+
+      - name: Restoring application 
+        shell: >
+          velero restore create --from-backup {{ velero_backup_name }} --restore-volumes=true 
+          --namespace-mappings {{ app_ns }}:{{ app_ns_new }}
+        args:
+          executable: /bin/bash
+   
+     when: lookup('env','LOCAL_SNAPSHOT') == "true"
+
+   - block:
+
+      - name: Creating application namespace
+        shell: kubectl create ns {{ app_ns_new }}
+        register: app_ns_create_status
+        failed_when: "'created' not in app_ns_create_status.stdout"
+
+      - name: Restoring application 
+        shell: >
+          velero restore create --from-backup {{ velero_backup_name }} --restore-volumes=true 
+          --namespace-mappings {{ app_ns }}:{{ app_ns_new }}
+        args:
+          executable: /bin/bash
+   
+     when: lookup('env','RESTORE_IN_DIFF_NAMESPACE') == "true"
+
+  when: action == "RESTORE"
+
+- block:
+   
+   - name: Getting restore name
+     shell: velero get restore | grep {{ velero_backup_name }} | awk '{print $1}'
+     register: restore_name
+
+   - name: Checking the restore status
+     shell: kubectl get restore {{ restore_name.stdout }} -n velero -o jsonpath='{.status.phase}'
+     register: restore_state
+     until: "'Completed' in restore_state.stdout"
+     delay: 5
+     retries: 60
+
+  when: action == "RESTORE_STATE"

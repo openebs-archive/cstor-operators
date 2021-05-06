@@ -87,6 +87,9 @@ cvcOperator:
   securityContext: {}
 
 csiController:
+  priorityClass:
+    create: true
+    name: cstor-csi-controller-critical
   componentName: "openebs-cstor-csi-controller"
   resizer:
     name: "csi-resizer"
@@ -159,6 +162,9 @@ cstorCSIPlugin:
   remount: "true"
 
 csiNode:
+  priorityClass:
+    create: true
+    name: cstor-csi-node-critical
   componentName: "openebs-cstor-csi-node"
   driverRegistrar:
     name: "csi-node-driver-registrar"

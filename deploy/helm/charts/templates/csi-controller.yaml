@@ -21,7 +21,7 @@ spec:
         {{ toYaml .Values.csiController.podLabels | nindent 8 }}
         {{- end }}
     spec:
-      priorityClassName: openebs-cstor-csi-controller-critical
+      priorityClassName: {{ template "cstor.csiController.priorityClassName" . }}
       serviceAccount: {{ .Values.serviceAccount.csiController.name }}
       containers:
         - name: {{ .Values.csiController.resizer.name }}

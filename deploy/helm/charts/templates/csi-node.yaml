@@ -19,7 +19,7 @@ spec:
         {{ toYaml .Values.csiNode.podLabels | nindent 8 }}
         {{- end }}
     spec:
-      priorityClassName: openebs-cstor-csi-node-critical
+      priorityClassName: {{ template "cstor.csiNode.priorityClassName" . }}
       serviceAccount: {{ .Values.serviceAccount.csiNode.name }}
       hostNetwork: true
       containers:

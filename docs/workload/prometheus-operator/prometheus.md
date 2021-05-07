@@ -25,7 +25,7 @@ We will add a 100G disk to each node. These disks will be consumed by CSI based 
 
 2. [Select OpenEBS storage engine](/docs/workload/prometheus-operator/prometheus.md#select-openebs-storage-engine)
 
-3. [Configure CSI based cStor pool and StorageClass](/docs/workload/prometheus-operator/prometheus.md#configure-openebs-local-pv-storageclass)
+3. [Configure CSI based cStor pool and StorageClass](/docs/workload/prometheus-operator/prometheus.md#configure-csi-based-cstor-pool-and-storageclass)
 
 4. [Installing Prometheus Operator](/docs/workload/prometheus-operator/prometheus.md#installing-prometheus-operator)
 

@@ -100,6 +100,9 @@ func TestGetVolumeResource(t *testing.T) {
 		}
 		// Get the created volume resource using name
 		cStorVolumeObtained, err := volumeController.getVolumeResource(ut.test.ObjectMeta.Name)
+		if err != nil {
+			t.Fatalf("Desc:%v, Unable to get resource : %v", desc, ut.test.ObjectMeta.Name)
+		}
 		if string(cStorVolumeObtained.ObjectMeta.UID) != ut.expectedVolumeName {
 			t.Fatalf("Desc:%v, VolumeName mismatch, Expected:%v, Got:%v", desc, ut.expectedVolumeName,
 				string(cStorVolumeObtained.ObjectMeta.UID))

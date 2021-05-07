@@ -11,7 +11,7 @@ In this document, we will explain how you can easily set up a monitoring environ
 
 
 
-<img src="/docs/workload/prometheus-operator/prometheus-deployment" alt="OpenEBS and Prometheus using cStor" style="width:100%;">
+<img src="/docs/workload/prometheus-operator/prometheus-deployment.svg" alt="OpenEBS and Prometheus using cStor" style="width:100%;">
 
 
 

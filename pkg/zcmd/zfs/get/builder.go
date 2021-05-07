@@ -168,7 +168,7 @@ func (v *VolumeGetProperty) Build() (*VolumeGetProperty, error) {
 	v = v.Validate()
 	v.appendCommand(&c, bin.ZFS)
 
-	v.appendCommand(&c, string(Operation))
+	v.appendCommand(&c, " "+Operation+" ")
 
 	if IsScriptedModeSet()(v) {
 		v.appendCommand(&c, " -H ")
@@ -181,7 +181,7 @@ func (v *VolumeGetProperty) Build() (*VolumeGetProperty, error) {
 	if IsFieldListSet()(v) {
 		v.appendCommand(&c, " -o ")
 		for _, f := range v.FieldList {
-			v.appendCommand(&c, string(f))
+			v.appendCommand(&c, ","+f)
 		}
 		// add space to separate next arg
 		v.appendCommand(&c, " ")
@@ -189,7 +189,7 @@ func (v *VolumeGetProperty) Build() (*VolumeGetProperty, error) {
 
 	if IsProplistSet()(v) {
 		for _, p := range v.Proplist {
-			v.appendCommand(&c, string(p))
+			v.appendCommand(&c, p+",")
 		}
 		// add space to separate next arg
 		v.appendCommand(&c, " ")

@@ -426,10 +426,8 @@ func (f *fixture) updateCSPIToPerformDay2Operation(cspiName string, tConfig test
 		}
 	}
 	_, err = f.openebsClient.CstorV1().CStorPoolInstances(ns).Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (f *fixture) run(cspiName string) {

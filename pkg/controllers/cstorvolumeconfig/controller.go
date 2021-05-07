@@ -249,11 +249,8 @@ func (c *CVCController) syncCVC(cvc *apis.CStorVolumeConfig) error {
 
 	// sync policy changes from cvc.spec.policy e.g. tunables like toleration, resource requirements etc
 	err = c.syncPolicySpec(cvc)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 // UpdateCVCObj updates the cstorvolumeconfig object resource to reflect the
@@ -507,10 +504,8 @@ func (c *CVCController) distributePendingCVRs(
 		return err
 	}
 	err = c.distributeCVRs(pendingReplicaCount, cvc, service, cv, policy)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 // isClaimDeletionCandidate checks if a cstorvolumeconfig is a deletion candidate.

@@ -2,6 +2,7 @@
 [![Go Report](https://goreportcard.com/badge/github.com/openebs/cstor-operators)](https://goreportcard.com/report/github.com/openebs/cstor-operators)
 [![Build Status](https://github.com/openebs/cstor-operators/actions/workflows/build.yml/badge.svg)](https://github.com/openebs/cstor-operators/actions/workflows/build.yml)
 [![Slack](https://img.shields.io/badge/JOIN-SLACK-blue)](https://kubernetes.slack.com/messages/openebs/)
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod)](https://gitpod.io/#https://github.com/openebs/cstor-operators)
 
 <img width="300" align="right" alt="OpenEBS Logo" src="https://raw.githubusercontent.com/cncf/artwork/master/projects/openebs/stacked/color/openebs-stacked-color.png" xmlns="http://www.w3.org/1999/html">
 

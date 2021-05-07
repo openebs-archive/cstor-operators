@@ -194,25 +194,20 @@ func (r TestRunner) RunCombinedOutput(command string, args ...string) ([]byte, e
 	var cmd *exec.Cmd
 	switch args[0] {
 	case "create":
-		cs = append([]string{"-test.run=TestCreaterProcess", "--"})
+		cs = []string{"-test.run=TestCreaterProcess", "--"}
 		//	cmd.Env = append([]string{"createErr=nil"})
-		break
 	case "import":
 		cs = []string{"-test.run=TestImporterProcess", "--"}
 		cmd.Env = []string{"importErr=nil"}
-		break
 	case "destroy":
 		cs = []string{"-test.run=TestDestroyerProcess", "--"}
 		cmd.Env = []string{"destroyErr=nil"}
-		break
 	case "labelclear":
 		cs = []string{"-test.run=TestLabelClearerProcess", "--"}
 		cmd.Env = []string{"labelClearErr=nil"}
-		break
 	case "status":
 		cs = []string{"-test.run=TestStatusProcess", "--"}
 		cmd.Env = []string{"StatusErr=nil"}
-		break
 	}
 	cs = append(cs, args...)
 	cmd = exec.Command(os.Args[0], cs...)
@@ -226,8 +221,7 @@ func (r TestRunner) RunStdoutPipe(command string, args ...string) ([]byte, error
 	var cmd *exec.Cmd
 	switch args[0] {
 	case "get":
-		cs = append([]string{"-test.run=TestGetterProcess", "--"})
-		break
+		cs = []string{"-test.run=TestGetterProcess", "--"}
 	}
 	cs = append(cs, args...)
 	cmd = exec.Command(os.Args[0], cs...)

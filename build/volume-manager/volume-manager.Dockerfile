@@ -41,7 +41,7 @@ COPY . .
 
 RUN make buildx.volume-manager
 
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 ARG DBUILD_DATE
 ARG DBUILD_REPO_URL

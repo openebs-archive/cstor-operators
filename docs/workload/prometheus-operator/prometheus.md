@@ -21,27 +21,27 @@ We will add a 100G disk to each node. These disks will be consumed by CSI based 
 
 ## Configuration workflow
 
-1. [Install OpenEBS](/docs/next/prometheus.html#install-openebs)
+1. [Install OpenEBS](/docs/workload/prometheus-operator/prometheus.md#install-openebs)
 
-2. [Select OpenEBS storage engine](/docs/next/prometheus.html#select-openebs-storage-engine)
+2. [Select OpenEBS storage engine](/docs/workload/prometheus-operator/prometheus.md#select-openebs-storage-engine)
 
-3. [Configure CSI based cStor pool and StorageClass](/docs/next/prometheus.html#configure-openebs-local-pv-storageclass)
+3. [Configure CSI based cStor pool and StorageClass](/docs/workload/prometheus-operator/prometheus.md#configure-openebs-local-pv-storageclass)
 
-4. [Installing Prometheus Operator](/docs/next/prometheus.html#installing-prometheus-operator)
+4. [Installing Prometheus Operator](/docs/workload/prometheus-operator/prometheus.md#installing-prometheus-operator)
 
-5. [Accessing Prometheus and Grafana](/docs/next/prometheus.html#accessing-prometheus-and-grafana)
+5. [Accessing Prometheus and Grafana](/docs/workload/prometheus-operator/prometheus.md#accessing-prometheus-and-grafana)
 
    
 
 ### Install OpenEBS
 
-If OpenEBS is not installed in your K8s cluster, this can be done from [here](/docs/next/installation.html). If OpenEBS is already installed, go to the next step.
+If OpenEBS is not installed in your K8s cluster, this can be done from [here](https://docs.openebs.io/docs/next/installation.html). If OpenEBS is already installed, go to the next step.
 
 
 
 ### Select OpenEBS storage engine
 
-A storage engine is the data plane component of the IO path of a Persistent Volume. In CAS architecture, users can choose different data planes for different application workloads based on a configuration policy. OpenEBS provides different types of storage engines and chooses the right engine that suits your type of application requirements and storage available on your Kubernetes nodes. More information can be read from [here](/docs/next/overview.html#types-of-openebs-storage-engines).
+A storage engine is the data plane component of the IO path of a Persistent Volume. In CAS architecture, users can choose different data planes for different application workloads based on a configuration policy. OpenEBS provides different types of storage engines and chooses the right engine that suits your type of application requirements and storage available on your Kubernetes nodes. More information can be read from [here](https://docs.openebs.io/docs/next/overview.html#types-of-openebs-storage-engines).
 
 In this document, we are deploying Prometheus Operator using OpenEBS CSI based cStor storage engine.
 

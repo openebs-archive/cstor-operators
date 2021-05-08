@@ -17,7 +17,6 @@ limitations under the License.
 package hash
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"

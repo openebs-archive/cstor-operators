@@ -68,10 +68,8 @@ func (pc *PoolConfig) CreateCSPI(cspc *cstor.CStorPoolCluster) error {
 		return err
 	}
 	err = pc.CreateCSPIDeployment(cspc, cspi)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (pc *PoolConfig) createDeployForCSPList(cspc *cstor.CStorPoolCluster, cspList []cstor.CStorPoolInstance) {
@@ -90,10 +88,8 @@ func (pc *PoolConfig) createDeployForCSPList(cspc *cstor.CStorPoolCluster, cspLi
 func (pc *PoolConfig) CreateCSPIDeployment(cspc *cstor.CStorPoolCluster, cspi *cstor.CStorPoolInstance) error {
 	deploy := pc.AlgorithmConfig.GetPoolDeploySpec(cspi)
 	_, err := pc.Controller.kubeclientset.AppsV1().Deployments(cspi.Namespace).Create(context.TODO(), deploy, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 // DownScalePool deletes the required pool.

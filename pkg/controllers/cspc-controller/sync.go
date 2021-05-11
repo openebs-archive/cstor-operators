@@ -497,11 +497,8 @@ func (pc *PoolConfig) syncCSPIWithCSPC(cspc *cstor.CStorPoolCluster, cspi *cstor
 		return err
 	}
 	err = pc.patchPoolDeploymentSpec(gotCSPI)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 /*

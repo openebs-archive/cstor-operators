@@ -152,18 +152,12 @@ func (c *RestoreController) getCStorRestoreResource(key string) (*cstorapis.CSto
 
 // IsRightCStorPoolMgmt is to check if the restore request is for particular pod/application.
 func IsRightCStorPoolMgmt(rst *cstorapis.CStorRestore) bool {
-	if os.Getenv(string(common.OpenEBSIOCSPIID)) == rst.ObjectMeta.Labels[types.CStorPoolInstanceUIDLabelKey] {
-		return true
-	}
-	return false
+	return os.Getenv(string(common.OpenEBSIOCSPIID)) == rst.ObjectMeta.Labels[types.CStorPoolInstanceUIDLabelKey]
 }
 
 // IsDestroyEvent is to check if the call is for restore destroy.
 func IsDestroyEvent(rst *cstorapis.CStorRestore) bool {
-	if rst.ObjectMeta.DeletionTimestamp != nil {
-		return true
-	}
-	return false
+	return rst.ObjectMeta.DeletionTimestamp != nil
 }
 
 // IsOnlyStatusChange is to check only status change of restore object.

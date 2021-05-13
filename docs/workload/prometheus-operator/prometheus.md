@@ -5,7 +5,7 @@
 
 Each and every DevOps and SRE's are looking for ease of deployment of their applications in Kubernetes. After successful installation, they will be looking for how easily it can be monitored to maintain the availability of applications in a real-time manner. They can take proactive measures before an issue arise by monitoring the application. Prometheus is the mostly widely used application for scraping cloud native application metrics. Prometheus and OpenEBS together provide a complete open source stack for monitoring.
 
-In this document, we will explain how you can easily set up a monitoring environment in your K8s cluster using Prometheus and use OpenEBS CSI based cStor PV as the persistent storage for storing the metrics. This guide provides the installation of Prometheus using Helm on dynamically provisioned OpenEBS volumes. 
+In this document, we will explain how you can easily set up a monitoring environment in your K8s cluster using Prometheus and use OpenEBS CSI based cStor PV as the persistent storage for storing the metrics. Since Prometheus is non-distributed application, using cStor helps in having data availability in case of node failures, due to the cStor's replicated storage nature. This guide provides the installation of Prometheus using Helm on dynamically provisioned OpenEBS cStor volumes. 
 
 ## Deployment model
 
@@ -15,17 +15,13 @@ In this document, we will explain how you can easily set up a monitoring environ
 
 
 
-We will add a 100G disk to each node. These disks will be consumed by CSI based cStor pool  and later Prometheus and Alert manager instances will be used these pools to created their persistent volumes. The recommended configuration is to have at least three nodes and an unclaimed external disk to be attached per node. 
+We will add a 100G disk to each node. These disks will be consumed by CSI based cStor pool and later Prometheus and Alert manager instances will be using these pools to create their persistent volumes. The recommended configuration is to have at least three nodes for provisioning at least 3 volume replicas for each volume and an unclaimed external disk to be attached per node to create cStor storage pool on each node with striped manner .  
 
 
 
 ## Configuration workflow
 
-1. [Install OpenEBS](/docs/workload/prometheus-operator/prometheus.md#install-openebs)
-
-2. [Select OpenEBS storage engine](/docs/workload/prometheus-operator/prometheus.md#select-openebs-storage-engine)
-
-3. [Configure CSI based cStor pool and StorageClass](/docs/workload/prometheus-operator/prometheus.md#configure-csi-based-cstor-pool-and-storageclass)
+1. [Meet Prerequisites](/docs/workload/prometheus-operator/prometheus.md#meet-prerequisites)
 
 4. [Installing Prometheus Operator](/docs/workload/prometheus-operator/prometheus.md#installing-prometheus-operator)
 
@@ -33,50 +29,16 @@ We will add a 100G disk to each node. These disks will be consumed by CSI based 
 
    
 
-### Install OpenEBS
+### Meet Prerequisites
 
-If OpenEBS is not installed in your K8s cluster, this can be done from [here](https://docs.openebs.io/docs/next/installation.html). If OpenEBS is already installed, go to the next step.
+OpenEBS should be installed first on your Kubernetes cluster. The steps for OpenEBS installation can be found [here](https://docs.openebs.io/docs/next/installation.html). After OpenEBS installation, choose the OpenEBS storage engine as per your requirement. 
 
-
-
-### Select OpenEBS storage engine
-
-A storage engine is the data plane component of the IO path of a Persistent Volume. In CAS architecture, users can choose different data planes for different application workloads based on a configuration policy. OpenEBS provides different types of storage engines and chooses the right engine that suits your type of application requirements and storage available on your Kubernetes nodes. More information can be read from [here](https://docs.openebs.io/docs/next/overview.html#types-of-openebs-storage-engines).
-
-In this document, we are deploying Prometheus Operator using OpenEBS CSI based cStor storage engine.
-
-
-
-### Configure CSI based cStor pool and StorageClass
-
-The following are the steps to complete cStor pool and cStor Storage Class.
-
-- Create and attach a disk with required capacity to each node.
-
-- Create a CSI based cStor pool on each node using the disks attached to it. More information can be found [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md).
-
-- Create a cStor Storage Class which uses the cStor pool just created in above step. More information can be found [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md). The following is a sample Storage Class used in this example. 
-
-  ```
-  kind: StorageClass
-  apiVersion: storage.k8s.io/v1
-  metadata:
-    name: cstor-csi
-  provisioner: cstor.csi.openebs.io
-  allowVolumeExpansion: true
-  parameters:
-    cas-type: cstor
-    # cstorPoolCluster should have the name of the CSPC
-    cstorPoolCluster: cstor-storage
-    # replicaCount should be <= no. of CSPI
-    replicaCount: "3"
-  ```
-
-  In this Storage Class, we used the name of the cStor pool name  ` cstor-storage` which is created just above this step and mentioned storage replica count as `3`.  We will use this Storage Class name in the Prometheus operator deployment spec for both Prometheus and Alert manager pods.
+- Choose **cStor**, If you are looking for replicated storage feature and other enterprise graded features such as volume expansion, backup and restore, etc. cStor configuration can be found [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md). In this document, we are mentioning about the Prometheus operator installation using OpenEBS cStor.
+- Choose **OpenEBS Local PV**, if you are not requiring replicated storage but high performance storage engine. The steps for deploying Prometheus operator using OpenEBS Local PV can be found [here](https://docs.openebs.io/docs/next/prometheus.html).
 
 ### Installing Prometheus Operator
 
-In this section, we will install the Prometheus operator. We will later deploy the latest available version of Prometheus application. The following are the high-level overview.
+In this section, we will install the Prometheus operator using OpenEBS cStor storage engine. The following are the high-level overview to install Prometheus operator on cStor.
 
 - Fetch and update Prometheus repository
 - Configure Prometheus Helm `values.yaml`
@@ -92,7 +54,7 @@ $ helm repo update
 
 #### Configure Prometheus Helm `values.yaml`
 
-Download `values.yaml` which will modify before installing Prometheus using Helm.
+Download `values.yaml` which we will modify before installing Prometheus using Helm.
 
 ```none
 wget https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/values.yaml
@@ -106,7 +68,7 @@ Perform the following changes:
 
 - Update `prometheus.prometheusSpec.replicas` as `1`
 
-- Uncomment the following spec in the `values.yaml` for `prometheus.prometheusSpec.storageSpec` and change the StorageClass name of Prometheus with the required StorageClass and required volume capacity. In this case, Storage Class used as `openebs-device` , provided the volume capacity as `90Gi`  and added `metdata.name` as `prom`. 
+- Uncomment the following spec in the `values.yaml` for `prometheus.prometheusSpec.storageSpec` and change the StorageClass name of Prometheus with the required StorageClass and required volume capacity. In this case, Storage Class used as `openebs-device` , provided the volume capacity as `40Gi`  and added `metdata.name` as `prom`. 
 
    ```
    storageSpec:
@@ -127,7 +89,7 @@ Perform the following changes:
 
 - Update `alertmanager.alertmanagerSpec.replicas` as `1`
 
-- Uncomment the following spec in the `values.yaml` for `alertmanager.alertmanagerSpec.storage` and change the StorageClass name of Alert manager with the required StorageClass name and required volume capacity. In this case, StorageClass used as `openebs-device` and provided the volume capacity as `90Gi` and added `metdata.name` as `alert`. 
+- Uncomment the following spec in the `values.yaml` for `alertmanager.alertmanagerSpec.storage` and change the StorageClass name of Alert manager with the required StorageClass name and required volume capacity. In this case, StorageClass used as `openebs-device` and provided the volume capacity as `40Gi` and added `metdata.name` as `alert`. 
 
   ```none
    storage:
@@ -179,7 +141,6 @@ Verify Prometheus related PVCs are created under **monitoring** namespace
 ```
 $ kubectl get pvc -n monitoring
 
-NAME                                                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS     AGE
 NAME                                    STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 alert-alertmanager-app-alertmanager-0   Bound    pvc-d734b059-e80a-488f-b398-c66e0b3c208c   40Gi       RWO            cstor-csi      5m53s
 prom-prometheus-app-prometheus-0        Bound    pvc-24bbb044-c080-4f66-a0f6-e51cded91286   40Gi       RWO            cstor-csi      5m53s
@@ -212,7 +173,7 @@ pvc-24bbb044-c080-4f66-a0f6-e51cded91286-target-7b564fcfd-lmt4v   3/3     Runnin
 pvc-d734b059-e80a-488f-b398-c66e0b3c208c-target-66c6454854tv6rj   3/3     Running   1          17m
 ```
 
-Pod names contains `target` is the cStor target pods for Prometheus and Alert manager instances.
+Pod names containing `target` are the cStor target pods for Prometheus and Alert manager instances.
 
 Verify if cStor Volume Claim(CVC) are created successfully.
 
@@ -274,7 +235,7 @@ $ kubectl patch svc prometheus-grafana -n monitoring -p '{"spec": {"type": "Node
 
 **Note:** If the user needs to access Prometheus and Grafana outside the network, the service type can be changed or a new service should be added to use Load Balancer or create Ingress resources for production deployment.
 
-Sample output after changing above 2 changes in services:
+Sample output after making the above 2 changes in services:
 
 ```
 $ kubectl get svc -n monitoring
@@ -308,7 +269,7 @@ ip-192-168-77-39.ap-south-1.compute.internal    Ready    <none>   100m   v1.19.5
 
 
 
-Verify Prometheus service is accessing over web browser using http://<any_node_external-ip:<NodePort>
+Verify Prometheus service is accessible over web browser using http://<any_node_external-ip:<NodePort>
 
 Example:
 
@@ -319,7 +280,7 @@ http://15.206.124.193:30203/
 
 
 
-Launch Grafana using Node External IP of with corresponding NodePort of **prometheus-grafana** service
+Launch Grafana using Node's External IP and with corresponding NodePort of **prometheus-grafana** service
 
 http://<any_node_external-ip>:<Grafana_SVC_NodePort>
 
@@ -337,7 +298,7 @@ Grafana Credentials:
 
 
 
-Password can be get using the command
+Password can be obtained using the command:
 
 ```
 $ (kubectl get secret \
@@ -366,11 +327,9 @@ Users can upload a Grafana dashboard for Prometheus in 3 ways.
 
 ## See Also:
 
-### [OpenEBS use cases](https://docs.openebs.io/docs/next/usecases.html)
+### [cStor User guide](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md)
 
-### [Understanding NDM](https://docs.openebs.io/docs/next/ugndm.html)
-
-### [CSI based cStor User guide](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md)
+### [Troubleshooting cStor](https://github.com/openebs/cstor-operators/blob/master/docs/troubleshooting/troubleshooting.md)
 
 <br>
 

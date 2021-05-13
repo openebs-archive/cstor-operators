@@ -21,10 +21,6 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-
-	"github.com/pkg/errors"
-	"k8s.io/klog"
-
 	"time"
 
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
@@ -33,10 +29,12 @@ import (
 	server "github.com/openebs/cstor-operators/pkg/server"
 	cvcserver "github.com/openebs/cstor-operators/pkg/server/cstorvolumeconfig"
 	"github.com/openebs/cstor-operators/pkg/snapshot"
+	"github.com/pkg/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 )
 
 var (

@@ -91,7 +91,7 @@ spec:
         imagePullPolicy: IfNotPresent
         image: openebs/cvc-operator:ci
         args:
-          - "--v=5"
+          - "--v=2"
           - "--leader-election=false"
           - "--bind=$(OPENEBS_CVC_POD_IP)"
         env:

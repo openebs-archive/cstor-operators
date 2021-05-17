@@ -172,7 +172,10 @@ func setupCVCServer(k8sclientset kubernetes.Interface, openebsClientset clientse
 	// Update BindAddress if address is provided as a option
 	if bindAddr != nil && *bindAddr != "" {
 		config.BindAddr = *bindAddr
+	} else {
+		klog.Fatalln("bindAddr does not have an IP configure, check the `bind` container arg")
 	}
+
 	config.Port = &port
 	err := config.NormalizeAddrs()
 	if err != nil {

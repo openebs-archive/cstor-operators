@@ -238,3 +238,10 @@ analytics:
   enabled: true
   # Specify in hours the duration after which a ping event needs to be sent.
   pingInterval: "24h"
+
+cleanup:
+  image:
+    # Make sure that registry name end with a '/'.
+    # For example : quay.io/ is a correct value here and quay.io is incorrect
+    registry:
+    repository: bitnami/kubectl

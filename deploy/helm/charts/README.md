@@ -115,6 +115,8 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | admissionServer.resources | object | `{}` | Admission webhook pod resources |
 | admissionServer.securityContext | object | `{}` | Admission webhook security context |
 | admissionServer.tolerations | list | `[]` | Admission webhook tolerations |
+| cleanup.image.registry | string | `nil` |  cleanup pre hook image registry |
+| cleanup.image.repository | string | `"bitnami/kubectl"` |  cleanup pre hook image repository |
 | csiController.annotations | object | `{}` | CSI controller annotations |
 | csiController.attacher.image.pullPolicy | string | `"IfNotPresent"` | CSI attacher image pull policy |
 | csiController.attacher.image.registry | string | `"k8s.gcr.io/"` |  CSI attacher image registry |
@@ -143,7 +145,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | csiController.snapshotController.name | string | `"snapshot-controller"` | CSI snapshot controller container name |
 | csiController.snapshotter.image.pullPolicy | string | `"IfNotPresent"` | CSI snapshotter image pull policy |
 | csiController.snapshotter.image.registry | string | `"k8s.gcr.io/"` | CSI snapshotter image pull registry |
-| csiController.snapshotter.image.repository | string | `"sig-storage/csi-snapshotter"` | CSI snapshotter image repositroy |
+| csiController.snapshotter.image.repository | string | `"sig-storage/csi-snapshotter"` | CSI snapshotter image repository |
 | csiController.snapshotter.image.tag | string | `"v3.0.3"` | CSI snapshotter image tag |
 | csiController.snapshotter.name | string | `"csi-snapshotter"` | CSI snapshotter container name |
 | csiController.tolerations | list | `[]` | CSI controller pod tolerations |
@@ -168,7 +170,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cspcOperator.cstorPool.image.repository | string | `"openebs/cstor-pool"` | CStor pool image repository|
 | cspcOperator.cstorPool.image.tag | string | `"2.9.0"` | CStor pool image tag |
 | cspcOperator.cstorPoolExporter.image.registry | string | `nil` | CStor pool exporter image registry |
-| cspcOperator.cstorPoolExporter.image.repository | string | `"openebs/m-exporter"` | CStor pool exporter image repositry |
+| cspcOperator.cstorPoolExporter.image.repository | string | `"openebs/m-exporter"` | CStor pool exporter image repository |
 | cspcOperator.cstorPoolExporter.image.tag | string | `"2.9.0"` | CStor pool exporter image tag |
 | cspcOperator.image.pullPolicy | string | `"IfNotPresent"` | CSPC operator image pull policy |
 | cspcOperator.image.registry | string | `nil` | CSPC operator image registry |

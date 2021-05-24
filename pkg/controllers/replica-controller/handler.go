@@ -529,10 +529,7 @@ func IsRightCStorVolumeReplica(cVR *apis.CStorVolumeReplica) bool {
 
 // IsDestroyEvent is to check if the call is for CStorVolumeReplica destroy.
 func IsDestroyEvent(cVR *apis.CStorVolumeReplica) bool {
-	if cVR.ObjectMeta.DeletionTimestamp != nil {
-		return true
-	}
-	return false
+	return cVR.ObjectMeta.DeletionTimestamp != nil
 }
 
 // IsOnlyStatusChange is to check only status change of cStorVolumeReplica object.

@@ -193,3 +193,25 @@ Create labels for cstor csi controller
 {{ include "cstor.csiController.matchLabels" . }}
 {{ include "cstor.csiController.componentLabels" . }}
 {{- end -}}
+
+{{/*
+Create the name of the priority class for csi node plugin
+*/}}
+{{- define "cstor.csiNode.priorityClassName" -}}
+{{- if .Values.csiNode.priorityClass.create }}
+{{- printf "%s-%s" .Release.Name .Values.csiNode.priorityClass.name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s" .Values.csiNode.priorityClass.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create the name of the priority class for csi controller plugin
+*/}}
+{{- define "cstor.csiController.priorityClassName" -}}
+{{- if .Values.csiController.priorityClass.create }}
+{{- printf "%s-%s" .Release.Name .Values.csiController.priorityClass.name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s" .Values.csiController.priorityClass.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}

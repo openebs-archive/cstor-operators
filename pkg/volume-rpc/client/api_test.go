@@ -15,6 +15,7 @@
 package client
 
 import (
+	"context"
 	"testing"
 
 	"github.com/openebs/api/v2/pkg/proto"
@@ -50,7 +51,7 @@ func TestRunVolumeSnapCreateCommand(t *testing.T) {
 	var s Server
 	for i, c := range cases {
 		t.Run(i, func(t *testing.T) {
-			resp, obtainedErr := s.RunVolumeSnapCreateCommand(nil, c.test)
+			resp, obtainedErr := s.RunVolumeSnapCreateCommand(context.TODO(), c.test)
 
 			if c.expectedError != obtainedErr {
 				// XXX: this can be written in a more compact way. but keeping it this way
@@ -90,7 +91,7 @@ func TestRunVolumeSnapDeleteCommand(t *testing.T) {
 	var s Server
 	for i, c := range cases {
 		t.Run(i, func(t *testing.T) {
-			resp, obtainedErr := s.RunVolumeSnapDeleteCommand(nil, c.test)
+			resp, obtainedErr := s.RunVolumeSnapDeleteCommand(context.TODO(), c.test)
 
 			if c.expectedError != obtainedErr {
 				// XXX: this can be written in a more compact way. but keeping it this way

@@ -177,10 +177,7 @@ func (f *fixture) createFakePoolPod(cspi *cstorapis.CStorPoolInstance) error {
 		},
 	}
 	_, err := f.k8sClient.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // createFakeVolumeReplicas will create fake CVRs on cstorPools

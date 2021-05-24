@@ -449,10 +449,7 @@ func (pOps *PoolOperations) createBDC(newBD, oldBD string) error {
 		return err
 	}
 	err = pOps.ClaimBD(bdObj, oldBD)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func getBDOwnerReference(cspc *cstor.CStorPoolCluster) []metav1.OwnerReference {

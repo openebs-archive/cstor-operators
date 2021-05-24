@@ -441,42 +441,6 @@ func getV1Alpha1BackupFromV1(backup *cstorapis.CStorBackup) *openebsapis.CStorBa
 	}
 }
 
-// getLastBackupSnap will fetch the last successful backup's snapshot name
-func (bOps *backupAPIOps) getLastBackupSnap(backup *cstorapis.CStorBackup) (string, error) {
-	lastbkpName := backup.Spec.BackupName + "-" + backup.Spec.VolumeName
-	b, err := bOps.clientset.OpenebsV1alpha1().
-		CStorCompletedBackups(backup.Namespace).
-		Get(context.TODO(), lastbkpName, metav1.GetOptions{})
-	if err != nil {
-		if k8serror.IsNotFound(err) {
-			// Build CStorCompletedBackup which will helpful for incremental backups
-			bk := &openebsapis.CStorCompletedBackup{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      lastbkpName,
-					Namespace: backup.Namespace,
-					Labels:    backup.Labels,
-				},
-				Spec: openebsapis.CStorBackupSpec{
-					BackupName: backup.Spec.BackupName,
-					VolumeName: backup.Spec.VolumeName,
-				},
-			}
-
-			_, err := bOps.clientset.OpenebsV1alpha1().CStorCompletedBackups(bk.Namespace).Create(context.TODO(), bk, metav1.CreateOptions{})
-			if err != nil {
-				klog.Errorf("Error creating last completed-backup resource for backup:%v err:%v", bk.Spec.BackupName, err)
-				return "", err
-			}
-			klog.Infof("LastBackup resource created for backup:%s volume:%s", bk.Spec.BackupName, bk.Spec.VolumeName)
-			return "", nil
-		}
-		return "", errors.Errorf("failed to get lastbkpName %s error: %s", lastbkpName, err.Error())
-	}
-
-	// PrevSnapName stores the last completed backup snapshot
-	return b.Spec.PrevSnapName, nil
-}
-
 func getPoolVersion(cspiName, cspiNamespace string, clientset clientset.Interface) (string, error) {
 	cspi, err := clientset.CstorV1().CStorPoolInstances(cspiNamespace).Get(context.TODO(), cspiName, metav1.GetOptions{})
 	if err != nil {

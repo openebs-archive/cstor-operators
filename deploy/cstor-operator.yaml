@@ -23,7 +23,7 @@ spec:
         openebs.io/component-name: cspc-operator
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-maya-operator
+      serviceAccountName: openebs-cstor-operator
       containers:
       - name: cspc-operator
         imagePullPolicy: IfNotPresent
@@ -85,11 +85,15 @@ spec:
         openebs.io/component-name: cvc-operator
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-maya-operator
+      serviceAccountName: openebs-cstor-operator
       containers:
       - name: cvc-operator
         imagePullPolicy: IfNotPresent
         image: openebs/cvc-operator:ci
+        args:
+          - "--v=2"
+          - "--leader-election=false"
+          - "--bind=$(OPENEBS_CVC_POD_IP)"
         env:
         # OPENEBS_IO_BASE_DIR is used to configure base directory for openebs on host path.
         # Where OpenEBS can store required files. Default base path will be /var/openebs
@@ -104,6 +108,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: OPENEBS_CVC_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         - name: OPENEBS_SERVICEACCOUNT_NAME
           valueFrom:
             fieldRef:
@@ -156,7 +164,7 @@ spec:
         openebs.io/component-name: cstor-admission-webhook
         openebs.io/version: dev
     spec:
-      serviceAccountName: openebs-maya-operator
+      serviceAccountName: openebs-cstor-operator
       containers:
         - name: admission-webhook
           image: openebs/cstor-webhook:ci

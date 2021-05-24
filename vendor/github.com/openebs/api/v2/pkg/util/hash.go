@@ -17,9 +17,9 @@ limitations under the License.
 package util
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"strconv"
 
+	"github.com/cespare/xxhash"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/json"
 )
@@ -32,6 +32,6 @@ func Hash(obj interface{}) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to convert the object to json encoded format")
 	}
-	hashBytes := md5.Sum(jsonEncodedValues)
-	return hex.EncodeToString(hashBytes[:]), nil
+	hashBytes := xxhash.Sum64(jsonEncodedValues)
+	return strconv.FormatUint(hashBytes, 10), nil
 }

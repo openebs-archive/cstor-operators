@@ -20,11 +20,9 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/cespare/xxhash"
 	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
@@ -839,7 +837,7 @@ func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig,
 			klog.Errorf("%s", errorMsg)
 			continue
 		}
-		hash, err := strconv.FormatUint(xxhash.Sum64String(pvName + "-" + poolName), 10), nil
+		hash, err := util.Hash(pvName + "-" + poolName)
 		if err != nil {
 			errorMsg = fmt.Sprintf(
 				"failed to calculate of hash for new volume replica error: %v",

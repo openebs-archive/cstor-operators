@@ -839,7 +839,7 @@ func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig,
 			klog.Errorf("%s", errorMsg)
 			continue
 		}
-		hash, err := strconv.FormatUint(xxhash.Sum64(pvName + "-" + poolName), 10), nil
+		hash, err := strconv.FormatUint(xxhash.Sum64String(pvName + "-" + poolName), 10), nil
 		if err != nil {
 			errorMsg = fmt.Sprintf(
 				"failed to calculate of hash for new volume replica error: %v",

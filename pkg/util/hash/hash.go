@@ -17,12 +17,12 @@ limitations under the License.
 package hash
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"strconv"
 
+	"github.com/cespare/xxhash"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
@@ -35,8 +35,8 @@ func Hash(obj interface{}) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to convert the object to json encoded format")
 	}
-	hashBytes := md5.Sum(jsonEncodedValues)
-	return hex.EncodeToString(hashBytes[:]), nil
+	hashBytes := xxhash.Sum64(jsonEncodedValues)
+	return strconv.FormatUint(hashBytes, 10), nil
 }
 
 const (

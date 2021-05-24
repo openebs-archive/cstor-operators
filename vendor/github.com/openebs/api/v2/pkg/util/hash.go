@@ -20,7 +20,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 
-	"github.com/cespare/xxhash"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/json"
 )

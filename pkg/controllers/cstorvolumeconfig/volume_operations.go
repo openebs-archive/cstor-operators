@@ -27,6 +27,7 @@ import (
 	"github.com/openebs/api/v2/pkg/apis/types"
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 
+	"github.com/openebs/cstor-operators/pkg/util/hash"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 
@@ -837,7 +838,7 @@ func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig,
 			klog.Errorf("%s", errorMsg)
 			continue
 		}
-		hash, err := util.Hash(pvName + "-" + poolName)
+		hashVal, err := hash.Hash(pvName + "-" + poolName)
 		if err != nil {
 			errorMsg = fmt.Sprintf(
 				"failed to calculate of hash for new volume replica error: %v",
@@ -849,7 +850,7 @@ func (c *CVCController) handleVolumeReplicaCreation(cvc *apis.CStorVolumeConfig,
 		// TODO: Add a check for ClonedVolumeReplica scaleup case
 		// Create replica with Recreate state
 		rInfo := replicaInfo{
-			replicaID: hash,
+			replicaID: hashVal,
 			phase:     apis.CVRStatusRecreate,
 			ioWorkers: cvc.Spec.Policy.Replica.IOWorkers,
 		}

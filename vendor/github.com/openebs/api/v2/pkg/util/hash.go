@@ -17,7 +17,8 @@ limitations under the License.
 package util
 
 import (
-	"strconv"
+	"crypto/md5"
+	"encoding/hex"
 
 	"github.com/cespare/xxhash"
 	"github.com/pkg/errors"
@@ -32,6 +33,6 @@ func Hash(obj interface{}) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to convert the object to json encoded format")
 	}
-	hashBytes := xxhash.Sum64(jsonEncodedValues)
-	return strconv.FormatUint(hashBytes, 10), nil
+	hashBytes := md5.Sum(jsonEncodedValues)
+	return hex.EncodeToString(hashBytes[:]), nil
 }

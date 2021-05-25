@@ -29,12 +29,6 @@ var (
 	usage   = fmt.Sprintf("%s", cmdName)
 )
 
-// CmdSnaphotOptions holds the options for snapshot
-// create command
-type CmdSnaphotOptions struct {
-	volName string
-}
-
 // NewCStorVolumeMgmt creates a new CStorVolume CRD watcher and grpc command.
 func NewCStorVolumeMgmt() (*cobra.Command, error) {
 	// Create a new command.

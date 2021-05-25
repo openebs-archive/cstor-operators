@@ -27,11 +27,6 @@ import (
 	"k8s.io/klog"
 )
 
-var (
-	poolTypeCommand  = map[string]string{"mirrored": "mirror", "raidz": "raidz", "raidz2": "raidz2"}
-	defaultGroupSize = map[string]int{"striped": 1, "mirrored": 2, "raidz": 3, "raidz2": 6}
-)
-
 // PoolOperator is the name of the tool that makes pool-related operations.
 const (
 	StatusNoPoolsAvailable = "no pools available"
@@ -67,11 +62,6 @@ type ImportOptions struct {
 
 	// DevPath is directory where pool devices resides
 	DevPath string
-
-	// dontImport, being true, makes sure `zpool import` command is built
-	// without pool name.
-	// This way, we know the existence of pool without importing pool
-	dontImport bool
 }
 
 // RunnerVar the runner variable for executing binaries.

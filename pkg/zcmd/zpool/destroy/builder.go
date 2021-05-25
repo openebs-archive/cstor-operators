@@ -17,7 +17,6 @@ limitations under the License.
 package pdestroy
 
 import (
-	"fmt"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -124,10 +123,10 @@ func (p *PoolDestroy) Build() (*PoolDestroy, error) {
 	var c strings.Builder
 	p = p.Validate()
 	p.appendCommand(&c, bin.ZPOOL)
-	p.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	p.appendCommand(&c, " "+Operation+" ")
 
 	if IsForcefullySet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -f "))
+		p.appendCommand(&c, " -f ")
 	}
 
 	p.appendCommand(&c, p.Pool)

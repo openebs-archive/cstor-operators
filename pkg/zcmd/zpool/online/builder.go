@@ -17,7 +17,6 @@ limitations under the License.
 package ponline
 
 import (
-	"fmt"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -128,17 +127,17 @@ func (p *PoolOnline) Build() (*PoolOnline, error) {
 	var c strings.Builder
 	p = p.Validate()
 	p.appendCommand(&c, bin.ZPOOL)
-	p.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	p.appendCommand(&c, " "+Operation+" ")
 
 	if IsShouldExpandSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -e "))
+		p.appendCommand(&c, " -e ")
 	}
 
-	p.appendCommand(&c, fmt.Sprintf(" %s ", p.Pool))
+	p.appendCommand(&c, " "+p.Pool+" ")
 
 	if IsDeviceSet()(p) {
 		for _, d := range p.Device {
-			p.appendCommand(&c, fmt.Sprintf(" %s ", d))
+			p.appendCommand(&c, " "+d+" ")
 		}
 	}
 	p.Command = c.String()

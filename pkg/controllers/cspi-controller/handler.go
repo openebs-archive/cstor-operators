@@ -172,7 +172,7 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 		c.recorder.Event(cspi,
 			corev1.EventTypeNormal,
 			string(common.SuccessCreated),
-			fmt.Sprintf("Pool created successfully"))
+			string("Pool created successfully"))
 
 		cspiGot, err := c.update(cspi)
 		if err != nil {
@@ -195,7 +195,7 @@ func (c *CStorPoolInstanceController) reconcile(key string) error {
 		// zpool commands will error out and fall into this scenario
 		c.recorder.Event(cspi, corev1.EventTypeWarning,
 			string(common.FailedSynced),
-			fmt.Sprintf("Failed to import the pool as the underlying pool might be lost or the disk(s) has gone bad"),
+			string("Failed to import the pool as the underlying pool might be lost or the disk(s) has gone bad"),
 		)
 		// Set Pool Lost condition to true
 		condition := cspiutil.NewCSPICondition(

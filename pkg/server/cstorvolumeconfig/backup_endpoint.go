@@ -317,7 +317,7 @@ func (bOps *backupAPIOps) deleteBackup(snapName, volname, ns, schedule string) e
 func backupCreateRequestValidations(backup *cstorapis.CStorBackup) error {
 	// backup name is expected
 	if len(strings.TrimSpace(backup.Spec.BackupName)) == 0 {
-		return CodedError(400, fmt.Sprintf("Failed to create backup: missing backup name "))
+		return CodedError(400, string("Failed to create backup: missing backup name "))
 	}
 
 	// namespace is expected

@@ -70,8 +70,6 @@ type fixture struct {
 	// Objects to put in the store.
 	cspiLister []*cstor.CStorPoolInstance
 
-	// Actions expected to happen on the client. Objects from here are also
-	// preloaded into NewSimpleFake.
 	k8sObjects     []runtime.Object
 	openebsObjects []runtime.Object
 }

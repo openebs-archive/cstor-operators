@@ -90,8 +90,7 @@ func validateCVCSpecChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error
 	}
 
 	// Below validations should be done only with new CVC object
-	err := validatePoolNames(cvcNewObj)
-	return err
+	return validatePoolNames(cvcNewObj)
 }
 
 // TODO: isScalingInProgress(cvcObj *cstor.CStorVolumeConfig) signature need to be

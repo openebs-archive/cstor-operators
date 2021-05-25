@@ -57,7 +57,6 @@ func (oc *OperationsConfig) addRaidGroup(r cstor.RaidGroup, dType, pType string)
 		WithVdevList(vdevlist).
 		WithExecutor(oc.zcmdExecutor).
 		Execute()
-
 	return err
 }
 

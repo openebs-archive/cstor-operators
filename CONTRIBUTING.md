@@ -16,6 +16,6 @@ cd openebs/cstor-operators
 make all
 ```
 
-Alternatively, you can open this repo in Gitpod and mkae your PR right from the browser:
+Alternatively, you can open this repo in Gitpod and make your PR right from the browser:
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/openebs/cstor-operators)

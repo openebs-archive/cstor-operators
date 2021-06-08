@@ -1,4 +1,4 @@
-# CStor-Operators
+# cStor Operators
 [![Go Report](https://goreportcard.com/badge/github.com/openebs/cstor-operators)](https://goreportcard.com/report/github.com/openebs/cstor-operators)
 [![Build Status](https://github.com/openebs/cstor-operators/actions/workflows/build.yml/badge.svg)](https://github.com/openebs/cstor-operators/actions/workflows/build.yml)
 [![Slack](https://img.shields.io/badge/JOIN-SLACK-blue)](https://kubernetes.slack.com/messages/openebs/)
@@ -9,7 +9,7 @@
 
 ## Project Status: Beta
 
-We are always happy to list users who run CStor in production, checkout our existing [adopters](https://github.com/openebs/openebs/tree/master/adopters) and their [feedbacks](https://github.com/openebs/openebs/issues/2719).
+We are always happy to list users who run cStor in production, check out our existing [adopters](https://github.com/openebs/openebs/tree/master/adopters), and their [feedbacks](https://github.com/openebs/openebs/issues/2719).
 
 The new cStor Operators support the following Operations on cStor pools and volumes:
 1. Provisioning and De-provisioning of cStor pools.

@@ -10,9 +10,9 @@ In this document, we will explain how you can easily set up a NFS solution using
 
 ## Configuration workflow
 
-1. [Meet Prerequisites](/docs/workload/NFS-Provisioner/nfs-provisioner.md#meet-prerequisites)
+1. [Meet Prerequisites](/docs/tutorial/volumes/rwx-with-nfs.md#meet-prerequisites)
 
-2. [Installing OpenEBS NFS Provisioner](/docs/workload/NFS-Provisioner/nfs-provisioner.md#installing-openebs-nfs-provisioner)
+2. [Installing OpenEBS NFS Provisioner](/docs/tutorial/volumes/rwx-with-nfs.md#installing-openebs-nfs-provisioner)
 
 
 ### Meet Prerequisites
@@ -94,3 +94,4 @@ From the above output, `openebs-rwx` is the storage class that supports shared s
 **Note:** Don’t forget to install NFS client packages on all worker nodes.  If NFS client packages are not installed & enabled, then it will fail to provision any application which uses the above NFS storage class.
 
 <hr>
+

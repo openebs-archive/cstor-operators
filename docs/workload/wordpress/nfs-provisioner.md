@@ -20,9 +20,9 @@ We will add a 100G disk to each node. These disks will be consumed by CSI based 
 
 ## Configuration workflow
 
-1. [Meet Prerequisites](/docs/workload/NFS-Provisioner/nfs-provisioner.md#meet-prerequisites)
+1. [Meet Prerequisites](/docs/workload/wordpress/nfs-provisioner.md#meet-prerequisites)
 
-2. [How to use NFS volume for different applications?](/docs/workload/NFS-Provisioner/nfs-provisioner.md#how-to-use-nfs-volume-for-different-applications?)
+2. [How to use NFS volume for different applications?](/docs/workload/wordpress/nfs-provisioner.md#how-to-use-nfs-volume-for-different-applications?)
 
     
 
@@ -109,4 +109,3 @@ pvc-99b40863-ea16-4dc8-9d54-ca5051940625   10Gi       RWO            Delete     
 <br>
 
 <hr>
-

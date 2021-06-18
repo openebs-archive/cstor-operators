@@ -35,5 +35,5 @@ spec:
           - /bin/sh
           - -c
           - >
-              kubectl delete validatingWebhookConfiguration openebs-cstor-validation-webhook;
+              kubectl delete validatingWebhookConfiguration openebs-cstor-validation-webhook || true;
       restartPolicy: OnFailure

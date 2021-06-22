@@ -61,7 +61,7 @@ Application of following YAML provisions a single node mirror cStor pool.
     ```
     **Note:** 
     The name of cspi is prefixed by the cspc name indicating which cspc the cspi belongs to.
-    Please note that, a cspc can have mutiple cspi(s) so the cspc name prefix helps to figure out that
+    Please note that, a cspc can have multiple cspi(s) so the cspc name prefix helps to figure out that
     the cspi belongs to which cspc.
    
 3. To delete the cStor pool

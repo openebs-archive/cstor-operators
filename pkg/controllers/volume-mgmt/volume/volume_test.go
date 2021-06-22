@@ -353,9 +353,6 @@ func TestCheckValidVolume(t *testing.T) {
 }
 
 func TestExtractReplicaStatusFromJSON(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := map[string]struct {
 		str     string
 		resp    *apis.CVStatus

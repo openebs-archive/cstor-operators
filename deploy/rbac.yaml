@@ -8,7 +8,7 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: openebs-maya-operator
+  name: openebs-cstor-operator
   namespace: openebs
 ---
 # Define Role that allows operations on K8s pods/deployments
@@ -66,7 +66,7 @@ metadata:
   name: openebs-cstor-operator
 subjects:
 - kind: ServiceAccount
-  name: openebs-maya-operator
+  name: openebs-cstor-operator
   namespace: openebs
 roleRef:
   kind: ClusterRole
@@ -95,7 +95,7 @@ metadata:
   name: openebs-cstor-migration
 subjects:
 - kind: ServiceAccount
-  name: openebs-maya-operator
+  name: openebs-cstor-operator
   namespace: openebs
 roleRef:
   kind: ClusterRole

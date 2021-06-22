@@ -1,0 +1,8 @@
+ignoreRules = [ "G101",
+                "S1039",
+                "ST1005"
+              ]
+
+ignoreFiles = """
+vendor/**
+"""

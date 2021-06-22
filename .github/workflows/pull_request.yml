@@ -20,6 +20,7 @@ on:
       - 'docs/**'
       - 'deploy/helm/**'
       - 'changelogs/**'
+      - 'CHANGELOG.md'
     branches:
       # on pull requests to master and release branches
       - master
@@ -59,10 +60,15 @@ jobs:
         with:
           version: v0.5.1
 
-      - name: Build Image
-        env:
-          IMG_RESULT: cache
-        run: make docker.buildx.cspc-operator
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/cspc-operator/cspc-operator.Dockerfile
+          push: false
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            openebs/cspc-operator:ci
 
   cvc-operator:
     runs-on: ubuntu-latest
@@ -82,10 +88,15 @@ jobs:
         with:
           version: v0.5.1
 
-      - name: Build Image
-        env:
-          IMG_RESULT: cache
-        run: make docker.buildx.cvc-operator
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/cvc-operator/cvc-operator.Dockerfile
+          push: false
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            openebs/cvc-operator:ci
 
   pool-manager:
     runs-on: ubuntu-latest
@@ -105,10 +116,17 @@ jobs:
         with:
           version: v0.5.1
 
-      - name: Build Image
-        env:
-          IMG_RESULT: cache
-        run: make docker.buildx.pool-manager
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/pool-manager/pool-manager.Dockerfile
+          push: false
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            openebs/cstor-pool-manager:ci
+          build-args: |
+            BASE_IMAGE=openebs/cstor-base:ci
 
   volume-manager:
     runs-on: ubuntu-latest
@@ -128,10 +146,15 @@ jobs:
         with:
           version: v0.5.1
 
-      - name: Build Image
-        env:
-          IMG_RESULT: cache
-        run: make docker.buildx.volume-manager
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/volume-manager/volume-manager.Dockerfile
+          push: false
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            openebs/cstor-volume-manager:ci
   
   cstor-webhook:
     runs-on: ubuntu-latest
@@ -151,10 +174,15 @@ jobs:
         with:
           version: v0.5.1
 
-      - name: Build Image
-        env:
-          IMG_RESULT: cache
-        run: make docker.buildx.cstor-webhook
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/cstor-webhook/cstor-webhook.Dockerfile
+          push: false
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            openebs/cstor-webhook:ci
 
   unit-tests:
     name: unit tests 
@@ -185,18 +213,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.18.6]
+        kubernetes: [v1.20.6]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      
+
       - name: Setup Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.3.0
+        uses: manusa/actions-setup-minikube@v2.4.1
         with:
-          minikube version: v1.9.2
+          minikube version: 'v1.16.0'
           kubernetes version: ${{ matrix.kubernetes }}
           github token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Set tag
         run: |
           BRANCH="${GITHUB_REF##*/}"
@@ -205,7 +233,7 @@ jobs:
           echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
 
       - name: Build images locally
-        run: make all.amd64 || exit 1;
+        run: make all || exit 1;
       
       - name: Running tests
         run: ./ci/sanity/install.sh && ./ci/sanity/sanity.sh

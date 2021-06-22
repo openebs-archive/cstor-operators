@@ -69,13 +69,6 @@ func NewBuilder() *Builder {
 }
 
 // WithNameSpace sets the Namespace field of config object with provided value.
-func (b *Builder) withDefaults() *Builder {
-	b.ConfigObj.GetSpec = b.ConfigObj.GetCSPISpec
-	b.ConfigObj.Select = b.ConfigObj.SelectNode
-	return b
-}
-
-// WithNameSpace sets the Namespace field of config object with provided value.
 func (b *Builder) WithNameSpace(ns string) *Builder {
 	if len(ns) == 0 {
 		b.errs = append(b.errs, errors.New("failed to build algorithm config object: missing namespace"))

@@ -194,7 +194,7 @@ spec:
                       description: Mode represents replica status i.e. Healthy, Degraded
                       type: string
                     quorum:
-                      description: 'Quorum indicates wheather data wrtitten to the
+                      description: 'Quorum indicates whether data wrtitten to the
                         replica is lost or exists. "0" means: data has been lost(
                         might be ephimeral case) and will recostruct data from other
                         Healthy replicas in a write-only mode 1 means: written data

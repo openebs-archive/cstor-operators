@@ -2432,7 +2432,7 @@ spec:
                   properties:
                     logicalReferenced:
                       description: LogicalReferenced describes the amount of space
-                        that is "logically" accessable by this snapshot. This logical
+                        that is "logically" accessible by this snapshot. This logical
                         space ignores the effect of the compression and copies properties,
                         giving a quantity closer to the amount of data that application
                         see. It also includes space consumed by metadata.
@@ -2455,7 +2455,7 @@ spec:
                   properties:
                     logicalReferenced:
                       description: LogicalReferenced describes the amount of space
-                        that is "logically" accessable by this snapshot. This logical
+                        that is "logically" accessible by this snapshot. This logical
                         space ignores the effect of the compression and copies properties,
                         giving a quantity closer to the amount of data that application
                         see. It also includes space consumed by metadata.
@@ -2717,7 +2717,7 @@ spec:
                       description: Mode represents replica status i.e. Healthy, Degraded
                       type: string
                     quorum:
-                      description: 'Quorum indicates wheather data wrtitten to the
+                      description: 'Quorum indicates whether data wrtitten to the
                         replica is lost or exists. "0" means: data has been lost(
                         might be ephimeral case) and will recostruct data from other
                         Healthy replicas in a write-only mode 1 means: written data

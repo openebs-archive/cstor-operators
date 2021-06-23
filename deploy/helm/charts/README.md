@@ -220,7 +220,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | openebs-ndm.helperPod.image.registry | string | `nil` | Registry for helper image |
 | openebs-ndm.helperPod.image.repository | string | `openebs/linux-utils` | Image repository for helper pod |
 | openebs-ndm.ndm.filters.enableOsDiskExcludeFilter | bool | `true` | Enable filters of OS disk exclude |
-| openebs-ndm.ndm.filters.enableVendorFilter | bool | `true` | Enable filters of venders |
+| openebs-ndm.ndm.filters.enableVendorFilter | bool | `true` | Enable filters of vendors |
 | openebs-ndm.ndm.filters.excludeVendors | string | `"CLOUDBYT,OpenEBS"` | Exclude devices with specified vendor |
 | openebs-ndm.ndm.filters.enablePathFilter | bool | `true` | Enable filters of paths |
 | openebs-ndm.ndm.filters.includePaths | string | `""` | Include devices with specified path patterns |

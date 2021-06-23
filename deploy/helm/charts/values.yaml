@@ -187,7 +187,7 @@ csiNode:
   #   memory: 32Mi
   ## Labels to be added to openebs-cstor-csi-node pods
   podLabels: {}
-  # kubeletDir path can be configured to run on various different k8s ditributions like
+  # kubeletDir path can be configured to run on various different k8s distributions like
   # microk8s where kubelet root dir is not (/var/lib/kubelet/). For example microk8s,
   # we need to change the kubelet directory to `/var/snap/microk8s/common/var/lib/kubelet/`
   kubeletDir: "/var/lib/kubelet/"

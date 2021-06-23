@@ -40,7 +40,3 @@ func (poolMocker *PoolMocker) SetProperty(cmd string) ([]byte, error) {
 	// Add fields in PoolMocker for setting the property
 	return []byte{}, nil
 }
-
-func setPropertyError(cmd string) ([]byte, error) {
-	return []byte("fake error cann't set value"), errors.Errorf("exit status 1")
-}

@@ -53,7 +53,7 @@ var (
 		metav1.NamespaceSystem,
 		metav1.NamespacePublic,
 	}
-	snapshotAnnotation = "snapshot.alpha.kubernetes.io/snapshot"
+	// snapshotAnnotation = "snapshot.alpha.kubernetes.io/snapshot"
 )
 
 // webhook implements a validating webhook.

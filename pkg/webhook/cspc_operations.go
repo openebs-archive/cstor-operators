@@ -448,11 +448,7 @@ func (pOps *PoolOperations) createBDC(newBD, oldBD string) error {
 	if err != nil {
 		return err
 	}
-	err = pOps.ClaimBD(bdObj, oldBD)
-	if err != nil {
-		return err
-	}
-	return nil
+	return pOps.ClaimBD(bdObj, oldBD)
 }
 
 func getBDOwnerReference(cspc *cstor.CStorPoolCluster) []metav1.OwnerReference {
@@ -681,11 +677,7 @@ func (pOps *PoolOperations) validatePoolExpansion(
 			}
 		}
 	}
-	err := pOps.validateNewBDs(bds, pOps.OldCSPC)
-	if err != nil {
-		return err
-	}
-	return nil
+	return pOps.validateNewBDs(bds, pOps.OldCSPC)
 }
 
 // getIndexedCommonRaidGroups returns raidGroups that contains index matching of

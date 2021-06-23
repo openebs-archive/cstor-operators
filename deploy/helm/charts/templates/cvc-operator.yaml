@@ -27,6 +27,10 @@ spec:
         - name: {{ template "cstor.fullname" . }}-cvc-operator
           imagePullPolicy: {{ .Values.cvcOperator.image.pullPolicy }}
           image: "{{ .Values.cvcOperator.image.registry }}{{ .Values.cvcOperator.image.repository }}:{{ .Values.cvcOperator.image.tag }}"
+          args:
+            - "--v=2"
+            - "--leader-election=false"
+            - "--bind=$(OPENEBS_CVC_POD_IP)"
           resources:
 {{ toYaml .Values.cvcOperator.resources | indent 12 }}
           env:
@@ -47,6 +51,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.serviceAccountName
+            - name: OPENEBS_CVC_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: OPENEBS_IO_CSTOR_TARGET_IMAGE
               value: "{{ .Values.cvcOperator.target.image.registry }}{{ .Values.cvcOperator.target.image.repository }}:{{ .Values.cvcOperator.target.image.tag }}"
             - name:  OPENEBS_IO_CSTOR_VOLUME_MGMT_IMAGE

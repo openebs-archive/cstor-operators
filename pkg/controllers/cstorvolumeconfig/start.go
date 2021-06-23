@@ -21,10 +21,6 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-
-	"github.com/pkg/errors"
-	"k8s.io/klog"
-
 	"time"
 
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
@@ -33,10 +29,12 @@ import (
 	server "github.com/openebs/cstor-operators/pkg/server"
 	cvcserver "github.com/openebs/cstor-operators/pkg/server/cstorvolumeconfig"
 	"github.com/openebs/cstor-operators/pkg/snapshot"
+	"github.com/pkg/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 )
 
 var (
@@ -49,7 +47,6 @@ var (
 // Command line flags
 var (
 	kubeconfig              = flag.String("kubeconfig", "", "Absolute path to the kubeconfig file. Required only when running out of cluster.")
-	resyncPeriod            = flag.Duration("resync-period", 60*time.Second, "Resync interval of the controller.")
 	leaderElection          = flag.Bool("leader-election", false, "Enables leader election.")
 	leaderElectionNamespace = flag.String("leader-election-namespace", "", "The namespace where the leader election resource exists. Defaults to the pod namespace if not set.")
 	bindAddr                = flag.String("bind", "", "IP Address to bind for CVC-Operator Server")
@@ -57,8 +54,6 @@ var (
 
 // ServerOptions holds information to start the CVC server
 type ServerOptions struct {
-	// Address on which CVC server will serve the requests
-	bindAddress string
 	// httpServer holds the CVC Server configurations
 	httpServer *cvcserver.HTTPServer
 }
@@ -177,7 +172,10 @@ func setupCVCServer(k8sclientset kubernetes.Interface, openebsClientset clientse
 	// Update BindAddress if address is provided as a option
 	if bindAddr != nil && *bindAddr != "" {
 		config.BindAddr = *bindAddr
+	} else {
+		klog.Fatalln("bindAddr does not have an IP configure, check the `bind` container arg")
 	}
+
 	config.Port = &port
 	err := config.NormalizeAddrs()
 	if err != nil {

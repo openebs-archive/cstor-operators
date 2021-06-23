@@ -115,7 +115,7 @@ Admin/User/SRE               X               X                |                 
 1. CSPC contains a list of pool specs and a pool spec contains configuration for cStor pool creation on a particular node as specified in the pool spec.
 For example, if a CSPC manifest has 3 pool specs, 3 cStor pools will be created on 3 different nodes. For a CSPC, no two cStor pools will be created on the same node.
 
-2. An admin/SRE can preapre their CSPC YAML according to the reqiremnts and do a `kubectl apply -f <cspc-yaml-file>` to provision a CStorPoolCluster.
+2. An admin/SRE can preapre their CSPC YAML according to the requirements and do a `kubectl apply -f <cspc-yaml-file>` to provision a CStorPoolCluster.
 
 3. Once a CSPC is applied, it is validated by cStor admission server and if the validation passes it is admitted to the etcd.
 

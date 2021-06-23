@@ -126,7 +126,7 @@ func (v *VolumeSnapshot) Build() (*VolumeSnapshot, error) {
 
 	v.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
 	if IsRecursiveSet()(v) {
-		v.appendCommand(&c, fmt.Sprintf(" -r "))
+		v.appendCommand(&c, " -r ")
 	}
 
 	if IsPropertySet()(v) {

@@ -35,7 +35,6 @@ import (
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -44,7 +43,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	core "k8s.io/client-go/testing"
 )
 
 var (
@@ -67,19 +65,14 @@ type fixture struct {
 	cvrLister  []*apis.CStorVolumeReplica
 	cvLister   []*apis.CStorVolume
 
-	ignoreActionExpectations bool
-
 	// Actions expected to happen on the client. Objects from here are also
 	// preloaded into NewSimpleFake.
-	actions        []core.Action
 	k8sObjects     []runtime.Object
 	openebsObjects []runtime.Object
 }
 
 // testConfig contains the extra information required to run the test
 type testConfig struct {
-	// isDay2OperationNeedToPerform is set then above operations will be performed
-	isDay2OperationNeedToPerform bool
 	// loopCount times reconcile function will be called
 	loopCount int
 	// time interval to trigger reconciliation
@@ -101,25 +94,6 @@ func (f *fixture) SetFakeClient() {
 
 	// Load openebs client set by preloading with openebs objects.
 	f.openebsClient = openebsFakeClientset.NewSimpleClientset(f.openebsObjects...)
-}
-
-func (f *fixture) expectUpdateCVCAction(cvc *apis.CStorVolumeConfig) {
-	action := core.NewUpdateAction(schema.GroupVersionResource{Resource: "cstorvolumeconfigs"}, cvc.Namespace, cvc)
-	f.actions = append(f.actions, action)
-}
-
-func (f *fixture) expectListCVRAction(cvc *apis.CStorVolumeConfig) {
-	action := core.NewListAction(schema.GroupVersionResource{Resource: "cstorvolumereplicas"},
-		schema.GroupVersionKind{Kind: "cstorvolumereplicas"}, cvc.Namespace, metav1.ListOptions{})
-	f.actions = append(f.actions, action)
-}
-
-func (f *fixture) run(cvcName string) {
-	testConfig := testConfig{
-		loopCount: 1,
-		loopDelay: time.Second * 0,
-	}
-	f.run_(cvcName, true, false, testConfig)
 }
 
 func (f *fixture) run_(cvcName string, startInformers bool, expectError bool, testConfig testConfig) {

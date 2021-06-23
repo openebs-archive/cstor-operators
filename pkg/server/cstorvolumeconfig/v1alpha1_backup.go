@@ -202,16 +202,10 @@ func (backupWrapper *v1Alpha1BackupWrapper) createBackupResource() (backupHelper
 
 // isBackupFailed returns true if backup failed
 func isBackupFailed(backup *openebsapis.CStorBackup) bool {
-	if backup.Status == openebsapis.BKPCStorStatusFailed {
-		return true
-	}
-	return false
+	return backup.Status == openebsapis.BKPCStorStatusFailed
 }
 
 // isBackupSucceeded returns true if backup completed successfully
 func isBackupSucceeded(backup *openebsapis.CStorBackup) bool {
-	if backup.Status == openebsapis.BKPCStorStatusDone {
-		return true
-	}
-	return false
+	return backup.Status == openebsapis.BKPCStorStatusDone
 }

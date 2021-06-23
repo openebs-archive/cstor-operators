@@ -130,28 +130,6 @@ func getDeployOwnerReference(volume *apis.CStorVolume) []metav1.OwnerReference {
 	return OwnerReference
 }
 
-// getDeployTemplateAffinity returns affinities
-// for target deployement
-func getDeployTemplateAffinity() *corev1.Affinity {
-	return &corev1.Affinity{
-		PodAffinity: &corev1.PodAffinity{
-			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
-				corev1.PodAffinityTerm{
-					LabelSelector: &metav1.LabelSelector{
-						MatchExpressions: []metav1.LabelSelectorRequirement{
-							metav1.LabelSelectorRequirement{
-								Key:      "statefulset.kubernetes.io/pod-name",
-								Operator: metav1.LabelSelectorOpIn,
-								Values:   []string{},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 // getTargetTemplateAffinity returns affinities for target deployement
 func getTargetTemplateAffinity(policySpec *apis.CStorVolumePolicySpec) *corev1.Affinity {
 	if policySpec.Target.PodAffinity == nil {

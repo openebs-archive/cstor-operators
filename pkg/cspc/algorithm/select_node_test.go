@@ -30,7 +30,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
-	core "k8s.io/client-go/testing"
 )
 
 type fixture struct {
@@ -38,7 +37,6 @@ type fixture struct {
 	openebsClient *openebsFakeClientset.Clientset
 	kubeObjects   []runtime.Object
 	openebsObject []runtime.Object
-	actions       []core.Action
 }
 
 func (f *fixture) WithOpenEBSObjects(objects ...runtime.Object) *fixture {

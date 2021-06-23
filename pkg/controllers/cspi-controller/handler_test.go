@@ -70,11 +70,8 @@ type fixture struct {
 	// Objects to put in the store.
 	cspiLister []*cstor.CStorPoolInstance
 
-	ignoreActionExpectations bool
-
 	// Actions expected to happen on the client. Objects from here are also
 	// preloaded into NewSimpleFake.
-	actions        []core.Action
 	k8sObjects     []runtime.Object
 	openebsObjects []runtime.Object
 }
@@ -429,10 +426,7 @@ func (f *fixture) updateCSPIToPerformDay2Operation(cspiName string, tConfig test
 		}
 	}
 	_, err = f.openebsClient.CstorV1().CStorPoolInstances(ns).Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (f *fixture) run(cspiName string) {

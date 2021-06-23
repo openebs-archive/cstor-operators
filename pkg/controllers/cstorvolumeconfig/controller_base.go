@@ -56,8 +56,7 @@ type CVCController struct {
 
 	cvrLister listers.CStorVolumeReplicaLister
 
-	cvrSynced  cache.InformerSynced
-	cspiLister listers.CStorPoolInstanceLister
+	cvrSynced cache.InformerSynced
 	// cvcSynced is used for caches sync to get populated
 	cvcSynced cache.InformerSynced
 
@@ -137,13 +136,6 @@ func (cb *CVCControllerBuilder) withCVRLister(sl informers.SharedInformerFactory
 func (cb *CVCControllerBuilder) withCVRInformerSync(sl informers.SharedInformerFactory) *CVCControllerBuilder {
 	cvrInformer := sl.Cstor().V1().CStorVolumeReplicas()
 	cb.CVCController.cvrSynced = cvrInformer.Informer().HasSynced
-	return cb
-}
-
-// withCSPLister fills csp lister to controller object.
-func (cb *CVCControllerBuilder) withCSPLister(sl informers.SharedInformerFactory) *CVCControllerBuilder {
-	cspiInformer := sl.Cstor().V1().CStorPoolInstances()
-	cb.CVCController.cspiLister = cspiInformer.Lister()
 	return cb
 }
 

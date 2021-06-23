@@ -35,8 +35,6 @@ import (
 	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
 )
 
-const volumeControllerName = "CStorVolume"
-
 // CStorVolumeController is the controller implementation for CStorVolume resources.
 type CStorVolumeController struct {
 	// kubeclientset is a standard kubernetes clientset

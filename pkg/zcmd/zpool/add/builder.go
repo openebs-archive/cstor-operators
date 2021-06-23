@@ -160,10 +160,10 @@ func (p *PoolExpansion) Build() (*PoolExpansion, error) {
 	var c strings.Builder
 	p = p.Validate()
 	p.appendCommand(&c, bin.ZPOOL)
-	p.appendCommand(&c, fmt.Sprintf(" %s ", Operation))
+	p.appendCommand(&c, " "+Operation+" ")
 
 	if IsForcefullySet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" -f "))
+		p.appendCommand(&c, " -f ")
 	}
 
 	if IsPropertySet()(p) {
@@ -175,15 +175,15 @@ func (p *PoolExpansion) Build() (*PoolExpansion, error) {
 	p.appendCommand(&c, p.Pool)
 
 	if IsDeviceTypeSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" %s ", p.DeviceType))
+		p.appendCommand(&c, " "+p.DeviceType+" ")
 	}
 
 	if IsTypeSet()(p) {
-		p.appendCommand(&c, fmt.Sprintf(" %s ", p.Type))
+		p.appendCommand(&c, " "+p.Type+" ")
 	}
 
 	for _, v := range p.VdevList {
-		p.appendCommand(&c, fmt.Sprintf(" %s ", v))
+		p.appendCommand(&c, " "+v+" ")
 	}
 
 	p.Command = c.String()

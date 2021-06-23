@@ -53,6 +53,15 @@ func (c *CStorVolumeReplicaController) Run(threadiness int, stopCh <-chan struct
 
 	klog.Info("Started CStorVolumeReplica workers")
 	<-stopCh
+
+	klog.Info("changing the CVR state to offline before shutting down")
+	// Changing the state of corresponding CVR to Offline before shutting down.
+	// Similar as when pod is running and if you stopped kubelet it will make
+	// pod status unknown.
+	// NOTE: CVR status will be updated to OFFLINE even cStor pool-manager
+	// container alone get restarted but in this case pool will be still in
+	// running state. This inconsistency will be resolved in subsequent reconciliations
+	c.markCVRStatusToOffline()
 	klog.Info("Shutting down CStorVolumeReplica workers")
 
 	return nil

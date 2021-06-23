@@ -147,7 +147,7 @@ func NewCStorVolumeReplicaController(
 				//  for every restart of controller container
 				// this informer handler will get add event
 				// for each cvr resource present in k8s
-				if IsEmptyStatus(cvrObj) {
+				if IsEmptyStatus(cvrObj) || IsInitStatus(cvrObj) {
 					cvrObj.Status.Phase = apis.CVRStatusInit
 				} else {
 					cvrObj.Status.Phase = apis.CVRStatusRecreate

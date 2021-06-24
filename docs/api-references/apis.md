@@ -1663,7 +1663,7 @@ uint64
 </td>
 <td>
 <p>LogicalReferenced describes the amount of space that is &ldquo;logically&rdquo;
-accessable by this snapshot. This logical space ignores the
+accessible by this snapshot. This logical space ignores the
 effect of the compression and copies properties, giving a quantity
 closer to the amount of data that application see. It also includes
 space consumed by metadata.</p>
@@ -2078,7 +2078,7 @@ Kubernetes core/v1.ResourceList
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#cstor.openebs.io/v1.CStorVolumePolicy">CStorVolumePolicy</a>, 
+<a href="#cstor.openebs.io/v1.CStorVolumePolicy">CStorVolumePolicy</a>,
 <a href="#cstor.openebs.io/v1.CStorVolumeConfigSpec">CStorVolumeConfigSpec</a>)
 </p>
 <p>
@@ -2226,7 +2226,7 @@ include space consumed by metadata</p>
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#cstor.openebs.io/v1.CStorVolumeSpec">CStorVolumeSpec</a>, 
+<a href="#cstor.openebs.io/v1.CStorVolumeSpec">CStorVolumeSpec</a>,
 <a href="#cstor.openebs.io/v1.CStorVolumeStatus">CStorVolumeStatus</a>)
 </p>
 <p>
@@ -2810,7 +2810,7 @@ It may contain several volumes</p>
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#cstor.openebs.io/v1.CStorPoolInstanceSpec">CStorPoolInstanceSpec</a>, 
+<a href="#cstor.openebs.io/v1.CStorPoolInstanceSpec">CStorPoolInstanceSpec</a>,
 <a href="#cstor.openebs.io/v1.PoolSpec">PoolSpec</a>)
 </p>
 <p>
@@ -3073,7 +3073,7 @@ Any power of 2 from 512 bytes to 128 Kbytes is valid.</p>
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#cstor.openebs.io/v1.CStorPoolInstanceSpec">CStorPoolInstanceSpec</a>, 
+<a href="#cstor.openebs.io/v1.CStorPoolInstanceSpec">CStorPoolInstanceSpec</a>,
 <a href="#cstor.openebs.io/v1.PoolSpec">PoolSpec</a>)
 </p>
 <p>
@@ -3181,7 +3181,7 @@ string
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#cstor.openebs.io/v1.CStorVolumeStatus">CStorVolumeStatus</a>, 
+<a href="#cstor.openebs.io/v1.CStorVolumeStatus">CStorVolumeStatus</a>,
 <a href="#cstor.openebs.io/v1.CVStatus">CVStatus</a>)
 </p>
 <p>
@@ -3280,7 +3280,7 @@ string
 </em>
 </td>
 <td>
-<p>Quorum indicates wheather data wrtitten to the replica
+<p>Quorum indicates whether data wrtitten to the replica
 is lost or exists.
 &ldquo;0&rdquo; means: data has been lost( might be ephimeral case)
 and will recostruct data from other Healthy replicas in a write-only
@@ -3438,10 +3438,10 @@ If left empty, no priority class is applied.</p>
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#cstor.openebs.io/v1.CStorPoolCluster">CStorPoolCluster</a>, 
-<a href="#cstor.openebs.io/v1.CStorPoolInstance">CStorPoolInstance</a>, 
-<a href="#cstor.openebs.io/v1.CStorVolume">CStorVolume</a>, 
-<a href="#cstor.openebs.io/v1.CStorVolumeConfig">CStorVolumeConfig</a>, 
+<a href="#cstor.openebs.io/v1.CStorPoolCluster">CStorPoolCluster</a>,
+<a href="#cstor.openebs.io/v1.CStorPoolInstance">CStorPoolInstance</a>,
+<a href="#cstor.openebs.io/v1.CStorVolume">CStorVolume</a>,
+<a href="#cstor.openebs.io/v1.CStorVolumeConfig">CStorVolumeConfig</a>,
 <a href="#cstor.openebs.io/v1.CStorVolumeReplica">CStorVolumeReplica</a>)
 </p>
 <p>

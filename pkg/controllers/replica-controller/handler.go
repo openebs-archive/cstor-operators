@@ -705,3 +705,30 @@ func (c *CStorVolumeReplicaController) reconcileVersion(cvr *apis.CStorVolumeRep
 	}
 	return cvr, nil
 }
+
+// markCVRStatusToOffline will fetch all the CVR resources present
+// in etcd and mark it them CVR.Status to Offline
+func (c *CStorVolumeReplicaController) markCVRStatusToOffline() {
+	cspiuuidLabel := "cstorpoolinstance.openebs.io/uid" + "=" + os.Getenv(string(common.OpenEBSIOCSPIID))
+	// list the cvr matching with the cstorpoolinstance uuid label
+	cvrList, err := c.clientset.CstorV1().CStorVolumeReplicas("").List(context.TODO(), metav1.ListOptions{LabelSelector: cspiuuidLabel})
+	if err != nil {
+		klog.Errorf("failed to fetch CVR list, error: %v", err)
+		return
+	}
+	for _, cvr := range cvrList.Items {
+		cvr := cvr // pin it
+		// If pool-manager container restarts or pod is deleted
+		// before even creating a zfs datasets, then we can skip those cvrs
+		if cvr.Status.Phase == "" || cvr.Status.Phase == apis.CVRStatusInit {
+			continue
+		}
+		cvr.Status.Phase = apis.CVRStatusOffline
+		_, err = c.clientset.CstorV1().CStorVolumeReplicas(cvr.Namespace).Update(context.TODO(), &cvr, metav1.UpdateOptions{})
+		if err != nil {
+			klog.Errorf("failed to update CVR: %s status to %s", cvr.Name, apis.CVRStatusOffline)
+			continue
+		}
+		klog.Infof("status marked %s for CVR: %s", apis.CVRStatusOffline, cvr.Name)
+	}
+}

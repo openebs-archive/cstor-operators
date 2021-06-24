@@ -3,6 +3,7 @@ module github.com/openebs/cstor-operators
 go 1.13
 
 require (
+	github.com/cespare/xxhash v1.1.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/hashicorp/go-version v1.2.1

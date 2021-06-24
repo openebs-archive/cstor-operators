@@ -719,7 +719,7 @@ func (c *CStorVolumeReplicaController) markCVRStatusToOffline() {
 	for _, cvr := range cvrList.Items {
 		cvr := cvr // pin it
 		// If pool-manager container restarts or pod is deleted
-		// before even creating a cvr, then we can skip those cvr
+		// before even creating a zfs datasets, then we can skip those cvrs
 		if cvr.Status.Phase == "" || cvr.Status.Phase == apis.CVRStatusInit {
 			continue
 		}

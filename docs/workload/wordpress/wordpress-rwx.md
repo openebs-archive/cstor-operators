@@ -20,15 +20,16 @@ We will add a 100G disk to each node. These disks will be consumed by CSI based 
 
 ## Configuration workflow
 
-1. [Meet Prerequisites](/docs/workload/wordpress/wordpress-rwx.md#meet-prerequisites)
+1. [Prerequisites](/docs/workload/wordpress/wordpress-rwx.md#prerequisites)
 
 2. [How to use NFS volume for different applications?](/docs/workload/wordpress/wordpress-rwx.md#how-to-use-nfs-volume-for-different-applications?)
 
     
 
 
-### Meet Prerequisites
+### Prerequisites
 
+- OpenEBS should be installed and then configure cStor operator. The steps for doing this configuration can be found [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md). cStor configuration includes installation of cStor operator, then provisioning of a CStorPoolCluster(CSPC) and finally the creation of a StorageClass that will consume the created CSPC pool. 
 - Install OpenEBS NFS provisioner in your cluster. The steps can be found from [here](https://github.com/openebs/cstor-operators/tree/master/docs/tutorial/volumes/rwx-with-nfs.md).
 - Install NFS client packages in all worker nodes. In this example, we used base OS as Ubuntu on all worker nodes. The  `nfs-common` packages are installed on all worker nodes and then enabled the NFS service.
 
@@ -109,4 +110,3 @@ pvc-99b40863-ea16-4dc8-9d54-ca5051940625   10Gi       RWO            Delete     
 <br>
 
 <hr>
-

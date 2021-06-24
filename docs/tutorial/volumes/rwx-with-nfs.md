@@ -10,16 +10,15 @@ In this document, we will explain how you can easily set up a NFS solution using
 
 ## Configuration workflow
 
-1. [Prerequisites](/docs/tutorial/volumes/rwx-with-nfs.md#meet-prerequisites)
+1. [Prerequisites](/docs/tutorial/volumes/rwx-with-nfs.md#prerequisites)
 
 2. [Installing OpenEBS NFS Provisioner](/docs/tutorial/volumes/rwx-with-nfs.md#installing-openebs-nfs-provisioner)
 
 
 ### Prerequisites
 
-- OpenEBS should be installed first on your Kubernetes cluster. The steps for OpenEBS installation can be found [here](https://docs.openebs.io/docs/next/installation.html). 
-- Perform cStor configuration by following the steps mentioned [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md). cStor configuration includes installation of cStor operator, provisioning of a CStorPoolCluster(CSPC) and then the creation of a StorageClass that will consume the created CSPC pool. 
-- (Optional) Install NFS client packages on all worker nodes before deploy any application with the NFS supported StorageClass. In this example, we used base OS as `Ubuntu` on all worker nodes. The  `nfs-common` packages are installed on all worker nodes and then enabled the NFS service.
+- OpenEBS should be installed and then configure cStor operator. The steps for doing this configuration can be found [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md). cStor configuration includes installation of cStor operator, then provisioning of a CStorPoolCluster(CSPC) and finally the creation of a StorageClass that will consume the created CSPC pool. 
+- Install NFS client packages on all worker nodes before deploy any application with the NFS supported StorageClass. In this example, we used base OS as `Ubuntu` on all worker nodes. The  `nfs-common` packages are installed on all worker nodes and then enabled the NFS service.
 
 ### Installing OpenEBS NFS Provisioner
 
@@ -94,3 +93,4 @@ From the above output, `openebs-rwx` is the storage class that supports shared s
 **Note:** Don’t forget to install NFS client packages on all worker nodes.  If NFS client packages are not installed & enabled, then it will fail to provision any application which uses the above NFS storage class.
 
 <hr>
+

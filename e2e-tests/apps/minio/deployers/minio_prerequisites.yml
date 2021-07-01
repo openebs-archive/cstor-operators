@@ -1,0 +1,66 @@
+---
+- name: copy the deployment spec to modify the specific values
+  shell: cp minio.yml minio-{{item}}.yml
+  args:
+    executable: /bin/bash
+
+- name: Get the application label values from env
+  set_fact:
+    app_lkey: "{{ app_label.split('=')[0] }}"
+    app_lvalue: "{{ app_label.split('=')[1] }}-{{item}}"
+
+- name: Replace the application label placeholder in deployment spec
+  replace:
+    path: minio-{{item}}.yml
+    regexp: "lkey: lvalue"
+    replace: "{{ app_lkey }}: {{ app_lvalue }}"
+
+- name: modify the Deployment name appended with number generated earlier
+  replace:
+      path: minio-{{item}}.yml
+      regexp: "minio-deployment"
+      replace: minio-deployment-{{item}}
+
+- name: print the specific spec
+  shell: cat minio-{{item}}.yml   
+
+- block:
+
+    - name: Applying the deployment spec
+      shell: kubectl apply -f minio-{{item}}.yml -n {{ app_ns }}
+      args:
+        executable: /bin/bash
+      register: status
+      failed_when: "status.rc != 0"
+
+    - name: Check the pod status
+      shell: >
+        kubectl get pods -n {{ app_ns }} -l "{{ app_lkey }}={{ app_lvalue }}" --no-headers
+        -o custom-columns=:status.phase
+      args:
+        executable: /bin/bash
+      register: result
+      until: "'Running' in result.stdout"
+      delay: 30
+      retries: 15
+  when: lookup('env','ACTION') == 'provision'
+
+- block: 
+
+    - name: Deleting the deployment with spec
+      shell: kubectl delete -f minio-{{item}}.yml -n {{ app_ns }}
+      args:
+        executable: /bin/bash
+      register: status
+    
+    ## verify if the pod is deleted
+    - name: Check if the pod is deleted successfully
+      shell: >
+        kubectl get pods -n {{ app_ns }} -l "{{ app_lkey }}={{ app_lvalue }}" --no-headers 
+      args:
+        executable: /bin/bash
+      register: result
+      until: "result.stdout == ''"
+      delay: 30
+      retries: 15  
+  when: lookup('env','ACTION') == 'deprovision'

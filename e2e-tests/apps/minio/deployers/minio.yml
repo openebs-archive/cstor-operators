@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio-deployment
+spec:
+  selector:
+    matchLabels: 
+      lkey: lvalue
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        # Label is used as selector in the service.
+        lkey: lvalue
+        app: minio
+    spec:
+      # Refer to the PVC created earlier
+      volumes:
+      - name: data-vol
+        persistentVolumeClaim:
+          # Name of the PVC created earlier
+                claimName: testclaim
+      containers:
+      - name: minio
+        # Pulls the default Minio image from Docker Hub
+        image: minio/minio
+        imagePullPolicy: "IfNotPresent"
+        args:
+        - server
+        - /storage1
+        livenessProbe:
+          exec:
+            command: 
+            - /bin/sh
+            - -c
+            - touch /storage1/healthy; sleep 2; rm -rf /storage1/healthy;
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        # Minio access key and secret key
+        - name: MINIO_ACCESS_KEY
+          value: "minio"
+        - name: MINIO_SECRET_KEY
+          value: "minio123"
+        ports:
+        - containerPort: 9000
+        # Mount the volume into the pod
+        volumeMounts:
+        - name: data-vol # must match the volume name, above
+          mountPath: "/storage1"

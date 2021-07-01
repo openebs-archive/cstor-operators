@@ -1,0 +1,12 @@
+---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: gcp-bucket
+  namespace: velero
+spec:
+  provider: openebs.io/cstor-blockstore
+  config:
+      bucket: e2e-gcp-bucket
+      provider: gcp
+      autoSetTargetIP: "true"

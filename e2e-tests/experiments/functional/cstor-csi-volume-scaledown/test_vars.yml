@@ -1,0 +1,11 @@
+test_name: cstor-csi-replica-scaledown
+
+namespace: "{{ lookup('env','APP_NAMESPACE') }}"
+
+pvc_name: "{{ lookup('env','APP_PVC') }}"
+
+label: "{{ lookup('env','APP_LABEL') }}"
+
+data_persistence: "{{ lookup('env','DATA_PERSISTENCE') }}"
+
+openebs_ns: "{{ lookup('env','OPENEBS_NAMESPACE') }}"

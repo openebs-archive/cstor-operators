@@ -1,0 +1,23 @@
+test_name: cstor-csi-clone
+
+namespace: "{{ lookup('env','APP_NAMESPACE') }}"
+
+pvc_name: "{{ lookup('env','APP_PVC') }}"
+
+app_name: "{{ lookup('env','APP_NAME') }}"
+
+app_label: "{{ lookup('env','APP_LABEL') }}"
+
+snapshot_class: "{{ lookup('env','SNAPSHOT_CLASS') }}"
+
+snapshot_name: "{{ lookup('env','SNAPSHOT_NAME') }}"
+
+data_persistence: "{{ lookup('env','DATA_PERSISTENCE') }}"
+
+storage_class_name: "{{ lookup('env','STORAGE_CLASS_NAME') }}"
+
+storage_capacity: "{{ lookup('env','STORAGE_CAPACITY') }}"
+
+cloned_pvc: "{{ lookup('env','CLONED_PVC') }}"
+
+operator_ns: "{{ lookup('env','OPENEBS_NAMESPACE') }}"

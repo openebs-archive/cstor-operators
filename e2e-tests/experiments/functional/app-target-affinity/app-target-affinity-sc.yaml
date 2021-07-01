@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: testclass
+provisioner: cstor.csi.openebs.io
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  replicaCount: "3"
+  cstorPoolCluster: "pool-name"
+  cas-type: "cstor"
+  cstorVolumePolicy: "app-target-affinity-policy"  

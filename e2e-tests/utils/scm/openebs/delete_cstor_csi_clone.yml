@@ -1,0 +1,108 @@
+---
+
+## verify that parent pvc should not be deleted
+- name: delete pvc from which snapshot is created 
+  shell: >
+    kubectl delete pvc {{ pvc_name }} -n {{ namespace }}
+  args:
+    executable: /bin/bash
+  register: status
+  failed_when: "status.rc ==0"
+
+## store the PV and CVRs for corresponding cloned pvc 
+- name: Derive PV name from PVC
+  shell: >
+    kubectl get pvc {{ cloned_pvc }} -n {{ namespace }}
+    --no-headers -o custom-columns=:spec.volumeName
+  args:
+    executable: /bin/bash
+  register: pv
+
+- set_fact:
+    cloned_pv_name: "{{ pv.stdout }}"
+
+- name: Obtaining the CVR from PV
+  shell: >
+    kubectl get cvr -n {{ operator_ns }} -l cstorvolume.openebs.io/name={{ cloned_pv_name }} 
+    --no-headers  -o custom-columns=:metadata.name
+  args:
+    executable: /bin/bash
+  register: cvr
+
+## obtain the application pod name
+- name: Get the app pod name
+  shell: >
+    kubectl get pods -n {{ namespace }} -l app={{ app_label }} 
+    --no-headers -o custom-columns=:.metadata.name
+  args: 
+    executable: /bin/bash
+  register: app_pod_name
+
+- set_fact: 
+    application_podname: "{{ app_pod_name.stdout }}"
+
+## delete the busybox deployment  
+- name: delete the busybox_app 
+  shell: > 
+    kubectl delete -f busybox.yml
+  args:
+    executable: /bin/bash
+  register: status
+  failed_when: "status.rc != 0"
+
+## verify if the pod is deleted
+- name: Check if the pod is deleted successfully
+  shell: >
+    kubectl get po -n {{ namespace }} 
+  args:
+    executable: /bin/bash
+  register: app_status
+  until: "application_podname not in app_status.stdout"
+  delay: 30
+  retries: 15   
+
+## verify and delete the cloned pvc 
+- name: delete the cloned pvc
+  shell: >
+    kubectl delete pvc {{ cloned_pvc }} -n {{ namespace }} 
+  args:
+    executable: /bin/bash
+  register: status
+  failed_when: "status.rc != 0"
+
+## verify if the cloned pvc is deleted
+- name: check if the cloned pvc is deleted
+  shell: >
+    kubectl get pvc -n {{ namespace }}
+  args:
+    executable: /bin/bash
+  register: cloned_pvc_name
+  until: "cloned_pvc not in cloned_pvc_name.stdout"
+  delay: 30
+  retries: 15   
+
+  ## verify if the pv for cloned pvc is deleted
+- name: check if the pv for cloned pvc is deleted
+  shell: >
+    kubectl get pv
+  args:
+    executable: /bin/bash
+  register: cloned_pv
+  until: "cloned_pv_name not in cloned_pv.stdout"
+  delay: 30
+  retries: 15
+
+- name: sleep for 30 seconds and continue with play
+  wait_for: timeout=30
+
+  ## verify if the cvrs for cloned pvc is deleted
+- name: check if the cvrs for cloned pvc is deleted
+  shell: >
+    kubectl get cvr {{ item }} -n {{ operator_ns }} --no-headers -o custom-columns=:metadata.name
+  args:
+    executable: /bin/bash
+  register: cloned_cvr
+  failed_when: "cloned_cvr.stdout != ''"
+  with_items: 
+    - "{{ cvr.stdout_lines }}"
+    

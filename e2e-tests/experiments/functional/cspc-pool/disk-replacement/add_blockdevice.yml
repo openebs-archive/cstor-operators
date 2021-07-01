@@ -1,0 +1,60 @@
+---
+    ## TODO: Obtain the blockdevice based on the state as Active and the disk size
+    # Calculate the disk size to verify the disk expansion.
+
+    - name: Getting the Unclaimed block-device from targeted node
+      shell: >
+        kubectl get blockdevice -n {{ operator_ns }} -l kubernetes.io/hostname={{ outer_item }} 
+        -o jsonpath='{.items[?(@.status.claimState=="Unclaimed")].metadata.name}' | tr " " "\n" | grep -v sparse
+      register: blockDevice
+      failed_when: 'blockDevice.stdout == ""'
+ 
+    - name: Select random bd from the list of unclaimed block device as claimed target blockdevice to perform disk replacement
+      set_fact:
+         unclaimed_target_bd: "{{ item }}"
+      with_random_choice: "{{ blockDevice.stdout_lines }}"
+
+    - name: Obtain the index position of the nodes from cspc json spec
+      shell: ./node_index_count {{ outer_item }} ./cspc-disk-replacement.json
+      register: index_count
+
+    - name: Getting the Claimed BlockDevice for the target node
+      shell: >
+        kubectl get cspc -n {{ operator_ns }} {{ pool_name }} -o jsonpath={.spec.pools[{{ index_count.stdout }}].dataRaidGroups[*].blockDevices[0].blockDeviceName} | tr " " "\n"
+      register: claimed_bd
+      failed_when: 'claimed_bd.stdout == ""'
+
+    - name: Select random bd from the list of claimed block device as claimed target blockdevice to perform disk replacement
+      set_fact:
+         claimed_target_bd: "{{ item }}"
+      with_random_choice: "{{ claimed_bd.stdout_lines }}"
+  
+    - name: Patch the CSPC to replace the BlockDevice
+      shell: >
+        kubectl patch cspc -n {{ operator_ns }} {{ pool_name }} --type='json' -p='[{"op": "replace", "path": "/spec/pools/{{ index_count.stdout }}/dataRaidGroups/0/blockDevices/0", "value": {"blockDeviceName": "'{{ unclaimed_target_bd }}'"}}]'
+      args:
+        executable: /bin/bash
+      register: patch_cspc
+      failed_when: "'patched' not in patch_cspc.stdout"
+
+    - name: Check if the replacing Blockdevice is in Claimed state
+      shell: >
+        kubectl get blockdevice -n {{ operator_ns }} {{ unclaimed_target_bd }}
+        --no-headers -o custom-columns=:.status.claimState
+      args:
+        executable: /bin/bash
+      register: bd_state
+      until: "'Claimed' in bd_state.stdout"
+      delay: 5
+      retries: 60
+
+    - name: Check if the replaced Blockdevice is in Unclaimed state
+      shell: >
+        kubectl get blockdevice -n {{ operator_ns }} {{ claimed_target_bd }}
+        --no-headers -o custom-columns=:.status.claimState
+      args:
+        executable: /bin/bash
+      register: old_bd_state
+      until: "'Unclaimed' in old_bd_state.stdout"
+      delay: 10
+      retries: 120

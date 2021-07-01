@@ -1,0 +1,14 @@
+---
+     ##{{ outer_item }} is name of the list of nodes, the values will passed as a loop variable in test.yml    
+  
+    - name: Getting the Claimed block-device from each node 
+      shell: kubectl get blockdevice -n {{ operator_ns }} -l kubernetes.io/hostname={{ outer_item }} -o json | jq '.items[] | select(.status.claimState=="Claimed") | select(.status.state=="Active") | .metadata.name' | tr "\"" " " | grep -v sparse | head -n "{{ disk_count }}"
+      register: blockDevice
+
+    - name: Add the block devices
+      lineinfile:
+        path: ./blockdevice-{{ outer_item }}.yml
+        insertafter: ' blockDevices:'
+        line: '        - blockDeviceName: {{ item }}'
+      with_items:
+          - "{{ blockDevice.stdout_lines }}"            

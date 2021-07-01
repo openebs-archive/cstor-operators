@@ -1,0 +1,119 @@
+---
+- hosts: localhost
+  connection: local
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+    - block:
+
+         ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+         ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Getting the compute node name
+          shell: kubectl get nodes --no-headers | grep -v master | awk {'print $1'}
+          register: nodes
+
+        - name: Select random node from the list of nodes as target node
+          set_fact:
+            target_node: "{{ item }}"
+          with_random_choice: "{{ nodes.stdout_lines }}"
+
+        - name: set the value for the disk count to fetch the unclaimed blockDevice from each node
+          set_fact:
+            disk_count: "{{ item.value.count }}"
+          loop: "{{ lookup('dict', bd_count) }}"
+          when: "'{{ pool_type }}' in item.key"
+
+        - name: Obtain the target node ip
+          shell: >
+            kubectl get nodes {{ target_node }} --no-headers 
+            -o custom-columns=:.status.addresses[*].address | cut -f1 -d  ","
+          args:
+            executable: /bin/bash
+          register: node_ip
+
+        - name: Getting the Claimed block-device from targeted node to create the filesystem
+          shell: >
+            kubectl get blockdevice -n {{ operator_ns }} 
+            -l kubernetes.io/hostname={{ target_node }} -o json | jq '.items[] | select(.status.claimState=="Unclaimed") | select(.status.state=="Active") | .metadata.name' | tr "\"" " " | grep -v sparse | head -n "{{ disk_count }}"
+          register: blockdevice
+
+        - name: Create the filesystem in each blockdevices
+          include_tasks: create_filesystem.yml
+          with_items: "{{ blockdevice.stdout_lines }}"
+          vars:
+            file_system: 'create'
+          loop_control:
+            loop_var: outer_item
+
+        - name: Add the block devices in cspc spec
+          lineinfile:
+            path: ./cspc.yml
+            insertafter: ' blockDevices:'
+            line: '        - blockDeviceName: {{ item }}'
+          with_items:
+              - "{{ blockdevice.stdout_lines }}"
+
+        - name: Replacing the pool name in CSPC spec
+          replace:
+            path: ./cspc.yml
+            regexp: "pool-name"
+            replace: "{{ pool_name }}"
+
+        - name: Replacing the namespace in CSPC spec
+          replace:
+            path: ./cspc.yml
+            regexp: "operator_ns"
+            replace: "{{ operator_ns }}"
+
+        - name: Replacing the pool type in CSPC spec
+          replace:
+            path: ./cspc.yml
+            regexp: "pool-type"
+            replace: "{{ pool_type }}"
+
+        - name: Replacing the node name in CSPC spec
+          replace:
+            path: ./cspc.yml
+            regexp: "node-name"
+            replace: "{{ target_node }}"
+
+        - name: Display cspc.yml for verification
+          debug: var=item
+          with_file:
+          - "cspc.yml"
+
+        - name: Create cstor cspc pool
+          shell: kubectl apply -f cspc.yml
+          args:
+            executable: /bin/bash
+          register: cspc_status
+          failed_when: "'block device has file system' not in cspc_status.stderr and cspc_status.rc == 0"
+ 
+        - name: Remove the filesystem from blockdevices
+          include_tasks: create_filesystem.yml
+          with_items: "{{ blockdevice.stdout_lines }}"
+          vars:
+            file_system: 'delete'
+          loop_control:
+            loop_var: outer_item
+        
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+          - set_fact:
+              flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+          - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+            vars:
+              status: 'EOT'

@@ -1,0 +1,19 @@
+---
+apiVersion: cstor.openebs.io/v1
+kind: CStorVolumePolicy
+metadata:
+  name: app-target-affinity-policy
+  namespace: openebs
+spec:
+  target:
+    affinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: openebs.io/target-affinity
+            operator: In
+            values:
+            - app-label
+        topologyKey: kubernetes.io/hostname
+        namespaces: ["app-namespace"]
+

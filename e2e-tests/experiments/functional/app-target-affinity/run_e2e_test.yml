@@ -1,0 +1,53 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: csi-cstor-app-target-affinity-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      name: e2e
+      labels:
+        app: app-target-affinity
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+            # CSPC name to create the storage class
+          - name: POOL_NAME
+            value: ""
+
+             # Application pod label in `key=value` format
+          - name: APP_LABEL
+            value: 'app=percona'
+
+            # Storage class name
+          - name: PROVIDER_STORAGE_CLASS
+            value: csi-app-target-affinity
+
+          - name: APP_PVC
+            value: percona-mysql-claim-csi-cstor
+
+            # Application namespace
+          - name: APP_NAMESPACE
+            value: app-percona-ns
+
+            # Use 'deprovision' for app-clean up
+          - name: ACTION
+            value: provision
+            
+            # namespace where the cstor is deployed
+          - name: OPENEBS_NAMESPACE
+            value: openebs
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/functional/app-target-affinity/test.yml -i /etc/ansible/hosts -v; exit 0"]

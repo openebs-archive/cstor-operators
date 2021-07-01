@@ -1,0 +1,66 @@
+---
+- block:
+
+   - name: Getting the volume name
+     shell:  kubectl get pvc {{ app_pvc }} -n {{ app_ns }} -o jsonpath='{.spec.volumeName}'
+     register: vol_name
+
+   - name: Getting the cstor backup name
+     shell: kubectl get cstorbackup -n {{ app_ns }} | grep {{ back_up_name }} | awk '{print $1}'
+     register: cstor_backup_name
+     until: cstor_backup_name.stdout is defined
+     delay: 5
+     retries: 60
+
+   - name: Getting the cstor pool UID
+     shell: >
+       kubectl get cstorbackup {{ cstor_backup_name.stdout }}
+       -n {{ app_ns }} -o jsonpath='{.metadata.labels.cstorpool\.openebs\.io/uid}'
+     register: pool_uid
+
+   - name: Getting the CVR name from the corresponding pool uid
+     shell: >
+       kubectl get cvr -n {{ operator_ns }} -l cstorpool.openebs.io/uid={{ pool_uid.stdout }},cstorvolume.openebs.io/name={{ vol_name.stdout }}
+       -o jsonpath='{.items[*].metadata.name}'
+     register: cvr
+
+   - name: Getting the cstor pool label from cvr
+     shell: kubectl get cvr {{ item }} -n {{ operator_ns }} -o jsonpath='{.metadata.labels.cstorpool\.openebs\.io/name}'
+     register: cstor_pool_label
+     with_items:
+       - "{{ cvr.stdout_lines }}"
+
+   - name: Geting the pool pod name corresponding to the label
+     shell: >
+       kubectl get pod -n {{ operator_ns }} -l openebs.io/cstor-pool={{ item.stdout }}
+       -ojsonpath='{.items[*].metadata.name}'
+     register: pool_pod_name
+     with_items:
+       - "{{ cstor_pool_label.results }}"
+
+   - block:
+
+      - name: Deleting the cstor pool pod
+        shell: kubectl delete pod {{ item.stdout }} -n {{ operator_ns }}
+        register: pool_delete_status
+        failed_when: "'deleted' not in pool_delete_status.stdout"
+        with_items:
+        - "{{ pool_pod_name.results }}"
+
+     when: action == "pool"
+
+   - block:
+
+      - name: Verifying whether local snapshot is deleted
+        shell: >
+          kubectl exec -it {{ item.stdout }} -n {{ operator_ns }} 
+          -- zfs list -t snapshot | grep {{ back_up_name }}
+        register: snapshot_delete_status
+        failed_when: snapshot_delete_status.stdout != ""
+        with_items:
+        - "{{ pool_pod_name.results }}"
+
+     when: action == "SNAPSHOT_DELETE"
+
+  when: action == "pool" or action == "SNAPSHOT_DELETE"
+

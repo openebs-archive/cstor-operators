@@ -1,0 +1,86 @@
+---
+
+- name: Obtain the SnapshotContent of the snapshot
+  shell: >
+    kubectl get volumesnapshot.snapshot {{ snapshot_name }} -n {{ namespace }} 
+    --no-headers -o custom-columns=:.spec.snapshotContentName
+  args:
+    executable: /bin/bash
+  register: snapshot_content
+  
+- set_fact:
+    snapshotcontent: "{{ snapshot_content.stdout }}"
+
+- name: Get the uid of the snapshot taken
+  shell: >
+    kubectl get volumesnapshot.snapshot {{ snapshot_name }} -n {{ namespace }} 
+    --no-headers -o custom-columns=:.metadata.uid
+  args:
+    executable: /bin/bash
+  register: snap_uid
+
+- set_fact:
+    uid_snapshot: "{{ snap_uid.stdout }}"
+
+- name: Delete the snapshot created
+  shell: >
+    kubectl delete volumesnapshot.snapshot {{ snapshot_name }} -n {{ namespace }}
+  args:
+    executable: /bin/bash
+  register: status
+  failed_when: "status.rc != 0"
+
+##Check if the snapshot is deleted
+- name: Verify if the snapshot is deleted
+  shell: >
+    kubectl get volumesnapshot.snapshot -n {{ namespace }}
+  args:
+    executable: /bin/bash
+  register: ss_name
+  failed_when: "snapshot_name in ss_name.stdout"
+
+##Check if the volumesnapshotcontent is deleted
+- name: Verify if the volumesnapshotcontent is deleted
+  shell: >
+    kubectl get volumesnapshotcontent -n {{ namespace }}
+  args:
+    executable: /bin/bash
+  register: ss_content
+  failed_when: "snapshotcontent in ss_content.stdout"  
+
+## verify if the snapshot is deleted from all the pool pods
+- name: Derive PV name from PVC
+  shell: >
+    kubectl get pvc {{ pvc_name }} -n {{ namespace }}
+    --no-headers -o custom-columns=:spec.volumeName
+  args:
+    executable: /bin/bash
+  register: pv
+
+- name: Obtaining the CVR from PV
+  shell: >
+    kubectl get cvr -n {{ operator_ns }} -l cstorvolume.openebs.io/name={{ pv.stdout }} 
+    --no-headers  -o custom-columns=:metadata.name
+  args:
+    executable: /bin/bash
+  register: cvr
+
+- name: Obtaining the pools where CVRs are mounted
+  shell: >
+    kubectl get cvr {{ item }} -n {{ operator_ns }} --no-headers 
+    -o jsonpath='{.metadata.labels.cstorpoolinstance\.openebs\.io/name}{"\n"}'
+  args:
+    executable: /bin/bash
+  register: pools
+  with_items:
+    - "{{ cvr.stdout_lines }}"
+  
+- name: Obtaining the pool pods
+  shell: >
+    kubectl get po -n {{ operator_ns }} -l openebs.io/cstor-pool-instance={{ item.stdout }} 
+    --no-headers -o custom-columns=:.metadata.name
+  args:
+    executable: /bin/bash
+  register: pool_pods
+  with_items:
+    - "{{ pools.results }}"

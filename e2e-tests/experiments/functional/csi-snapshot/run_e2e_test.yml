@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: csi-snapshot
+  namespace: e2e
+data:
+  parameters.yml: |
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: cstor-csi-snapshot-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      labels:
+        name: cstor-csi-snapshot
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+          - name: APP_NAMESPACE
+            value: '' 
+
+          - name: OPENEBS_NAMESPACE
+            value: 'openebs'
+
+          ##Name of CSI volumesnapshotclass
+          - name: SNAPSHOT_CLASS
+            value: 'csi-cstor'
+
+          - name: SNAPSHOT_NAME
+            value: 'csi-snap'
+            
+          - name: APP_PVC
+            value: ''
+
+          # Use 'deprovision' for snapshot cleanup
+          - name: ACTION
+            value: 'provision'  
+
+          ##busybox for app busybox 
+          - name: DATA_PERSISTENCE
+            value: ""
+       
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/functional/csi-snapshot/test.yml -i /etc/ansible/hosts -vv; exit 0"]
+
+        volumeMounts:
+        - name: parameters
+          mountPath: /mnt/
+      volumes:
+        - name: parameters
+          configMap:
+            name: csi-snapshot

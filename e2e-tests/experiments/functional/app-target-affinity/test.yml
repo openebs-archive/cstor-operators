@@ -1,0 +1,110 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+    - block:
+
+        ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+         ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - block:
+
+            - name: Replace the application namespace placeholder in cstorvolumpolicy spec
+              replace:
+                path: "{{ affinity_policy }}"
+                regexp: "app-namespace"
+                replace: "{{ lookup('env','APP_NAMESPACE') }}"
+
+            - name: Get the application label values from env
+              set_fact:
+                 app_key: "{{ app_label.split('=')[0] }}"
+                 application_label: "{{ app_label.split('=')[1] }}"                
+
+            - name: Replace the application's label value placeholder in cstorvolumpolicy spec
+              replace:
+                path: "{{ affinity_policy }}"
+                regexp: "app-label"
+                replace: "{{ application_label }}"                
+
+            - name: Deploying the application target affinity volume policy
+              shell: kubectl apply -f "{{ affinity_policy }}"
+              args:
+                executable: /bin/bash
+
+            - name: Replace the pool name placeholder in storage class spec
+              replace:
+                path: "{{ affinity_sc }}"
+                regexp: "pool-name"
+                replace: "{{ lookup('env','POOL_NAME') }}"
+           
+            - name: Replace the storage class name placeholder in storage class spec
+              replace:
+                path: "{{ affinity_sc }}"
+                regexp: "testclass"
+                replace: "{{ lookup('env','PROVIDER_STORAGE_CLASS') }}"
+
+            - name: Create the storage class for affinity policy
+              shell: kubectl apply -f "{{ affinity_sc }}"
+              args:
+                executable: /bin/bash
+
+            ## Actual test
+            ## Creating namespaces and making the application for deployment
+            - include_tasks: /e2e-tests/utils/k8s/pre_create_app_deploy.yml
+
+            - name: Replace label name placeholder in application spec
+              replace:
+                path: "{{ application_deployment }}"
+                regexp: "lvalue"
+                replace: "{{ app_lvalue }}"
+
+            ## Deploying the application, upper bound wait time: 900s 
+            - include_tasks: /e2e-tests/utils/k8s/deploy_single_app.yml
+              vars:
+                check_app_pod: 'yes'
+                delay: 5 
+                retries: 180
+    
+            ## Fetching the pod name
+            - include_tasks: /e2e-tests/utils/k8s/fetch_app_pod.yml
+    
+            ## Checking the db is ready for connection
+            - include_tasks: /e2e-tests/utils/scm/applications/mysql/check_db_connection.yml
+   
+            ## Check application-target pod affinity
+            - include_tasks: /e2e-tests/utils/scm/openebs/csi_target_affinity_check.yml
+
+          when: "'deprovision' not in action"  
+
+        - block:
+
+            - name: Deprovisioning the Application
+              include_tasks: "/e2e-tests/utils/k8s/deprovision_deployment.yml"
+              vars:
+                app_deployer: "{{ application_deployment }}"
+
+          when: "'deprovision' is in action"        
+
+        - set_fact:
+            flag: "Pass" 
+
+      rescue:
+        - set_fact:
+            flag: "Fail"     
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'
+              

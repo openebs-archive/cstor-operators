@@ -1,0 +1,72 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: target-network-delay
+  namespace: e2e
+data:
+  parameters.yml: |
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: openebs-target-network-delay- 
+  namespace: e2e 
+spec:
+  template:
+    metadata:
+      labels:
+        name: openebs-target-network-delay 
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        env: 
+          - name: ANSIBLE_STDOUT_CALLBACK
+            #value: log_plays
+            #value: actionable
+            value: default
+
+          - name: OPERATOR_NAMESPACE
+            value: openebs
+ 
+          - name: APP_NAMESPACE
+            value: ""
+
+          - name: APP_LABEL
+            value: ""
+
+          - name: APP_PVC
+            value: ""
+
+          - name: NETWORK_DELAY
+            value: "60000" # in milliseconds
+
+          - name: CHAOS_DURATION
+            value: "60000" # in milliseconds
+            
+          - name: LIVENESS_APP_LABEL
+            value: ""
+
+          - name: LIVENESS_APP_NAMESPACE
+            value: ""
+
+          - name: DATA_PERSISTENCE
+            value: ""   
+
+          - name: CONTAINER_RUNTIME
+            value: docker
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/chaos/openebs_target_network_delay/test.yml -i /etc/ansible/hosts -vv; exit 0"]
+        
+        volumeMounts:
+        - name: parameters
+          mountPath: /mnt/
+      volumes:
+        - name: parameters
+          configMap:
+            name: target-network-delay

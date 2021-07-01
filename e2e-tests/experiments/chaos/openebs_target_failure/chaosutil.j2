@@ -1,0 +1,5 @@
+{% if target_container is defined and target_container == 'cstor-istgt' or target_container == 'cstor-volume-mgmt' %}
+ chaosutil: openebs/cstor_target_container_kill.yml
+{% else %}
+ chaosutil: openebs/cstor_target_failure.yaml
+{% endif %}

@@ -1,0 +1,75 @@
+---
+      - name: Update the desired image tag for openebs-plugin
+        replace:
+          path: "{{ csi_operator }}"
+          regexp: "cstor-csi-driver:ci"
+          replace: "{{ lookup('env','CSTOR_CSI_DRIVER_IMAGE') }}"
+        when: lookup('env','CSTOR_CSI_DRIVER_IMAGE') | length > 0
+
+      - name: Change the OpenEBS component labels to desired version csi provisioner spec
+        replace:
+          path: "{{ csi_operator }}"
+          regexp: 'openebs.io/version: dev'
+          replace: "openebs.io/version: {{ openebs_version }}"
+
+      - name: Change CSPC operator image
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: openebs/cspc-operator:ci
+          replace: "{{ lookup('env','CSPC_OPERATOR_IMAGE') }}"
+        when: lookup('env','CSPC_OPERATOR_IMAGE') | length > 0
+
+      - name: Change CSTOR POOL MANAGER image
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: openebs/cstor-pool-manager:ci
+          replace: "{{ lookup('env','CSPI_MGMT_IMAGE') }}"
+        when: lookup('env','CSPI_MGMT_IMAGE') | length > 0
+
+      - name: Change OPENEBS_IO_CSTOR_POOL image
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: openebs/cstor-pool:ci
+          replace: "{{ lookup('env','CSPC_CSTOR_POOL_IMAGE') }}"
+        when: lookup('env','CSPC_CSTOR_POOL_IMAGE') | length > 0
+
+      - name: Change OPENEBS_IO_CSTOR_POOL_EXPORTER image
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: openebs/m-exporter:ci
+          replace: "{{ lookup('env','CSPC_CSTOR_POOL_EXPORTER_IMAGE') }}"
+        when: lookup('env','CSPC_CSTOR_POOL_EXPORTER_IMAGE') | length > 0
+
+      - name: Change openebs cvc operator image
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: openebs/cvc-operator:ci
+          replace: "{{ lookup('env','CSPC_CVC_OPERATOR_IMAGE') }}"
+        when: lookup('env','CSPC_CVC_OPERATOR_IMAGE') | length > 0
+
+      - name: Change openebs CSTOR ISTGT image
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: openebs/cstor-istgt:ci
+          replace: "{{ lookup('env','CSPC_CSTOR_ISTGT_IMAGE') }}"
+        when: lookup('env','CSPC_CSTOR_ISTGT_IMAGE') | length > 0
+
+      - name: Change openebs CSTOR VOLUME MGMT image
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: openebs/cstor-volume-manager:ci
+          replace: "{{ lookup('env','CSPC_CSTOR_VOLUME_MGMT_IMAGE') }}"
+        when: lookup('env','CSPC_CSTOR_VOLUME_MGMT_IMAGE') | length > 0
+
+      - name: Change openebs CSTOR WEBHOOK image
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: openebs/cstor-webhook:ci
+          replace: "{{ lookup('env','CSPC_CSTOR_WEBHOOK_IMAGE') }}"
+        when: lookup('env','CSPC_CSTOR_WEBHOOK_IMAGE') | length > 0
+
+      - name: Change the OpenEBS component labels to desired version in Operator yaml
+        replace:
+          path: "{{ cspc_operator }}"
+          regexp: 'openebs.io/version: dev'
+          replace: "openebs.io/version: {{ openebs_version }}"

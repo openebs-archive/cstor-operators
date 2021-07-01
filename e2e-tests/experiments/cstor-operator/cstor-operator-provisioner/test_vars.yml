@@ -1,0 +1,21 @@
+cspc_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/cstor-operator.yaml
+cspc_rbac_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/rbac.yaml
+all_crd_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/crds/all_cstor_crds.yaml
+csi_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml
+ndm_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/ndm-operator.yaml
+cstor_operator_link: https://raw.githubusercontent.com/openebs/charts/gh-pages/{{ openebs_version }}/cstor-operator.yaml
+release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ commit_id }}/{{ openebs_version }}/cstor-operator.yaml"
+rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ commit_id }}/{{ openebs_version }}/cstor-operator-{{ rc_tag }}.yaml"
+cspc_operator: cspc-operator.yaml
+csi_operator: csi-operator.yaml
+cstor_operator: cstor-operator.yaml
+cspc_rbac: rbac.yaml
+cspc_crd: all_cstor_crds.yaml
+ndm_operator: ndm-operator.yaml
+release_tag: "{{ lookup('env','IMAGE_TYPE') }}"
+openebs_version: "{{ lookup('env','OPENEBS_VERSION') }}"
+webhook_policy: "{{ lookup('env','WEBHOOK_FAILURE_POLICY') }}"
+test_name: "openebs-cstor-operator-{{ lookup('env','ACTION') }}"
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+commit_id: "{{ lookup('env','COMMIT_ID') }}"
+rc_tag: "{{ lookup('env','RC_TAG') }}"

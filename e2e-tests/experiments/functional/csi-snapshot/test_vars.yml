@@ -1,0 +1,13 @@
+test_name: cstor-csi-snapshot
+
+namespace: "{{ lookup('env','APP_NAMESPACE') }}"
+
+pvc_name: "{{ lookup('env','APP_PVC') }}"
+
+snapshot_class: "{{ lookup('env','SNAPSHOT_CLASS') }}"
+
+snapshot_name: "{{ lookup('env','SNAPSHOT_NAME') }}"
+
+data_persistence: "{{ lookup('env','DATA_PERSISTENCE') }}"
+
+operator_ns: "{{ lookup('env','OPENEBS_NAMESPACE') }}"

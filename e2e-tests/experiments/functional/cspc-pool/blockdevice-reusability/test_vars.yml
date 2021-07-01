@@ -1,0 +1,8 @@
+# Test-specific parameters
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+test_name: verify-blockdevice-reusability
+old_cspc_pool: "{{ lookup('env','OLD_CSPC_POOL_NAME') }}"
+new_cspc_pool: "{{ lookup('env','NEW_CSPC_POOL_NAME') }}"
+pool_type: "{{ lookup('env','POOL_TYPE') }}"
+sc_name: "{{ lookup('env', 'STORAGE_CLASS') }}"
+action: "{{ lookup('env', 'ACTION') }}"

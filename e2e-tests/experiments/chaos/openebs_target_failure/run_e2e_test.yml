@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: target-failure
+  namespace: e2e
+data:
+  parameters.yml: |
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: openebs-target-failure-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      labels:
+        name: openebs-target-failure
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+          - name: APP_NAMESPACE
+            value: "" 
+
+          - name: TARGET_NAMESPACE
+            value: openebs
+
+          - name: APP_LABEL
+            value: ""
+
+          - name: APP_PVC
+            value: ""
+
+          - name: LIVENESS_APP_LABEL
+            value: ""
+
+          - name: LIVENESS_APP_NAMESPACE
+            value: ""
+
+          - name: DATA_PERSISTENCE
+            value: ""
+       
+          # Specify the container runtime used , to pick the relevant chaos util
+          - name: CONTAINER_RUNTIME
+            value: docker 
+
+            # CHAOS_TYPE values :  target-zrepl-kill , target-kill , target-delete
+            # For cstor-volume-istgt container kill Use : target-kill
+            # For Volume-mgmt-kill container Use  : target-zrepl-kill
+            # For cstor-target-failure Use    : target-delete
+
+            #          - name: CHAOS_TYPE
+            #            value: "target-zrepl-kill"
+            
+            # TARGET_CONTAINER values: cstor-volume-mgmt , cstor-istgt
+            # For cstor-volume-istgt container kill use : cstor-istgt
+            # For volume-mgmt-kill container use : cstor-volume-mgmt
+          - name: TARGET_CONTAINER
+            value: "cstor-volume-mgmt"
+
+          - name: TARGET_AFFINITY_CHECK
+            value: 'enable'
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/chaos/openebs_target_failure/test.yml -i /etc/ansible/hosts -vv; exit 0"]
+
+        volumeMounts:
+        - name: parameters
+          mountPath: /mnt/
+      volumes:
+        - name: parameters
+          configMap:
+            name: target-failure

@@ -1,0 +1,16 @@
+---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: minio
+  namespace: velero
+spec:
+  provider: openebs.io/cstor-blockstore
+  config:
+      bucket: velero
+      provider: aws
+      region: minio
+      #profile: new-profile
+      s3ForcePathStyle: "true"
+      s3Url: http://minio.velero.svc:9000
+      autoSetTargetIP: "true"

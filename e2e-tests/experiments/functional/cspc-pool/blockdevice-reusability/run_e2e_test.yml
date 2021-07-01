@@ -1,0 +1,50 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: verify-blockdevice-reusability-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      name: e2e
+      labels:
+        app: verify-blockdevice-reusability
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+            # Existing cspc pool name
+          - name: OLD_CSPC_POOL_NAME
+            value: ""
+
+            # Provide the cStor CSPC pool name to create
+          - name: NEW_CSPC_POOL_NAME
+            value: ""
+
+           # Provide the value for POOL_TYPE 
+           # stripe, mirror, raidz, raidz2
+          - name: POOL_TYPE
+            value: ""
+
+           #Provide the name of STORAGE_CLASS
+          - name: STORAGE_CLASS	
+            value: openebs-bd-reusability-sc
+
+           # Namespace where the OpenEBS components are deployed
+          - name: OPERATOR_NS
+            value: openebs
+
+          - name: ACTION
+            value: provision
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/functional/cspc-pool/blockdevice-reusability/test.yml -i /etc/ansible/hosts -v; exit 0"]

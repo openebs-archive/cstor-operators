@@ -1,0 +1,139 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+    - /mnt/parameters.yml
+
+  tasks:
+
+    - block:
+
+        ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+        ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Identify the data consistency util to be invoked
+          template:
+            src: data_persistence.j2
+            dest: data_persistence.yml
+
+        - include_vars:
+            file: data_persistence.yml
+
+        - name: Record the data consistency util path
+          set_fact:
+            data_consistency_util_path: "{{ consistencyutil }}"
+          when: data_persistence != ''
+
+        - name: Get the application pod name
+          shell: >
+            kubectl get pod -n {{ namespace }} -l {{ label }} --no-headers -o custom-columns=:.metadata.name
+          args:
+            executable: /bin/bash
+          register: app_pod_name
+
+        - name: Check if the application pod is in running state
+          shell: >
+            kubectl get pods -n {{ namespace }} -l {{ label }} --no-headers -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: pod_status
+          failed_when: "'Running' not in pod_status.stdout"
+
+        - name: Generate data on the specified application.
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'LOAD'
+            ns: "{{ namespace }}"
+            pod_name: "{{ app_pod_name.stdout }}"
+          when: data_persistence != ''
+
+        - name: Derive PV name from PVC.
+          shell: >
+            kubectl get pvc "{{ pvc_name }}" -n "{{ namespace }}"
+            --no-headers -o custom-columns=:spec.volumeName
+          args:
+            executable: /bin/bash
+          register: pv
+
+        - name: Get CVC name, note that CVC name is same as PV.
+          set_fact:
+            cvc_name: "{{ pv.stdout }}"
+
+        - name: Get the current replica count
+          shell: >
+            kubectl get cvc "{{ cvc_name }}" -n "{{ openebs_ns }}" --no-headers
+            -o custom-columns=:status.poolInfo | awk '{print NF}' 
+          args:
+            executable: /bin/bash
+          register: current_replica
+
+        ## openebs admission server should block the scale down process because only one replica should be allowed to delete.
+
+        - name: Try to scale down couple of replicas
+          shell: >
+             kubectl patch cvc {{ cvc_name }} 
+             -n {{ openebs_ns }} --type='json' -p='[{"op": "remove", "path": "/spec/policy/replicaPoolInfo"}]'
+          args:
+            executable: /bin/bash
+          register: multiple_rep
+          failed_when: "'more than one replica scale down requested' not in multiple_rep.stderr"
+
+        - name: Try to scale down only one of replica
+          shell: >
+            kubectl patch cvc {{ cvc_name }} 
+            -n {{ openebs_ns }} --type='json' -p='[{"op": "remove", "path": "/spec/policy/replicaPoolInfo/1"}]'
+          args:
+            executable: /bin/bash
+          register: single_rep
+          failed_when: "'patched' not in single_rep.stdout"
+
+        - name: Check the replica count in cvc
+          shell: >
+            kubectl get cvc "{{ cvc_name }}" -n "{{ openebs_ns }}" --no-headers
+            -o custom-columns=:status.poolInfo | awk '{print NF}' 
+          args:
+            executable: /bin/bash
+          register: updated_replica
+          until: "current_replica.stdout > updated_replica.stdout"
+          delay: 10
+          retries: 20
+
+        - name: check the replica count in cStorvolume
+          shell: >
+            kubectl get cstorvolume "{{ cvc_name }}" -n "{{ openebs_ns }}" --no-headers
+            -o custom-columns=:spec.replicationFactor
+          args:
+            executable: /bin/bash
+          register: rep_count
+          until: "current_replica.stdout > rep_count.stdout"
+          delay: 10
+          retries: 20
+
+        - name: Verify application data persistence
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'VERIFY'
+            ns: "{{ namespace }}"
+            pod_name: "{{ app_pod_name.stdout }}"
+          when: data_persistence != ''
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'
+

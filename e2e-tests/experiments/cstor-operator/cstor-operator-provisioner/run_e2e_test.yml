@@ -1,0 +1,84 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: e2e-cstor-operator-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      name: e2e
+      labels: 
+        provider: cstor-operator
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+        env: 
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+            # openebs version in case of ci, value is 'ci'
+            # For the release chart image openebs versions should be release tag eg: 2.9.0
+          - name: OPENEBS_VERSION
+            value: ""
+
+            # To Deploy the cstor operator from release charts value should be `charts`
+            # To Deploy the cstor operator for ci images value should be `master`
+            # To Deploy the cstor operator from any PR value should be `commit_id`
+          - name: IMAGE_TYPE
+            value: ""
+
+          - name: CSPC_OPERATOR_IMAGE
+            value: ""
+
+          - name: CSPI_MGMT_IMAGE
+            value: ""
+
+          - name: CSPC_CSTOR_POOL_IMAGE
+            value: ""
+
+          - name: CSPC_CSTOR_POOL_EXPORTER_IMAGE
+            value: ""
+
+          - name: CSPC_CVC_OPERATOR_IMAGE
+            value: ""
+
+          - name: CSPC_CSTOR_ISTGT_IMAGE
+            value: ""        
+
+          - name: CSPC_CSTOR_VOLUME_MGMT_IMAGE
+            value: ""                         
+                  
+          - name: CSPC_CSTOR_WEBHOOK_IMAGE
+            value: ""
+
+          - name: CSTOR_CSI_DRIVER_IMAGE
+            value: ""
+
+          - name: COMMIT_ID
+            value: ""
+
+          - name: RC_TAG
+            value: ""             
+
+            # To Deploy the cstor operator value will be `provision`
+            # Ro Remove the cstor operator value will be `deprovision`
+          - name: ACTION
+            value: provision
+
+            ## Admission server policy
+            #supported values are 'fail' or 'ignore'
+          - name: WEBHOOK_FAILURE_POLICY
+            value: "ignore"
+
+            # Namespace where the csi plugins are deployed
+            # For versions 1.10.0, 1.11.0 and 1.12.0 namespace is 'kube-system`
+          - name: OPERATOR_NS
+            value: "openebs"
+                       
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/cstor-operator/cstor-operator-provisioner/test.yml -i /etc/ansible/hosts -vv; exit 0"]

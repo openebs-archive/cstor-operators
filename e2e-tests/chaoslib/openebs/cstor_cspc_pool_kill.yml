@@ -1,0 +1,123 @@
+- name: Derive PV from application PVC 
+  shell: >
+    kubectl get pvc {{ app_pvc }}
+    -o custom-columns=:spec.volumeName -n {{ app_ns }}
+    --no-headers
+  args:
+    executable: /bin/bash
+  register: pv
+
+- name: Obtain the CSPI name from cvr
+  shell: >
+    kubectl get cvr -n {{ operator_ns }}
+    -l openebs.io/persistent-volume={{ pv.stdout }} --no-headers
+    -o=jsonpath='{range .items[*]}{.metadata.labels.cstorpoolinstance\.openebs\.io\/name}{"\n"}{end}'
+  args:
+    executable: /bin/bash
+  register: pool_deployment
+
+- name: Select random pool deployment to kill the pool container
+  set_fact:
+     cspi_name: "{{ item }}"
+  with_random_choice: "{{ pool_deployment.stdout_lines }}"  
+
+- name: Verify the status of cspi
+  shell: >
+    kubectl get cspi -n {{ operator_ns }} {{ cspi_name }} --no-headers
+    -o custom-columns=:.status.phase
+  args:
+    executable: /bin/bash
+  register: cspi_status
+  until: "'ONLINE' in cspi_status.stdout"
+  delay: 2
+  retries: 30
+
+- name: Get the pod of pool deployment status
+  shell: >
+    kubectl get pods -n {{ operator_ns }} --no-headers 
+    -l openebs.io/cstor-pool-instance={{ cspi_name }} -o custom-columns=:.status.phase
+  args:
+    executable: /bin/bash
+  register: pool_pod_status
+  until: "'Running' in pool_pod_status.stdout"
+  delay: 2
+  retries: 30
+
+- name: Obtain the pool pod name
+  shell: >
+    kubectl get pods -n {{ operator_ns }} --no-headers
+    -l openebs.io/cstor-pool-instance={{ cspi_name }} -o custom-columns=:.metadata.name
+  args:
+    executable: /bin/bash
+  register: cstor_pool_pod
+
+- name: Get the runningStatus of pool pod
+  shell: >
+    kubectl get pod {{ cstor_pool_pod.stdout }} -n {{ operator_ns }}
+    -o=jsonpath='{range .status.containerStatuses[*]}{.state}{"\n"}{end}' |
+    grep -w running | wc -l
+  args:
+    executable: /bin/bash
+  register: runningStatusCount
+  until: "runningStatusCount.stdout == \"3\""
+  delay: 2
+  retries: 30
+
+- include_tasks: /e2e-tests/chaoslib/pumba/pod_failure_by_sigkill.yaml
+  vars:
+    action: "killapp"
+    namespace: "{{ operator_ns }}"
+    app_pod: "{{ cstor_pool_pod.stdout }}"
+    app_container: "{{ container_name }}"
+  when: cri == 'docker'
+
+- include_tasks: /e2e-tests/chaoslib/containerd_chaos/openebs-pool-failure.yml
+  vars:
+    action: "killapp"
+    namespace: "{{ operator_ns }}"
+    app_pod: "{{ cstor_pool_pod.stdout }}"
+    app_container: "{{ container_name }}"
+  when: cri == 'containerd'
+
+- include_tasks: /e2e-tests/chaoslib/crio_chaos/openebs-pool-failure.yml
+  vars:
+    action: "killapp"
+    namespace: "{{ operator_ns }}"
+    app_pod: "{{ cstor_pool_pod.stdout }}"
+    app_container: "{{ container_name }}"
+  when: cri == 'cri-o'
+
+- name: Verify the status of cspi post fault injection
+  shell: >
+    kubectl get cspi -n {{ operator_ns }} {{ cspi_name }} --no-headers
+    -o custom-columns=:.status.phase          
+  args:
+    executable: /bin/bash
+  register: aft_cspi_status
+  until: "'ONLINE' in aft_cspi_status.stdout"
+  delay: 2
+  retries: 150
+
+- name: Check for pool pod in running state post chaos
+  shell: >
+    kubectl get pods -n {{ operator_ns }} --no-headers
+    -l openebs.io/cstor-pool-instance={{ cspi_name }} -o custom-columns=:.status.phase
+  args:
+    executable: /bin/bash
+  register: aft_pool_pod_status
+  until: "'Running' in aft_pool_pod_status.stdout"
+  delay: 2
+  retries: 150
+
+- name: Get the runningStatus of pool pod
+  shell: >
+    kubectl get pod {{ cstor_pool_pod.stdout }} -n {{ operator_ns }}
+    -o=jsonpath='{range .status.containerStatuses[*]}{.state}{"\n"}{end}' |
+    grep -w running | wc -l
+  args:
+    executable: /bin/bash
+  register: runningStatusCount
+  until: "runningStatusCount.stdout == \"3\""
+  delay: 2
+  retries: 150
+

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+declare -i index=-1
+nodeName=$1
+while read i; do
+index=$(( index + 1 ))
+if [[ $i == *"$nodeName"* ]]; then
+  break
+fi
+done <<<$(jq -c '.spec.pools[]' $2)
+echo $index
+

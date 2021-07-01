@@ -1,0 +1,43 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: cstor-pool-creation-with-claimed-bd-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      name: e2e
+      labels:
+        app: cstor-pool-creation-with-claimed-bd
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+            # Provide name POOL_NAME for the cstor-pool
+          - name: POOL_NAME
+            value: cstor-cspc-disk-pool
+
+           # Provide the value for POOL_TYPE 
+           # stripe, mirror, raidz, raidz2
+          - name: POOL_TYPE
+            value: stripe
+
+           # Namespace where the OpenEBS components are deployed
+          - name: OPERATOR_NS
+            value: openebs
+
+           # Pool count to create the required number of pools
+          - name: POOL_COUNT
+            value: '3'
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/functional/cspc-pool/block-pool-creation-with-claimed-bd/test.yml -i /etc/ansible/hosts -v; exit 0"]

@@ -1,0 +1,40 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: pool-expansion-with-claimed-bd-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      name: e2e
+      labels:
+        app: pool-expansion-with-claimed-bd
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/cstor-csi-e2e:ci
+        imagePullPolicy: IfNotPresent
+
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            #value: log_plays, actionable, default
+            value: default
+
+            # Provide CSPC_NAME to expand
+          - name: CSPC_NAME
+            value: ''
+
+           # Provide the value for POOL_TYPE to expand
+           # stripe,mirror,raidz1,raidz2
+          - name: POOL_TYPE
+            value: ''
+
+           # Namespace where the OpenEBS components are deployed
+          - name: OPERATOR_NS
+            value: ''
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/functional/cspc-pool/fail_pool_expansion_with_claimed_bd/test.yml -i /etc/ansible/hosts -v; exit 0"]

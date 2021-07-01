@@ -1,0 +1,44 @@
+---
+
+# This util induces network delay in the pod provided. The inputs required are:
+#      - target_pod : pod where it has to be induced.
+#
+#      - operator_namespace : openebs namespace in case of "cstor".
+#
+#      - status : "induce" for adding the network loss rule
+#                 "remove" for deleting the applied rule.
+
+- block:
+
+    - name: Checking whether tc is already installed
+      shell: kubectl exec -it {{ target_pod }} -n {{ operator_namespace }} --container {{ containername }} 
+        -- bash -c "which tc"
+      register: tc_status 
+      ignore_errors: yes 
+
+    - name: Install tc command on targeted pod
+      shell: >
+        kubectl exec -it {{ target_pod }} -n {{ operator_namespace }} --container {{ containername }} 
+        -- bash -c "chmod 1777 /tmp && apt-get update && apt-get -y install iproute2"
+      register: tc_apt_output
+      when: "'tc' not in tc_status.stdout"
+
+    - name: Inject netem delay on targeted pod
+      shell: >
+        kubectl exec -it {{ target_pod }} -n {{ operator_namespace }} --container {{ containername }} 
+        -- bash -c "tc qdisc add dev eth0 root netem delay {{ n_delay }}ms"
+      register: tc_output
+
+  when: status == "induce"
+
+- block:
+
+    - name: Remove netem delay rule from targeted pod
+      shell: >
+        kubectl exec -it {{ target_pod }} -n {{ operator_namespace }} --container {{ containername }} 
+        -- bash -c "tc qdisc del dev eth0 root netem delay {{ n_delay }}ms"
+      register: apt_rc
+
+  when: status == "remove"
+
+

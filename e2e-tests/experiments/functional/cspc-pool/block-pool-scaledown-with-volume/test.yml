@@ -1,0 +1,89 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+    - block:
+
+         ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+         ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/fcm/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Obtain the CSPI name to verify the status
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ pool_name }}
+            -o custom-columns=:.metadata.name --no-headers
+          args:
+            executable: /bin/bash
+          register: cspi_name
+
+        - name: Verify the status of CSPI before the pool scaledown
+          shell: >
+            kubectl get cspi -n {{ operator_ns }} -o jsonpath='{.items[?(@.metadata.name=="{{ item }}")].status.phase}'
+          args:
+            executable: /bin/bash
+          register: cspi_status
+          with_items: "{{ cspi_name.stdout_lines }}"
+          until: "'ONLINE' in cspi_status.stdout"
+          delay: 5
+          retries: 30
+
+        - name: Select random cspi from the list of cspi as targeted cspi to scale down
+          set_fact:
+            targeted_cspi: "{{ item }}"
+          with_random_choice: "{{ cspi_name.stdout_lines }}"              
+
+        - name: Verify if the cStor Pool pod is Running for the targeted cspi
+          shell: >
+            kubectl get pods -n {{ operator_ns }} 
+            -l 'openebs.io/cstor-pool-instance in ({{ targeted_cspi }}),openebs.io/cstor-pool-cluster in ({{ pool_name }})' 
+            --no-headers -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: cspi_pool_pod
+          until: "'Running' in cspi_pool_pod.stdout"
+          retries: 30
+          delay: 10
+          
+        - name: Obtain the cStor pool pod name for the targeted cspi
+          shell: >
+            kubectl get pods -n {{ operator_ns }} 
+            -l 'openebs.io/cstor-pool-instance in ({{ targeted_cspi }}),openebs.io/cstor-pool-cluster in ({{ pool_name }})' 
+            --no-headers -o custom-columns=:.metadata.name
+          args:
+            executable: /bin/bash
+          register: pool_pod_name
+
+         ####################################################################################
+         # TODO:                                                                            #
+         # Include a task to verify the volumes status of the targeted pool                 #
+         # Include a task to scaledown the volume and verify pool scaledown                 #
+         # Task to verify the pool scaledown is blocked when the volume is created in pool  #
+         #                                                                                  #
+         ####################################################################################                                                                                  
+        - name: Patch the CSPC to scaledown the pool
+          include_tasks: pool_scaledown.yml
+          with_items: "{{ targeted_cspi }}"
+          loop_control:
+            loop_var: outer_item
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+          - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+            vars:
+              status: 'EOT'

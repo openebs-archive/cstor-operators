@@ -1,0 +1,11 @@
+test_name: svc-failure-chaos
+namespace: "{{ lookup('env','APP_NAMESPACE') }}"
+label: "{{ lookup('env','APP_LABEL') }}"
+pvc: "{{ lookup('env','APP_PVC') }}"
+svc_type: "{{ lookup('env','SVC_TYPE') }}"
+operator_ns: "{{ lookup('env','OPERATOR_NAMESPACE') }}"
+liveness_label: "{{ lookup('env','LIVENESS_APP_LABEL') }}"
+liveness_namespace: "{{ lookup('env','LIVENESS_APP_NAMESPACE') }}"
+data_persistence: "{{ lookup('env','DATA_PERSISTENCE') }}"
+node_pwd: "{{ lookup('env','NODE_PASSWORD') }}"
+user: "{{ lookup('env','USERNAME') }}"

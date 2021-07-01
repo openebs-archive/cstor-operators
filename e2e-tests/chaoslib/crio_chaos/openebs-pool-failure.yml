@@ -1,0 +1,182 @@
+- block:
+
+    - name: Setup crio chaos infrastructure.
+      shell: >
+        kubectl apply -f /e2e-tests/chaoslib/crio_chaos/crio-chaos-ds.yml
+        -n {{ namespace }}
+      args:
+        executable: /bin/bash
+      register: result
+
+    - name: Confirm that crio-chaos ds pod is running on all the nodes.
+      shell: >
+        kubectl get pod -l app=crio
+        --no-headers -o custom-columns=:status.phase
+        -n {{ namespace }} | sort | uniq
+      args:
+        executable: /bin/bash
+      register: result
+      until: "result.stdout == 'Running'"
+      delay: 5
+      retries: 20
+      ignore_errors: true
+
+    - name: Identify the node where application pod is running
+      shell: >
+        kubectl get pod {{ app_pod }} -n {{ namespace }}
+        --no-headers -o custom-columns=:spec.nodeName
+      args:
+        executable: /bin/bash
+      register: result
+      failed_when: result is failed
+
+    - name: Record the application node name
+      set_fact:
+        app_node: "{{ result.stdout }}"
+
+    - name: Record the crio-chaos pod on app node
+      shell: >
+        kubectl get pod -l app=crio -o wide
+        -n {{ namespace }} | grep {{ app_node }}
+        | awk '{print $1}'
+      args:
+        executable: /bin/bash
+      register: chaos_pod
+      failed_when: chaos_pod is failed
+
+    - block:
+
+      - name: Record the application container
+        shell: >
+          kubectl get pods -l {{ label }} -n {{ namespace }} -o jsonpath='{.items[0].spec.containers[0].name}'
+        args:
+          executable: /bin/bash
+        register: container
+
+      - name: Record the app_container
+        set_fact:
+          app_container: "{{ container.stdout }}"
+
+      when: app_container is undefined
+
+    - name: Obtain the pod ID through Pod name
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl pods | grep "{{ app_pod }}" | awk '{print $1}'
+      args:
+        executable: /bin/bash
+      register: pod_id
+      failed_when: pod_id is failed
+
+    - name: Obtain the container ID using pod name and container name
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl ps | grep {{ pod_id.stdout }} | grep cstor-pool | grep -v mgmt | awk '{print $1}'
+      args:
+        executable: /bin/bash
+      register: container_id_cstor_pool
+      failed_when: container_id_cstor_pool is failed
+      when: app_container == "cstor-pool"
+
+    - name: Obtain the container ID using pod name and container name
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl ps | grep {{ pod_id.stdout }} | grep cstor-pool-mgmt | awk '{print $1}'
+      args:
+        executable: /bin/bash
+      register: container_id_pool_mgmt
+      failed_when: container_id_pool_mgmt is failed
+      when: app_container == "cstor-pool-mgmt"
+
+    - name: Kill the container
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl stop "{{ container_id_cstor_pool.stdout }}"
+      args:
+        executable: /bin/bash
+      register: result
+      failed_when: result is failed
+      when: app_container == "cstor-pool"
+
+    - name: Kill the container
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl stop "{{ container_id_pool_mgmt.stdout }}"
+      args:
+        executable: /bin/bash
+      register: result
+      failed_when: result is failed
+      when: app_container == "cstor-pool-mgmt"
+
+    - name: Obtain the container ID using pod name and container name
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl ps | grep {{ pod_id.stdout }} | grep cstor-pool | grep -v mgmt | awk '{print $1}'
+      args:
+        executable: /bin/bash
+      register: new_container_id_cstor_pool
+      until: "new_container_id_cstor_pool.stdout != ''"
+      delay: 5
+      retries: 20
+      when: app_container == "cstor-pool"
+
+    - name: Obtain the container ID using pod name and container name
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl ps | grep {{ pod_id.stdout }} | grep cstor-pool-mgmt | awk '{print $1}'
+      args:
+        executable: /bin/bash
+      register: new_container_id_pool_mgmt
+      until: "new_container_id_pool_mgmt.stdout != ''"
+      delay: 5
+      retries: 20
+      when: app_container == "cstor-pool-mgmt" 
+
+    - name: Check if the new container is running.
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl ps | grep {{ new_container_id_cstor_pool.stdout }}
+      args:
+        executable: /bin/bash
+      register: status
+      until: "'Running' in status.stdout"
+      delay: 3
+      retries: 30
+      when: app_container == "cstor-pool"
+
+    - name: Check if the new container is running.
+      shell: >
+        kubectl exec {{ chaos_pod.stdout }} -n {{ namespace }} -- 
+        crictl ps | grep {{ new_container_id_pool_mgmt.stdout }}
+      args:
+        executable: /bin/bash
+      register: status
+      until: "'Running' in status.stdout"
+      delay: 3
+      retries: 30
+      when: app_container == "cstor-pool-mgmt"  
+
+  when: action == "killapp"
+
+- block:
+
+    - name: Delete the crio crictl-chaos daemonset
+      shell: >
+        kubectl delete -f /e2e-tests/chaoslib/crio_chaos/crio-chaos-ds.yml
+        -n {{ namespace }}
+      args:
+        executable: /bin/bash
+      register: result
+
+    - name: Confirm that the crio-chaos pod is deleted successfully
+      shell: >
+        kubectl get pod -l app=crio
+        --no-headers -n {{ namespace }}
+      args:
+        executable: /bin/bash
+      register: result
+      until: "result.stdout == ''"
+      delay: 3
+      retries: 50
+
+  when: action == "delete-crio"

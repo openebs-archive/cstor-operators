@@ -1,0 +1,16 @@
+# Test-specific parameters
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+test_name: fail-pool-expansion-claimed-bd
+pool_name: "{{ lookup('env','CSPC_NAME') }}"
+pool_type: "{{ lookup('env','POOL_TYPE') }}"
+
+bd_count:
+   stripe:
+      count: 1
+   mirror:
+      count: 2
+   raidz1:
+      count: 3
+   raidz2:
+      count: 6
+

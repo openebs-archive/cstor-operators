@@ -1,0 +1,5 @@
+# Test-specific parameters
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+test_name: block-cspc-pool-deletion-if-pool-with-volume
+app_ns: "{{ lookup('env','APP_NAMESPACE') }}"
+app_label: "{{ lookup('env','APP_LABEL') }}"

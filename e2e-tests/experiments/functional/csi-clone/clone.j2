@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: "{{ cloned_pvc }}"
+spec:
+  storageClassName: "{{ storage_class_name }}"
+  dataSource:
+    name: "{{ snapshot_name }}"
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: "{{ storage_capacity }}"

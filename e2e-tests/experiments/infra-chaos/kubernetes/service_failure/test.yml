@@ -1,0 +1,149 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+
+  vars_files:
+    - test_vars.yml
+    - /mnt/parameters.yml
+
+  tasks:
+    - block:
+
+        - name: Identify the data consistency util to be invoked
+          template:
+            src: data_persistence.j2
+            dest: data_persistence.yml
+
+        - include_vars:
+            file: data_persistence.yml
+            
+        - name: Record the data consistency util path
+          set_fact:
+            data_consistency_util_path: "{{ consistencyutil }}"
+          when: data_persistence != ''
+
+        ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'SOT'
+
+        ## PRE-CHAOS APPLICATION LIVENESS CHECK
+
+        - name: Verify that the AUT (Application Under Test) is running
+          include_tasks: "/e2e-tests/utils/k8s/status_app_pod.yml"
+          vars:
+            app_ns: "{{namespace}}" 
+            app_lkey: "{{ label.split('=')[0] }}"
+            app_lvalue: "{{ label.split('=')[1] }}"       
+            delay: 5
+            retries: 60 
+        
+        - name: Get the application pod name
+          shell: > 
+            kubectl get pods -n {{ namespace }} -l {{ label }} --no-headers
+            -o custom-columns=:.metadata.name
+          args:
+            executable: /bin/bash
+          register: app_pod_name
+        
+        - name: Get the PV name
+          shell: >
+            kubectl get pvc -n {{ namespace }} --no-headers -o custom-columns=:.spec.volumeName
+          args:
+            executable: /bin/bash
+          register: pv_name
+
+        - name: Check the persistent volume provisioner name
+          shell: >
+            kubectl get pv {{ pv_name.stdout }} --no-headers
+            -o custom-columns=:.metadata.annotations.pv\\.kubernetes\\.io\/provisioned-by
+          args:
+            executable: /bin/bash
+          register: volume_provisioner
+
+        - name: Record the volume provisioner name 
+          set_fact: 
+            vol_provisioner: "{{ volume_provisioner.stdout }}"
+
+        - block:
+
+          - name: Get the target pod name associated with this pv
+            shell: >
+              kubectl get pods -n {{ operator_ns }} -l openebs.io/persistent-volume={{ pv_name.stdout }} 
+              --no-headers -o custom-columns=:.metadata.name
+            args:
+              executable: /bin/bash
+            register: csi_target_pod_name
+        
+          when: vol_provisioner == 'cstor.csi.openebs.io'          
+
+        - name: Create some test data
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'LOAD'
+            ns: "{{ namespace }}"
+            pod_name: "{{ app_pod_name.stdout }}"
+          when: data_persistence != ''
+
+        ## STORAGE FAULT INJECTION 
+
+        - include_tasks: /e2e-tests/chaoslib/service_failure/service_chaos.yml
+          vars:
+            app_ns: "{{ namespace }}"
+            app_label: "{{ label }}"
+            action: "svc_stop"
+            target_pod: "{{ target_pod_name.stdout }}"
+            csi_target_pod: "{{ csi_target_pod_name.stdout }}"
+            ctrl_pod: "{{ ctrl_pod_name.stdout }}"
+            app_pod: "{{ app_pod_name.stdout }}"
+            pvol_name: "{{ pv_name.stdout }}"
+
+        - include_tasks: /e2e-tests/chaoslib/service_failure/service_chaos.yml
+          vars:
+            app_ns: "{{ namespace }}"
+            app_label: "{{ label }}"
+            action: "svc_start"
+            target_pod: "{{ target_pod_name.stdout }}"
+            ctrl_pod: "{{ ctrl_pod_name }}"
+            csi_target_pod: "{{ csi_target_pod_name.stdout }}"
+            app_pod: "{{ app_pod_name.stdout }}"
+
+        ## POST-CHAOS APPLICATION LIVENESS CHECK
+
+        - name: Verify AUT liveness post fault-injection
+          include_tasks: "/e2e-tests/utils/k8s/status_app_pod.yml"
+          vars:
+            app_ns: "{{namespace}}" 
+            app_lkey: "{{ label.split('=')[0] }}"
+            app_lvalue: "{{ label.split('=')[1] }}"       
+            delay: 5
+            retries: 60
+
+        - name: Verify application data persistence
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'VERIFY'
+            ns: "{{ namespace }}"
+            pod_name: "{{ new_app_pod }}"
+          when: data_persistence != ''
+
+        - include_tasks: /e2e-tests/utils/k8s/application_liveness_check.yml
+          when: liveness_label != ''
+   
+        - set_fact:
+            flag: "Pass"
+
+      rescue: 
+        - set_fact: 
+            flag: "Fail"
+
+      always: 
+        ## RECORD END-OF-TEST IN E2E RESULT CR
+ 
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'

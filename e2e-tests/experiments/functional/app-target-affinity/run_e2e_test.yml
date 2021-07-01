@@ -20,17 +20,17 @@ spec:
 
         env:
           - name: ANSIBLE_STDOUT_CALLBACK
-            #value: log_plays, actionable, default
             value: default
 
+            # CSPC name to create the storage class
           - name: POOL_NAME
             value: ""
 
-            # Application label
+             # Application pod label in `key=value` format
           - name: APP_LABEL
             value: 'app=percona'
 
-            # Application label
+            # Storage class name
           - name: PROVIDER_STORAGE_CLASS
             value: csi-app-target-affinity
 
@@ -45,6 +45,7 @@ spec:
           - name: ACTION
             value: provision
             
+            # namespace where the cstor is deployed
           - name: OPENEBS_NAMESPACE
             value: openebs
 

@@ -1,20 +1,55 @@
-# Test Case to validate the cspc pool creation is failed when the blockdevice is already claimed.
+## About this experiment
 
-## Description
-   - This test is capable of validating if the pool creation is failed when the specified blockdevices are already claimed
-   - This test constitutes the below files.
-     - test_vars.yml - This test_vars file has the list of test specific variables used in this test case.
-     - test.yml - Playbook where the test logic is to validate the blockdevice reusability.
-     - blockdevice.j2 - Template to append the identified blockdevice to create the pool.
-     - add_blockdevice.yml - Util where the test logic is implemented to obtain the claimed blockdevice list. 
-     - cspc.yml  - CSPC pool spec which has to be populated with the given variables.
-   - This test case should be provided with the parameters in form of job environmental variables in run_e2e_test.yml.
+Test Case to validate the cspc pool creation is failed when the blockdevice is already claimed.
 
-## Environment Variables
+## Supported platforms:
 
-| Parameters              | Description                                                                       |
-| ----------------------- | --------------------------------------------------------------------------------- |
-| OPERATOR_NS             | Namespace where the openebs is deployed                                           |
-| POOL_NAME               | Name of the cspc pool                                                              |
-| POOL_COUNT              | Number of the pools to be create.                                                 |
-| POOL_TYPE               | Type of the pool to create, supported values are striped, mirrored, raidz ,raidz2 |
+K8s : 1.18+
+
+OS : Ubuntu, CentOS
+
+## Entry-criteria
+
+- K8s cluster should be in healthy state including desired worker nodes in ready state.
+- CSPC and CVC operators, openebs-ndm, cstor-csi-node daemonsets and csi controler statefulsets should be in running state.
+- Application should be running successfully using cstor csi engine.
+- Claimed block device should be available in the cluster'
+
+## Exit-criteria
+
+- CSPC pool creation has to be blocked by the admission webhook server.
+
+## Steps performed
+
+- Select the random node from the list of nodes.
+- Obtain the claimed bockdevice from the selected node.
+- Use the claimed blockdevice to create the pool.
+- Admission server will block the pool creation with the error `can't use claimed blockdevice`.
+
+## How to run
+
+- This experiment accepts the parameters in form of kubernetes job environmental variables.
+- For running this experiment of csi volume resize, clone openens/cstor-operators[https://github.com/openebs/cstor-operators] repo and then first apply rbac and crds for e2e-framework.
+```
+kubectl apply -f cstor-operators/e2e-tests/hack/rbac.yaml
+kubectl apply -f cstor-operators/e2e-tests/hack/crds.yaml
+```
+then update the needed test specific values in run_e2e_test.yml file and create the kubernetes job.
+```
+kubectl create -f run_e2e_test.yml
+```
+All the env variables description is provided with the comments in the same file.
+
+After creating kubernetes job, when the job’s pod is instantiated, we can see the logs of that pod which is executing the test-case.
+
+```
+kubectl get pods -n e2e
+kubectl logs -f <block-pool-creation-with-claimed-bd-xxxxx-xxxxx> -n e2e
+```
+To get the test-case result, get the corresponding e2e custom-resource `e2eresult` (short name: e2er ) and check its phase (Running or Completed) and result (Pass or Fail).
+
+```
+kubectl get e2er
+kubectl get e2er block-pool-creation-with-claimed-bd -n e2e --no-headers -o custom-columns=:.spec.testStatus.phase
+kubectl get e2er block-pool-creation-with-claimed-bd -n e2e --no-headers -o custom-columns=:.spec.testStatus.result
+```

@@ -22,6 +22,7 @@ spec:
           - name: ANSIBLE_STDOUT_CALLBACK
             value: default
 
+             # Application pod label in `key=value` format
           - name: APP_LABEL
             value: 'name=percona'
 
@@ -52,7 +53,7 @@ spec:
             value: "openebs/velero-plugin:ci"
 
           - name: VELERO_VERSION
-            value: "v1.1.0"
+            value: "v1.4.0"
 
           #Supported values are {'minio', 'GCP'}
           - name: STORAGE_BUCKET
@@ -75,7 +76,7 @@ spec:
           - name: PROFILE
             value: "default"
 
-          #Supported values are {"pool", "maya"}
+          #Supported values are {"pool"}
           # Will have no impact if variable is undefined i.e; will not induce any failure
           - name: COMPONENT_FAILURE
             value: ''

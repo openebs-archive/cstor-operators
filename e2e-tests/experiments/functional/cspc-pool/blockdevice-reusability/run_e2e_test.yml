@@ -20,7 +20,6 @@ spec:
 
         env:
           - name: ANSIBLE_STDOUT_CALLBACK
-            #value: log_plays, actionable, default
             value: default
 
             # Existing cspc pool name
@@ -36,7 +35,7 @@ spec:
           - name: POOL_TYPE
             value: ""
 
-           # Provide the name of STORAGE_CLASS 	
+           #Provide the name of STORAGE_CLASS
           - name: STORAGE_CLASS	
             value: openebs-bd-reusability-sc
 

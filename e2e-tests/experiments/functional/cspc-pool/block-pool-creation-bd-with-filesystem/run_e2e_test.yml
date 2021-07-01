@@ -20,7 +20,6 @@ spec:
 
         env:
           - name: ANSIBLE_STDOUT_CALLBACK
-            #value: log_plays, actionable, default
             value: default
 
             # Provide name POOL_NAME for the cstor-pool
@@ -36,9 +35,11 @@ spec:
           - name: OPERATOR_NS
             value: openebs
 
+           #Password for the node to ssh and create the filesystem on the disk
           - name: NODE_PASSWORD
             value: ""
 
+           #Username for the node to ssh and create the filesystem on the disk
           - name: USER_NAME
             value: ""
 

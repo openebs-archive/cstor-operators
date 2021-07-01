@@ -27,15 +27,13 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
           - name: ANSIBLE_STDOUT_CALLBACK
-            #value: log_plays
-            #value: actionable
             value: default
 
           - name: APP_NAMESPACE
-            value: '' 
+            value: ""
 
           - name: STORAGE_CLASS_NAME
-            value: ''
+            value: ""
 
             ## Name of CSI volumesnapshotclass
           - name: SNAPSHOT_CLASS
@@ -45,13 +43,13 @@ spec:
             value: 'csi-snap'
             
           - name: APP_PVC
-            value: ''
+            value: ""
 
           - name: CLONED_PVC
-            value: ''
+            value: ""
 
           - name: APP_NAME
-            value: 
+            value: ""
             
           - name: APP_LABEL
             value: 'busybox-cloned'

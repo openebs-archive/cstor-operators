@@ -30,16 +30,20 @@ spec:
             # Application pvc
           - name: APP_PVC
             value: '' 
-
+            
+            # Application pod label in `key=value` format
           - name: APP_LABEL
             value: ''
 
+            # storage class used to provision the application
           - name: STORAGE_CLASS
             value: ''
 
+            # Existing volume capacity
           - name: PV_CAPACITY
             value: ''
           
+            #Resized PVC size (for eg. 10Gi)
           - name: NEW_CAPACITY
             value: ''
 

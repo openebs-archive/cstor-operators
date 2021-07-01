@@ -64,17 +64,3 @@
 
   when: action == "pool" or action == "SNAPSHOT_DELETE"
 
-- block:
-
-   - name: Getting maya-pai-server pod name
-     shell: >
-       kubectl get pod -n {{ operator_ns }} --no-headers 
-       -l openebs.io/component-name=maya-apiserver -ojsonpath='{.items[*].metadata.name}'
-     register: maya_pod_name
-
-   - name: Deleting the maya-api-server pod
-     shell: kubectl delete pod {{ maya_pod_name.stdout }} -n {{ operator_ns }}
-     register: maya_pod_del_status
-     failed_when: "'deleted' not in maya_pod_del_status.stdout"
-
-  when: action == "maya"

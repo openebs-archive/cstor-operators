@@ -1,3 +1,94 @@
+# Changelog
+
+## [v2.11.0-RC2]/2021-07-15
+========================
+- refactor\[e2e\]: Included the dependent package for build the e2e image [\#353](https://github.com/openebs/cstor-operators/pull/353) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- fix\(workflow\): fix ansible job action workflow [\#351](https://github.com/openebs/cstor-operators/pull/351) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(docs\): Add instruction for OpenEBS NFS provisioner using cStor [\#338](https://github.com/openebs/cstor-operators/pull/338) ([ranjithwingrider](https://github.com/ranjithwingrider))
+- feat\(e2e-test\): Add E2E test cases for cstor csi [\#327](https://github.com/openebs/cstor-operators/pull/327) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- fix\(status\): update cvr status on graceful corresponding pool-manager termination [\#349](https://github.com/openebs/cstor-operators/pull/349) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(actions\): skip release workflow on helm release [\#348](https://github.com/openebs/cstor-operators/pull/348) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Fix bunch of typos [\#347](https://github.com/openebs/cstor-operators/pull/347) ([surajssd](https://github.com/surajssd))
+- fix\(cleanup-job\): add OR clause to prevent job from failing [\#346](https://github.com/openebs/cstor-operators/pull/346) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(webhook\): fix version comparison of webhook resources [\#341](https://github.com/openebs/cstor-operators/pull/341) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(docs\): Add workload page for Elasticsearch [\#335](https://github.com/openebs/cstor-operators/pull/335) ([nareshdesh](https://github.com/nareshdesh))
+
+
+## [v2.11.0-RC2]/2021-07-13
+========================
+
+No Changes
+
+## [v2.11.0-RC1]/2021-07-06
+========================
+- refactor\[e2e\]: Included the dependent package for build the e2e image [\#353](https://github.com/openebs/cstor-operators/pull/353) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- fix\(workflow\): fix ansible job action workflow [\#351](https://github.com/openebs/cstor-operators/pull/351) ([prateekpandey14](https://github.com/prateekpandey14))
+- chore\(docs\): Add instruction for OpenEBS NFS provisioner using cStor [\#338](https://github.com/openebs/cstor-operators/pull/338) ([ranjithwingrider](https://github.com/ranjithwingrider))
+- feat\(e2e-test\): Add E2E test cases for cstor csi [\#327](https://github.com/openebs/cstor-operators/pull/327) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- fix\(status\): update cvr status on graceful corresponding pool-manager termination [\#349](https://github.com/openebs/cstor-operators/pull/349) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(actions\): skip release workflow on helm release [\#348](https://github.com/openebs/cstor-operators/pull/348) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Fix bunch of typos [\#347](https://github.com/openebs/cstor-operators/pull/347) ([surajssd](https://github.com/surajssd))
+- fix\(cleanup-job\): add OR clause to prevent job from failing [\#346](https://github.com/openebs/cstor-operators/pull/346) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(webhook\): fix version comparison of webhook resources [\#341](https://github.com/openebs/cstor-operators/pull/341) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(docs\): Add workload page for Elasticsearch [\#335](https://github.com/openebs/cstor-operators/pull/335) ([nareshdesh](https://github.com/nareshdesh))
+
+
+## [v2.10.0]/2021-06-15
+========================
+- refact\(docs\): update Project README and contributors docs [\#334](https://github.com/openebs/cstor-operators/pull/334) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(cvc\): set the bind address using a go flag in cvc server config [\#332](https://github.com/openebs/cstor-operators/pull/332) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(charts\): make cleanup pre hook image configurable [\#336](https://github.com/openebs/cstor-operators/pull/336) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(operator\): sync cstor and NDM operator with latest changes [\#333](https://github.com/openebs/cstor-operators/pull/333) ([prateekpandey14](https://github.com/prateekpandey14))
+- Changed md5 to sha256 algorithm [\#322](https://github.com/openebs/cstor-operators/pull/322) ([nisarg1499](https://github.com/nisarg1499))
+- fixed all opt.semgrep.err-nil-check issues [\#314](https://github.com/openebs/cstor-operators/pull/314) ([sreeharimohan](https://github.com/sreeharimohan))
+- Move usr/bin declaration to top of file  [\#305](https://github.com/openebs/cstor-operators/pull/305) ([soniasingla](https://github.com/soniasingla))
+- Remove unused struct CmdSnaphotOptions [\#289](https://github.com/openebs/cstor-operators/pull/289) ([soniasingla](https://github.com/soniasingla))
+- \[stable/cstor\]: update cstor charts to 2.9.0 release [\#331](https://github.com/openebs/cstor-operators/pull/331) ([prateekpandey14](https://github.com/prateekpandey14))
+
+
+## [v2.10.0-RC2]/2021-06-13
+========================
+No Changes
+
+## [v2.10.0-RC1]/2021-06-06
+========================
+- refact\(docs\): update Project README and contributors docs [\#334](https://github.com/openebs/cstor-operators/pull/334) ([prateekpandey14](https://github.com/prateekpandey14))
+- fix\(cvc\): set the bind address using a go flag in cvc server config [\#332](https://github.com/openebs/cstor-operators/pull/332) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(charts\): make cleanup pre hook image configurable [\#336](https://github.com/openebs/cstor-operators/pull/336) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(operator\): sync cstor and NDM operator with latest changes [\#333](https://github.com/openebs/cstor-operators/pull/333) ([prateekpandey14](https://github.com/prateekpandey14))
+- Changed md5 to sha256 algorithm [\#322](https://github.com/openebs/cstor-operators/pull/322) ([nisarg1499](https://github.com/nisarg1499))
+- fixed all opt.semgrep.err-nil-check issues [\#314](https://github.com/openebs/cstor-operators/pull/314) ([sreeharimohan](https://github.com/sreeharimohan))
+- Move usr/bin declaration to top of file  [\#305](https://github.com/openebs/cstor-operators/pull/305) ([soniasingla](https://github.com/soniasingla))
+- Remove unused struct CmdSnaphotOptions [\#289](https://github.com/openebs/cstor-operators/pull/289) ([soniasingla](https://github.com/soniasingla))
+- \[stable/cstor\]: update cstor charts to 2.9.0 release [\#331](https://github.com/openebs/cstor-operators/pull/331) ([prateekpandey14](https://github.com/prateekpandey14))
+
+## [v2.9.0]/2021-05-15
+========================
+- chore\(docs\): Add workload page for Prometheus operator [\#330](https://github.com/openebs/cstor-operators/pull/330) ([ranjithwingrider](https://github.com/ranjithwingrider))
+- refact(fmt): code changes in a better format [\#317](https://github.com/openebs/cstor-operators/pull/317) ([nisarg1499](https://github.com/nisarg1499))
+- static check fixes in {controllers, volume-rpc, server/cstorvolumeconfig} [\#325](https://github.com/openebs/cstor-operators/pull/325) ([arcolife](https://github.com/arcolife))
+- Added Gitpod config [\#320](https://github.com/openebs/cstor-operators/pull/320) ([JanKoehnlein](https://github.com/JanKoehnlein))
+- \(bugsbash\) fix return statements [\#308](https://github.com/openebs/cstor-operators/pull/308) ([asquare14](https://github.com/asquare14))
+- \(bugsbash\) shellcheck : The shebang must be on the first line. Delete blanks and move comments. [\#306](https://github.com/openebs/cstor-operators/pull/306) ([asquare14](https://github.com/asquare14))
+- fix\(helm chart\): rename priority class name for CSI plugin \(node and controller\) [\#287](https://github.com/openebs/cstor-operators/pull/287) ([shovanmaity](https://github.com/shovanmaity))
+
+
+## [v2.9.0-RC2]/2021-05-12
+========================
+
+No Changes
+
+## [v2.9.0-RC1]/2021-05-06
+========================
+- chore\(docs\): Add workload page for Prometheus operator [\#330](https://github.com/openebs/cstor-operators/pull/330) ([ranjithwingrider](https://github.com/ranjithwingrider))
+- refact(fmt): code changes in a better format [\#317](https://github.com/openebs/cstor-operators/pull/317) ([nisarg1499](https://github.com/nisarg1499))
+- static check fixes in {controllers, volume-rpc, server/cstorvolumeconfig} [\#325](https://github.com/openebs/cstor-operators/pull/325) ([arcolife](https://github.com/arcolife))
+- Added Gitpod config [\#320](https://github.com/openebs/cstor-operators/pull/320) ([JanKoehnlein](https://github.com/JanKoehnlein))
+- \(bugsbash\) fix return statements [\#308](https://github.com/openebs/cstor-operators/pull/308) ([asquare14](https://github.com/asquare14))
+- \(bugsbash\) shellcheck : The shebang must be on the first line. Delete blanks and move comments. [\#306](https://github.com/openebs/cstor-operators/pull/306) ([asquare14](https://github.com/asquare14))
+- fix\(helm chart\): rename priority class name for CSI plugin \(node and controller\) [\#287](https://github.com/openebs/cstor-operators/pull/287) ([shovanmaity](https://github.com/shovanmaity))
+
+
 v2.8.0 / 2021-03-14
 ========================
 * fix(webhook): fix admission review response apis ([#275](https://github.com/openebs/cstor-operators/pull/275),[@prateekpandey14](https://github.com/prateekpandey14))
@@ -32,8 +123,6 @@ v2.7.0-RC1 / 2021-03-08
 ========================
 * refact(deps): bump k8s and client-go deps to version v0.20.2 ([#257](https://github.com/openebs/cstor-operators/pull/257),[@prateekpandey14](https://github.com/prateekpandey14))
 
-
-# Changelog
 
 ## [v2.6.0](https://github.com/openebs/cstor-operators/tree/v2.6.0) (2021-02-13)
 

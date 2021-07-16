@@ -238,4 +238,3 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | serviceAccount.csiController.name | string | `"openebs-cstor-csi-controller-sa"` | CSI Controller ServiceAccount name |
 | serviceAccount.csiNode.create | bool | `true` | Enable CSI Node ServiceAccount |
 | serviceAccount.csiNode.name | string | `"openebs-cstor-csi-node-sa"` | CSI Node ServiceAccount name |
-

@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.11.0-RC2]/2021-07-15
+## [v2.11.0]/2021-07-15
 ========================
 - refactor\[e2e\]: Included the dependent package for build the e2e image [\#353](https://github.com/openebs/cstor-operators/pull/353) ([nsathyaseelan](https://github.com/nsathyaseelan))
 - fix\(workflow\): fix ansible job action workflow [\#351](https://github.com/openebs/cstor-operators/pull/351) ([prateekpandey14](https://github.com/prateekpandey14))

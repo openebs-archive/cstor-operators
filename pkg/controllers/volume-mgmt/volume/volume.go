@@ -50,6 +50,7 @@ var (
   MediaDirectory "/mnt"
   Timeout 60
   NopInInterval 20
+  TCPUserTimeout 120
   MaxR2T 16
   DiscoveryAuthMethod None
   DiscoveryAuthGroup None

@@ -21,7 +21,7 @@
           vars:
             status: 'SOT'
             chaostype: "drain-node"
-            app: "percona"
+            app: ""
 
         ## DISPLAY APP INFORMATION 
  
@@ -132,5 +132,4 @@
           vars:
             status: 'EOT'
             chaostype: "drain-node"
-            app: "percona"
-           
+            app: ""

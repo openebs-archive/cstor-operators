@@ -216,18 +216,6 @@
                   args:
                     executable: /bin/bash
 
-                - name: Update the volume snapshotclass template with the variables
-                  template:
-                    src: snapshot-class.j2
-                    dest: snapshot-class.yml
-
-                - name: Create volume snapshotclass
-                  shell: kubectl apply -f snapshot-class.yml
-                  args:
-                    executable: /bin/bash
-                  register: result
-                  failed_when: "result.rc != 0"                    
-
               when: lookup('env','ACTION') == "provision"
 
             - block:
@@ -280,7 +268,7 @@
             - release_tag == "master"
 
         - block:
-
+               
             - name: Checking OpenEBS-CSPC-Operator is running
               shell: >
                 kubectl get pods -n {{ operator_ns }}
@@ -372,6 +360,18 @@
               until: "desired_count.stdout == ready_pods.stdout"
               delay: 5
               retries: 50
+
+            - name: Update the volume snapshotclass template with the variables
+              template:
+                src: snapshot-class.j2
+                dest: snapshot-class.yml
+
+            - name: Create volume snapshotclass
+              shell: kubectl apply -f snapshot-class.yml
+              args:
+                executable: /bin/bash
+              register: result
+              failed_when: "result.rc != 0"            
 
           when: lookup('env','ACTION') == "provision"
 

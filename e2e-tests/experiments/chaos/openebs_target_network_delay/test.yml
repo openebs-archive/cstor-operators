@@ -22,8 +22,20 @@
              src: data_persistence.j2
              dest: data_persistence.yml
 
+        - name: Identify the chaos util to be invoked 
+          template:
+             src: chaosutil.j2
+             dest: chaosutil.yml
+
         - include_vars:
             file: data_persistence.yml
+
+        - include_vars:
+            file: chaosutil.yml
+
+        - name: Record the chaos util path
+          set_fact: 
+            chaos_util_path: "/e2e-tests/chaoslib/{{ chaosutil }}"
 
         - name: Record the data consistency util path
           set_fact:
@@ -84,7 +96,7 @@
 
         ## STORAGE FAULT INJECTION 
 
-        - include: "/e2e-tests/chaoslib/openebs/cstor_target_network_delay.yaml"
+        - include: "{{ chaos_util_path }}"
           vars:
             app_ns: "{{ namespace }}"
             app_pvc: "{{ pvc }}"
@@ -92,7 +104,7 @@
             chaos_duration: "{{ c_duration }}"
           when: cri == 'docker'
 
-        - include: "/e2e-tests/chaoslib/openebs/inject_network_delay_tc.yml"
+        - include: "{{ chaos_util_path }}"
           vars:
             status: "induce"
             target_pod: "{{ cstor_target_pod.stdout }}"
@@ -101,7 +113,7 @@
           when: 
             - cri == 'cri-o'
 
-        - include: "/e2e-tests/chaoslib/openebs/inject_network_delay_tc.yml"
+        - include: "{{ chaos_util_path }}"
           vars:
             status: "induce"
             target_pod: "{{ cstor_target_pod.stdout }}"
@@ -114,7 +126,7 @@
           wait_for:
             timeout: 10
 
-        - include: "/e2e-tests/chaoslib/openebs/inject_network_delay_tc.yml"
+        - include: "{{ chaos_util_path }}"
           vars:
             status: "remove"
             target_pod: "{{ cstor_target_pod.stdout }}"
@@ -123,7 +135,7 @@
           when: 
             - cri == 'cri-o'  
 
-        - include: "/e2e-tests/chaoslib/openebs/inject_network_delay_tc.yml"
+        - include: "{{ chaos_util_path }}"
           vars:
             status: "remove"
             target_pod: "{{ cstor_target_pod.stdout }}"

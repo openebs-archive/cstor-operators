@@ -1,0 +1,277 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+    - /mnt/parameters.yml
+
+  tasks:
+
+    - block:
+
+        - include_tasks: /e2e-tests/utils/fcm/create_testname.yml
+
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'SOT'
+            chaostype: "node-failure"
+            app: ""
+
+        ## DISPLAY APP INFORMATION
+        - name: Display the app information passed via the test job
+          debug:
+            msg:
+              - "The application info is as follows:"
+              - "Namespace    : {{ namespace }}"
+              - "Label        : {{ label }}"
+
+        - name: Identify the chaos util to be invoked
+          template:
+            src: chaosutil.j2
+            dest: chaosutil.yml
+
+        - include_vars:
+            file: chaosutil.yml
+
+        - name: Record the chaos util path
+          set_fact:
+            chaos_util_path: "/{{ chaosutil }}"
+
+        - name: Identify the data consistency util to be invoked
+          template:
+            src: data_persistence.j2
+            dest: data_persistence.yml
+
+        - include_vars:
+            file: data_persistence.yml
+
+        - name: Record the data consistency util path
+          set_fact:
+            data_consistency_util_path: "{{ consistencyutil }}"
+          when: data_persistence != ''
+
+        ## Verify the APPLICATION UNDER TEST PRE CHAOS
+        - name: Verify if the application is running.
+          include_tasks: /e2e-tests/utils/k8s/status_app_pod.yml
+          vars:
+            app_ns: "{{ namespace }}"
+            app_lkey: "{{ label.split('=')[0] }}"
+            app_lvalue: "{{ label.split('=')[1] }}"
+            delay: '2'
+            retries: '60'
+
+        - name: Get the deployment name
+          shell: >
+            kubectl get deploy -n {{ namespace }} -l {{ label }} --no-headers -o=custom-columns=NAME:".metadata.name"
+          args:
+            executable: /bin/bash
+          register: app_deploy_name
+
+        ## Fetch application pod name
+        - name: Get application pod name
+          shell: >
+            kubectl get pod -n {{ namespace }} -l {{ label }} --no-headers -o=custom-columns=NAME:".metadata.name"
+          args:
+            executable: /bin/bash
+          register: app_pod_name
+
+        - name: Record the application pod name
+          set_fact:
+            application_pod: "{{ app_pod_name.stdout }}"
+
+        - name: Obtain PVC name from the application mount
+          shell: >
+            kubectl get pods "{{ app_pod_name.stdout }}" -n "{{ namespace }}"
+            -o custom-columns=:.spec.volumes[*].persistentVolumeClaim.claimName --no-headers
+          args:
+            executable: /bin/bash
+          register: pvc
+
+        ## Obtain the node where application pod is running
+        - name: Get Running Application pod Node to perform chaos
+          shell: >
+            kubectl get pod {{ app_pod_name.stdout }} -n {{ namespace }}
+            --no-headers -o custom-columns=:spec.nodeName
+          args:
+            executable: /bin/bash
+          register: app_node
+
+        - name: Record the application pod node name
+          set_fact:
+            app_node_name: "{{ app_node.stdout }}"
+
+        - name: Obtain the Persistent Volume name
+          shell: >
+            kubectl get pvc "{{ pvc.stdout }}" -n "{{ namespace }}" --no-headers
+            -o custom-columns=:.spec.volumeName
+          args:
+            executable: /bin/bash
+          register: pv
+          failed_when: 'pv.stdout == ""'
+
+        - name: Record the pv name
+          set_fact:
+            pv_name: "{{ pv.stdout }}"
+
+        ## Generate data on the application
+        - name: Generate data on the specified application.
+          include: "{{ data_consistency_util_path }}"
+          vars:
+            status: 'LOAD'
+            ns: "{{ namespace }}"
+            pod_name: "{{ app_pod_name.stdout }}"
+          when: data_persistence != ''
+
+        - name: Get the deployment name
+          shell: >
+            kubectl scale deploy -n {{ namespace }} "{{ app_deploy_name.stdout }}" --replicas=2
+          args:
+            executable: /bin/bash
+          register: scale_deploy
+          failed_when: scale_deploy.rc != 0
+
+        - name: Obtaine the newly scaled application pod name
+          shell: >
+            kubectl get pod -n {{ namespace }} -l {{ label }}
+            --no-headers -o=custom-columns=NAME:".metadata.name" | grep -v "{{ app_pod_name.stdout }}"
+          args:
+            executable: /bin/bash
+          register: scaled_pod_name
+
+        - name: check the newly scaled application pod status
+          shell: >
+             kubectl get pod -n {{ namespace }} {{ scaled_pod_name.stdout }}
+             --no-headers -o custom-columns=:.status.containerStatuses[*].state.waiting.reason
+          args:
+            executable: /bin/bash
+          register: scaled_pod_status
+          until: "'ContainerCreating' in scaled_pod_status.stdout"
+          delay: 5
+          retries: 10
+          ignore_errors: true
+
+        - name: Obtain the error message from the scaled app pod
+          shell: >
+             kubectl describe pod
+             -n {{ namespace }} {{ scaled_pod_name.stdout }} | grep "Volume {{ pv_name }} still mounted on node {{ app_node_name }}"
+          args:
+            executable: /bin/bash
+          register: error_status
+          until: "'Volume {{ pv_name }} still mounted on node {{ app_node_name }}' in error_status.stdout"
+          delay: 5
+          retries: 10
+          ignore_errors: true
+
+        ## Execute the chaos util to turn off the target node
+        - include_tasks: "{{ chaos_util_path }}"
+          vars:
+            esx_ip: "{{ host_ip }}"
+            target_node: "{{ app_node.stdout }}"
+            operation: "off"
+          when: platform == 'vmware'
+
+        - name: Check the node status
+          shell: kubectl get nodes {{ app_node.stdout }} --no-headers
+          args:
+            executable: /bin/bash
+          register: state
+          until: "'NotReady' in state.stdout"
+          delay: 15
+          retries: 30
+
+        # wait 5 minutes
+        - name: Wait for the application pod to get evicted
+          wait_for:
+            timeout: 300
+
+        - name: check the application pod event after scale down
+          shell: >
+             kubectl describe pod -n {{ namespace }} {{ app_pod_name.stdout }} | grep "Node is not ready"
+          args:
+            executable: /bin/bash
+          register: pod_event
+          until: "'Node is not ready' in pod_event.stdout"
+          delay: 5
+          retries: 10
+          ignore_errors: true
+
+       ## Application verification after injecting chaos
+        - name: check the application status
+          shell: kubectl get pods -n {{ namespace }} {{ scaled_pod_name.stdout }} --no-headers -o custom-columns=:.status.phase
+          args:
+            executable: /bin/bash
+          register: app_status
+          until: "'Running' in app_status.stdout"
+          delay: 5
+          retries: 10
+          ignore_errors: true
+
+        - name: Check if the CVRs are in healthy state
+          shell: >
+            kubectl get cvr -n {{ operator_ns }} -l openebs.io/persistent-volume={{ pv.stdout }}
+            -o custom-columns=:.status.phase --no-headers
+          args:
+            executable: /bin/bash
+          register: cvr_status
+          until: "((cvr_status.stdout_lines|unique)|length) == 1 and 'Healthy' in cvr_status.stdout"
+          retries: 60
+          delay: 10
+
+        # Turn on the k8s node
+        - include_tasks: "{{ chaos_util_path }}"
+          vars:
+            esx_ip: "{{ host_ip }}"
+            target_node: "{{ app_node.stdout }}"
+            operation: "on"
+          when:
+          - platform == 'vmware'
+
+        ## Obtain the node where application pod is running
+        - name: Get Running Application pod Node
+          shell: >
+            kubectl get pod {{ scaled_pod_name.stdout }} -n {{ namespace }}
+            --no-headers -o custom-columns=:spec.nodeName
+          args:
+            executable: /bin/bash
+          register: scaled_app_node
+
+        - name: Record the application pod node name
+          set_fact:
+            scaled_app_node_name: "{{ scaled_app_node.stdout }}"
+
+        - name: Obtain the error message from the scaled app pod
+          shell: >
+             kubectl describe pod
+             -n {{ namespace }} {{ app_pod_name.stdout }} | grep "Volume {{ pv_name }} still mounted on node {{ scaled_app_node_name }}"
+          args:
+            executable: /bin/bash
+          register: error_status
+          until: "'Volume {{ pv_name }} still mounted on node {{ scaled_app_node_name }}' in error_status.stdout"
+          delay: 5
+          retries: 10
+          ignore_errors: true
+
+        - name: Verify application data persistence
+          include: "data_availability_check.yml"
+          vars:
+            ns: "{{ namespace }}"
+            pod_name: "{{ scaled_pod_name.stdout }}"
+          when: data_persistence != ''
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+              
+        - set_fact:
+            flag: "Fail"
+
+      always:
+          
+        - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'
+            chaostype: "node-failure"
+            app: ""

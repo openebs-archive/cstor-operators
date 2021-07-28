@@ -16,7 +16,7 @@
         - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
           vars:
             status: 'SOT'
-            chaostype: "node-failure"
+            chaostype: "multiple-app-on-single-volume"
             app: ""
 
         ## DISPLAY APP INFORMATION
@@ -124,7 +124,7 @@
             pod_name: "{{ app_pod_name.stdout }}"
           when: data_persistence != ''
 
-        - name: Get the deployment name
+        - name: Scale the application deployment
           shell: >
             kubectl scale deploy -n {{ namespace }} "{{ app_deploy_name.stdout }}" --replicas=2
           args:
@@ -186,7 +186,7 @@
           wait_for:
             timeout: 300
 
-        - name: check the application pod event after scale down
+        - name: check the application pod event after poweroff the node
           shell: >
              kubectl describe pod -n {{ namespace }} {{ app_pod_name.stdout }} | grep "Node is not ready"
           args:
@@ -198,7 +198,7 @@
           ignore_errors: true
 
        ## Application verification after injecting chaos
-        - name: check the application status
+        - name: check the scaled application pod status
           shell: kubectl get pods -n {{ namespace }} {{ scaled_pod_name.stdout }} --no-headers -o custom-columns=:.status.phase
           args:
             executable: /bin/bash
@@ -241,7 +241,7 @@
           set_fact:
             scaled_app_node_name: "{{ scaled_app_node.stdout }}"
 
-        - name: Obtain the error message from the scaled app pod
+        - name: Obtain the error message from the old app pod on old node
           shell: >
              kubectl describe pod
              -n {{ namespace }} {{ app_pod_name.stdout }} | grep "Volume {{ pv_name }} still mounted on node {{ scaled_app_node_name }}"
@@ -273,5 +273,5 @@
         - include_tasks: /e2e-tests/utils/fcm/update_e2e_result_resource.yml
           vars:
             status: 'EOT'
-            chaostype: "node-failure"
+            chaostype: "multiple-app-on-single-volume"
             app: ""

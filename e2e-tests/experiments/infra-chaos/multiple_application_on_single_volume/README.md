@@ -2,7 +2,7 @@
 
 | Type  | Description                                                  | Storage | K8s Platform      |
 | ----- | ------------------------------------------------------------ | ------- | ----------------- |
-| Chaos | Verify the application status when the multiple application pods tryijng to connect on sinle cstor volume | OpenEBS | on-premise-VMware |
+| Chaos | Verify the application status when the multiple application pods trying to connect on single cstor volume | OpenEBS | on-premise-VMware |
 
 ## Entry-Criteria
 
@@ -61,7 +61,7 @@ Note: To perform admin operatons on vmware, the VM display name in hypervisor sh
 | APP_NAMESPACE    | Namespace in which application pods are deployed             |
 | APP_LABEL        | Unique Labels in `key=value` format of application deployment |
 | APP_PVC          | Name of persistent volume claim used for app's volume mounts |
-| TARGET_NAMESPACE | Namespace where OpenEBS is installed                         |
+| OPERATOR_NS      | Namespace where OpenEBS is installed                         |
 | DATA_PERSISTENCE | Specify the application name against which data consistency has to be ensured. Example: busybox |
 
 ### Chaos

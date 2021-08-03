@@ -8,11 +8,20 @@
 #      - status : "induce" for adding the network loss rule
 #                 "remove" for deleting the applied rule.
 
+- name: Display the app information passed via the test job
+  debug: 
+    msg: 
+      - "The application info is as follows:"
+      - "Namespace    : {{ operator_namespace }}"
+      - "Label        : {{ containername }}"
+      - "target       : {{ target_pod }}"
+
 - block:
 
     - name: Checking whether tc is already installed
-      shell: kubectl exec -it {{ target_pod }} -n {{ operator_namespace }} --container {{ containername }} 
-        -- bash -c "which tc"
+      shell: >
+         kubectl exec -it {{ target_pod }} -n {{ operator_namespace }} --container {{ containername }} 
+         -- bash -c "which tc"
       register: tc_status 
       ignore_errors: yes 
 
@@ -40,5 +49,3 @@
       register: apt_rc
 
   when: status == "remove"
-
-

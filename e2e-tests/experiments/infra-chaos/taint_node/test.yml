@@ -20,7 +20,7 @@
           vars:
             status: 'SOT'
             chaostype: "taint-node"
-            app: "percona"
+            app: ""
 
         ## DISPLAY APP INFORMATION 
  
@@ -128,4 +128,4 @@
           vars:
             status: 'EOT'
             chaostype: "taint-node"
-            app: "percona" 
+            app: "" 

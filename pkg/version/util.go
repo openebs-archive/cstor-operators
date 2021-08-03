@@ -15,27 +15,53 @@ limitations under the License.
 package version
 
 import (
+	"strconv"
 	"strings"
 )
 
 var (
-	validCurrentVersions = map[string]bool{
-		"1.10.0": true, "1.11.0": true, "1.12.0": true,
-		"2.0.0": true, "2.1.0": true, "2.2.0": true, "2.3.0": true,
-		"2.4.0": true, "2.4.1": true, "2.5.0": true, "2.6.0": true, "2.7.0": true,
-		"2.8.0": true, "2.9.0": true, "2.10.0": true, "2.11.0": true,
-	}
+	minCurrentVersion   = "1.10.0"
 	validDesiredVersion = strings.Split(GetVersion(), "-")[0]
+	// these are the versions used in various pipelines for ci testing
+	exceptions = []string{"master"}
 )
 
 // IsCurrentVersionValid verifies if the  current version is valid or not
 func IsCurrentVersionValid(v string) bool {
 	currentVersion := strings.Split(v, "-")[0]
-	return validCurrentVersions[currentVersion]
+	return CanCurrentVersionBeUpgraded(currentVersion)
 }
 
 // IsDesiredVersionValid verifies the desired version is valid or not
 func IsDesiredVersionValid(v string) bool {
 	desiredVersion := strings.Split(v, "-")[0]
 	return validDesiredVersion == desiredVersion
+}
+
+// CanCurrentVersionBeUpgraded determines whether the current version
+// is within the range of minCurrentVersion and validDesiredVersion
+func CanCurrentVersionBeUpgraded(version string) bool {
+	return IsOldLessThanOrEqualNewVersion(minCurrentVersion, version) &&
+		IsOldLessThanOrEqualNewVersion(version, validDesiredVersion)
+}
+
+// IsOldLessThanOrEqualNewVersion compares old and new version and returns true
+// if old version is less `<` or equal then new version
+func IsOldLessThanOrEqualNewVersion(old, new string) bool {
+	oldVersions := strings.Split(strings.Split(old, "-")[0], ".")
+	newVersions := strings.Split(strings.Split(new, "-")[0], ".")
+	for _, exception := range exceptions {
+		if newVersions[0] == exception {
+			return true
+		}
+	}
+	for i := 0; i < len(oldVersions); i++ {
+		oldVersion, _ := strconv.Atoi(oldVersions[i])
+		newVersion, _ := strconv.Atoi(newVersions[i])
+		if oldVersion == newVersion {
+			continue
+		}
+		return oldVersion < newVersion
+	}
+	return true
 }

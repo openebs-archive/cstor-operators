@@ -115,9 +115,9 @@ func (c *Controller) sync(cspc *cstor.CStorPoolCluster, cspiList *cstor.CStorPoo
 
 	if ok, reason := c.ShouldReconcile(*cspc); !ok {
 		// Do not reconcile this cspc
-		message := fmt.Sprintf("Cannot not reconcile CSPC %s as %s", cspc.Name, reason)
+		message := fmt.Sprintf("Can not reconcile CSPC %s as %s", cspc.Name, reason)
 		c.recorder.Event(cspc, corev1.EventTypeWarning, "CSPC Reconcile", message)
-		klog.Warningf("Cannot not reconcile CSPC %s in namespace %s as %s", cspc.Name, cspc.Namespace, reason)
+		klog.Warningf("Can not reconcile CSPC %s in namespace %s as %s", cspc.Name, cspc.Namespace, reason)
 		return nil
 	}
 

@@ -1,7 +1,7 @@
 ---
 # Test specific parameters
 
-test_name: multiple_application_on_single_volume
+test_name: multiple-application-on-single-volume
 
 namespace: "{{ lookup('env','APP_NAMESPACE') }}"
 

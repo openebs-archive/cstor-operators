@@ -10,6 +10,7 @@ Following are list of policies that can be configured based on the requirements.
 - [Volume Tunable](#volume-tunable)
 - [Memory and CPU Resources QOS](#resource-request-and-limits) 
 - [Toleration for target pod to ensure scheduling of target pods on tainted nodes](#target-pod-toleration)
+- [NodeSelector for target pod to ensure scheduling of target pod on specific set of nodes](#target-pod-nodeselector)
 - [Priority class for volume target deployment](#priority-class)
 
 Below StorageClass example contains `cstorVolumePolicy` parameter having `csi-volume-policy` name set to configured the custom policy.
@@ -310,6 +311,36 @@ spec:
       effect: "NoSchedule"
 ```
 
+### Target Pod NodeSelector:
+
+This feature allows user to specify a set node labels(valid labels) on `policy.spec.target.nodeSelector`, so that target pod will get scheduled only on specified set of nodes(An example case is where user dedicates set of nodes in a cluster for storage `kubectl label node <node-1> <node-2>...<node-n> openebs.io/storage=true`).
+
+#### Influence Target Pod Scheduling During Volume Provisioning Time:
+
+Ex: Create CStorVolumePolicy by populating values under `policy.spec.target.nodeSelector`
+
+```yaml
+apiVersion: cstor.openebs.io/v1
+kind: CStorVolumePolicy
+metadata:
+  name: csi-volume-policy
+  namespace: openebs
+spec:
+  replica: {}
+  target:
+    nodeSelector:
+      openebs.io/storage: "true"
+```
+
+#### Dynamically Update NodeSelector On CstorVolumeConfig:
+
+cStor also provides an options to dynamically update the nodeSelectors under CStorVolumeConfig.
+
+- Edit/patch the CStorVolumeConfig(CVC) for a particular volume(CVC name will be same as PV name) and add nodeSelectors under `cvc.spec.policy.target.nodeSelector`. Once changes are applied successfully then target pod will get schedule as per specified configuration.
+
+```sh
+kubectl edit cvc <cvc_name> -n openebs
+```
 
 ### Priority Class:
 

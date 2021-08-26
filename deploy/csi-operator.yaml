@@ -967,7 +967,7 @@ spec:
       serviceAccount: openebs-cstor-csi-controller-sa
       containers:
         - name: csi-resizer
-          image: k8s.gcr.io/sig-storage/csi-resizer:v1.1.0
+          image: k8s.gcr.io/sig-storage/csi-resizer:v1.2.0
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
@@ -997,7 +997,7 @@ spec:
             - "--leader-election=false"
           imagePullPolicy: IfNotPresent
         - name: csi-provisioner
-          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.1.0
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v3.0.0
           imagePullPolicy: IfNotPresent
           args:
             - "--csi-address=$(ADDRESS)"
@@ -1222,7 +1222,7 @@ spec:
       hostNetwork: true
       containers:
         - name: csi-node-driver-registrar
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.3.0
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"

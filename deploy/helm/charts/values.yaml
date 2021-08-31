@@ -100,7 +100,7 @@ csiController:
       repository: sig-storage/csi-resizer
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
-      tag: v1.1.0
+      tag: v1.2.0
   snapshotter:
     name: "csi-snapshotter"
     image:
@@ -140,7 +140,7 @@ csiController:
       repository: sig-storage/csi-provisioner
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
-      tag: v2.1.0
+      tag: v3.0.0
   annotations: {}
   podAnnotations: {}
   podLabels: {}
@@ -173,7 +173,7 @@ csiNode:
       repository: sig-storage/csi-node-driver-registrar
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
-      tag: v2.1.0
+      tag: v2.3.0
   updateStrategy:
     type: RollingUpdate
   annotations: {}

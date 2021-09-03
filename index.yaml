@@ -3,6 +3,39 @@ entries:
   cstor:
   - apiVersion: v2
     appVersion: 2.12.0
+    created: "2021-09-03T10:07:59.099290233Z"
+    dependencies:
+    - condition: openebsNDM.enabled
+      name: openebs-ndm
+      repository: https://openebs.github.io/node-disk-manager
+      version: 1.6.1
+    description: CStor-Operator helm chart for Kubernetes
+    digest: 0c37711f9b65895f68f5c930abc90a2c2d16418f15c0604b501a8cfe89e65aeb
+    home: http://www.openebs.io/
+    icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/openebs/icon/color/openebs-icon-color.png
+    keywords:
+    - cloud-native-storage
+    - block-storage
+    - iSCSI
+    - storage
+    - cstor
+    - cstor-operators
+    maintainers:
+    - email: kiran.mova@mayadata.io
+      name: kiranmova
+    - email: prateek.pandey@mayadata.io
+      name: prateekpandey14
+    - email: sonasingh46@gmail.com
+      name: sonasingh46
+    name: cstor
+    sources:
+    - https://github.com/openebs/cstor-operators
+    type: application
+    urls:
+    - https://github.com/openebs/cstor-operators/releases/download/cstor-2.12.1/cstor-2.12.1.tgz
+    version: 2.12.1
+  - apiVersion: v2
+    appVersion: 2.12.0
     created: "2021-08-18T10:30:32.908606376Z"
     dependencies:
     - condition: openebsNDM.enabled

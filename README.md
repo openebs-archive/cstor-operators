@@ -9,7 +9,7 @@
 
 ## Project Status: Beta
 
-We are always happy to list users who run cStor in production, check out our existing [adopters](https://github.com/openebs/openebs/tree/master/adopters), and their [feedbacks](https://github.com/openebs/openebs/issues/2719).
+We are always happy to list users who run cStor in production, check out our existing [adopters](https://github.com/openebs/openebs/tree/HEAD/adopters), and their [feedbacks](https://github.com/openebs/openebs/issues/2719).
 
 The new cStor Operators support the following Operations on cStor pools and volumes:
 1. Provisioning and De-provisioning of cStor pools.
@@ -37,7 +37,7 @@ in the CSPC. A cStor pool is provisioned on node by utilising the disks attached
 CStorPoolInstance(CSPI) custom resource in a Kubernetes cluster. One has freedom to specify the disks that they
 want to use for pool provisioning.
 
-CSPC API comes with a variety of tunables and features and the API can be viewed for [here](https://github.com/openebs/api/blob/master/pkg/apis/cstor/v1/cstorpoolcluster.go)
+CSPC API comes with a variety of tunables and features and the API can be viewed for [here](https://github.com/openebs/api/blob/HEAD/pkg/apis/cstor/v1/cstorpoolcluster.go)
 
 Once a CSPC is created, cspc-operator provision CSPI CR and **pool-manager** deployment on each node where cStor pool should 
 be created. The pool-manager deployment watches for its corresponding CSPI on the node and finally executes commands to

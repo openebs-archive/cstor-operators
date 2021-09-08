@@ -90,6 +90,7 @@ csiController:
   priorityClass:
     create: true
     name: cstor-csi-controller-critical
+    value: 900000000
   componentName: "openebs-cstor-csi-controller"
   resizer:
     name: "csi-resizer"
@@ -165,6 +166,7 @@ csiNode:
   priorityClass:
     create: true
     name: cstor-csi-node-critical
+    value: 900001000
   componentName: "openebs-cstor-csi-node"
   driverRegistrar:
     name: "csi-node-driver-registrar"

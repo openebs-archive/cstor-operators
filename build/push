@@ -70,7 +70,7 @@ fi
 # set the tag CI (fixed) and build tags.
 BUILD_TAG="${CURRENT_BRANCH}-${BUILD_ID}"
 CI_TAG="${CURRENT_BRANCH}-ci"
-if [ ${CURRENT_BRANCH} = "master" ]; then
+if [ ${CURRENT_BRANCH} = "develop" ]; then
   CI_TAG="ci"
 fi
 

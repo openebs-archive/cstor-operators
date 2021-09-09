@@ -67,7 +67,7 @@ Advantages of using OpenEBS for Elasticsearch database:
 A storage engine is the data plane component of the IO path of a Persistent Volume. In CAS architecture, users can choose different data planes for different application workloads based on a configuration policy. OpenEBS provides different types of storage engines and you should choose the right engine that suits your type of application requirements and storage available on your Kubernetes nodes. More information can be read from [here](https://docs.openebs.io/docs/next/overview.html#types-of-openebs-storage-engines).
 
 After OpenEBS installation, choose the OpenEBS storage engine as per your requirement. 
-- Choose **cStor**, If you are looking for replicated storage feature and other enterprise graded features such as volume expansion, backup and restore, etc. cStor configuration can be found [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md). In this document, we will be doing Elasticsearch installation using OpenEBS cStor.
+- Choose **cStor**, If you are looking for replicated storage feature and other enterprise graded features such as volume expansion, backup and restore, etc. cStor configuration can be found [here](https://github.com/openebs/cstor-operators/blob/HEAD/docs/quick.md). In this document, we will be doing Elasticsearch installation using OpenEBS cStor.
 - Choose **OpenEBS Local PV**, if you are not requiring replicated storage but high performance storage engine. The steps for deploying Prometheus operator using OpenEBS Local PV can be found [here](https://docs.openebs.io/docs/next/elasticsearch.html).
 
 
@@ -589,8 +589,8 @@ You will see the OpenEBS NDM pod logs listed on the page.
 
 ## See Also:
 
-### [cStor User guide](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md)
-### [Troubleshooting cStor](https://github.com/openebs/cstor-operators/blob/master/docs/troubleshooting/troubleshooting.md)
+### [cStor User guide](https://github.com/openebs/cstor-operators/blob/HEAD/docs/quick.md)
+### [Troubleshooting cStor](https://github.com/openebs/cstor-operators/blob/HEAD/docs/troubleshooting/troubleshooting.md)
 
 <br>
 

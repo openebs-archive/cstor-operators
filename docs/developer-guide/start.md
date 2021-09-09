@@ -24,7 +24,7 @@ OpenEBS is an Apache 2.0 Licensed project and all your commits should be signed 
 * Find an issue to work on or create a new issue. The issues are maintained at [openebs/openebs](https://github.com/openebs/openebs/issues). You can pick up from a list of [good-first-issues](https://github.com/openebs/openebs/labels/good%20first%20issue).
 * Claim your issue by commenting your intent to work on it to avoid duplication of efforts.
 * Fork the repository on GitHub.
-* Create a branch from where you want to base your work (usually master).
+* Create a branch from where you want to base your work (usually develop).
 * Make your changes. If you are working on code contributions, please see [Setting up the Development Environment](#setting-up-your-development-environment).
 * Relevant coding style guidelines are the [Go Code Review Comments](https://code.google.com/p/go-wiki/wiki/CodeReviewComments) and the _Formatting and style_ section of Peter Bourgon's [Go: Best Practices for Production Environments](http://peter.bourgon.org/go-in-production/#formatting-and-style).
 * Commit your changes by making sure the commit messages convey the need and notes about the commit.
@@ -33,7 +33,7 @@ OpenEBS is an Apache 2.0 Licensed project and all your commits should be signed 
 
 ## Pull Request Checklist
 
-* Rebase to the current master branch before submitting your pull request.
+* Rebase to the current develop branch before submitting your pull request.
 * Commits should be as small as possible. Each commit should follow the checklist below:
   - For code changes, add tests relevant to the fixed bug or new feature.
   - Pass the compile and tests - includes spell checks, formatting, etc.
@@ -44,7 +44,7 @@ OpenEBS is an Apache 2.0 Licensed project and all your commits should be signed 
 
 ## Sign your work
 
-We use the Developer Certificate of Origin (DCO) as an additional safeguard for the OpenEBS project. This is a well established and widely used mechanism to assure that contributors have confirmed their right to license their contribution under the project's license. Please read [dcofile](https://github.com/openebs/openebs/blob/master/contribute/developer-certificate-of-origin). If you can certify it, then just add a line to every git commit message:
+We use the Developer Certificate of Origin (DCO) as an additional safeguard for the OpenEBS project. This is a well established and widely used mechanism to assure that contributors have confirmed their right to license their contribution under the project's license. Please read [dcofile](https://github.com/openebs/openebs/blob/HEAD/contribute/developer-certificate-of-origin). If you can certify it, then just add a line to every git commit message:
 
 ```
   Signed-off-by: Random J Developer <random@developer.example.org>

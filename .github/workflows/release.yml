@@ -51,6 +51,7 @@ jobs:
           images: |
             ${{ env.IMAGE_ORG }}/cspc-operator
             quay.io/${{ env.IMAGE_ORG }}/cspc-operator
+            ghcr.io/${{ env.IMAGE_ORG }}/cspc-operator
           tag-latest: true
           tag-semver: |
             {{version}}
@@ -83,6 +84,13 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & Push Image
         uses: docker/build-push-action@v2
@@ -131,6 +139,7 @@ jobs:
           images: |
             ${{ env.IMAGE_ORG }}/cvc-operator
             quay.io/${{ env.IMAGE_ORG }}/cvc-operator
+            ghcr.io/${{ env.IMAGE_ORG }}/cvc-operator
           tag-latest: true
           tag-semver: |
             {{version}}
@@ -163,6 +172,13 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & Push Image
         uses: docker/build-push-action@v2
@@ -211,6 +227,7 @@ jobs:
           images: |
             ${{ env.IMAGE_ORG }}/cstor-pool-manager
             quay.io/${{ env.IMAGE_ORG }}/cstor-pool-manager
+            ghcr.io/${{ env.IMAGE_ORG }}/cstor-pool-manager
           tag-latest: true
           tag-semver: |
             {{version}}
@@ -243,6 +260,13 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & Push Image
         uses: docker/build-push-action@v2
@@ -292,6 +316,7 @@ jobs:
           images: |
             ${{ env.IMAGE_ORG }}/cstor-volume-manager
             quay.io/${{ env.IMAGE_ORG }}/cstor-volume-manager
+            ghcr.io/${{ env.IMAGE_ORG }}/cstor-volume-manager
           tag-latest: true
           tag-semver: |
             {{version}}
@@ -324,6 +349,13 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & Push Image
         uses: docker/build-push-action@v2
@@ -372,6 +404,7 @@ jobs:
           images: |
             ${{ env.IMAGE_ORG }}/cstor-webhook
             quay.io/${{ env.IMAGE_ORG }}/cstor-webhook
+            ghcr.io/${{ env.IMAGE_ORG }}/cstor-webhook
           tag-latest: true
           tag-semver: |
             {{version}}
@@ -404,6 +437,13 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & Push Image
         uses: docker/build-push-action@v2

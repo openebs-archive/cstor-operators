@@ -505,7 +505,7 @@ defaulting mechanism is -- if certain fields are not specified in cspc at
 pool config level ( or per cspi level ) then a generic value from pool spec
 is taken.
 Please refer following design document to understand more
-https://github.com/openebs/api/tree/master/design/cstor/v1
+https://github.com/openebs/api/tree/HEAD/design/cstor/v1
 
 ToDo: Offload this defaulting mechanism to mutating webhook server.
 */

@@ -33,7 +33,7 @@ We will add a 100G disk to each node. These disks will be consumed by CSI based 
 
 OpenEBS should be installed first on your Kubernetes cluster. The steps for OpenEBS installation can be found [here](https://docs.openebs.io/docs/next/installation.html). After OpenEBS installation, choose the OpenEBS storage engine as per your requirement. 
 
-- Choose **cStor**, If you are looking for replicated storage feature and other enterprise graded features such as volume expansion, backup and restore, etc. cStor configuration can be found [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md). In this document, we are mentioning about the Prometheus operator installation using OpenEBS cStor.
+- Choose **cStor**, If you are looking for replicated storage feature and other enterprise graded features such as volume expansion, backup and restore, etc. cStor configuration can be found [here](https://github.com/openebs/cstor-operators/blob/HEAD/docs/quick.md). In this document, we are mentioning about the Prometheus operator installation using OpenEBS cStor.
 - Choose **OpenEBS Local PV**, if you are not requiring replicated storage but high performance storage engine. The steps for deploying Prometheus operator using OpenEBS Local PV can be found [here](https://docs.openebs.io/docs/next/prometheus.html).
 
 ### Installing Prometheus Operator
@@ -327,9 +327,9 @@ Users can upload a Grafana dashboard for Prometheus in 3 ways.
 
 ## See Also:
 
-### [cStor User guide](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md)
+### [cStor User guide](https://github.com/openebs/cstor-operators/blob/HEAD/docs/quick.md)
 
-### [Troubleshooting cStor](https://github.com/openebs/cstor-operators/blob/master/docs/troubleshooting/troubleshooting.md)
+### [Troubleshooting cStor](https://github.com/openebs/cstor-operators/blob/HEAD/docs/troubleshooting/troubleshooting.md)
 
 <br>
 

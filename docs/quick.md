@@ -60,7 +60,7 @@ helm install openebs-cstor openebs-cstor/cstor -n openebs --create-namespace
 </details>
 
 
-[Click here](https://github.com/openebs/cstor-operators/blob/master/deploy/helm/charts/README.md) for detailed instructions.
+[Click here](https://github.com/openebs/cstor-operators/blob/HEAD/deploy/helm/charts/README.md) for detailed instructions.
 
 ### Using Operator:
 

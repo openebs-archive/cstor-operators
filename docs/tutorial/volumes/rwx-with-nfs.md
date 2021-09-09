@@ -17,7 +17,7 @@ In this document, we will explain how you can easily set up a NFS solution using
 
 ### Prerequisites
 
-- OpenEBS should be installed and then configure cStor operator. The steps for doing this configuration can be found [here](https://github.com/openebs/cstor-operators/blob/master/docs/quick.md). cStor configuration includes installation of cStor operator, then provisioning of a CStorPoolCluster(CSPC) and finally the creation of a StorageClass that will consume the created CSPC pool. 
+- OpenEBS should be installed and then configure cStor operator. The steps for doing this configuration can be found [here](https://github.com/openebs/cstor-operators/blob/HEAD/docs/quick.md). cStor configuration includes installation of cStor operator, then provisioning of a CStorPoolCluster(CSPC) and finally the creation of a StorageClass that will consume the created CSPC pool. 
 - Install NFS client packages on all worker nodes before deploy any application with the NFS supported StorageClass. In this example, we used base OS as `Ubuntu` on all worker nodes. The  `nfs-common` packages are installed on all worker nodes and then enabled the NFS service.
 
 ### Installing OpenEBS NFS Provisioner

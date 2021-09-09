@@ -27,7 +27,7 @@ git clone https://github.com/$user/cstor-operators.git
 cd cstor-operators
 git remote add upstream https://github.com/openebs/cstor-operators.git
 
-# Never push to upstream master
+# Never push to upstream develop
 git remote set-url --push upstream no_push
 
 # Confirm that your remotes make sense
@@ -44,15 +44,15 @@ Open a terminal on your local host. Change directory to the cstor-operators-fork
 $ cd cstor-operators
 ```
 
- Checkout the master branch.
+ Checkout the develop branch.
 
  ```sh
- $ git checkout master
- Switched to branch 'master'
- Your branch is up-to-date with 'origin/master'.
+ $ git checkout develop
+ Switched to branch 'develop'
+ Your branch is up-to-date with 'origin/develop'.
  ```
 
- Recall that origin/master is a branch on your remote GitHub repository.
+ Recall that origin/develop is a branch on your remote GitHub repository.
  Make sure you have the upstream remote openebs/cstor-operators by listing them.
 
  ```sh
@@ -69,45 +69,45 @@ $ cd cstor-operators
  $ git remote add upstream https://github.com/openebs/cstor-operators.git
  ```
 
- Fetch all the changes from the upstream master branch.
+ Fetch all the changes from the upstream develop branch.
 
  ```sh
- $ git fetch upstream master
+ $ git fetch upstream develop
  remote: Counting objects: 141, done.
  remote: Compressing objects: 100% (29/29), done.
  remote: Total 141 (delta 52), reused 46 (delta 46), pack-reused 66
  Receiving objects: 100% (141/141), 112.43 KiB | 0 bytes/s, done.
  Resolving deltas: 100% (79/79), done.
  From github.com:openebs/cstor-operators
-   * branch            master     -> FETCH_HEAD
+   * branch            develop     -> FETCH_HEAD
  ```
 
- Rebase your local master with the upstream/master.
+ Rebase your local develop with the upstream/develop.
 
  ```sh
- $ git rebase upstream/master
+ $ git rebase upstream/develop
  First, rewinding head to replay your work on top of it...
- Fast-forwarded master to upstream/master.
+ Fast-forwarded develop to upstream/develop.
  ```
 
- This command applies all the commits from the upstream master to your local master.
+ This command applies all the commits from the upstream develop to your local develop.
 
  Check the status of your local branch.
 
  ```sh
  $ git status
- On branch master
- Your branch is ahead of 'origin/master' by 38 commits.
+ On branch develop
+ Your branch is ahead of 'origin/develop' by 38 commits.
  (use "git push" to publish your local commits)
  nothing to commit, working directory clean
  ```
 
- Your local repository now has all the changes from the upstream remote. You need to push the changes to your own remote fork which is origin master.
+ Your local repository now has all the changes from the upstream remote. You need to push the changes to your own remote fork which is origin develop.
 
- Push the rebased master to origin master.
+ Push the rebased develop to origin develop.
 
  ```sh
- $ git push origin master
+ $ git push origin develop
  Username for 'https://github.com': $user
  Password for 'https://$user@github.com':
  Counting objects: 223, done.
@@ -115,7 +115,7 @@ $ cd cstor-operators
  Writing objects: 100% (69/69), 8.76 KiB | 0 bytes/s, done.
  Total 69 (delta 53), reused 47 (delta 31)
  To https://github.com/$user/cstor-operators.git
- 8e107a9..5035fa1  master -> master
+ 8e107a9..5035fa1  develop -> develop
  ```
 
 ### Create a new feature branch to work on your issue
@@ -152,7 +152,7 @@ You can build amd64 images by following command.
 ```sh
 # While on your myfeature branch (see above)
 git fetch upstream
-git rebase upstream/master
+git rebase upstream/develop
 ```
 
 While you rebase your changes, you must resolve any conflicts that might arise and build and test your changes using the above steps.

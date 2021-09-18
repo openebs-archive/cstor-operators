@@ -1,7 +1,71 @@
 # Changelog
 
+## [v3.0.0]/2021-09-17
+===========================
+
+- chore(version): add develop as an exception [\#385](https://github.com/openebs/cstor-operators/pull/385) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore(ci): updating branch reference from master to develop(HEAD) [\#382](https://github.com/openebs/cstor-operators/pull/382) ([mittachaitu](https://github.com/mittachaitu))
+- update\(yaml\): update priority class name for csi driver [\#381](https://github.com/openebs/cstor-operators/pull/381) ([shovanmaity](https://github.com/shovanmaity))
+- chore\(operator\): bump k8s csi sidecars images [\#376](https://github.com/openebs/cstor-operators/pull/376) ([prateekpandey14](https://github.com/prateekpandey14))
+- refactor\[e2e\]: Updated the path the fetch RC tag yaml [\#379](https://github.com/openebs/cstor-operators/pull/379) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- refactor\[e2e\]: Updated the path for the cstor operator yaml [\#378](https://github.com/openebs/cstor-operators/pull/378) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- fix\[e2e\]: Updated the test name for multiple application login request infra chaos test [\#372](https://github.com/openebs/cstor-operators/pull/372) ([nsathyaseelan](https://github.com/nsathyaseelan))
+
+
+## [v3.0.0-RC1]/2021-09-16
+===========================
+
+- chore(version): add develop as an exception [\#385](https://github.com/openebs/cstor-operators/pull/385) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore(ci): updating branch reference from master to develop(HEAD) [\#382](https://github.com/openebs/cstor-operators/pull/382) ([mittachaitu](https://github.com/mittachaitu))
+- update\(yaml\): update priority class name for csi driver [\#381](https://github.com/openebs/cstor-operators/pull/381) ([shovanmaity](https://github.com/shovanmaity))
+- chore\(operator\): bump k8s csi sidecars images [\#376](https://github.com/openebs/cstor-operators/pull/376) ([prateekpandey14](https://github.com/prateekpandey14))
+- refactor\[e2e\]: Updated the path the fetch RC tag yaml [\#379](https://github.com/openebs/cstor-operators/pull/379) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- refactor\[e2e\]: Updated the path for the cstor operator yaml [\#378](https://github.com/openebs/cstor-operators/pull/378) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- fix\[e2e\]: Updated the test name for multiple application login request infra chaos test [\#372](https://github.com/openebs/cstor-operators/pull/372) ([nsathyaseelan](https://github.com/nsathyaseelan))
+
+
+## [v2.12.2]/2021-09-13
+========================
+
+- chore(version): add develop as an exception [\#385](https://github.com/openebs/cstor-operators/pull/385) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore(ci): updating branch reference from master to develop(HEAD) [\#382](https://github.com/openebs/cstor-operators/pull/382) ([mittachaitu](https://github.com/mittachaitu))
+- update\(yaml\): update priority class name for csi driver [\#381](https://github.com/openebs/cstor-operators/pull/381) ([shovanmaity](https://github.com/shovanmaity))
+- chore\(operator\): bump k8s csi sidecars images [\#376](https://github.com/openebs/cstor-operators/pull/376) ([prateekpandey14](https://github.com/prateekpandey14))
+- refactor\[e2e\]: Updated the path the fetch RC tag yaml [\#379](https://github.com/openebs/cstor-operators/pull/379) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- refactor\[e2e\]: Updated the path for the cstor operator yaml [\#378](https://github.com/openebs/cstor-operators/pull/378) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- fix\[e2e\]: Updated the test name for multiple application login request infra chaos test [\#372](https://github.com/openebs/cstor-operators/pull/372) ([nsathyaseelan](https://github.com/nsathyaseelan))
+
+
+## [v2.12.1]/2021-09-03
+==========================
+
+No Changes
+
+## [v2.12.0]/2021-08-16
+===========================
+- fix(cspc): fix cspc operator sync logs [\#371](https://github.com/openebs/cstor-operators/pull/371) ([prateekpandey14](https://github.com/prateekpandey14))
+- refact\(version\): use range instead of matrix for validation [\#369](https://github.com/openebs/cstor-operators/pull/369) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(e2e-crd\): update e2e crds from v1beta1 to use apiextensions.k8s.io/v1 apis [\#368](https://github.com/openebs/cstor-operators/pull/368) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- refactor\[e2e-tests\]: Updated the e2e test for target network delay [\#365](https://github.com/openebs/cstor-operators/pull/365) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- feat\(E2E\): Test case to validate the Multiple application request to connect on single cstor volume [\#367](https://github.com/openebs/cstor-operators/pull/367) ([nsathyaseelan](https://github.com/nsathyaseelan))
+
+
+## [v2.12.0-RC2]/2021-08-13
+===========================
+- fix(cspc): fix cspc operator sync logs [\#371](https://github.com/openebs/cstor-operators/pull/371) ([prateekpandey14](https://github.com/prateekpandey14))
+
+
+## [v2.12.0-RC1]/2021-08-10
+===========================
+- refact\(version\): use range instead of matrix for validation [\#369](https://github.com/openebs/cstor-operators/pull/369) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(e2e-crd\): update e2e crds from v1beta1 to use apiextensions.k8s.io/v1 apis [\#368](https://github.com/openebs/cstor-operators/pull/368) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- refactor\[e2e-tests\]: Updated the e2e test for target network delay [\#365](https://github.com/openebs/cstor-operators/pull/365) ([nsathyaseelan](https://github.com/nsathyaseelan))
+- feat\(E2E\): Test case to validate the Multiple application request to connect on single cstor volume [\#367](https://github.com/openebs/cstor-operators/pull/367) ([nsathyaseelan](https://github.com/nsathyaseelan))
+
+
 ## [v2.11.0]/2021-07-15
 ========================
+- fix\(istgt config\): add TCP User Timeout setting in istgt configuration [\#366](https://github.com/openebs/cstor-operators/pull/366) ([mittachaitu](https://github.com/mittachaitu))
 - refactor\[e2e\]: Included the dependent package for build the e2e image [\#353](https://github.com/openebs/cstor-operators/pull/353) ([nsathyaseelan](https://github.com/nsathyaseelan))
 - fix\(workflow\): fix ansible job action workflow [\#351](https://github.com/openebs/cstor-operators/pull/351) ([prateekpandey14](https://github.com/prateekpandey14))
 - chore\(docs\): Add instruction for OpenEBS NFS provisioner using cStor [\#338](https://github.com/openebs/cstor-operators/pull/338) ([ranjithwingrider](https://github.com/ranjithwingrider))
@@ -21,6 +85,7 @@ No Changes
 
 ## [v2.11.0-RC1]/2021-07-06
 ========================
+- fix\(istgt config\): add TCP User Timeout setting in istgt configuration [\#366](https://github.com/openebs/cstor-operators/pull/366) ([mittachaitu](https://github.com/mittachaitu))
 - refactor\[e2e\]: Included the dependent package for build the e2e image [\#353](https://github.com/openebs/cstor-operators/pull/353) ([nsathyaseelan](https://github.com/nsathyaseelan))
 - fix\(workflow\): fix ansible job action workflow [\#351](https://github.com/openebs/cstor-operators/pull/351) ([prateekpandey14](https://github.com/prateekpandey14))
 - chore\(docs\): Add instruction for OpenEBS NFS provisioner using cStor [\#338](https://github.com/openebs/cstor-operators/pull/338) ([ranjithwingrider](https://github.com/ranjithwingrider))

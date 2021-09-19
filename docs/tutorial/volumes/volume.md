@@ -5,7 +5,7 @@ meets the following prerequisites:
 
 1. You will need to have Kubernetes version 1.16 or higher
 2. You will need to have CStor-Operator installed.
-   The steps to install cstor operates are [here](../../deploy/cstor-operators)
+   The steps to install cstor operators are [here](../../deploy/cstor-operators)
 3. CStor CSI driver operates on the cStor Pools provisioned using the new schema called CSPC.
    Steps to provision the pools using the same are [here](./../intro.md)
 4. iSCSI initiator utils installed on all the worker nodes

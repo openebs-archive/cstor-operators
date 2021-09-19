@@ -1,13 +1,3 @@
-# This manifest deploys the OpenEBS CSI control plane components,
-# with associated CRs & RBAC rules. This manifest has been verified
-# only with different linux flavours and
-# linux distros.
-#
-# For supporting a differnet OS other than the above,
-# 1) Get the list of shared object files required for iscsiadm binary in that OS version.
-# 2) Check which files are already present in the cstor-csi-driver container present in csi node pod.
-# 3) Mount the required missing files inside the container.
-#
 ####################################################
 ###########                             ############
 ###########  CSI Node and Driver CRDs   ############

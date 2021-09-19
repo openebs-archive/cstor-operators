@@ -16,25 +16,9 @@
 
 set -ex
 
-echo "Install cstor-operators CRDs"
-
-kubectl apply -f ./deploy/crds
-
-echo "Apply RBAC rules"
-
-kubectl apply -f ./deploy/rbac.yaml
-
-echo "Install NDM-Operator"
-
-kubectl apply -f ./deploy/ndm-operator.yaml
-
-echo "Install cStor-Operators"
+echo "Install cstor-operator artifacts"
 
 kubectl apply -f ./deploy/cstor-operator.yaml
-
-echo "Install CSI"
-
-kubectl apply -f ./deploy/csi-operator.yaml
 
 sleep 5
 

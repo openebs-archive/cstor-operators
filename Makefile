@@ -192,6 +192,11 @@ gen-api-docs:
 	@echo ">> generating cstor 'v1' apis docs"
 	go run github.com/ahmetb/gen-crd-api-reference-docs -api-dir ../api/pkg/apis/cstor/v1 -config hack/api-docs/config.json -template-dir hack/api-docs/template -out-file docs/api-references/apis.md
 
+manifests:
+	@echo "-----------------------------------------------------"
+	@echo "---   Generating cStor-operatory YAML     ----------"
+	@echo "-----------------------------------------------------"
+	./build/generate-manifest.sh
 
 .PHONY: license-check
 license-check:
@@ -234,8 +239,8 @@ k8s-deploy:
 
 .PHONY: k8s-deploy-devel
 k8s-deploy-devel:
-	kubectl apply -f deploy/rbac.yaml
-	kubectl apply -f deploy/ndm-operator.yaml
+	kubectl apply -f deploy/yamls/rbac.yaml
+	kubectl apply -f deploy/yamls/ndm-operator.yaml
 	kubectl apply -f deploy/crds
-	kubectl apply -f deploy/cstor-operator.yaml
-	kubectl apply -f deploy/csi-operator.yaml
+	kubectl apply -f deploy/yamls/cspc-operator.yaml
+	kubectl apply -f deploy/yamls/csi-operator.yaml

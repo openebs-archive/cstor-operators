@@ -1,8 +1,8 @@
-cspc_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/cstor-operator.yaml
-cspc_rbac_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/rbac.yaml
-all_crd_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/crds/all_cstor_crds.yaml
-csi_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml
-ndm_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/ndm-operator.yaml
+cspc_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/HEAD/deploy/yamls/cspc-operator.yaml
+cspc_rbac_link: https://raw.githubusercontent.com/openebs/cstor-operators/HEAD/deploy/yamls/rbac.yaml
+all_crd_link: https://raw.githubusercontent.com/openebs/cstor-operators/HEAD/deploy/crds/all_cstor_crds.yaml
+csi_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/HEAD/deploy/yamls/csi-operator.yaml
+ndm_operator_link: https://raw.githubusercontent.com/openebs/cstor-operators/HEAD/deploy/yamls/ndm-operator.yaml
 cstor_operator_link: https://raw.githubusercontent.com/openebs/charts/gh-pages/versioned/{{ openebs_version }}/cstor-operator.yaml
 release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ commit_id }}/versioned/{{ openebs_version }}/cstor-operator.yaml"
 rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ commit_id }}/versioned/{{ openebs_version }}/cstor-operator-{{ rc_tag }}.yaml"

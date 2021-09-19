@@ -437,6 +437,52 @@ data:
         include: ""
         exclude: "/dev/loop,/dev/fd0,/dev/sr0,/dev/ram,/dev/md,/dev/dm-,/dev/rbd,/dev/zd"
 ---
+# Create NDM Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openebs-maya-operator
+  namespace: openebs
+---
+# Define Role that allows operations on K8s pods/deployments
+# in "openebs" namespace
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: openebs
+  name: openebs-ndm-operator
+rules:
+- apiGroups: ["*"]
+  resources: ["nodes", "pods", "services", "endpoints", "events", "configmaps", "secrets", "jobs"]
+  verbs:
+  - '*'
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs:
+  - '*'
+- apiGroups:
+  - openebs.io
+  resources:
+  - blockdevices
+  - blockdeviceclaims
+  verbs:
+  - '*'
+---
+# Bind the Service Account with the Role Privileges.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openebs-ndm-operator
+  namespace: openebs
+subjects:
+- kind: ServiceAccount
+  name: openebs-maya-operator
+  namespace: openebs
+roleRef:
+  kind: ClusterRole
+  name: openebs-ndm-operator
+  apiGroup: rbac.authorization.k8s.io
+---
 # Create NDM daemonset
 apiVersion: apps/v1
 kind: DaemonSet
@@ -465,7 +511,7 @@ spec:
       # to detect disk attach and detach events using fd.
       hostNetwork: true
       hostPID: true
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
       - name: node-disk-manager
         image: openebs/node-disk-manager:ci
@@ -473,6 +519,8 @@ spec:
         - -v=4
         - --feature-gates="GPTBasedUUID"
         - --feature-gates="APIService"
+        # Detect changes to device size, filesystem and mount-points without restart.
+        - --feature-gates="ChangeDetection"
         # Default address is 0.0.0.0:9115, do not use quotes around the address
         # - --api-service-address=0.0.0.0:9115
         - --feature-gates="UseOSDisk"
@@ -567,7 +615,7 @@ spec:
       labels:
         name: node-disk-operator
     spec:
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
       - name: node-disk-operator
         image: openebs/node-disk-operator:ci
@@ -609,4 +657,133 @@ spec:
             port: 8585
           initialDelaySeconds: 5
           periodSeconds: 10
+---
+# Create NDM cluster exporter deployment.
+# This is an optional component and is not required for the basic
+# functioning of NDM
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ndm-cluster-exporter
+  namespace: openebs
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      name: ndm-cluster-exporter
+  template:
+    metadata:
+      labels:
+        name: ndm-cluster-exporter
+    spec:
+      serviceAccountName: openebs-maya-operator
+      containers:
+      - name: ndm-cluster-exporter
+        image: openebs/node-disk-exporter:ci
+        command:
+        - /usr/local/bin/exporter
+        args:
+        - "start"
+        - "--mode=cluster"
+        - "--port=$(METRICS_LISTEN_PORT)"
+        - "--metrics=/metrics"
+        ports:
+        - containerPort: 9100
+          protocol: TCP
+          name: metrics
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: METRICS_LISTEN_PORT
+          value: :9100
+---
+# Create NDM cluster exporter service
+# This is optional and required only when
+# ndm-cluster-exporter deployment is used
+apiVersion: v1
+kind: Service
+metadata:
+  name: ndm-cluster-exporter-service
+  namespace: openebs
+  labels:
+    name: openebs-ndm-exporter
+    component: openebs-ndm-cluster-exporter
+spec:
+  clusterIP: None
+  ports:
+    - name: metrics
+      port: 9100
+      targetPort: 9100
+  selector:
+    name: ndm-cluster-exporter
+---
+# Create NDM node exporter daemonset.
+# This is an optional component used for getting disk level
+# metrics from each of the storage nodes
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ndm-node-exporter
+  namespace: openebs
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      name: ndm-node-exporter
+  template:
+    metadata:
+      labels:
+        name: ndm-node-exporter
+    spec:
+      serviceAccountName: openebs-maya-operator
+      containers:
+      - name: node-disk-exporter
+        image: openebs/node-disk-exporter:ci
+        command:
+        - /usr/local/bin/exporter
+        args:
+        - "start"
+        - "--mode=node"
+        - "--port=$(METRICS_LISTEN_PORT)"
+        - "--metrics=/metrics"
+        ports:
+        - containerPort: 9101
+          protocol: TCP
+          name: metrics
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: METRICS_LISTEN_PORT
+          value: :9101
+---
+# Create NDM node exporter service
+# This is optional and required only when
+# ndm-node-exporter daemonset is used
+apiVersion: v1
+kind: Service
+metadata:
+  name: ndm-node-exporter-service
+  namespace: openebs
+  labels:
+    name: openebs-ndm-exporter
+    component: openebs-ndm-node-exporter
+spec:
+  clusterIP: None
+  ports:
+    - name: metrics
+      port: 9101
+      targetPort: 9101
+  selector:
+    name: ndm-node-exporter
 ---

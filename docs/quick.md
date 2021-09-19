@@ -85,11 +85,11 @@ Alternatively, you may also install the development version  of CStor Operators 
 ```bash
 $ git clone https://github.com/openebs/cstor-operators.git
 $ cd cstor-operators
-$ kubectl create -f deploy/rbac.yaml
-$ kubectl create -f deploy/ndm-operator.yaml
+$ kubectl create -f deploy/yamls/rbac.yaml
+$ kubectl create -f deploy/yamls/ndm-operator.yaml
 $ kubectl create -f deploy/crds
-$ kubectl create -f deploy/cstor-operator.yaml
-$ kubectl create -f deploy/csi-operator.yaml
+$ kubectl create -f deploy/yamls/cspc-operator.yaml
+$ kubectl create -f deploy/yamls/csi-operator.yaml
 ```
 
  **Note: If running on K8s version lesser than 1.17, you will need to comment the `priorityClassName: system-cluster-critical` in the csi-operator.yaml**

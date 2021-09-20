@@ -52,7 +52,7 @@ By default this chart installs additional, dependent charts:
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://openebs.github.io/node-disk-manager | openebs-ndm | 1.7.0 |
+| https://openebs.github.io/node-disk-manager | openebs-ndm | 1.7.1 |
 
 To disable the dependency during installation, set `openebsNDM.enabled` to `false`.
 

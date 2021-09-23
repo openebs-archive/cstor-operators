@@ -5110,7 +5110,9 @@ spec:
               # OpenEBS namespace where the openebs cstor operator components
               # has been installed
             - name: OPENEBS_NAMESPACE
-              value: openebs
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: OPENEBS_IO_INSTALLER_TYPE
               value: "cstor-operator"
             - name: OPENEBS_IO_ENABLE_ANALYTICS
@@ -5343,11 +5345,13 @@ spec:
               # OpenEBS namespace where the openebs cstor operator components
               # has been installed
             - name: OPENEBS_NAMESPACE
-              value: openebs
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
               # Enable/Disable auto-remount feature, when volumes
               # recovers form the read-only state
             - name: REMOUNT
-              value: "false"
+              value: "true"
           volumeMounts:
             - name: plugin-dir
               mountPath: /plugin
@@ -5444,6 +5448,9 @@ spec:
         # The default path used is /var/openebs/sparse
         #- name: OPENEBS_IO_CSTOR_POOL_SPARSE_DIR
         #  value: "/var/openebs/sparse"
+        #  OPENEBS_IO_IMAGE_PULL_SECRETS is used to specify the image pull secrets for the cstor pool pod
+        #- name: OPENEBS_IO_IMAGE_PULL_SECRETS
+        #  value: ""
         - name: OPENEBS_IO_CSPI_MGMT_IMAGE
           value: "openebs/cstor-pool-manager:ci"
         - name: OPENEBS_IO_CSTOR_POOL_IMAGE
@@ -5496,6 +5503,9 @@ spec:
         # The default path used is /var/openebs/sparse
         #- name: OPENEBS_IO_CSTOR_TARGET_DIR
         #  value: "/var/openebs/sparse"
+        #  OPENEBS_IO_IMAGE_PULL_SECRETS is used to specify the image pull secrets for the cstor target pod
+        #- name: OPENEBS_IO_IMAGE_PULL_SECRETS
+        #  value: ""
         - name: OPENEBS_NAMESPACE
           valueFrom:
             fieldRef:

@@ -32,7 +32,7 @@ cat deploy/yamls/rbac.yaml >> deploy/cstor-operator.yaml
 cat deploy/crds/all_cstor_crds.yaml >> deploy/cstor-operator.yaml
 
 ## Fetch NDM Operator from https://github.com/openebs/node-disk-manager
-wget https://raw.githubusercontent.com/openebs/node-disk-manager/HEAD/deploy/ndm-operator.yaml -O deploy/yamls/ndm-operator.yaml
+wget https://raw.githubusercontent.com/openebs/charts/gh-pages/yamls/ndm-operator.yaml -O deploy/yamls/ndm-operator.yaml
 
 ## Update the SPARSE_FILE_COUNT env value in ndm-operator.yaml
 ##
@@ -40,6 +40,12 @@ wget https://raw.githubusercontent.com/openebs/node-disk-manager/HEAD/deploy/ndm
 ## n prints the current line and reads the next line into pattern space,
 ## c changes the current line to the string following command
 sed -i '/SPARSE_FILE_COUNT/!b;n;c\          value: "1"' deploy/yamls/ndm-operator.yaml
+
+## Update the service account serviceAccountName value
+sed -i 's/openebs-maya-operator/openebs-cstor-operator/g' deploy/yamls/ndm-operator.yaml
+
+## Update the version labels
+sed -i 's/openebs.io\/version.*/openebs.io\/version: dev/g' deploy/yamls/ndm-operator.yaml
 
 ## Add the ndm-operator yaml to manifest
 cat deploy/yamls/ndm-operator.yaml >> deploy/cstor-operator.yaml

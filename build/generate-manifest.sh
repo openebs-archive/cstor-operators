@@ -47,6 +47,11 @@ sed -i 's/openebs-maya-operator/openebs-cstor-operator/g' deploy/yamls/ndm-opera
 ## Update the version labels
 sed -i 's/openebs.io\/version.*/openebs.io\/version: dev/g' deploy/yamls/ndm-operator.yaml
 
+## Retag NDM images to ci version
+sed -i 's/image: openebs\/node-disk-operator.*/image: openebs\/node-disk-operator:ci/g' deploy/yamls/ndm-operator.yaml
+sed -i 's/image: openebs\/node-disk-exporter.*/image: openebs\/node-disk-exporter:ci/g' deploy/yamls/ndm-operator.yaml
+sed -i 's/image: openebs\/node-disk-manager.*/image: openebs\/node-disk-manager:ci/g' deploy/yamls/ndm-operator.yaml
+
 ## Add the ndm-operator yaml to manifest
 cat deploy/yamls/ndm-operator.yaml >> deploy/cstor-operator.yaml
 

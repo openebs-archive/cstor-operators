@@ -31,7 +31,6 @@ import (
 	"github.com/openebs/api/v2/pkg/apis/types"
 	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	"github.com/openebs/api/v2/pkg/util"
-	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/controllers/volume-mgmt/volume"
 	"github.com/openebs/cstor-operators/pkg/version"
 	corev1 "k8s.io/api/core/v1"
@@ -762,31 +761,27 @@ func (c *CStorVolumeController) reconcileVersion(cv *apis.CStorVolume) (*apis.CS
 // markCVStatusToOffline will fetch all the CV resources present
 // in etcd and mark it them CV.Status to Offline
 func (c *CStorVolumeController) markCVStatusToOffline() {
-	
-	cvList, err := c.clientset.CstorV1().CStorVolumes("").List(context.TODO(), metav1.ListOptions{})
+	openebsNameSpace := os.Getenv("OPENEBS_NAMESPACE")
+	cvList, err := c.clientset.CstorV1().CStorVolumes(openebsNameSpace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		klog.Errorf("failed to fetch CV list, error: %v", err)
 		return
 	}
-	cvID := os.Getenv(string(common.OpenEBSIOCSPIID))
 	for _, cv := range cvList.Items {
-		cv := cv // pin it
-		if string(cv.GetUID()) == cvID {
-			// If target container restarts or pod is deleted
-			// before even creating a cvr, then we can skip those cvr
-			if cv.Status.Phase == "" || cv.Status.Phase == apis.CStorVolumePhase(apis.CVRStatusInit) {
-				continue
-			}
-			// No CstorVolume enum exist, hence wrapping cvr status
-			cv.Status.Phase = apis.CStorVolumePhase(apis.CVRStatusOffline)
-
-			// updating cv status to offline 
+		// Checking if Valid Cstor
+		if IsValidCStorVolumeMgmt(&cv) {
+			cv.Status.Phase = apis.CVStatusOffline
+			cv.Status.ReplicaStatuses = nil
+			
+			// updating cv status to offline
 			_, err = c.clientset.CstorV1().CStorVolumes(cv.Namespace).Update(context.TODO(), &cv, metav1.UpdateOptions{})
 			if err != nil {
-				klog.Errorf("failed to update CVR: %s status to %s", cv.Name, apis.CVRStatusOffline)
+				klog.Errorf("failed to update CV: %s status to %s", cv.Name, apis.CVStatusOffline)
 				continue
 			}
-			klog.Infof("status marked %s for CV: %s", apis.CStorVolumePhase(apis.CVRStatusOffline), cv.Name)
+			klog.Infof("status marked %s for CV: %s", apis.CVStatusOffline, cv.Name)
+			// as only one cv exists returning after updating cv status
+			return
 		}
 	}
 }

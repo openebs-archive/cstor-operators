@@ -10,7 +10,7 @@ require (
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
-	github.com/openebs/api/v2 v2.2.1-0.20210302070038-f282f96d77c6
+	github.com/openebs/api/v2 v2.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5

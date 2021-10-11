@@ -767,8 +767,9 @@ func (c *CStorVolumeController) markCVStatusToOffline() {
 		klog.Errorf("failed to fetch CV list, error: %v", err)
 		return
 	}
-	for _, cv := range cvList.Items {
+	for i := range cvList.Items {
 		// Checking if Valid Cstor
+		cv := cvList.Items[i]
 		if IsValidCStorVolumeMgmt(&cv) {
 			cv.Status.Phase = apis.CVStatusOffline
 			cv.Status.ReplicaStatuses = nil

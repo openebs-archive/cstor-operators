@@ -189,8 +189,8 @@ github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.9.0 h1:R1uwffexN6Pr340GtYRIdZmAiN4J+iw6WG4wog1DUXg=
 github.com/onsi/gomega v1.9.0/go.mod h1:Ho0h+IUsWyvy1OpqCwxlQ/21gkhVunqlU8fDGcoTdcA=
-github.com/openebs/api/v2 v2.2.1-0.20210302070038-f282f96d77c6 h1:P+gwyB2xycGJrxJoyG4SdnOC5cZwcaYRiHmCxL1a6bw=
-github.com/openebs/api/v2 v2.2.1-0.20210302070038-f282f96d77c6/go.mod h1:nLCaNvVjgjkjeD2a+n1fMbv5HjoEYP4XB8OAbwmIXtY=
+github.com/openebs/api/v2 v2.4.0 h1:MiDyuNe1TnwskN+1JAQr5DoiI/IWxbgljKg7ssGPIjg=
+github.com/openebs/api/v2 v2.4.0/go.mod h1:nLCaNvVjgjkjeD2a+n1fMbv5HjoEYP4XB8OAbwmIXtY=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

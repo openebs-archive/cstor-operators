@@ -771,6 +771,9 @@ func (c *CStorVolumeController) markCVStatusToOffline() {
 		// Checking if Valid Cstor
 		cv := cvList.Items[i]
 		if IsValidCStorVolumeMgmt(&cv) {
+			if cv.Status.Phase == "" {
+				return
+			}
 			cv.Status.Phase = apis.CVStatusOffline
 			cv.Status.ReplicaStatuses = nil
 			
@@ -778,7 +781,7 @@ func (c *CStorVolumeController) markCVStatusToOffline() {
 			_, err = c.clientset.CstorV1().CStorVolumes(cv.Namespace).Update(context.TODO(), &cv, metav1.UpdateOptions{})
 			if err != nil {
 				klog.Errorf("failed to update CV: %s status to %s", cv.Name, apis.CVStatusOffline)
-				continue
+				return
 			}
 			klog.Infof("status marked %s for CV: %s", apis.CVStatusOffline, cv.Name)
 			// as only one cv exists returning after updating cv status

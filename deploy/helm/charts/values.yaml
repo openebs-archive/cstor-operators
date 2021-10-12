@@ -85,6 +85,7 @@ cvcOperator:
   tolerations: []
   resources: {}
   securityContext: {}
+  logLevel: "2"
 
 csiController:
   priorityClass:
@@ -92,6 +93,7 @@ csiController:
     name: cstor-csi-controller-critical
     value: 900000000
   componentName: "openebs-cstor-csi-controller"
+  logLevel: "5"
   resizer:
     name: "csi-resizer"
     image:
@@ -176,6 +178,7 @@ csiNode:
       pullPolicy: IfNotPresent
       # Overrides the image tag whose default is the chart appVersion.
       tag: v2.3.0
+  logLevel: "5"
   updateStrategy:
     type: RollingUpdate
   annotations: {}

@@ -29,7 +29,7 @@ spec:
           resources:
 {{ toYaml .Values.csiController.resources | indent 12 }}
           args:
-            - "--v=5"
+            - "--v={{ .Values.csiController.resizer.logLevel | default .Values.csiController.logLevel }}"
             - "--csi-address=$(ADDRESS)"
             - "--leader-election"
           env:
@@ -53,7 +53,7 @@ spec:
         - name: {{ .Values.csiController.snapshotController.name }}
           image: "{{ .Values.csiController.snapshotController.image.registry }}{{ .Values.csiController.snapshotController.image.repository }}:{{ .Values.csiController.snapshotController.image.tag }}"
           args:
-            - "--v=5"
+            - "--v={{ .Values.csiController.snapshotController.logLevel | default .Values.csiController.logLevel }}"
             - "--leader-election=false"
           imagePullPolicy: {{ .Values.csiController.snapshotController.image.pullPolicy }}
         - name: {{ .Values.csiController.provisioner.name }}
@@ -61,7 +61,7 @@ spec:
           imagePullPolicy: {{ .Values.csiController.provisioner.image.pullPolicy }}
           args:
             - "--csi-address=$(ADDRESS)"
-            - "--v=5"
+            - "--v={{ .Values.csiController.provisioner.logLevel | default .Values.csiController.logLevel }}"
             - "--feature-gates=Topology=true"
             - "--extra-create-metadata=true"
             - "--metrics-address=:22011"
@@ -81,7 +81,7 @@ spec:
           image: "{{ .Values.csiController.attacher.image.registry }}{{ .Values.csiController.attacher.image.repository }}:{{ .Values.csiController.attacher.image.tag }}"
           imagePullPolicy: {{ .Values.csiController.attacher.image.pullPolicy }}
           args:
-            - "--v=5"
+            - "--v={{ .Values.csiController.attacher.logLevel | default .Values.csiController.logLevel }}"
             - "--csi-address=$(ADDRESS)"
           env:
             - name: ADDRESS

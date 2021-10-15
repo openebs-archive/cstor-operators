@@ -6,7 +6,7 @@ It is recommended to go through the cStor Pool resource organisation [doc](cstor
 
 CStor CSI volumes are created by creating a PVC in a Kubernetes cluster which references a CSPC based OpenEBS storage 
 class. A CSPC based storage class is simply a storage class that refers a CStorPoolCluster. A CStor CSI volume is 
-collection of 1 or more volume replica that gets ditributed across the CStorPoolInstances of a CStorPoolCluster. In this 
+collection of 1 or more volume replica that gets distributed across the CStorPoolInstances of a CStorPoolCluster. In this 
 sense, CStor volumes provide a replicated storage.
 
 To understand more on how CSI works please refer to the following document: 
@@ -27,12 +27,12 @@ Following are the list of native Kubernetes resources that enables the cStor CSI
 # cStor CSI Driver Overview
 
 OpenEBS cStor CSI driver(or plugin) follows a cetralized plugin architecture. In centralized plugin architeture, two 
-componenets are deployed in following manner:
+components are deployed in following manner:
 1. **Controller Plugin:** It is deployed as a sidecar container in statefulset with other CSI specific containers.
 
 2. **Node Plugin:** It is deployed as a daemonset controller. 
 
-Controller plugin and node plugin both run a set of containers inside thier pod. Controller plugin carries out volume
+Controller plugin and node plugin both run a set of containers inside their pod. Controller plugin carries out volume
 orchestration related tasks and node plugin actually helps in executing the relevant volume operations as required on
 the node.
 

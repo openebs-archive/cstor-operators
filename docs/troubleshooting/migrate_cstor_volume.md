@@ -52,7 +52,7 @@ On-Premise can have following situations:
 
     **Node OS**: Ubuntu 18.04
 
-## Instalation of cStor setup
+## Installation of cStor setup
 Created CStor pools using CSPC API by following [doc](../quick.md) and then provisioned cStor-CSI volume with HA configuration(storage replica count as 3) on top of cStor pools.
 
 ### OpenEBS setup

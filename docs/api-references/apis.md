@@ -2767,7 +2767,7 @@ string
 <h3 id="cstor.openebs.io/v1.CVStatusResponse">CVStatusResponse
 </h3>
 <p>
-<p>CVStatusResponse stores the reponse of istgt replica command output
+<p>CVStatusResponse stores the response of istgt replica command output
 It may contain several volumes</p>
 </p>
 <table>
@@ -3416,7 +3416,7 @@ map[string]string
 </td>
 <td>
 <p>NodeSelector is the labels that will be used to select
-a node for target pod scheduleing
+a node for target pod scheduling
 Required field</p>
 </td>
 </tr>

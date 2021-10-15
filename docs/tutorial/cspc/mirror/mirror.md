@@ -123,7 +123,7 @@ spec:
     ```bash
         kubectl get cspi -n openebs
     ```
-    **Note:** The name of cspi is prefixed by the cspc name that indicating whihc cspc the cspi belongs to.
+    **Note:** The name of cspi is prefixed by the cspc name that indicating which cspc the cspi belongs to.
 
 4. To delete the cStor pool
 
@@ -432,6 +432,6 @@ Events:
   ----    ------                   ----  ----               -------
   Normal  Created                  74s   CStorPoolInstance  Pool created successfully
   Normal  BlockDevice Replacement  27s   CStorPoolInstance  Replacement of blockdevice-10ad9f484c299597ed1e126d7b857967 BlockDevice with blockdevice-3267fa8f5bede11e636cdf5e531bb265 BlockDevice is in-Progress
-  Normal  BlockDevice Replacement  27s   CStorPoolInstance  Resilvering is successfull on BlockDevice blockdevice-3267fa8f5bede11e636cdf5e531bb265
+  Normal  BlockDevice Replacement  27s   CStorPoolInstance  Resilvering is successful on BlockDevice blockdevice-3267fa8f5bede11e636cdf5e531bb265
 
 ```

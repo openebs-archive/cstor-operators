@@ -42,7 +42,7 @@ Consider an example where you have following nodes in a Kubernetes cluster with 
     
     **Node OS**: Ubuntu 18.04
 
-## Instalation of cStor setup
+## Installation of cStor setup
   Created CStor pools using CSPC API by following [doc](../quick.md) and then created cStor-CSI volume on top of cStor pools. 
 
 ### OpenEBS setup

@@ -143,7 +143,7 @@ spec:
     ```bash
         kubectl get cspi -n openebs
     ```
-    **Note:** The name of cspi is prefixed by the cspc name that indicating whihc cspc the cspi belongs to.
+    **Note:** The name of cspi is prefixed by the cspc name that indicating which cspc the cspi belongs to.
 
 4. To delete the cStor pool
 

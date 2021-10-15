@@ -52,7 +52,7 @@ spec:
         dataRaidGroupType: mirror
 ```
 
-Following CSPC YAML explains how the resource and limits can be overriden.
+Following CSPC YAML explains how the resource and limits can be overridden.
 If you look at the CSPC YAML, there is no `resources` and `auxResources` specified at pool level for `worker-node-1` and `worker-node-2` but specified for `worker-node-3`.
 In this case, for `worker-node-1` and `worker-node-2` the `resources` and `auxResources` will be applied from @spec.resources and @spec.auxResources respectively but for `worker-node-3` these will be applied from @spec.pools[2].poolConfig.resources and @spec.pools[2].poolConfig.auxResources respectively.
 

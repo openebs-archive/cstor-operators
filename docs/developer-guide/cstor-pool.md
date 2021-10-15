@@ -54,7 +54,7 @@ list all the block devices attached to the nodes.
 On a high level, the blockdevices on the nodes can be grouped together in a RAID configuration to create a cStor pool.
 These cStor pools created on nodes comes together to form a cStor pool cluster.
 In cStor, you can only create cStor pool cluster and a cStor pool cluster can have 0 to `k` number of pools. Here
-`k` could be any arbitray practical number.
+`k` could be any arbitrary practical number.
 
 For example consider following scenarios : 
 
@@ -139,7 +139,7 @@ For example, if a CSPC manifest has 3 pool specs, 3 cStor pools will be created 
 4. Pool-manager is again a Kubernetes deployment that reads the configuration from CSPI and execute ZFS related commands on node to satisfy the CSPI
 configuration e.g. creation of pool, deletion of pool, enabling/disabling compression on pool.
 
-Following is a representaion of the resources involved for cStor pool. CSPC,CSPI,BD and BDC custom resources facilitates cStor pool provisioning and 
+Following is a representation of the resources involved for cStor pool. CSPC,CSPI,BD and BDC custom resources facilitates cStor pool provisioning and 
 other operations.
 
 While using cStor for pool related operations CSPC API is the only contact point for a cStor user and it is not recommended to modify the other

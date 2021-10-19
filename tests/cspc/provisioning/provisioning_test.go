@@ -17,8 +17,10 @@ limitations under the License.
 package provisioning_test
 
 import (
-	"k8s.io/apimachinery/pkg/api/resource"
+	"context"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,34 +28,35 @@ import (
 	"github.com/openebs/api/v2/pkg/apis/types"
 	"github.com/openebs/cstor-operators/tests/pkg/cspc/cspcspecbuilder"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
 /*
-This test file covers following test cases :
+ This test file covers following test cases :
 
-1. Stripe pool provisioning with multiple disks and raid groups
-   ( includes write cache and data raid groups )
-2. Mirror pool provisioning with multiple disks and raid groups
-   (includes write cache and data raid groups )
-3. Raidz1 pool provisioning with multiple disks and raid groups
-   (includes write cache and data raid groups )
-4. Raidz2 pool provisioning with multiple disks and raid groups
-   (includes write cache and data raid groups )
+ 1. Stripe pool provisioning with multiple disks and raid groups
+    ( includes write cache and data raid groups )
+ 2. Mirror pool provisioning with multiple disks and raid groups
+    (includes write cache and data raid groups )
+ 3. Raidz1 pool provisioning with multiple disks and raid groups
+    (includes write cache and data raid groups )
+ 4. Raidz2 pool provisioning with multiple disks and raid groups
+    (includes write cache and data raid groups )
 
-NOTE: The test cases adjusts depending on the number of nodes
-in the Kubernetes cluster.
-Meaning, if only 1 node is present then the test result expectations(output)
-are in accordance with what it should be with 1 node.
+ NOTE: The test cases adjusts depending on the number of nodes
+ in the Kubernetes cluster.
+ Meaning, if only 1 node is present then the test result expectations(output)
+ are in accordance with what it should be with 1 node.
 
-if only 3 node is present then the test result expectations(output)
-are in accordance with what it should be with 3 node.
+ if only 3 node is present then the test result expectations(output)
+ are in accordance with what it should be with 3 node.
 
-Before starting the test suite, it should be specified whether it is
-a 3 node or 1 node test.
+ Before starting the test suite, it should be specified whether it is
+ a 3 node or 1 node test.
 
-Test suite only supports either a 1 node or 3 node test.
+ Test suite only supports either a 1 node or 3 node test.
 
 */
 
@@ -109,7 +112,7 @@ func OperationsTest(poolType string, bdCount int) {
 					OpenEBSClientSet.
 					CstorV1().
 					CStorPoolClusters(cspc.Namespace).
-					Create(cspc)
+					Create(context.TODO(), cspc, metav1.CreateOptions{})
 				Expect(err).To(BeNil())
 
 			})
@@ -132,7 +135,7 @@ func OperationsTest(poolType string, bdCount int) {
 							OpenEBSClientSet.
 							CstorV1().
 							CStorPoolClusters(cspc.Namespace).
-							Get(cspc.Name, metav1.GetOptions{})
+							Get(context.TODO(), cspc.Name, metav1.GetOptions{})
 						if err != nil {
 							klog.Warningf("Retrying to update CSPC:%s", err.Error())
 							time.Sleep(3 * time.Second)
@@ -151,7 +154,7 @@ func OperationsTest(poolType string, bdCount int) {
 							OpenEBSClientSet.
 							CstorV1().
 							CStorPoolClusters(cspc.Namespace).
-							Update(cspc)
+							Update(context.TODO(), cspc, metav1.UpdateOptions{})
 						if err == nil {
 							updatedSuccessfully = true
 							break
@@ -182,7 +185,7 @@ func OperationsTest(poolType string, bdCount int) {
 						OpenEBSClientSet.
 						CstorV1().
 						CStorPoolClusters(cspc.Namespace).
-						Delete(cspc.Name, &metav1.DeleteOptions{})
+						Delete(context.TODO(), cspc.Name, metav1.DeleteOptions{})
 					Expect(err).To(BeNil())
 					// The CSPCSpecData should be cleared
 					specBuilder.ResetCSPCSpecData()
@@ -229,7 +232,7 @@ func ProvisioningTest(poolType string, bdCount int) {
 					OpenEBSClientSet.
 					CstorV1().
 					CStorPoolClusters(cspc.Namespace).
-					Create(cspc)
+					Create(context.TODO(), cspc, metav1.CreateOptions{})
 				Expect(err).To(BeNil())
 
 			})
@@ -271,12 +274,16 @@ func ProvisioningTest(poolType string, bdCount int) {
 		Context("Remove 1 pool spec from the CSPC", func() {
 			Specify("desired count should be updated on cspc",
 				func() {
+					// We can remove spec only if test is running on multi node cluster
+					if cspcsuite.infra.NodeCount == 1 {
+						return
+					}
 					gotCSPC, err := cspcsuite.
 						client.
 						OpenEBSClientSet.
 						CstorV1().
 						CStorPoolClusters(cspc.Namespace).
-						Get(cspc.Name, metav1.GetOptions{})
+						Get(context.TODO(), cspc.Name, metav1.GetOptions{})
 					Expect(err).To(BeNil())
 					specBuilder.SetCSPCSpec(gotCSPC)
 					cspc = specBuilder.RemovePoolSpec().GetCSPCSpec()
@@ -286,7 +293,7 @@ func ProvisioningTest(poolType string, bdCount int) {
 						OpenEBSClientSet.
 						CstorV1().
 						CStorPoolClusters(cspc.Namespace).
-						Update(cspc)
+						Update(context.TODO(), cspc, metav1.UpdateOptions{})
 					Expect(err).To(BeNil())
 
 					gotCount := cspcsuite.
@@ -320,6 +327,10 @@ func ProvisioningTest(poolType string, bdCount int) {
 
 			Specify("desired count should be updated on cspc",
 				func() {
+					// We can add spec only if test is running on multi node cluster
+					if cspcsuite.infra.NodeCount == 1 {
+						return
+					}
 					nodeName := ""
 
 					for k, _ := range specBuilder.CSPCSpecData.UnUsedNodes {
@@ -332,7 +343,7 @@ func ProvisioningTest(poolType string, bdCount int) {
 						OpenEBSClientSet.
 						CstorV1().
 						CStorPoolClusters(cspc.Namespace).
-						Get(cspc.Name, metav1.GetOptions{})
+						Get(context.TODO(), cspc.Name, metav1.GetOptions{})
 					Expect(err).To(BeNil())
 					specBuilder.SetCSPCSpec(gotCSPC)
 					cspc = specBuilder.AddPoolSpec(nodeName, poolType, bdCount).GetCSPCSpec()
@@ -341,7 +352,7 @@ func ProvisioningTest(poolType string, bdCount int) {
 						OpenEBSClientSet.
 						CstorV1().
 						CStorPoolClusters(cspc.Namespace).
-						Update(cspc)
+						Update(context.TODO(), cspc, metav1.UpdateOptions{})
 					Expect(err).To(BeNil())
 					gotCount := cspcsuite.
 						client.
@@ -379,7 +390,7 @@ func ProvisioningTest(poolType string, bdCount int) {
 					OpenEBSClientSet.
 					CstorV1().
 					CStorPoolClusters(cspc.Namespace).
-					Delete(cspc.Name, &metav1.DeleteOptions{})
+					Delete(context.TODO(), cspc.Name, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 
 				// The CSPCSpecData should be cleared
@@ -405,7 +416,21 @@ func ProvisioningTest(poolType string, bdCount int) {
 					client.
 					GetBDCCountEventually(cspc.Name, cspc.Namespace, 0)
 				Expect(gotCount).To(BeNumerically("==", 0))
+			})
 
+			It("CSPC should removed from cluster", func() {
+				var isCSPCDeleted bool
+				retryCount := 20
+				for retryCount > 0 {
+					_, err := cspcsuite.client.OpenEBSClientSet.CstorV1().CStorPoolClusters(cspc.Namespace).Get(context.TODO(), cspc.Name, metav1.GetOptions{})
+					if err != nil && k8serrors.IsNotFound(err) {
+						isCSPCDeleted = true
+						break
+					}
+					retryCount--
+					time.Sleep(5 * time.Second)
+				}
+				Expect(isCSPCDeleted).Should(BeTrue(), "cspc %s/%s should get deleted", cspc.Namespace, cspc.Name)
 			})
 		})
 	})
@@ -415,7 +440,7 @@ func TunablesTest(poolType string, bdCount int) {
 	var cspc *cstor.CStorPoolCluster
 	var specBuilder *cspcspecbuilder.CSPCSpecBuilder
 	priorityClassName := "integration-test-priority"
-	compression := "lz"
+	compression := "lzjb"
 	roThreshold := 70
 	Describe(poolType+" CSPC", func() {
 		Context("Pass resource and limit via CSPC", func() {
@@ -437,7 +462,7 @@ func TunablesTest(poolType string, bdCount int) {
 					OpenEBSClientSet.
 					CstorV1().
 					CStorPoolClusters(cspc.Namespace).
-					Create(cspc)
+					Create(context.TODO(), cspc, metav1.CreateOptions{})
 				Expect(err).To(BeNil())
 
 			})
@@ -516,7 +541,7 @@ func TunablesTest(poolType string, bdCount int) {
 						OpenEBSClientSet.
 						CstorV1().
 						CStorPoolClusters(cspc.Namespace).
-						Delete(cspc.Name, &metav1.DeleteOptions{})
+						Delete(context.TODO(), cspc.Name, metav1.DeleteOptions{})
 					Expect(err).To(BeNil())
 					// The CSPCSpecData should be cleared
 					specBuilder.ResetCSPCSpecData()

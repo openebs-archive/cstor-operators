@@ -17,12 +17,14 @@ limitations under the License.
 package k8sclient
 
 import (
+	"context"
+	"time"
+
 	. "github.com/onsi/gomega"
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"time"
 )
 
 // GetBDReplacmentStatusOnCSPI gets the status of block device replacement
@@ -37,7 +39,7 @@ func (client *Client) GetBDReplacmentStatusOnCSPI(cspcName, cspcNamespace, hostN
 		}
 		cspiList, err := client.OpenEBSClientSet.CstorV1().
 			CStorPoolInstances(cspcNamespace).
-			List(metav1.ListOptions{
+			List(context.TODO(), metav1.ListOptions{
 				LabelSelector: labels.Set(ls.MatchLabels).String(),
 			})
 		Expect(err).To(BeNil())

@@ -17,6 +17,7 @@ limitations under the License.
 package k8sclient
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,7 +36,7 @@ var (
 
 // CreateNamespace create namespace for volume
 func (client *Client) CreateNamespace(ns string) error {
-	_, err := client.KubeClientSet.CoreV1().Namespaces().Get(ns, metav1.GetOptions{})
+	_, err := client.KubeClientSet.CoreV1().Namespaces().Get(context.TODO(), ns, metav1.GetOptions{})
 	if err != nil {
 		if k8serror.IsNotFound(err) {
 			nsObj := &corev1.Namespace{
@@ -43,7 +44,7 @@ func (client *Client) CreateNamespace(ns string) error {
 					Name: ns,
 				},
 			}
-			_, err = client.KubeClientSet.CoreV1().Namespaces().Create(nsObj)
+			_, err = client.KubeClientSet.CoreV1().Namespaces().Create(context.TODO(), nsObj, metav1.CreateOptions{})
 		}
 	}
 	return err
@@ -69,7 +70,7 @@ func (client *Client) WaitForPersistentVolumeClaimPhase(
 
 // GetPVC will fetch the PVC from etcd
 func (client *Client) GetPVC(pvcName, pvcNamespace string) (*corev1.PersistentVolumeClaim, error) {
-	return client.KubeClientSet.CoreV1().PersistentVolumeClaims(pvcNamespace).Get(pvcName, metav1.GetOptions{})
+	return client.KubeClientSet.CoreV1().PersistentVolumeClaims(pvcNamespace).Get(context.TODO(), pvcName, metav1.GetOptions{})
 }
 
 // WaitForPersistentVolumeClaimDeletion waits for a PersistentVolumeClaim

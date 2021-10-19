@@ -94,7 +94,7 @@ function getBD(){
 nodeName=$1
 BD_RETRY=$2
 for i in $(seq 1 $BD_RETRY) ; do
- bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[?(@.spec.details.deviceType=="sparse")].metadata.name}')
+ bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[0].metadata.name}')
  if [ "$bdName" != "" ]; then
  echo "Got BD $bdName"
  break
@@ -157,5 +157,12 @@ kubectl wait --for=delete pod -l app=busybox --timeout=600s
 sessionCount=$(sudo iscsiadm -m session | wc -l)
 if [ $sessionCount -ne 0 ]; then
     echo "iSCSI session not cleaned up successfully"
+    exit 1
+fi
+
+## Running integration test
+make integration-test
+if [ $? -ne 0 ]; then
+    echo "CStor integration test has failed"
     exit 1
 fi

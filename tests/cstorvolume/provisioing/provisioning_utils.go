@@ -15,6 +15,7 @@ limitations under the License.
 package provisioning
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -79,7 +80,7 @@ func createStorageClass(scName string, parameters map[string]string) *storagev1.
 
 	By(fmt.Sprintf("Creating %s StorageClass", sc.Name))
 
-	sc, err = cstorsuite.client.KubeClientSet.StorageV1().StorageClasses().Create(sc)
+	sc, err = cstorsuite.client.KubeClientSet.StorageV1().StorageClasses().Create(context.TODO(), sc, metav1.CreateOptions{})
 	Expect(err).To(BeNil())
 	return sc
 }
@@ -108,7 +109,7 @@ func createPersistentVolumeClaim(pvcName, pvcNamespace, scName string) *corev1.P
 	pvc, err = cstorsuite.client.KubeClientSet.
 		CoreV1().
 		PersistentVolumeClaims(pvcNamespace).
-		Create(pvc)
+		Create(context.TODO(), pvc, metav1.CreateOptions{})
 	Expect(err).To(BeNil())
 
 	return pvc
@@ -125,7 +126,7 @@ func ProvisionCSPC(cspcName, namespace, poolType string, bdCount int) {
 		OpenEBSClientSet.
 		CstorV1().
 		CStorPoolClusters(cspc.Namespace).
-		Create(cspc)
+		Create(context.TODO(), cspc, metav1.CreateOptions{})
 	Expect(err).To(BeNil())
 
 	gotHealthyCSPiCount := cstorsuite.
@@ -147,7 +148,7 @@ func DeProvisionCSPC(cspc *cstorapis.CStorPoolCluster) {
 		OpenEBSClientSet.
 		CstorV1().
 		CStorPoolClusters(cspc.Namespace).
-		Delete(cspc.Name, &metav1.DeleteOptions{})
+		Delete(context.TODO(), cspc.Name, metav1.DeleteOptions{})
 	Expect(err).To(BeNil())
 
 	cspcSpecBuilder.ResetCSPCSpecData()
@@ -164,7 +165,7 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 	pvc, err := cstorsuite.client.KubeClientSet.
 		CoreV1().
 		PersistentVolumeClaims(pvcNamespace).
-		Get(pvcName, metav1.GetOptions{})
+		Get(context.TODO(), pvcName, metav1.GetOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
 		Expect(err).To(BeNil())
 	}
@@ -172,7 +173,7 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 	err = cstorsuite.client.KubeClientSet.
 		CoreV1().
 		PersistentVolumeClaims(pvcNamespace).
-		Delete(pvcName, &metav1.DeleteOptions{})
+		Delete(context.TODO(), pvcName, metav1.DeleteOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
 		Expect(err).To(BeNil())
 	}
@@ -183,7 +184,7 @@ func DeProvisionVolume(pvcName, pvcNamespace, scName string) {
 	err = cstorsuite.client.KubeClientSet.
 		StorageV1().
 		StorageClasses().
-		Delete(scName, &metav1.DeleteOptions{})
+		Delete(context.TODO(), scName, metav1.DeleteOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
 		Expect(err).To(BeNil())
 	}
@@ -226,7 +227,7 @@ func VerifyCStorVolumeResourcesStatus(pvcName, pvcNamespace string, replicaCount
 	pvc, err := cstorsuite.client.KubeClientSet.
 		CoreV1().
 		PersistentVolumeClaims(pvcNamespace).
-		Get(pvcName, metav1.GetOptions{})
+		Get(context.TODO(), pvcName, metav1.GetOptions{})
 	Expect(err).To(BeNil())
 
 	err = cstorsuite.client.WaitForCStorVolumeConfigPhase(

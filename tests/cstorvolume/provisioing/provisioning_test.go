@@ -17,6 +17,7 @@ limitations under the License.
 package provisioning
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -98,7 +99,7 @@ func CSIVolumeProvisioningTest() {
 		Context("Deleting PVC Namespace", func() {
 			Specify("no error should occur during deletion of namespace", func() {
 				Expect(cspc).NotTo(BeNil(), "cstor-stripe CSPC is not created successfully")
-				err := cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				err := cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(context.TODO(), testNS, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 			})
 		})
@@ -216,7 +217,7 @@ func CSIVolumeProvisioningTestWithResourceLimits() {
 
 				DeProvisionVolume(pvcName, testNS, scName)
 
-				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(context.TODO(), testNS, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 			})
 		})
@@ -295,7 +296,7 @@ func CSIVolumeProvisioningTestWithTolerations() {
 				Expect(err).To(BeNil(), "volume manger should have specified limits")
 				DeProvisionVolume(pvcName, testNS, scName)
 
-				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(context.TODO(), testNS, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 			})
 		})
@@ -339,7 +340,7 @@ func ProvisionVolumeWithPriorityClass() {
 				}
 
 				// Create Priority class
-				priorityClassObj, err := cstorsuite.client.KubeClientSet.SchedulingV1().PriorityClasses().Create(priorityClass)
+				priorityClassObj, err := cstorsuite.client.KubeClientSet.SchedulingV1().PriorityClasses().Create(context.TODO(), priorityClass, metav1.CreateOptions{})
 				Expect(err).To(BeNil(), "failed to create %s priority class", priorityClass.Name)
 
 				// Provision cStor CSI volume
@@ -374,10 +375,10 @@ func ProvisionVolumeWithPriorityClass() {
 				DeProvisionVolume(pvcName, testNS, scName)
 
 				// Delete Priority class
-				err = cstorsuite.client.KubeClientSet.SchedulingV1().PriorityClasses().Delete(priorityClass.Name, &metav1.DeleteOptions{})
+				err = cstorsuite.client.KubeClientSet.SchedulingV1().PriorityClasses().Delete(context.TODO(), priorityClass.Name, metav1.DeleteOptions{})
 				Expect(err).To(BeNil(), "failed to delete %s priority class", priorityClass.Name)
 
-				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(context.TODO(), testNS, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 			})
 		})
@@ -446,7 +447,7 @@ func ProvisionVolumeAndUpdateTunables() {
 
 				DeProvisionVolume(pvcName, testNS, scName)
 
-				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(context.TODO(), testNS, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 			})
 		})
@@ -522,7 +523,7 @@ func ScaleupAndScaleDownCStorVolume() {
 
 				DeProvisionVolume(pvcName, testNS, scName)
 
-				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(context.TODO(), testNS, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 
 			})
@@ -602,7 +603,7 @@ func NegativeScaleupAndScaleDownCStorVolume() {
 
 				DeProvisionVolume(pvcName, testNS, scName)
 
-				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				err = cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(context.TODO(), testNS, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 			})
 		})
@@ -658,7 +659,7 @@ func ProvisionVolumeWithReplicaCountMoreThanAvailablePools() {
 				pvc, err = cstorsuite.client.KubeClientSet.
 					CoreV1().
 					PersistentVolumeClaims(testNS).
-					Get(pvc.Name, metav1.GetOptions{})
+					Get(context.TODO(), pvc.Name, metav1.GetOptions{})
 				Expect(err).To(BeNil())
 
 				err = cstorsuite.client.WaitForCStorVolumeConfigPhase(
@@ -676,7 +677,7 @@ func ProvisionVolumeWithReplicaCountMoreThanAvailablePools() {
 
 		Context("Deleting PVC Namespace", func() {
 			Specify("no error should occur during deletion of namespace", func() {
-				err := cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(testNS, &metav1.DeleteOptions{})
+				err := cstorsuite.client.KubeClientSet.CoreV1().Namespaces().Delete(context.TODO(), testNS, metav1.DeleteOptions{})
 				Expect(err).To(BeNil())
 			})
 		})

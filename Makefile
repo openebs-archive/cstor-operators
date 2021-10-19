@@ -46,6 +46,12 @@ ifeq (${DBUILD_SITE_URL}, )
   export DBUILD_SITE_URL
 endif
 
+## Specify the KUBECONFIG_PATH for running integration tests
+ifeq (${KUBECONFIG_PATH},)
+  KUBECONFIG_PATH="${HOME}/.kube/config"
+  export KUBECONFIG_PATH
+endif
+
 # Specify the date of build
 DBUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 
@@ -244,3 +250,9 @@ k8s-deploy-devel:
 	kubectl apply -f deploy/crds
 	kubectl apply -f deploy/yamls/cspc-operator.yaml
 	kubectl apply -f deploy/yamls/csi-operator.yaml
+
+.PHONY: integration-test
+integration-test:
+	@echo "Running CStor Pool related tests"
+	@echo "It is required to have minimum 15 Blockdevices to run integration test"
+	go test ./tests/cspc/provisioning/... -v -timeout 60m -kubeconfig ${KUBECONFIG_PATH}

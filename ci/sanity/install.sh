@@ -33,3 +33,6 @@ kubectl get pods -n openebs -l role=openebs-cstor-csi
 echo "Verify cstor-operators installation"
 
 kubectl get pod -n openebs
+
+# Roll back changes made to deployment
+sed -i '/SPARSE_FILE_COUNT/!b;n;c\          value: "1"' ./deploy/cstor-operator.yaml

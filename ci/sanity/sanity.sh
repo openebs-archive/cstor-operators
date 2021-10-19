@@ -94,8 +94,9 @@ function getBD(){
 nodeName=$1
 BD_RETRY=$2
 for i in $(seq 1 $BD_RETRY) ; do
- bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[0].metadata.name}')
- if [ "$bdName" != "" ]; then
+ blockDeviceNames=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[?(@.spec.details.deviceType=="sparse")].metadata.name}')
+ if [ "$blockDeviceNames" != "" ]; then
+ bdName=$(echo "$blockDeviceNames" | awk '{print $1}')
  echo "Got BD $bdName"
  break
  else
@@ -161,8 +162,7 @@ if [ $sessionCount -ne 0 ]; then
 fi
 
 ## Running integration test
-make integration-test
-if [ $? -ne 0 ]; then
+if make integration-test; then
     echo "CStor integration test has failed"
     exit 1
 fi

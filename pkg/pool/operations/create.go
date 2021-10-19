@@ -103,6 +103,7 @@ func (oc *OperationsConfig) createPool(cspi *cstor.CStorPoolInstance, r cstor.Ra
 		WithType(ptype).
 		WithProperty("cachefile", types.CStorPoolBasePath+types.CacheFileName).
 		WithFSProperty("compression", compressionType).
+		WithFSProperty("canmount", "off").
 		WithPool(PoolName()).
 		WithVdevList(vdevlist).
 		WithExecutor(oc.zcmdExecutor).

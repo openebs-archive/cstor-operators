@@ -211,6 +211,21 @@ func OperationsTest(poolType string, bdCount int) {
 						GetBDCCountEventually(cspc.Name, cspc.Namespace, 0)
 					Expect(gotCount).To(BeNumerically("==", 0))
 				})
+
+				It("CSPC should get removed from cluster", func() {
+					var isCSPCDeleted bool
+					retryCount := 20
+					for retryCount > 0 {
+						_, err := cspcsuite.client.OpenEBSClientSet.CstorV1().CStorPoolClusters(cspc.Namespace).Get(context.TODO(), cspc.Name, metav1.GetOptions{})
+						if err != nil && k8serrors.IsNotFound(err) {
+							isCSPCDeleted = true
+							break
+						}
+						retryCount--
+						time.Sleep(5 * time.Second)
+					}
+					Expect(isCSPCDeleted).Should(BeTrue(), "cspc %s/%s should get deleted", cspc.Namespace, cspc.Name)
+				})
 			})
 
 		})

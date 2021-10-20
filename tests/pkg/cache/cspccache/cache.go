@@ -64,12 +64,9 @@ func NewCSPCCache(client *k8sclient.Client, infrastructure *infra.Infrastructure
 	}
 
 	for i := 0; i < len(nodeList.Items); i++ {
-		if _, ok := nodeList.Items[i].Labels["node-role.kubernetes.io/master"]; ok {
-			continue
-		}
+		// Master node can also be worker node if it is eligible for scheduling
 		cache.NodeLabels[nodeList.Items[i].Name] = nodeList.Items[i].Labels
-		cache.NodeList =
-			append(cache.NodeList, nodeList.Items[i].Name)
+		cache.NodeList = append(cache.NodeList, nodeList.Items[i].Name)
 	}
 
 	if len(cache.NodeList) < infrastructure.NodeCount {

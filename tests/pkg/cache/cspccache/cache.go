@@ -91,6 +91,10 @@ func NewCSPCCache(client *k8sclient.Client, infrastructure *infra.Infrastructure
 		}
 
 		for _, bd := range bdList.Items {
+			// If disk has filesystem then it will not participate in pool creation
+			if bd.Spec.FileSystem.Type != "" {
+				continue
+			}
 			if cache.NodeDisk[k] == nil {
 				bdNameList := make([]string, 1)
 				bdNameList[0] = bd.Name

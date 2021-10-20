@@ -346,9 +346,9 @@ func ProvisioningTest(poolType string, bdCount int) {
 					if cspcsuite.infra.NodeCount == 1 {
 						return
 					}
-					nodeName := ""
+					var nodeName string
 
-					for k, _ := range specBuilder.CSPCSpecData.UnUsedNodes {
+					for k := range specBuilder.CSPCSpecData.UnUsedNodes {
 						nodeName = k
 						break
 					}

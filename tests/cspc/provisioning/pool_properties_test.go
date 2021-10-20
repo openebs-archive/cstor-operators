@@ -104,6 +104,7 @@ var _ = Describe("VERIFY CSPC POOL PROPERTIES", func() {
 			cspc, err = cspcsuite.client.OpenEBSClientSet.CstorV1().
 				CStorPoolClusters(openebsNamespace).
 				Get(context.TODO(), cspcName, metav1.GetOptions{})
+			Expect(err).To(BeNil(), "while fetching cspc %s/%s", openebsNamespace, cspcName)
 			for index := range cspc.Spec.Pools {
 				cspc.Spec.Pools[index].PoolConfig.Compression = "gzip"
 			}

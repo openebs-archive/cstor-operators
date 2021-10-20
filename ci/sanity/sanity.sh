@@ -189,7 +189,8 @@ wait_for_resource_deletion cspc openebs
 wait_for_resource_deletion cspi openebs
 
 ## Running integration test
-if make KUBECONFIG_PATH=/var/run/kubernetes/admin.kubeconfig integration-test; then
+make integration-test
+if [ $? -ne 0 ]; then
     echo "CStor integration test has failed"
     exit 1
 fi

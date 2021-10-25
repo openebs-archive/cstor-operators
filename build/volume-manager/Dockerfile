@@ -16,7 +16,7 @@
 
 FROM ubuntu:18.04
 RUN apt-get update; exit 0
-RUN apt-get -y install rsyslog
+RUN apt-get -y install rsyslog bash
 
 RUN mkdir -p /usr/local/etc/istgt
 
@@ -38,5 +38,5 @@ LABEL org.label-schema.build-date=$DBUILD_DATE
 LABEL org.label-schema.vcs-url=$DBUILD_REPO_URL
 LABEL org.label-schema.url=$DBUILD_SITE_URL
 
-ENTRYPOINT entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 EXPOSE 7676 7777

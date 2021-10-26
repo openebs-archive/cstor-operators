@@ -768,7 +768,7 @@ func (c *CStorVolumeController) markCVStatusToOffline() {
 		return
 	}
 	for i := range cvList.Items {
-		// Checking if Valid Cstor
+		// Check if it is cStorVolume related to this target
 		cv := cvList.Items[i]
 		if IsValidCStorVolumeMgmt(&cv) {
 			if cv.Status.Phase == "" {

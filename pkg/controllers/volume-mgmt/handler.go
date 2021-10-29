@@ -757,3 +757,35 @@ func (c *CStorVolumeController) reconcileVersion(cv *apis.CStorVolume) (*apis.CS
 	}
 	return cv, nil
 }
+
+// markCVStatusToOffline will fetch all the CV resources present
+// in etcd and mark it them CV.Status to Offline
+func (c *CStorVolumeController) markCVStatusToOffline() {
+	openebsNameSpace := os.Getenv("OPENEBS_NAMESPACE")
+	cvList, err := c.clientset.CstorV1().CStorVolumes(openebsNameSpace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		klog.Errorf("failed to fetch CV list, error: %v", err)
+		return
+	}
+	for i := range cvList.Items {
+		// Check if it is cStorVolume related to this target
+		cv := cvList.Items[i]
+		if IsValidCStorVolumeMgmt(&cv) {
+			if cv.Status.Phase == "" {
+				return
+			}
+			cv.Status.Phase = apis.CVStatusOffline
+			cv.Status.ReplicaStatuses = nil
+			
+			// updating cv status to offline
+			_, err = c.clientset.CstorV1().CStorVolumes(cv.Namespace).Update(context.TODO(), &cv, metav1.UpdateOptions{})
+			if err != nil {
+				klog.Errorf("failed to update CV: %s status to %s", cv.Name, apis.CVStatusOffline)
+				return
+			}
+			klog.Infof("status marked %s for CV: %s", apis.CVStatusOffline, cv.Name)
+			// as only one cv exists returning after updating cv status
+			return
+		}
+	}
+}

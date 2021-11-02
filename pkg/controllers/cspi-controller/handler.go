@@ -454,7 +454,7 @@ func (c *CStorPoolInstanceController) sync(cspi *cstor.CStorPoolInstance) {
 	if err != nil {
 		c.recorder.Event(cspi,
 			corev1.EventTypeWarning,
-			"Pool "+string("FailedToPoolProperties"),
+			"Pool "+string("FailedToSetPoolProperties"),
 			fmt.Sprintf("Failed to set pool properties: %v", err.Error()))
 	}
 }

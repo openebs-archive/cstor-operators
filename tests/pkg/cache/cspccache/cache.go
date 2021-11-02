@@ -17,12 +17,14 @@ limitations under the License.
 package cspccache
 
 import (
+	"context"
+	"reflect"
+
 	"github.com/openebs/api/v2/pkg/apis/types"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
 	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-	"reflect"
 )
 
 // CSPCResourceCache holds information about Kubernetes
@@ -56,18 +58,15 @@ func newResourceCache() *CSPCResourceCache {
 func NewCSPCCache(client *k8sclient.Client, infrastructure *infra.Infrastructure) *CSPCResourceCache {
 	klog.Infof("Building CSPC Resource Cache...")
 	cache := newResourceCache()
-	nodeList, err := client.KubeClientSet.CoreV1().Nodes().List(v1.ListOptions{})
+	nodeList, err := client.KubeClientSet.CoreV1().Nodes().List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		klog.Fatalf("failed to build resource cache:%s", err.Error())
 	}
 
 	for i := 0; i < len(nodeList.Items); i++ {
-		if _, ok := nodeList.Items[i].Labels["node-role.kubernetes.io/master"]; ok {
-			continue
-		}
+		// Master node can also be worker node if it is eligible for scheduling
 		cache.NodeLabels[nodeList.Items[i].Name] = nodeList.Items[i].Labels
-		cache.NodeList =
-			append(cache.NodeList, nodeList.Items[i].Name)
+		cache.NodeList = append(cache.NodeList, nodeList.Items[i].Name)
 	}
 
 	if len(cache.NodeList) < infrastructure.NodeCount {
@@ -81,6 +80,7 @@ func NewCSPCCache(client *k8sclient.Client, infrastructure *infra.Infrastructure
 			OpenebsV1alpha1().
 			BlockDevices("openebs").
 			List(
+				context.TODO(),
 				v1.ListOptions{
 					LabelSelector: string(types.HostNameLabelKey) +
 						"=" + v[string(types.HostNameLabelKey)],
@@ -91,6 +91,10 @@ func NewCSPCCache(client *k8sclient.Client, infrastructure *infra.Infrastructure
 		}
 
 		for _, bd := range bdList.Items {
+			// If disk has filesystem then it will not participate in pool creation
+			if bd.Spec.FileSystem.Type != "" {
+				continue
+			}
 			if cache.NodeDisk[k] == nil {
 				bdNameList := make([]string, 1)
 				bdNameList[0] = bd.Name

@@ -17,6 +17,7 @@ limitations under the License.
 package k8sclient
 
 import (
+	"context"
 	"time"
 
 	cstorapis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -80,7 +81,7 @@ func (client *Client) GetCVRReplicaIDs(name, namespace string) ([]string, error)
 func (client *Client) GetCVRList(pvName, pvcNamespace string) (*cstorapis.CStorVolumeReplicaList, error) {
 	return client.OpenEBSClientSet.CstorV1().
 		CStorVolumeReplicas(pvcNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: openebstypes.PersistentVolumeLabelKey + "=" + pvName,
 		})
 }

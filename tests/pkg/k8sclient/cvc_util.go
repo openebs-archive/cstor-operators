@@ -17,6 +17,7 @@ limitations under the License.
 package k8sclient
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -97,7 +98,7 @@ func (client *Client) WaitForCStorVolumeConfigDeletion(cvcName, cvcNamespace str
 func (client *Client) GetCVC(cvcName, cvcNamespace string) (*cstorapis.CStorVolumeConfig, error) {
 	return client.OpenEBSClientSet.CstorV1().
 		CStorVolumeConfigs(cvcNamespace).
-		Get(cvcName, metav1.GetOptions{})
+		Get(context.TODO(), cvcName, metav1.GetOptions{})
 }
 
 // PatchCVCSpec patch the cvc object by fetching from etcd
@@ -114,7 +115,7 @@ func (client *Client) PatchCVCSpec(cvcName, cvcNamespace string,
 		return nil, err
 	}
 	return client.OpenEBSClientSet.CstorV1().CStorVolumeConfigs(existingCVCObj.Namespace).
-		Patch(existingCVCObj.Name, k8stypes.MergePatchType, patchBytes)
+		Patch(context.TODO(), existingCVCObj.Name, k8stypes.MergePatchType, patchBytes, metav1.PatchOptions{})
 }
 
 // PatchCVC patch the cvc object by fetching from etcd
@@ -128,7 +129,7 @@ func (client *Client) PatchCVC(newCVCObj *cstorapis.CStorVolumeConfig) (*cstorap
 		return nil, err
 	}
 	return client.OpenEBSClientSet.CstorV1().CStorVolumeConfigs(existingCVCObj.Namespace).
-		Patch(existingCVCObj.Name, k8stypes.MergePatchType, patchBytes)
+		Patch(context.TODO(), existingCVCObj.Name, k8stypes.MergePatchType, patchBytes, metav1.PatchOptions{})
 }
 
 func getPatchData(oldObj, newObj interface{}) ([]byte, []byte, error) {

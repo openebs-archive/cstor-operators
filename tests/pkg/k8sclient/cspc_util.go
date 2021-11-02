@@ -17,6 +17,10 @@ limitations under the License.
 package k8sclient
 
 import (
+	"context"
+	"reflect"
+	"time"
+
 	. "github.com/onsi/gomega"
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
@@ -25,8 +29,6 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
-	"time"
 )
 
 const maxRetry = 30
@@ -157,14 +159,14 @@ func (client *Client) GetDesiredInstancesStatusOnCSPC(cspcName, cspcNamespace st
 func (client *Client) GetCSPIList(cspcName, cspcNamespace string) (*cstor.CStorPoolInstanceList, error) {
 	return client.OpenEBSClientSet.CstorV1().
 		CStorPoolInstances(cspcNamespace).
-		List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
 }
 
 // GetPoolManagerList gets the list of all pool-manger deployments based on cspc name and namespace.
 func (client *Client) GetPoolManagerList(cspcName, cspcNamespace string) *v1.DeploymentList {
 	pmList, err := client.KubeClientSet.AppsV1().
 		Deployments(cspcNamespace).
-		List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
 	Expect(err).To(BeNil())
 	return pmList
 }
@@ -173,14 +175,14 @@ func (client *Client) GetPoolManagerList(cspcName, cspcNamespace string) *v1.Dep
 func (client *Client) GetBDCList(cspcName, cspcNamespace string) *v1alpha1.BlockDeviceClaimList {
 	bdcList, err := client.OpenEBSClientSet.OpenebsV1alpha1().
 		BlockDeviceClaims(cspcNamespace).
-		List(metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcName})
 	Expect(err).To(BeNil())
 	return bdcList
 }
 
 // GetPoolManagerList gets the list of all pool-manger deployments based on cspc name and namespace.
 func (client *Client) GetCSPC(cspcName, cspcNamespace string) *cstor.CStorPoolCluster {
-	cspc, err := client.OpenEBSClientSet.CstorV1().CStorPoolClusters(cspcNamespace).Get(cspcName, metav1.GetOptions{})
+	cspc, err := client.OpenEBSClientSet.CstorV1().CStorPoolClusters(cspcNamespace).Get(context.TODO(), cspcName, metav1.GetOptions{})
 	Expect(err).To(BeNil())
 	return cspc
 }
@@ -190,7 +192,8 @@ func (client *Client) HasResourceLimitOnCSPIEventually(
 	cspcName, cspcNamespace string, expectedResource *corev1.ResourceRequirements) bool {
 	for i := 0; i < (maxRetry + 100); i++ {
 		resourceLimitMatches := true
-		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		cspiList, err := client.GetCSPIList(cspcName, cspcNamespace)
+		Expect(err).To(BeNil())
 		for _, v := range cspiList.Items {
 			if !reflect.DeepEqual(v.Spec.PoolConfig.Resources, expectedResource) {
 				resourceLimitMatches = false
@@ -232,7 +235,7 @@ func (client *Client) HasTolerationsOnCSPIEventually(
 	cspcName, cspcNamespace string, tolerations []corev1.Toleration) bool {
 	for i := 0; i < (maxRetry + 100); i++ {
 		tolerationsMatches := true
-		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		cspiList, _ := client.GetCSPIList(cspcName, cspcNamespace)
 		for _, v := range cspiList.Items {
 			if !reflect.DeepEqual(v.Spec.PoolConfig.Tolerations, tolerations) {
 				tolerationsMatches = false
@@ -270,7 +273,7 @@ func (client *Client) HasPriorityClassOnCSPIEventually(
 	cspcName, cspcNamespace string, priorityClass *string) bool {
 	for i := 0; i < (maxRetry + 100); i++ {
 		priorityClassMatches := true
-		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		cspiList, _ := client.GetCSPIList(cspcName, cspcNamespace)
 		for _, v := range cspiList.Items {
 			if !reflect.DeepEqual(v.Spec.PoolConfig.PriorityClassName, priorityClass) {
 				priorityClassMatches = false
@@ -308,7 +311,7 @@ func (client *Client) HasCompressionOnCSPIEventually(
 	cspcName, cspcNamespace string, compression string) bool {
 	for i := 0; i < (maxRetry + 100); i++ {
 		compressionMatches := true
-		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		cspiList, _ := client.GetCSPIList(cspcName, cspcNamespace)
 		for _, v := range cspiList.Items {
 			if v.Spec.PoolConfig.Compression != compression {
 				compressionMatches = false
@@ -327,7 +330,7 @@ func (client *Client) HasROThresholdOnCSPIEventually(
 	cspcName, cspcNamespace string, roThreshold *int) bool {
 	for i := 0; i < (maxRetry + 100); i++ {
 		roThresholdMatches := true
-		cspiList := client.GetCSPIList(cspcName, cspcNamespace)
+		cspiList, _ := client.GetCSPIList(cspcName, cspcNamespace)
 		for _, v := range cspiList.Items {
 			if !reflect.DeepEqual(v.Spec.PoolConfig.ROThresholdLimit, roThreshold) {
 				roThresholdMatches = false

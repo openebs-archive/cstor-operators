@@ -338,43 +338,6 @@ func (oc *OperationsConfig) cleanUpReplacementMarks(oldObj, newObj *openebsapis.
 	return nil
 }
 
-// SetCompression sets the cstor pool compression
-func (oc *OperationsConfig) SetCompression(poolName string, compressionType string) error {
-	// If compression type is empty -- it means disable compression on the pool
-	if compressionType == "" {
-		compressionType = "lz4"
-	}
-
-	// Get the compression value that exists in the pool
-	existingCompressionType, err := oc.GetVolumePropertyValue(poolName, "compression")
-	if err != nil {
-		return errors.Errorf("Failed to get compression type:err:%s", err.Error())
-	}
-
-	// If there is no change in the compression algorithm -- simply return.
-	if compressionType == existingCompressionType {
-		return nil
-	}
-
-	// If the requested compression algorithm is supported -- enable that.
-	if SupportedCompressionTypes[compressionType] {
-		ret, err := zcmd.NewVolumeSetProperty().
-			WithProperty("compression", compressionType).
-			WithDataset(poolName).
-			WithExecutor(oc.zcmdExecutor).
-			Execute()
-		if err != nil {
-			return errors.Errorf(
-				"Failed to update compression type to %s out:%v err:%v",
-				compressionType, string(ret), err)
-		}
-		return nil
-	}
-
-	// If we are here, the requested compression algorithm is not supported.
-	return errors.Errorf("compression type %s not supported", compressionType)
-}
-
 // GetUnavailableDiskList returns the list of faulted disks from the current pool
 func (oc *OperationsConfig) GetUnavailableDiskList(cspi *cstor.CStorPoolInstance) ([]string, error) {
 	faultedDevices := []string{}

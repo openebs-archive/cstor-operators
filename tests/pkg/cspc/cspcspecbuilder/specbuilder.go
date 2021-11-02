@@ -116,7 +116,7 @@ func (c *CSPCSpecBuilder) AddResourceLimits(resources *corev1.ResourceRequiremen
 func (c *CSPCSpecBuilder) AddResourceLimitsAtPos(resources *corev1.ResourceRequirements, atPoolPos int) *CSPCSpecBuilder {
 	if atPoolPos >= len(c.CSPC.Spec.Pools) {
 		klog.Warningf("Could not add resource and limit to pool spec"+
-			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+			"as length of pool spec is %d and pos to add is %d", len(c.CSPC.Spec.Pools), atPoolPos)
 		return c
 	}
 	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.WithResources(resources)
@@ -135,7 +135,7 @@ func (c *CSPCSpecBuilder) AddTolerations(tolerations []corev1.Toleration) *CSPCS
 func (c *CSPCSpecBuilder) AddTolerationsAtPos(tolerations []corev1.Toleration, atPoolPos int) *CSPCSpecBuilder {
 	if atPoolPos >= len(c.CSPC.Spec.Pools) {
 		klog.Warningf("Could not add tolerations to pool spec"+
-			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+			"as length of pool spec is %d and pos to add is %d", len(c.CSPC.Spec.Pools), atPoolPos)
 		return c
 	}
 	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.WithTolerations(tolerations)
@@ -154,7 +154,7 @@ func (c *CSPCSpecBuilder) AddPriorityClass(priorityClass *string) *CSPCSpecBuild
 func (c *CSPCSpecBuilder) AddPriorityClassAtPos(priorityClass *string, atPoolPos int) *CSPCSpecBuilder {
 	if atPoolPos >= len(c.CSPC.Spec.Pools) {
 		klog.Warningf("Could not add priority class to pool spec"+
-			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+			"as length of pool spec is %d and pos to add is %d", len(c.CSPC.Spec.Pools), atPoolPos)
 		return c
 	}
 	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.WithPriorityClassName(priorityClass)
@@ -173,7 +173,7 @@ func (c *CSPCSpecBuilder) AddCompression(compression string) *CSPCSpecBuilder {
 func (c *CSPCSpecBuilder) AddCompressionAtPos(compression string, atPoolPos int) *CSPCSpecBuilder {
 	if atPoolPos >= len(c.CSPC.Spec.Pools) {
 		klog.Warningf("Could not add compression to pool spec"+
-			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+			"as length of pool spec is %d and pos to add is %d", len(c.CSPC.Spec.Pools), atPoolPos)
 		return c
 	}
 	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.Compression = compression
@@ -192,7 +192,7 @@ func (c *CSPCSpecBuilder) AddRoThreshold(roLimit *int) *CSPCSpecBuilder {
 func (c *CSPCSpecBuilder) AddRoThresholdAtPos(roLimit *int, atPoolPos int) *CSPCSpecBuilder {
 	if atPoolPos >= len(c.CSPC.Spec.Pools) {
 		klog.Warningf("Could not add RO threshold to pool spec"+
-			"as length of pool spec is %s and pos to add is %s", len(c.CSPC.Spec.Pools), atPoolPos)
+			"as length of pool spec is %d and pos to add is %d", len(c.CSPC.Spec.Pools), atPoolPos)
 		return c
 	}
 	c.CSPC.Spec.Pools[atPoolPos].PoolConfig.WithROThresholdLimit(roLimit)

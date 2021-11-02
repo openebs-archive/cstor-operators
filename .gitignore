@@ -3,3 +3,6 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# cspc file is created during sanity test
+./ci/sanity/cspc.yaml

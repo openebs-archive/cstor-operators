@@ -17,6 +17,7 @@ limitations under the License.
 package k8sclient
 
 import (
+	"context"
 	"reflect"
 	"strconv"
 	"time"
@@ -137,7 +138,7 @@ func (client *Client) WaitForVolumeManagerTolerations(
 	name, namespace string, tolerations []corev1.Toleration, timeout, poll time.Duration) error {
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
 		vDeploymentList, err := client.KubeClientSet.AppsV1().Deployments(namespace).
-			List(metav1.ListOptions{LabelSelector: openebstypes.PersistentVolumeLabelKey + "=" + name})
+			List(context.TODO(), metav1.ListOptions{LabelSelector: openebstypes.PersistentVolumeLabelKey + "=" + name})
 		if err != nil {
 			return err
 		}
@@ -365,12 +366,12 @@ func isResourceListsMatched(resourceListOne, resourceListTwo corev1.ResourceList
 func (client *Client) GetCV(cvName, cvNamespace string) (*cstorapis.CStorVolume, error) {
 	return client.OpenEBSClientSet.CstorV1().
 		CStorVolumes(cvNamespace).
-		Get(cvName, metav1.GetOptions{})
+		Get(context.TODO(), cvName, metav1.GetOptions{})
 }
 
 // GetVolumeManagerList will fetch volume manager list based on provided arguments from etcd
 func (client *Client) GetVolumeManagerList(name, namespace string) (*corev1.PodList, error) {
 	return client.KubeClientSet.CoreV1().
 		Pods(namespace).
-		List(metav1.ListOptions{LabelSelector: openebstypes.PersistentVolumeLabelKey + "=" + name})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: openebstypes.PersistentVolumeLabelKey + "=" + name})
 }

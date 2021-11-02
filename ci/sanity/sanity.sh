@@ -94,8 +94,9 @@ function getBD(){
 nodeName=$1
 BD_RETRY=$2
 for i in $(seq 1 $BD_RETRY) ; do
- bdName=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[?(@.spec.details.deviceType=="sparse")].metadata.name}')
- if [ "$bdName" != "" ]; then
+ blockDeviceNames=$(kubectl get bd -n openebs -l kubernetes.io/hostname="$nodeName" -o=jsonpath='{.items[?(@.spec.details.deviceType=="sparse")].metadata.name}')
+ if [ "$blockDeviceNames" != "" ]; then
+ bdName=$(echo "$blockDeviceNames" | awk '{print $1}')
  echo "Got BD $bdName"
  break
  else
@@ -112,6 +113,21 @@ for i in $(seq 1 $BD_RETRY) ; do
 done
 
 }
+
+function wait_for_resource_deletion(){
+    resource_kind=$1
+    namespace=$2
+    while true; do
+        resource_list=$(kubectl get "$resource_kind" -n "$namespace" --no-headers)
+        echo "$resource_list"
+        if [ -z "$resource_list" ]; then
+            break
+        fi
+        echo "Waiting for resource $resource_kind to get delete in namespace $namespace"
+        sleep 5
+    done
+}
+
 echo "Preparing the CSPC YAML from template"
 nodeName=$(kubectl get node -o=jsonpath={.items[0].metadata.name})
 
@@ -154,8 +170,27 @@ echo "Deleting BusyBox pod and check for the iscsi session cleaned properly..."
 kubectl delete -f ./ci/artifacts/busybox-csi-cstor-sparse.yaml
 
 kubectl wait --for=delete pod -l app=busybox --timeout=600s
+sleep 2
 sessionCount=$(sudo iscsiadm -m session | wc -l)
 if [ $sessionCount -ne 0 ]; then
-    echo "iSCSI session not cleaned up successfully"
+    echo "iSCSI session not cleaned up successfully --- $sessionCount"
+    exit 1
+fi
+
+wait_for_resource_deletion pvc ""
+wait_for_resource_deletion cvr openebs
+wait_for_resource_deletion cv openebs
+
+## Delete CSPC and wait till CSPC and all dependents gets deleted
+## Delete CSPC
+kubectl delete -f ./ci/sanity/cspc.yaml
+
+wait_for_resource_deletion cspc openebs
+wait_for_resource_deletion cspi openebs
+
+## Running integration test
+make integration-test
+if [ $? -ne 0 ]; then
+    echo "CStor integration test has failed"
     exit 1
 fi

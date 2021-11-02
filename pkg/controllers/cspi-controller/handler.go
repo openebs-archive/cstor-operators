@@ -448,15 +448,14 @@ func (c *CStorPoolInstanceController) addPoolProtectionFinalizer(
 func (c *CStorPoolInstanceController) sync(cspi *cstor.CStorPoolInstance) {
 	oc := zpool.NewOperationsConfig().
 		WithZcmdExecutor(c.zcmdExecutor)
-	// Right now the only sync activity is compression
-	compressionType := cspi.Spec.PoolConfig.Compression
-	poolName := zpool.PoolName()
-	err := oc.SetCompression(poolName, compressionType)
+
+	// reconcile pool(fs & pool both) properties
+	err := oc.SetPoolProperties(cspi)
 	if err != nil {
 		c.recorder.Event(cspi,
 			corev1.EventTypeWarning,
-			"Pool "+string("FailedToSetCompression"),
-			fmt.Sprintf("Failed to set compression %s to the pool %s : %s", compressionType, poolName, err.Error()))
+			"Pool "+string("FailedToSetPoolProperties"),
+			fmt.Sprintf("Failed to set pool properties: %v", err.Error()))
 	}
 }
 

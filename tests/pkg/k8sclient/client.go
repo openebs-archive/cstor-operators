@@ -47,6 +47,8 @@ type Client struct {
 
 	// clientset is a openebs custom resource package generated for custom API group.
 	OpenEBSClientSet openebsclientset.Interface
+
+	config *rest.Config
 }
 
 func NewClient(path string) (*Client, error) {
@@ -75,6 +77,7 @@ func NewClient(path string) (*Client, error) {
 	client := &Client{
 		KubeClientSet:    kubeClient,
 		OpenEBSClientSet: openebsClient,
+		config:           cfg,
 	}
 
 	return client, nil

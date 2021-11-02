@@ -18,6 +18,10 @@ set -ex
 
 echo "Install cstor-operator artifacts"
 
+# Set SPARSE_FILE_COUNT env to 15, to have enough blockdevices
+# for running cStor pool integration test
+sed -i '/SPARSE_FILE_COUNT/!b;n;c\          value: "15"' ./deploy/cstor-operator.yaml
+
 kubectl apply -f ./deploy/cstor-operator.yaml
 
 sleep 5
@@ -29,3 +33,6 @@ kubectl get pods -n openebs -l role=openebs-cstor-csi
 echo "Verify cstor-operators installation"
 
 kubectl get pod -n openebs
+
+# Roll back changes made to deployment
+sed -i '/SPARSE_FILE_COUNT/!b;n;c\          value: "1"' ./deploy/cstor-operator.yaml

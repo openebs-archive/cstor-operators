@@ -11,7 +11,6 @@ require (
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/openebs/api/v3 v3.0.0-00010101000000-000000000000
-	//github.com/openebs/api/v3
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
@@ -27,7 +26,6 @@ require (
 )
 
 replace (
-	github.com/openebs/api/v3 => /home/prateek/gocode/src/github.com/openebs/api
 	k8s.io/api => k8s.io/api v0.20.2
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.20.2
 

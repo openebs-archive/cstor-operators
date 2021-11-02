@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

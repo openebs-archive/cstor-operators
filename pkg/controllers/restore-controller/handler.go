@@ -22,8 +22,8 @@ import (
 	"os"
 	"reflect"
 
-	cstorapis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	"github.com/openebs/api/v2/pkg/apis/types"
+	cstorapis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v3/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	corev1 "k8s.io/api/core/v1"

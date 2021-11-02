@@ -22,9 +22,9 @@ import (
 	"strings"
 	"testing"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	ndmapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
-	zpool "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	ndmapis "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
+	zpool "github.com/openebs/api/v3/pkg/internalapis/apis/cstor"
 	bin "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

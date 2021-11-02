@@ -22,8 +22,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	internalapi "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	internalapi "github.com/openebs/api/v3/pkg/internalapis/apis/cstor"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 )
 

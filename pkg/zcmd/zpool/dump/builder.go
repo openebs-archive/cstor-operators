@@ -24,7 +24,7 @@ import (
 	"runtime"
 	"strings"
 
-	vdump "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
+	vdump "github.com/openebs/api/v3/pkg/internalapis/apis/cstor"
 	"github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"github.com/pkg/errors"
 )

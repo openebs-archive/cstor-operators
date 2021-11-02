@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	v1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"

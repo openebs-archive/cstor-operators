@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	openebsclientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	openebsclientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"

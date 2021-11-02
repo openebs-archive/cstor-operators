@@ -27,10 +27,10 @@ import (
 
 	"strings"
 
-	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	"github.com/openebs/api/v2/pkg/apis/types"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	"github.com/openebs/api/v2/pkg/util"
+	apis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v3/pkg/apis/types"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	"github.com/openebs/api/v3/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/controllers/volume-mgmt/volume"
 	"github.com/openebs/cstor-operators/pkg/version"
 	corev1 "k8s.io/api/core/v1"
@@ -776,7 +776,7 @@ func (c *CStorVolumeController) markCVStatusToOffline() {
 			}
 			cv.Status.Phase = apis.CVStatusOffline
 			cv.Status.ReplicaStatuses = nil
-			
+
 			// updating cv status to offline
 			_, err = c.clientset.CstorV1().CStorVolumes(cv.Namespace).Update(context.TODO(), &cv, metav1.UpdateOptions{})
 			if err != nil {

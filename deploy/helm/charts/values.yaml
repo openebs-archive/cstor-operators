@@ -19,7 +19,7 @@ imagePullSecrets:
 # - name: "image-pull-secret"
 
 # If false, then the default hostpath for storing openebs required files will not be used
-useVarDirectoryPath: true
+useVarDirectoryPath: false
 
 cspcOperator:
   componentName: cspc-operator

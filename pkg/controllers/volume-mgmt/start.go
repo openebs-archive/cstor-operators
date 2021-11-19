@@ -33,10 +33,10 @@ import (
 	"github.com/openebs/cstor-operators/pkg/controllers/volume-mgmt/volume"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
-	"github.com/openebs/api/v2/pkg/util"
-	"github.com/openebs/api/v2/pkg/util/signals"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"
+	"github.com/openebs/api/v3/pkg/util"
+	"github.com/openebs/api/v3/pkg/util/signals"
 )
 
 const (

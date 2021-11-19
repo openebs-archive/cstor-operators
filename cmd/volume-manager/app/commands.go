@@ -17,7 +17,7 @@ limitations under the License.
 package app
 
 import (
-	"github.com/openebs/api/v2/pkg/util"
+	"github.com/openebs/api/v3/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )

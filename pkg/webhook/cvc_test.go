@@ -20,9 +20,9 @@ import (
 	"context"
 	"testing"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	openebsFakeClientset "github.com/openebs/api/v3/pkg/client/clientset/versioned/fake"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"

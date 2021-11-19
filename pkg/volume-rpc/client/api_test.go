@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/openebs/api/v2/pkg/proto"
+	"github.com/openebs/api/v3/pkg/proto"
 )
 
 type TestUnixSock struct{}

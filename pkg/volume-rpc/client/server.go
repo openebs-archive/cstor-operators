@@ -21,8 +21,8 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/openebs/api/v2/pkg/proto"
-	"github.com/openebs/api/v2/pkg/util"
+	"github.com/openebs/api/v3/pkg/proto"
+	"github.com/openebs/api/v3/pkg/util"
 	"google.golang.org/grpc"
 	"k8s.io/klog"
 )

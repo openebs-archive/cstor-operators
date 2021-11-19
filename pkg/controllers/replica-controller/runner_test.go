@@ -24,17 +24,17 @@ import (
 	"testing"
 	"time"
 
-	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	apis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	"k8s.io/klog"
 
-	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
-	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
+	openebsFakeClientset "github.com/openebs/api/v3/pkg/client/clientset/versioned/fake"
+	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"
 
-	"github.com/openebs/api/v2/pkg/util"
-	"github.com/openebs/api/v2/pkg/util/signals"
+	"github.com/openebs/api/v3/pkg/util"
+	"github.com/openebs/api/v3/pkg/util/signals"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"

@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	zpool "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
-	"github.com/openebs/api/v2/pkg/util"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	zpool "github.com/openebs/api/v3/pkg/internalapis/apis/cstor"
+	"github.com/openebs/api/v3/pkg/util"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"k8s.io/klog"
 )

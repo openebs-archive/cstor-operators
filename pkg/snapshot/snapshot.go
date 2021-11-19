@@ -17,8 +17,8 @@ package snapshot
 import (
 	"context"
 
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	v1proto "github.com/openebs/api/v2/pkg/proto"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	v1proto "github.com/openebs/api/v3/pkg/proto"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"

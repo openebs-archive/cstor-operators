@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	"github.com/openebs/api/v2/pkg/util"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	"github.com/openebs/api/v3/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"

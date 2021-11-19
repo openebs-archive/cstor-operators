@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	openebsFakeClientset "github.com/openebs/api/v3/pkg/client/clientset/versioned/fake"
 	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

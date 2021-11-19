@@ -20,7 +20,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/openebs/api/v2/pkg/apis/types"
+	"github.com/openebs/api/v3/pkg/apis/types"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,12 +34,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	cstorapis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	cstorapis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	openebsScheme "github.com/openebs/api/v2/pkg/client/clientset/versioned/scheme"
-	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	openebsScheme "github.com/openebs/api/v3/pkg/client/clientset/versioned/scheme"
+	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"
 )
 
 const restoreControllerName = "CStorRestore"

@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	cstorapis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	cstorapis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/tests/pkg/cspc/cspcspecbuilder"
 	"github.com/openebs/cstor-operators/tests/pkg/cstorvolumeconfig/cvcspecbuilder"
 	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"

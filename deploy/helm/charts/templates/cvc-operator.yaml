@@ -28,7 +28,7 @@ spec:
           imagePullPolicy: {{ .Values.cvcOperator.image.pullPolicy }}
           image: "{{ .Values.cvcOperator.image.registry }}{{ .Values.cvcOperator.image.repository }}:{{ .Values.cvcOperator.image.tag }}"
           args:
-            - "--v=2"
+            - "--v={{ .Values.cvcOperator.logLevel }}"
             - "--leader-election=false"
             - "--bind=$(OPENEBS_CVC_POD_IP)"
           resources:

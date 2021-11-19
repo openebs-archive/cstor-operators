@@ -122,19 +122,23 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | csiController.attacher.image.registry | string | `"k8s.gcr.io/"` |  CSI attacher image registry |
 | csiController.attacher.image.repository | string | `"sig-storage/csi-attacher"` |  CSI attacher image repo |
 | csiController.attacher.image.tag | string | `"v3.1.0"` | CSI attacher image tag |
+| csiController.attacher.logLevel | string | _unspecified_ | Override log level for CSI attacher container (1 = least verbose, 5 = most verbose) |
 | csiController.attacher.name | string | `"csi-attacher"` |  CSI attacher container name|
 | csiController.componentName | string | `"openebs-cstor-csi-controller"` | CSI controller component name |
+| csiController.logLevel | string | `"5"` |  Default log level for all CSI controller containers (1 = least verbose, 5 = most verbose) unless overridden for a specific container |
 | csiController.nodeSelector | object | `{}` |  CSI controller pod node selector |
 | csiController.podAnnotations | object | `{}` | CSI controller pod annotations |
 | csiController.provisioner.image.pullPolicy | string | `"IfNotPresent"` | CSI provisioner image pull policy |
 | csiController.provisioner.image.registry | string | `"k8s.gcr.io/"` | CSI provisioner image pull registry |
 | csiController.provisioner.image.repository | string | `"sig-storage/csi-provisioner"` | CSI provisioner image pull repository |
 | csiController.provisioner.image.tag | string | `"v3.0.0"` | CSI provisioner image tag |
+| csiController.provisioner.logLevel | string | _unspecified_ | Override log level for CSI provisioner container (1 = least verbose, 5 = most verbose) |
 | csiController.provisioner.name | string | `"csi-provisioner"` | CSI provisioner container name |
 | csiController.resizer.image.pullPolicy | string | `"IfNotPresent"` | CSI resizer image pull policy  |
 | csiController.resizer.image.registry | string | `"k8s.gcr.io/"` | CSI resizer image registry |
 | csiController.resizer.image.repository | string | `"sig-storage/csi-resizer"` |  CSI resizer image repository|
 | csiController.resizer.image.tag | string | `"v1.2.0"` | CSI resizer image tag |
+| csiController.resizer.logLevel | string | _unspecified_ | Override log level for CSI resizer container (1 = least verbose, 5 = most verbose) |
 | csiController.resizer.name | string | `"csi-resizer"` | CSI resizer container name |
 | csiController.resources | object | `{}` | CSI controller container resources |
 | csiController.securityContext | object | `{}` | CSI controller security context |
@@ -142,6 +146,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | csiController.snapshotController.image.registry | string | `"k8s.gcr.io/"` | CSI snapshot controller image registry |
 | csiController.snapshotController.image.repository | string | `"sig-storage/snapshot-controller"` | CSI snapshot controller image repository |
 | csiController.snapshotController.image.tag | string | `"v3.0.3"` | CSI snapshot controller image tag |
+| csiController.snapshotController.logLevel | string | _unspecified_ | Override log level for CSI snapshot controller container (1 = least verbose, 5 = most verbose) |
 | csiController.snapshotController.name | string | `"snapshot-controller"` | CSI snapshot controller container name |
 | csiController.snapshotter.image.pullPolicy | string | `"IfNotPresent"` | CSI snapshotter image pull policy |
 | csiController.snapshotter.image.registry | string | `"k8s.gcr.io/"` | CSI snapshotter image pull registry |
@@ -155,9 +160,11 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | csiNode.driverRegistrar.image.registry | string | `"k8s.gcr.io/"` | CSI Node driver registrar image registry |
 | csiNode.driverRegistrar.image.repository | string | `"sig-storage/csi-node-driver-registrar"` | CSI Node driver registrar image repository |
 | csiNode.driverRegistrar.image.tag | string | `"v2.3.0"` |  CSI Node driver registrar image tag|
+| csiNode.driverRegistrar.logLevel | string | _unspecified_ | Override log level for CSI node driver registrar container (1 = least verbose, 5 = most verbose) |
 | csiNode.driverRegistrar.name | string | `"csi-node-driver-registrar"` | CSI Node driver registrar container name |
 | csiNode.kubeletDir | string | `"/var/lib/kubelet/"` | Kubelet root dir |
 | csiNode.labels | object | `{}` | CSI Node pod labels |
+| csiNode.logLevel | string | `"5"` | Default log level for CSI node containers (1 = least verbose, 5 = most verbose) unless overriden for a specific container |
 | csiNode.nodeSelector | object | `{}` |   CSI Node pod nodeSelector |
 | csiNode.podAnnotations | object | `{}` | CSI Node pod annotations |
 | csiNode.resources | object | `{}` | CSI Node pod resources |
@@ -197,6 +204,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cvcOperator.image.registry | string | `nil` | CVC operator image registry |
 | cvcOperator.image.repository | string | `"openebs/cvc-operator"` | CVC operator image repository |
 | cvcOperator.image.tag | string | `"3.0.0"` | CVC operator image tag |
+| cvcOperator.logLevel | string | `"2"` |  Log level for CVC operator container (1 = least verbose, 5 = most verbose) |
 | cvcOperator.nodeSelector | object | `{}` | CVC operator pod nodeSelector |
 | cvcOperator.podAnnotations | object | `{}` | CVC operator pod annotations |
 | cvcOperator.resources | object | `{}` |CVC operator pod resources  |

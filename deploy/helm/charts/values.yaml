@@ -18,9 +18,6 @@ rbac:
 imagePullSecrets:
 # - name: "image-pull-secret"
 
-# If false, then the default hostpath for storing openebs required files will not be used
-useVarDirectoryPath: false
-
 cspcOperator:
   componentName: cspc-operator
   poolManager:
@@ -55,7 +52,7 @@ cspcOperator:
   resources: {}
   securityContext: {}
   baseDir: "/var/openebs"
-  cstorPoolSparseDir: "/var/openebs/sparse"
+  SparseDir: "/var/openebs/sparse"
 
 cvcOperator:
   componentName: cvc-operator
@@ -91,7 +88,6 @@ cvcOperator:
   resources: {}
   securityContext: {}
   baseDir: "/var/openebs"
-  cstorTargetDir: "/var/openebs/sparse"
   logLevel: "2"
 
 csiController:

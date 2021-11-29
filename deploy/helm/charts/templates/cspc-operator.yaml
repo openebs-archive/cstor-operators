@@ -45,18 +45,20 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-{{- if .Values.useVarDirectoryPath }}
+{{- if .Values.cspcOperator.baseDir }}
             # OPENEBS_IO_BASE_DIR is used to configure base directory for openebs on host path.
             # Where OpenEBS can store required files. Default base path will be /var/openebs
             - name: OPENEBS_IO_BASE_DIR
-              value: "{{ .Values.cspcOperator.baseDir }}"
+              value: {{ .Values.cspcOperator.baseDir | quote }}
+{{- end }}
+{{- if .Values.cspcOperator.SparseDir }}
             # OPENEBS_IO_CSTOR_POOL_SPARSE_DIR can be used to specify the hostpath
             # to be used for saving the shared content between the side cars
             # of cstor pool pod. This ENV is also used to indicate the location
             # of the sparse devices.
             # The default path used is /var/openebs/sparse
             - name: OPENEBS_IO_CSTOR_POOL_SPARSE_DIR
-              value: "{{ .Values.cspcOperator.cstorPoolSparseDir }}"
+              value: "{{ .Values.cspcOperator.SparseDir }}"
 {{- end }}
             - name: OPENEBS_IO_CSPI_MGMT_IMAGE
               value: "{{ .Values.cspcOperator.poolManager.image.registry }}{{ .Values.cspcOperator.poolManager.image.repository }}:{{ .Values.cspcOperator.poolManager.image.tag }}"

@@ -34,16 +34,11 @@ spec:
           resources:
 {{ toYaml .Values.cvcOperator.resources | indent 12 }}
           env:
-{{- if .Values.useVarDirectoryPath }}
+{{- if .Values.cvcOperator.baseDir }}
             # OPENEBS_IO_BASE_DIR is used to configure base directory for openebs on host path.
             # Where OpenEBS can store required files. Default base path will be /var/openebs
             - name: OPENEBS_IO_BASE_DIR
               value: "{{ .Values.cvcOperator.baseDir }}"
-            # OPENEBS_IO_CSTOR_TARGET_DIR can be used to specify the hostpath
-            # that to be used for saving the core dump of cstor volume pod.
-            # The default path used is /var/openebs/sparse
-            - name: OPENEBS_IO_CSTOR_TARGET_DIR
-              value: "{{ .Values.cvcOperator.cstorTargetDir }}"
 {{- end }}
             - name: OPENEBS_NAMESPACE
               valueFrom:

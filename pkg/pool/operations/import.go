@@ -19,8 +19,8 @@ package v1alpha2
 import (
 	"fmt"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	"github.com/openebs/api/v2/pkg/apis/types"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v3/pkg/apis/types"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"

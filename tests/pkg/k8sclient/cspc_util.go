@@ -22,9 +22,9 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	"github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
-	"github.com/openebs/api/v2/pkg/apis/types"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
+	"github.com/openebs/api/v3/pkg/apis/types"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

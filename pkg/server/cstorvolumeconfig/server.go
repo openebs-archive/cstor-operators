@@ -21,7 +21,7 @@ import (
 	"log"
 	"sync"
 
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	server "github.com/openebs/cstor-operators/pkg/server"
 	"github.com/openebs/cstor-operators/pkg/snapshot"
 	"k8s.io/client-go/kubernetes"

@@ -28,13 +28,13 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	common "github.com/openebs/cstor-operators/pkg/controllers/common"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd/bin"
 
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	openebsScheme "github.com/openebs/api/v2/pkg/client/clientset/versioned/scheme"
-	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	openebsScheme "github.com/openebs/api/v3/pkg/client/clientset/versioned/scheme"
+	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"
 )
 
 const poolControllerName = "CStorPoolInstance"

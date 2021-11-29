@@ -23,17 +23,17 @@ import (
 	"strings"
 	"time"
 
-	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	"github.com/openebs/api/v2/pkg/apis/types"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	apis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v3/pkg/apis/types"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 
 	"github.com/openebs/cstor-operators/pkg/util/hash"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 
-	"github.com/openebs/api/v2/pkg/util"
+	"github.com/openebs/api/v3/pkg/util"
 
-	apicore "github.com/openebs/api/v2/pkg/kubernetes/core"
+	apicore "github.com/openebs/api/v3/pkg/kubernetes/core"
 	errors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	policy "k8s.io/api/policy/v1beta1"

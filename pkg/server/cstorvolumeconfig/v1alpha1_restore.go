@@ -18,8 +18,8 @@ package cstorvolumeconfig
 import (
 	"context"
 
-	openebsapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
-	cstortypes "github.com/openebs/api/v2/pkg/apis/types"
+	openebsapis "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
+	cstortypes "github.com/openebs/api/v3/pkg/apis/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )

@@ -22,8 +22,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/openebs/api/v2/pkg/apis/types"
-	"github.com/openebs/api/v2/pkg/util"
+	"github.com/openebs/api/v3/pkg/apis/types"
+	"github.com/openebs/api/v3/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
 	admissionregistration "k8s.io/api/admissionregistration/v1"

@@ -20,7 +20,7 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/openebs/api/v2/pkg/apis/types"
+	"github.com/openebs/api/v3/pkg/apis/types"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
 	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

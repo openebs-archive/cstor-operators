@@ -19,7 +19,7 @@ package v1alpha2
 import (
 	"sync"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
 )

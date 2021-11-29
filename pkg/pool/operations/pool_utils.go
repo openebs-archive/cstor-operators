@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openebs/api/v2/pkg/apis/types"
+	"github.com/openebs/api/v3/pkg/apis/types"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	openebsapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
-	zpool "github.com/openebs/api/v2/pkg/internalapis/apis/cstor"
-	"github.com/openebs/api/v2/pkg/util"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	openebsapis "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
+	zpool "github.com/openebs/api/v3/pkg/internalapis/apis/cstor"
+	"github.com/openebs/api/v3/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
 	bin "github.com/openebs/cstor-operators/pkg/zcmd/bin"

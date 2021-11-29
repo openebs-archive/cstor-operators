@@ -26,10 +26,10 @@ import (
 
 	"github.com/openebs/cstor-operators/pkg/log/alertlog"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	types "github.com/openebs/api/v2/pkg/apis/types"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	"github.com/openebs/api/v2/pkg/util"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	types "github.com/openebs/api/v3/pkg/apis/types"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	"github.com/openebs/api/v3/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/debug"
 	"github.com/openebs/cstor-operators/pkg/util/hash"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"

@@ -17,10 +17,10 @@ limitations under the License.
 package algorithm
 
 import (
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	cstorstoredversion "github.com/openebs/api/v2/pkg/client/clientset/versioned/typed/cstor/v1"
-	openebsstoredversion "github.com/openebs/api/v2/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	cstorstoredversion "github.com/openebs/api/v3/pkg/client/clientset/versioned/typed/cstor/v1"
+	openebsstoredversion "github.com/openebs/api/v3/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 )

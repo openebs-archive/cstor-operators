@@ -31,10 +31,10 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
-	openebsScheme "github.com/openebs/api/v2/pkg/client/clientset/versioned/scheme"
-	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
+	apis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
+	openebsScheme "github.com/openebs/api/v3/pkg/client/clientset/versioned/scheme"
+	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 )
 

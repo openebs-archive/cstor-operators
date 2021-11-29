@@ -25,8 +25,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/openebs/api/v2/pkg/apis/types"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	"github.com/openebs/api/v3/pkg/apis/types"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

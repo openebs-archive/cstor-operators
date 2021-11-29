@@ -20,8 +20,8 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/openebs/api/v2/pkg/proto"
-	"github.com/openebs/api/v2/pkg/util"
+	"github.com/openebs/api/v3/pkg/proto"
+	"github.com/openebs/api/v3/pkg/util"
 	"golang.org/x/net/context"
 )
 

@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openebs/api/v2/pkg/apis/types"
+	"github.com/openebs/api/v3/pkg/apis/types"
 	policy "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"

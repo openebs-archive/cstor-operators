@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"k8s.io/klog"
 )

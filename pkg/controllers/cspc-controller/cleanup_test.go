@@ -17,10 +17,10 @@ limitations under the License.
 package cspccontroller
 
 import (
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	"github.com/openebs/api/v2/pkg/apis/types"
-	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
-	informers "github.com/openebs/api/v2/pkg/client/informers/externalversions"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v3/pkg/apis/types"
+	openebsFakeClientset "github.com/openebs/api/v3/pkg/client/clientset/versioned/fake"
+	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"

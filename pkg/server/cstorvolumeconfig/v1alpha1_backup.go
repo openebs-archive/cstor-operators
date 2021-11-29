@@ -19,9 +19,9 @@ package cstorvolumeconfig
 import (
 	"context"
 
-	openebsapis "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
-	cstortypes "github.com/openebs/api/v2/pkg/apis/types"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	openebsapis "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
+	cstortypes "github.com/openebs/api/v3/pkg/apis/types"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

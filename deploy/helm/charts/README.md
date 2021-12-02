@@ -193,7 +193,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cspcOperator.securityContext | object | `{}` | CSPC operator security context |
 | cspcOperator.tolerations | list | `[]` | CSPC operator pod tolerations |
 | cspcOperator.baseDir | string | `"/var/openebs"` | base directory for openebs cStor pools on host path to store pool related information |
-| cspcOperator.SparseDir | string | `"/var/openebs/sparse"` | sparse directory to access sparse based devices |
+| cspcOperator.sparseDir | string | `"/var/openebs/sparse"` | sparse directory to access sparse based devices |
 | cstorCSIPlugin.image.pullPolicy | string | `"IfNotPresent"` | CStor CSI driver image pull policy |
 | cstorCSIPlugin.image.registry | string | `nil` | CStor CSI driver image registry |
 | cstorCSIPlugin.image.repository | string | `"openebs/cstor-csi-driver"` |  CStor CSI driver image repository |

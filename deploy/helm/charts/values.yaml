@@ -52,7 +52,7 @@ cspcOperator:
   resources: {}
   securityContext: {}
   baseDir: "/var/openebs"
-  SparseDir: "/var/openebs/sparse"
+  sparseDir: "/var/openebs/sparse"
 
 cvcOperator:
   componentName: cvc-operator

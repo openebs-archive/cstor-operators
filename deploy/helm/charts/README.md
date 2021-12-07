@@ -192,6 +192,8 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cspcOperator.resyncInterval | string | `"30"` | CSPC operator resync interval |
 | cspcOperator.securityContext | object | `{}` | CSPC operator security context |
 | cspcOperator.tolerations | list | `[]` | CSPC operator pod tolerations |
+| cspcOperator.baseDir | string | `"/var/openebs"` | base directory for openebs cStor pools on host path to store pool related information |
+| cspcOperator.sparseDir | string | `"/var/openebs/sparse"` | sparse directory to access sparse based devices |
 | cstorCSIPlugin.image.pullPolicy | string | `"IfNotPresent"` | CStor CSI driver image pull policy |
 | cstorCSIPlugin.image.registry | string | `nil` | CStor CSI driver image registry |
 | cstorCSIPlugin.image.repository | string | `"openebs/cstor-csi-driver"` |  CStor CSI driver image repository |
@@ -220,6 +222,7 @@ helm install openebs-cstor openebs-cstor/cstor --namespace openebs --create-name
 | cvcOperator.volumeMgmt.image.registry | string | `nil` | Volume mgmt image registry |
 | cvcOperator.volumeMgmt.image.repository | string | `"openebs/cstor-volume-manager"` | Volume mgmt image repository |
 | cvcOperator.volumeMgmt.image.tag | string | `"3.0.0"` |  Volume mgmt image tag|
+| cvcOperator.baseDir | string | `"/var/openebs"` | CVC operator base directory for openebs on host path |
 | imagePullSecrets | string | `nil` | Image registry pull secrets |
 | openebsNDM.enabled | bool | `true` | Enable OpenEBS NDM dependency |
 | openebs-ndm.featureGates.APIService.enabled | bool | `true` | Enable 'API Service' feature gate for NDM |

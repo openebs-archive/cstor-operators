@@ -51,6 +51,8 @@ cspcOperator:
   tolerations: []
   resources: {}
   securityContext: {}
+  baseDir: "/var/openebs"
+  sparseDir: "/var/openebs/sparse"
 
 cvcOperator:
   componentName: cvc-operator
@@ -85,6 +87,7 @@ cvcOperator:
   tolerations: []
   resources: {}
   securityContext: {}
+  baseDir: "/var/openebs"
   logLevel: "2"
 
 csiController:

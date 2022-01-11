@@ -1,5 +1,24 @@
 # Changelog
 
+## [v3.1.0]/2022-01-03
+==========================
+- update(helm): allow setting different base dir(and others) for cspc and cvc operators [\#404](https://github.com/openebs/cstor-operators/pull/404) ([Ab-hishek](https://github.com/Ab-hishek))
+- chore(deps): update go mod to use the openebs v3 api modules [\#403](https://github.com/openebs/cstor-operators/pull/403) ([Ab-hishek](https://github.com/Ab-hishek))
+- fix(helm): Make log verbosity configurable [\#397](https://github.com/openebs/cstor-operators/pull/397) ([ianroberts](https://github.com/ianroberts))
+- fix(pool): set canmount filesystem property to off for pool dataset [\#400](https://github.com/openebs/cstor-operators/pull/400) ([mittachaitu](https://github.com/mittachaitu))
+- fix(status): update cstor volume status to offline based on availability of target pods [\#395](https://github.com/openebs/cstor-operators/pull/395) ([saltperfect](https://github.com/saltperfect))
+
+## [v3.1.0-RC2]/2021-12-29
+===========================
+
+## [v3.1.0-RC1]/2021-12-20
+============================
+- update(helm): allow setting different base dir(and others) for cspc and cvc operators [\#404](https://github.com/openebs/cstor-operators/pull/404) ([Ab-hishek](https://github.com/Ab-hishek))
+- chore(deps): update go mod to use the openebs v3 api modules [\#403](https://github.com/openebs/cstor-operators/pull/403) ([Ab-hishek](https://github.com/Ab-hishek))
+- fix(helm): Make log verbosity configurable [\#397](https://github.com/openebs/cstor-operators/pull/397) ([ianroberts](https://github.com/ianroberts))
+- fix(pool): set canmount filesystem property to off for pool dataset [\#400](https://github.com/openebs/cstor-operators/pull/400) ([mittachaitu](https://github.com/mittachaitu))
+- fix(status): update cstor volume status to offline based on availability of target pods [\#395](https://github.com/openebs/cstor-operators/pull/395) ([saltperfect](https://github.com/saltperfect))
+
 ## [v3.0.0]/2021-09-17
 ===========================
 

@@ -181,7 +181,7 @@
           delay: 15
           retries: 30
 
-        # wait 5 minutes
+        # wait for 5 minutes
         - name: Wait for the application pod to get evicted
           wait_for:
             timeout: 300

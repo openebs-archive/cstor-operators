@@ -181,7 +181,7 @@
           delay: 15
           retries: 30
 
-        # wait 5 minutes
+        # wait for 5 minutes
         - name: Wait for the application pod to get evicted
           wait_for:
             timeout: 300
@@ -259,6 +259,13 @@
             ns: "{{ namespace }}"
             pod_name: "{{ scaled_pod_name.stdout }}"
           when: data_persistence != ''
+
+        - name: Scale down the deployment again to single replica
+          shell: kubectl scale deploy -n {{ namespace }} "{{ app_deploy_name.stdout }}" --replicas=1
+          args:
+            executable: /bin/bash
+          register: scale_deploy
+          failed_when: scale_deploy.rc != 0
 
         - set_fact:
             flag: "Pass"

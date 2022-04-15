@@ -29,7 +29,7 @@ spec:
           resources:
 {{ toYaml .Values.csiNode.resources | indent 12 }}
           args:
-            - "--v=5"
+            - "--v={{ .Values.csiNode.driverRegistrar.logLevel | default .Values.csiNode.logLevel }}"
             - "--csi-address=$(ADDRESS)"
             - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
           lifecycle:

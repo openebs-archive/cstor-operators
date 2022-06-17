@@ -935,10 +935,13 @@ func (c *CVCController) scaleDownVolumeReplicas(cvc *apis.CStorVolumeConfig) (*a
 	// TODO: Make below function as cvObj.IsScaleDownInProgress()
 	if !apis.IsScaleDownInProgress(cvObj) {
 		if cvrObj != nil {
-			err = c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
-				Delete(context.TODO(), cvrObj.Name, metav1.DeleteOptions{})
-			if err != nil {
-				return cvc, errors.Wrapf(err, "failed to delete cstorvolumereplica %s", cvrObj.Name)
+			if len(cvrObj.Name) > 0 { 
+				// TODO: Skip deletion if user deleted it manually (avoid getting stuck)
+				err = c.clientset.CstorV1().CStorVolumeReplicas(openebsNamespace).
+					Delete(context.TODO(), cvrObj.Name, metav1.DeleteOptions{})
+				if err != nil {
+					return cvc, errors.Wrapf(err, "failed to delete cstorvolumereplica %s", cvrObj.Name)
+				}
 			}
 		}
 		desiredPoolNames := cvc.GetDesiredReplicaPoolNames()

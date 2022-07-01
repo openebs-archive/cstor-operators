@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 release:
-  version: "3.1.0"
+  version: "3.2.0"
 
 # If false, openebs NDM sub-chart will not be installed
 openebsNDM:
@@ -24,17 +24,17 @@ cspcOperator:
     image:
       registry:
       repository: openebs/cstor-pool-manager
-      tag: 3.1.0
+      tag: 3.2.0
   cstorPool:
     image:
       registry:
       repository: openebs/cstor-pool
-      tag: 3.1.0
+      tag: 3.2.0
   cstorPoolExporter:
     image:
       registry:
       repository: openebs/m-exporter
-      tag: 3.1.0
+      tag: 3.2.0
   image:
     # Make sure that registry name end with a '/'.
     # For example : quay.io/ is a correct value here and quay.io is incorrect
@@ -42,7 +42,7 @@ cspcOperator:
     repository: openebs/cspc-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 3.1.0
+    tag: 3.2.0
   annotations: {}
   resyncInterval: "30"
   podAnnotations: {}
@@ -60,17 +60,17 @@ cvcOperator:
     image:
       registry:
       repository: openebs/cstor-istgt
-      tag: 3.1.0
+      tag: 3.2.0
   volumeMgmt:
     image:
       registry:
       repository: openebs/cstor-volume-manager
-      tag: 3.1.0
+      tag: 3.2.0
   volumeExporter:
     image:
       registry:
       repository: openebs/m-exporter
-      tag: 3.1.0
+      tag: 3.2.0
   image:
     # Make sure that registry name end with a '/'.
     # For example : quay.io/ is a correct value here and quay.io is incorrect
@@ -78,7 +78,7 @@ cvcOperator:
     repository: openebs/cvc-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 3.1.0
+    tag: 3.2.0
   annotations: {}
   resyncInterval: "30"
   podAnnotations: {}
@@ -164,7 +164,7 @@ cstorCSIPlugin:
     repository: openebs/cstor-csi-driver
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 3.1.0
+    tag: 3.2.0
   remount: "true"
 
 csiNode:
@@ -217,7 +217,7 @@ admissionServer:
     repository: openebs/cstor-webhook
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: 3.1.0
+    tag: 3.2.0
   failurePolicy: "Fail"
   annotations: {}
   podAnnotations: {}

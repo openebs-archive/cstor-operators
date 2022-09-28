@@ -114,10 +114,10 @@ var (
 `
 )
 
-//FileOperatorVar is used for doing File Operations
+// FileOperatorVar is used for doing File Operations
 var FileOperatorVar util.FileOperator
 
-//UnixSockVar is used for communication through Unix Socket
+// UnixSockVar is used for communication through Unix Socket
 var UnixSockVar util.UnixSock
 
 func init() {

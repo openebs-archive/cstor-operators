@@ -34,7 +34,7 @@ const (
 	Operation = "dump"
 )
 
-//PoolDump defines structure for pool 'Status' operation
+// PoolDump defines structure for pool 'Status' operation
 type PoolDump struct {
 	//pool name
 	Pool string

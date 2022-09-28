@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"syscall"
 	"testing"
 	"time"
 
@@ -113,7 +114,7 @@ func TestCreaterProcess(*testing.T) {
 		return
 	}
 	fmt.Println(nil)
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 
 }
 
@@ -122,7 +123,7 @@ func TestGetterProcess(*testing.T) {
 	if os.Getenv("volName") != "cstor-123abc/cba" {
 		return
 	}
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 	fmt.Println("cstor-123abc/cba")
 }
 
@@ -131,7 +132,7 @@ func TestDestroyerProcess(*testing.T) {
 	if os.Getenv("destroyErr") != "nil" {
 		return
 	}
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 	fmt.Println(nil)
 }
 
@@ -277,7 +278,7 @@ func TestStatusHelperProcess(*testing.T) {
 		fmt.Fprint(os.Stdout, mockedStatusOutputNonQuorumDegraded)
 	}
 
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 }
 
 // TestCapacityHelperProcess is a function that is run as a process to get the mocked std output
@@ -293,7 +294,7 @@ cstor-d82bd105-f3a8-11e8-87fd-42010a800087/pvc-1b2a7d4b-f3a9-11e8-87fd-42010a800
 		return
 	}
 	fmt.Fprint(os.Stdout, mockedCapacityOutput)
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 }
 
 // TestSetCachefileProcess mocks zpool set cachefile.
@@ -301,7 +302,7 @@ func TestSetCachefileProcess(*testing.T) {
 	if os.Getenv("SetErr") != "nil" {
 		return
 	}
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 	fmt.Println(nil)
 }
 

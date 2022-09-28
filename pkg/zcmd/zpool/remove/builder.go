@@ -32,7 +32,7 @@ const (
 	Operation = "remove"
 )
 
-//PoolRemove defines structure for pool 'Remove' operation
+// PoolRemove defines structure for pool 'Remove' operation
 type PoolRemove struct {
 	//pool name
 	Pool string

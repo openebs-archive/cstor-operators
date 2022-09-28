@@ -32,7 +32,7 @@ const (
 	Operation = "get"
 )
 
-//VolumeGetProperty defines structure for volume 'Property' operation
+// VolumeGetProperty defines structure for volume 'Property' operation
 type VolumeGetProperty struct {
 	//list of property
 	Proplist []string

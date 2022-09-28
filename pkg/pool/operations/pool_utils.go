@@ -288,11 +288,12 @@ func getVdevFromPath(path string, topology zpool.Topology) (zpool.Vdev, bool) {
 	return vdev, isVdevExist
 }
 
-//cleanUpReplacementMarks should be called only after resilvering is completed.
-//It does the following work
-// 1. RemoveFinalizer on old block device claim exists and delete the old block
-//   device claim.
-// 2. Remove link of old block device in new block device claim
+// cleanUpReplacementMarks should be called only after resilvering is completed.
+// It does the following work
+//  1. RemoveFinalizer on old block device claim exists and delete the old block
+//     device claim.
+//  2. Remove link of old block device in new block device claim
+//
 // oldObj is block device claim of replaced block device object which is
 // detached from pool
 // newObj is block device claim of current block device object which is in use

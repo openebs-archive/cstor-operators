@@ -32,7 +32,7 @@ const (
 	Operation = "destroy"
 )
 
-//VolumeDestroy defines structure for volume 'Destroy' operation
+// VolumeDestroy defines structure for volume 'Destroy' operation
 type VolumeDestroy struct {
 	//Do a dry-run
 	DryRun bool

@@ -200,14 +200,14 @@ gen-api-docs:
 
 manifests:
 	@echo "-----------------------------------------------------"
-	@echo "---   Generating cStor-operatory YAML     ----------"
+	@echo "---   Generating cStor-operator YAML     ----------"
 	@echo "-----------------------------------------------------"
 	./build/generate-manifest.sh
 
 .PHONY: license-check
 license-check:
 	@echo "--> Checking license header..."
-	@licRes=$$(for file in $$(find . -type f -regex '.*\.sh\|.*\.go\|.*Docker.*\|.*\Makefile*' ! -path './vendor/*' ) ; do \
+	@licRes=$$(for file in $$(find . -type f -regex '.*\.sh\|.*\.go\|.*Docker.*\|.*\Makefile*' ) ; do \
                awk 'NR<=5' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
        done); \
        if [ -n "$${licRes}" ]; then \

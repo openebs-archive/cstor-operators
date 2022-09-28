@@ -32,7 +32,7 @@ const (
 	Operation = "set"
 )
 
-//VolumeSetProperty defines structure for volume 'Property' operation
+// VolumeSetProperty defines structure for volume 'Property' operation
 type VolumeSetProperty struct {
 	//list of property
 	Proplist []string

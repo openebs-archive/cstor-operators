@@ -32,7 +32,7 @@ const (
 	Operation = "set"
 )
 
-//PoolSProperty defines structure for pool 'set Property' operation
+// PoolSProperty defines structure for pool 'set Property' operation
 type PoolSProperty struct {
 	//list of property
 	PropList []string

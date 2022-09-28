@@ -88,7 +88,7 @@ func Reader(r io.Reader) (string, error) {
 	return "", errors.Errorf("failed to read data connection closed")
 }
 
-//ServeRequest process the request from the client
+// ServeRequest process the request from the client
 func ServeRequest(conn net.Conn, clientset clientset.Interface) {
 	var err error
 	var readData string

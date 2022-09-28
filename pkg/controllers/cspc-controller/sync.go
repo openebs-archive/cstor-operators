@@ -545,7 +545,6 @@ ToDo: Explore server side apply -- right now server side apply is still worked u
 NOTE : A strategic merge patch happens only to specific fields in a certain native k8s object.
 For example, fields like `tolerations` in a deployment object cannot have strategic merge patch and are always
 a JSON Merge Patch ( RFC 6902 )
-
 */
 func (pc *PoolConfig) patchPoolDeploymentSpec(cspi *cstor.CStorPoolInstance) error {
 	// Get the corresponding deployment for the cspi

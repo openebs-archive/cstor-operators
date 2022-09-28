@@ -615,7 +615,7 @@ func isEmptyReplicaID(cVR *apis.CStorVolumeReplica) bool {
 	return cVR.Spec.ReplicaID == ""
 }
 
-//  getCVRStatus is a wrapper that fetches the status of cstor volume.
+// getCVRStatus is a wrapper that fetches the status of cstor volume.
 func (c *CStorVolumeReplicaController) getCVRStatus(
 	cVR *apis.CStorVolumeReplica,
 ) (string, error) {

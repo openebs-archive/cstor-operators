@@ -32,7 +32,7 @@ const (
 	Operation = "snapshot"
 )
 
-//VolumeSnapshot defines structure for volume 'Snapshot' operation
+// VolumeSnapshot defines structure for volume 'Snapshot' operation
 type VolumeSnapshot struct {
 	//list of property
 	Property []string

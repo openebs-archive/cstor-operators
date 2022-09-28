@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.14.7 as build
+FROM golang:1.19.1 as build
 
 ARG RELEASE_TAG
 ARG BRANCH
@@ -20,8 +20,7 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT=""
 
-ENV GO111MODULE=on \
-  GOOS=${TARGETOS} \
+ENV GOOS=${TARGETOS} \
   GOARCH=${TARGETARCH} \
   GOARM=${TARGETVARIANT} \
   DEBIAN_FRONTEND=noninteractive \

@@ -23,7 +23,7 @@ import (
 	"github.com/openebs/api/v3/pkg/apis/types"
 	deployapi "github.com/openebs/api/v3/pkg/kubernetes/apps"
 	coreapi "github.com/openebs/api/v3/pkg/kubernetes/core"
-	util "github.com/openebs/api/v3/pkg/util"
+	"github.com/openebs/api/v3/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/version"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -324,7 +324,7 @@ func getPoolMgmtEnv(cspi *cstor.CStorPoolInstance) []corev1.EnvVar {
 
 func getPoolLivenessProbe() *corev1.Probe {
 	probe := &corev1.Probe{
-		Handler: corev1.Handler{
+		ProbeHandler: corev1.ProbeHandler{
 			Exec: &corev1.ExecAction{
 				Command: []string{"/bin/sh", "-c", "timeout 120 zfs set io.openebs:livenesstimestamp=\"$(date +%s)\" cstor-$OPENEBS_IO_POOL_NAME"},
 			},
@@ -354,7 +354,7 @@ func getPoolEnv(cspi *cstor.CStorPoolInstance) []corev1.EnvVar {
 
 func getPoolLifeCycle() *corev1.Lifecycle {
 	lc := &corev1.Lifecycle{
-		PostStart: &corev1.Handler{
+		PostStart: &corev1.LifecycleHandler{
 			Exec: &corev1.ExecAction{
 				Command: []string{"/bin/sh", "-c", "sleep 2"},
 			},

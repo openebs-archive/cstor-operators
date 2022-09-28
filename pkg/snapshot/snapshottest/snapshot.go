@@ -32,7 +32,7 @@ func (fs *FakeSnapshotter) CreateSnapshot(ip, volName, snapName string) (*v1prot
 	return &v1proto.VolumeSnapCreateResponse{}, nil
 }
 
-//DestroySnapshot mocks snapshot delete operation
+// DestroySnapshot mocks snapshot delete operation
 func (fs *FakeSnapshotter) DestroySnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapDeleteResponse, error) {
 	if fs.ShouldReturnFakeError {
 		return nil, errors.Errorf("injected fake errors during snapshot delete operation")

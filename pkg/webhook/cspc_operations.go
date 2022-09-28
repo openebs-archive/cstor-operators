@@ -122,10 +122,11 @@ func GetHostNameFromLabelSelector(labels map[string]string, kubeClient kubernete
 
 // getCommonPoolSpecs get the same pool specs from old persisted CSPC and the new CSPC after modification
 // which is not persisted yet. It figures out common pool spec using following ways
-// 1. If node exist in cluster for current node selector then common pool
-//    spec will be figured out using nodeselector.
-// 2. If node doesn't exist in cluster for current node selector then
-//    common pool spec will be figured using data raid groups blockdevices.
+//  1. If node exist in cluster for current node selector then common pool
+//     spec will be figured out using nodeselector.
+//  2. If node doesn't exist in cluster for current node selector then
+//     common pool spec will be figured using data raid groups blockdevices.
+//
 // NOTE: First check is more priority to avoid blockdevice replacement in case of stripe pool
 // TODO: Fix cases where node and blockdevice were replaced at a time
 func getCommonPoolSpecs(cspcNew, cspcOld *cstor.CStorPoolCluster, kubeClient kubernetes.Interface) (*poolspecs, error) {
@@ -391,7 +392,8 @@ func (pOps *PoolOperations) IsBDValid(bd string, bdc *openebsapis.BlockDeviceCla
 
 // GetPredecessorBDIfAny returns a map of predecessor BDs if any in the current CSPC
 // Note: Predecessor BDs in a CSPC are those BD for which a new BD has appeared in the CSPC and
-//       replacement is still in progress
+//
+//	replacement is still in progress
 //
 // For example,
 // (b1,b2) is a group in cspc
@@ -733,13 +735,13 @@ func getIndexedCommonRaidGroups(oldPoolSpec,
 
 // ArePoolSpecChangesValid validates the pool specs on CSPC for raid groups
 // changes(day-2-operations). Steps performed in this function
-// 1. Get common raidgroups with index matching from old and new spec.
-// 2. Iterate over common old and new raid groups and perform following steps:
-//    2.1 Validate raid group changes.
-//        2.1.1: Verify and return error when new block device added or removed from existing
-//               raid groups for other than stripe pool type.
-//    2.2 Validate changes for blockdevice replacement scenarios(openebs/openebs#2846).
-// 3. Validate vertical pool expansions if there are any new raidgroups or blockdevices added.
+//  1. Get common raidgroups with index matching from old and new spec.
+//  2. Iterate over common old and new raid groups and perform following steps:
+//     2.1 Validate raid group changes.
+//     2.1.1: Verify and return error when new block device added or removed from existing
+//     raid groups for other than stripe pool type.
+//     2.2 Validate changes for blockdevice replacement scenarios(openebs/openebs#2846).
+//  3. Validate vertical pool expansions if there are any new raidgroups or blockdevices added.
 func (pOps *PoolOperations) ArePoolSpecChangesValid(oldPoolSpec, newPoolSpec *cstor.PoolSpec) (bool, string) {
 	if oldPoolSpec.PoolConfig.DataRaidGroupType != newPoolSpec.PoolConfig.DataRaidGroupType ||
 		(oldPoolSpec.PoolConfig.WriteCacheGroupType != "" &&

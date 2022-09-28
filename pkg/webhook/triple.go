@@ -60,9 +60,11 @@ type KeyPair struct {
 }
 
 // newPrivateKey returns randomly generated ECDSA private key.
-//func newPrivateKey(curve elliptic.Curve) (*ecdsa.PrivateKey, error) {
-//	return ecdsa.GenerateKey(curve, rand.Reader)
-//}
+//
+//	func newPrivateKey(curve elliptic.Curve) (*ecdsa.PrivateKey, error) {
+//		return ecdsa.GenerateKey(curve, rand.Reader)
+//	}
+//
 // newPrivateKey creates an RSA private key
 func newPrivateKey() (*rsa.PrivateKey, error) {
 	return rsa.GenerateKey(cryptorand.Reader, rsaKeySize)

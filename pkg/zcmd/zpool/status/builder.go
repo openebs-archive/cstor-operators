@@ -32,7 +32,7 @@ const (
 	Operation = "status"
 )
 
-//PoolStatus defines structure for pool 'Status' operation
+// PoolStatus defines structure for pool 'Status' operation
 type PoolStatus struct {
 	//pool name
 	Pool string

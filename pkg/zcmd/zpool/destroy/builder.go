@@ -31,7 +31,7 @@ const (
 	Operation = "destroy"
 )
 
-//PoolDestroy defines structure for pool 'Destroy' operation
+// PoolDestroy defines structure for pool 'Destroy' operation
 type PoolDestroy struct {
 	//pool name
 	Pool string

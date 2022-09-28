@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/openebs/api/v3/pkg/apis/types"
-	policy "k8s.io/api/policy/v1beta1"
+	policy "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -72,7 +72,7 @@ func (c *CVCController) createPDB(poolNames []string, cspcName string) (*policy.
 		},
 	}
 	// Create podDisruptionBudget
-	return c.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(openebsNamespace).
+	return c.kubeclientset.PolicyV1().PodDisruptionBudgets(openebsNamespace).
 		Create(context.TODO(), pdbObj, metav1.CreateOptions{})
 }
 

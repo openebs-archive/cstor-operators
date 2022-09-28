@@ -32,7 +32,7 @@ const (
 	Operation = "receive"
 )
 
-//VolumeSnapshotRecv defines structure for volume 'Snapshot' operation
+// VolumeSnapshotRecv defines structure for volume 'Snapshot' operation
 type VolumeSnapshotRecv struct {
 	//name of snapshot
 	Snapshot string

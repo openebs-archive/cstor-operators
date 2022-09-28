@@ -180,7 +180,8 @@ func validatePoolListChanges(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) erro
 // validateReplicaScaling returns error if user updated pool list when scaling is
 // already in progress.
 // Note: User can perform scaleup of multiple replicas by adding multiple pool
-//       names at time but not by updating CVC pool names with multiple edits.
+//
+//	names at time but not by updating CVC pool names with multiple edits.
 func validateReplicaScaling(cvcOldObj, cvcNewObj *cstor.CStorVolumeConfig) error {
 	if isScalingInProgress(cvcOldObj) {
 		// if old and new CVC has same count of pools then return true else

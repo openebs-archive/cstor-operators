@@ -33,7 +33,7 @@ import (
 	"k8s.io/klog"
 )
 
-//EventReason is used as part of the Event reason when a resource goes through different phases
+// EventReason is used as part of the Event reason when a resource goes through different phases
 type EventReason string
 
 const (

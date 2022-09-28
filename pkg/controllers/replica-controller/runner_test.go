@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"syscall"
 	"testing"
 	"time"
 
@@ -249,14 +250,14 @@ func (r TestRunner) RunCommandWithLog(common string, args ...string) ([]byte, er
 
 // TestGetterProcess mocks zpool get.
 func TestGetterProcess(*testing.T) {
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 	fmt.Println("cstor-123abc")
 }
 
 // TestCreaterProcess mocks zpool create.
 func TestCreaterProcess(*testing.T) {
 	fmt.Println(nil)
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 
 }
 
@@ -265,6 +266,6 @@ func TestDestroyerProcess(*testing.T) {
 	if os.Getenv("destroyErr") != "nil" {
 		return
 	}
-	defer os.Exit(0)
+	defer syscall.Exit(0)
 	fmt.Println(nil)
 }

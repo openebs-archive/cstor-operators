@@ -27,8 +27,8 @@ import (
 	"k8s.io/klog"
 )
 
-//CVReplicationDetails enables to update RF,CF and
-//known replicas into etcd
+// CVReplicationDetails enables to update RF,CF and
+// known replicas into etcd
 type CVReplicationDetails struct {
 	VolumeName        string `json:"volumeName"`
 	ReplicationFactor int    `json:"replicationFactor"`

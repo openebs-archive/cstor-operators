@@ -40,7 +40,6 @@ Before starting the test suite, it should be specified whether it is
 a 3 node or 1 node test.
 
 Test suite only supports either a 1 node or 3 node test.
-
 */
 func TestSource(t *testing.T) {
 	RegisterFailHandler(Fail)

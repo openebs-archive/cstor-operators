@@ -32,7 +32,7 @@ const (
 	Operation = "rename"
 )
 
-//VolumeRename defines structure for volume 'Rename' operation
+// VolumeRename defines structure for volume 'Rename' operation
 type VolumeRename struct {
 	//createall the non-existing parent datasets
 	CreateParent bool

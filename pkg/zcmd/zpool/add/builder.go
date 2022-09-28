@@ -32,7 +32,7 @@ const (
 	Operation = "add"
 )
 
-//PoolExpansion defines structure for pool 'Expansion' operation
+// PoolExpansion defines structure for pool 'Expansion' operation
 type PoolExpansion struct {
 	// list of vdev to add
 	VdevList []string

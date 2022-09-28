@@ -32,7 +32,7 @@ const (
 	Operation = "create"
 )
 
-//PoolCreate defines structure for pool 'Create' operation
+// PoolCreate defines structure for pool 'Create' operation
 type PoolCreate struct {
 	// property list
 	Property []string

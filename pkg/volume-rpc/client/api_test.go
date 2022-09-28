@@ -23,7 +23,7 @@ import (
 
 type TestUnixSock struct{}
 
-//SendCommand for the dummy unix sock for the test program,
+// SendCommand for the dummy unix sock for the test program,
 func (r TestUnixSock) SendCommand(cmd string) ([]string, error) {
 	ret := []string{"OK " + cmd}
 	return ret, nil

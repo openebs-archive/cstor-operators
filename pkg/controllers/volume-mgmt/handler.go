@@ -546,13 +546,14 @@ func (c *CStorVolumeController) triggerScaleUpProcess(
 
 // triggerScaleDownProcess returns error in case of any error during the scaledown
 // process else it will return cstorvolume object. Following steps are executed
-// 1. Verify whether all the replicas are healthy other than removing replica.
-// 2. If step1 is passed then update the istgt.conf file with latest
-//    information.
-// 3. Update cStorVolume CR(replicationFactor, ConsistencyFactor and known
-//    replica list.
-// 4. Trigger istgtcontrol command (istgtcontrol drf <vol_name> <value>
-//    <remaining_replica_list>
+//  1. Verify whether all the replicas are healthy other than removing replica.
+//  2. If step1 is passed then update the istgt.conf file with latest
+//     information.
+//  3. Update cStorVolume CR(replicationFactor, ConsistencyFactor and known
+//     replica list.
+//  4. Trigger istgtcontrol command (istgtcontrol drf <vol_name> <value>
+//     <remaining_replica_list>
+//
 // In triggerScaleDownProcess cStorVolumeAPI is used to access fields in CV
 // object and cStorvolume is used to access methods of cStorVolume
 func (c *CStorVolumeController) triggerScaleDownProcess(
@@ -776,7 +777,7 @@ func (c *CStorVolumeController) markCVStatusToOffline() {
 			}
 			cv.Status.Phase = apis.CVStatusOffline
 			cv.Status.ReplicaStatuses = nil
-			
+
 			// updating cv status to offline
 			_, err = c.clientset.CstorV1().CStorVolumes(cv.Namespace).Update(context.TODO(), &cv, metav1.UpdateOptions{})
 			if err != nil {

@@ -59,7 +59,7 @@ provide cStor volumes for stateful workloads.
 
 ### Minimum Supported Versions
 
-K8S : 1.18+
+K8S : 1.21+
 
 ## Usage
 

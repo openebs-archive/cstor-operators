@@ -31,7 +31,7 @@ const (
 	Operation = "export"
 )
 
-//PoolExport defines structure for pool 'Export' operation
+// PoolExport defines structure for pool 'Export' operation
 type PoolExport struct {
 	// all pools
 	AllPool bool

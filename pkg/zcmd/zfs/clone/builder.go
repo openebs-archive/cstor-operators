@@ -32,7 +32,7 @@ const (
 	Operation = "clone"
 )
 
-//VolumeClone defines structure for volume 'Clone' operation
+// VolumeClone defines structure for volume 'Clone' operation
 type VolumeClone struct {
 	//snapshot from where clone needs to be created
 	Snapshot string

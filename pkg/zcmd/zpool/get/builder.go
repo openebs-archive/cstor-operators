@@ -32,7 +32,7 @@ const (
 	Operation = "get"
 )
 
-//PoolGProperty defines structure for pool 'get Property' operation
+// PoolGProperty defines structure for pool 'get Property' operation
 type PoolGProperty struct {
 	//list of property
 	PropList []string

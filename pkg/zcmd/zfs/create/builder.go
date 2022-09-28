@@ -32,7 +32,7 @@ const (
 	Operation = "create"
 )
 
-//VolumeCreate defines structure for volume 'Create' operation
+// VolumeCreate defines structure for volume 'Create' operation
 type VolumeCreate struct {
 	//name of dataset
 	Name string

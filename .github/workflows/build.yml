@@ -40,7 +40,7 @@ jobs:
           reporter: github-pr-review
           path: '.'
           pattern: '*.sh'
-          exclude: './.git/*
+          exclude: './.git/*'
 
   unit-tests:
     if: ${{ (github.event.ref_type != 'tag') }}

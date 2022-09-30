@@ -32,7 +32,7 @@ const (
 	Operation = "attach"
 )
 
-//PoolAttach defines structure for pool 'Attach' operation
+// PoolAttach defines structure for pool 'Attach' operation
 type PoolAttach struct {
 	//list of property
 	Property []string

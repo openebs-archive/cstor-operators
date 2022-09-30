@@ -32,7 +32,7 @@ const (
 	Operation = "clear"
 )
 
-//PoolClear defines structure for pool 'Clear' operation
+// PoolClear defines structure for pool 'Clear' operation
 type PoolClear struct {
 	// pool name
 	Pool string

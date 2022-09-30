@@ -31,7 +31,7 @@ const (
 	Operation = "online"
 )
 
-//PoolOnline defines structure for pool 'Online' operation
+// PoolOnline defines structure for pool 'Online' operation
 type PoolOnline struct {
 	//pool name
 	Pool string

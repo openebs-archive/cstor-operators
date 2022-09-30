@@ -28,13 +28,13 @@ import (
 	"github.com/openebs/api/v3/pkg/util"
 	"github.com/openebs/cstor-operators/pkg/util/hash"
 	"github.com/openebs/cstor-operators/pkg/version"
-	errors "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	"k8s.io/klog"
 
 	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	policy "k8s.io/api/policy/v1beta1"
+	policy "k8s.io/api/policy/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -280,13 +280,13 @@ func (c *CVCController) updateCVCObj(
 }
 
 // createVolumeOperation trigers the all required resource create operation.
-// 1. Create volume service.
-// 2. Create cstorvolume resource with required iscsi information.
-// 3. Create target deployment.
-// 4. Create cstorvolumeconfig resource.
-// 5. Create PDB provisioning volume is HA volume.
-// 6. Update the cstorvolumeconfig with claimRef info, PDB label(only for HA
-//    volumes) and bound with cstorvolume.
+//  1. Create volume service.
+//  2. Create cstorvolume resource with required iscsi information.
+//  3. Create target deployment.
+//  4. Create cstorvolumeconfig resource.
+//  5. Create PDB provisioning volume is HA volume.
+//  6. Update the cstorvolumeconfig with claimRef info, PDB label(only for HA
+//     volumes) and bound with cstorvolume.
 func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeConfig) (*apis.CStorVolumeConfig, error) {
 
 	policyName := cvc.Annotations[string(apitypes.VolumePolicyKey)]
@@ -336,6 +336,7 @@ func (c *CVCController) createVolumeOperation(cvc *apis.CStorVolumeConfig) (*api
 			return nil, errors.Wrapf(err,
 				"failed to create PDB for volume: %s", cvc.Name)
 		}
+
 		addPDBLabelOnCVC(cvc, pdbObj)
 	}
 
@@ -799,8 +800,9 @@ func (c *CVCController) deletePDBIfNotInUse(cvc *apis.CStorVolumeConfig) error {
 			"failed to list volumes refering to PDB %s", pdbName)
 	}
 	if len(cvcList.Items) == 1 {
-		err = c.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(openebsNamespace).
+		err = c.kubeclientset.PolicyV1().PodDisruptionBudgets(openebsNamespace).
 			Delete(context.TODO(), pdbName, metav1.DeleteOptions{})
+
 		if k8serror.IsNotFound(err) {
 			klog.Infof("pdb %s of volume %s was already deleted", pdbName, cvc.Name)
 			return nil

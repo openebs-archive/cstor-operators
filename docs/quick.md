@@ -5,7 +5,7 @@
 Before setting up cStor operators make sure your Kubernetes cluster
 meets the following prerequisites:
 
-1. Kubernetes version 1.17 or higher
+1. Kubernetes version 1.21 or higher
 2. iSCSI initiator utils installed on all the worker nodes (If you are using a Rancher-based cluster, perform the steps mentioned [here](troubleshooting/rancher_prerequisite.md)).
 
 

@@ -757,14 +757,14 @@ func GetAndUpdateReplicaID(cvr *cstor.CStorVolumeReplica) error {
 
 // GetAndUpdateSnapshotInfo get the snapshot list from ZFS and updates in CVR status.
 // Execution happens in following steps:
-// 1. Get snapshot list from ZFS
-// 2. Checks whether above snapshots exist on CVR under Status.Snapshots:
-//    2.1 If snapshot doesn't exist then get the info of snapshot from ZFS and update
-//        the details in CVR.Status.Snapshots
-// 3. Verify and delete the snapshot details on CVR if it is deleted from ZFS
-// 4. Update the pending list of snapshots by verifying with snapshot list obtained from step1
-// 5. If replica is under rebuilding get the snapshot list from peer CVR and update them
-//    under pending snapshot list
+//  1. Get snapshot list from ZFS
+//  2. Checks whether above snapshots exist on CVR under Status.Snapshots:
+//     2.1 If snapshot doesn't exist then get the info of snapshot from ZFS and update
+//     the details in CVR.Status.Snapshots
+//  3. Verify and delete the snapshot details on CVR if it is deleted from ZFS
+//  4. Update the pending list of snapshots by verifying with snapshot list obtained from step1
+//  5. If replica is under rebuilding get the snapshot list from peer CVR and update them
+//     under pending snapshot list
 func GetAndUpdateSnapshotInfo(
 	clientset clientset.Interface, cvr *cstor.CStorVolumeReplica) error {
 	volName := cvr.GetLabels()[types.PersistentVolumeLabelKey]

@@ -25,7 +25,6 @@ import (
 	openebsScheme "github.com/openebs/api/v3/pkg/client/clientset/versioned/scheme"
 	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"
 	listers "github.com/openebs/api/v3/pkg/client/listers/cstor/v1"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"

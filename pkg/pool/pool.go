@@ -38,7 +38,7 @@ const (
 	ZpoolStatusUnavail     = "UNAVAIL"
 )
 
-//PoolAddEventHandled is a flag representing if the pool has been initially imported or created
+// PoolAddEventHandled is a flag representing if the pool has been initially imported or created
 var PoolAddEventHandled = false
 
 // PoolNamePrefix is a typed string to store pool name prefix

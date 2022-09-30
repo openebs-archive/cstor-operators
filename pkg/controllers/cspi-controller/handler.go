@@ -324,11 +324,13 @@ func (c *CStorPoolInstanceController) updateStatus(cspi *cstor.CStorPoolInstance
 }
 
 // updateROMode sets/unsets the pool readonly mode property. It does the following changes
-// 1. If pool used space reached to roThresholdLimit then pool will be set to readonly mode
-// 2. If pool was in readonly mode if roThresholdLimit/pool expansion was happened then it
-//    unsets the ReadOnly Mode.
+//  1. If pool used space reached to roThresholdLimit then pool will be set to readonly mode
+//  2. If pool was in readonly mode if roThresholdLimit/pool expansion was happened then it
+//     unsets the ReadOnly Mode.
+//
 // NOTE: This function must be invoked after having the updated
-//       cspiStatus information from zfs/zpool
+//
+//	cspiStatus information from zfs/zpool
 func (c *CStorPoolInstanceController) updateROMode(
 	cspiStatus *cstor.CStorPoolInstanceStatus, cspi cstor.CStorPoolInstance) {
 	roThresholdLimit := 85

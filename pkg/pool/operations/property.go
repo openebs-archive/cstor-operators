@@ -45,7 +45,8 @@ var (
 // SetPoolFSPropertiesIfNot will set the given properties for pool dataset using zfs cmd utility
 // only if doesn't match to existing value
 // NOTE: Advantage of using SetPoolFSPropertiesIfNot will avoids calls to cstor-pool container
-//       since executing zpool/zfs commands(most of them) will read from disk
+//
+//	since executing zpool/zfs commands(most of them) will read from disk
 func (oc *OperationsConfig) SetPoolFSPropertiesIfNot(datasetName string, desiredFSProperties map[string]string) error {
 	// unsetPropValues will contain zvol propeties and their values only if they
 	// doesn't exist in-memory (Or) existing value doesn't match to desired one

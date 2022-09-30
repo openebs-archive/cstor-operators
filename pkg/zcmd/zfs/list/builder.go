@@ -32,7 +32,7 @@ const (
 	Operation = "list"
 )
 
-//VolumeList defines structure for volume 'Stats' operation
+// VolumeList defines structure for volume 'Stats' operation
 type VolumeList struct {
 	//list of property
 	PropList []string

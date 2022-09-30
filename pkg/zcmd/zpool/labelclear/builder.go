@@ -31,7 +31,7 @@ const (
 	Operation = "labelclear"
 )
 
-//PoolLabelClear defines structure for pool 'Clear' operation
+// PoolLabelClear defines structure for pool 'Clear' operation
 type PoolLabelClear struct {
 	// vdev
 	Vdev string

@@ -32,7 +32,7 @@ const (
 	Operation = "replace"
 )
 
-//PoolDiskReplace defines structure for pool 'Disk Replace' operation
+// PoolDiskReplace defines structure for pool 'Disk Replace' operation
 type PoolDiskReplace struct {
 	// Vdev to be replaced
 	OldVdev string

@@ -31,7 +31,7 @@ const (
 	Operation = "offline"
 )
 
-//PoolOffline defines structure for pool 'Offline' operation
+// PoolOffline defines structure for pool 'Offline' operation
 type PoolOffline struct {
 	// force fault
 	ForceOffline bool

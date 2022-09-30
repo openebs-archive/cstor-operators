@@ -32,7 +32,7 @@ const (
 	Operation = "import"
 )
 
-//PoolImport defines structure for pool 'Import' operation
+// PoolImport defines structure for pool 'Import' operation
 type PoolImport struct {
 	//cachefile to do import
 	Cachefile string

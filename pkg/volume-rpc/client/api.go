@@ -40,12 +40,12 @@ const (
 	ProtocolVersion = 1
 )
 
-//CommandStatus is the response from istgt for control commands
+// CommandStatus is the response from istgt for control commands
 type CommandStatus struct {
 	Response string `json:"response"`
 }
 
-//APIUnixSockVar is unix socker variable
+// APIUnixSockVar is unix socker variable
 var APIUnixSockVar util.UnixSock
 
 // Server represents the gRPC server

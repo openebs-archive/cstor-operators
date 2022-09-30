@@ -32,7 +32,7 @@ const (
 	Operation = "rollback"
 )
 
-//VolumeRollback defines structure for volume 'Rollback' operation
+// VolumeRollback defines structure for volume 'Rollback' operation
 type VolumeRollback struct {
 	//destroy any more recent snapshots and bookmarks, as well as any clones of those snapshots
 	Destroy bool

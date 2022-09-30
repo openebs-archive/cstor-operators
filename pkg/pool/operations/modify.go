@@ -38,7 +38,7 @@ const (
 	DeviceTypeData = "data"
 )
 
-//TODO: Get better naming conventions
+// TODO: Get better naming conventions
 type raidConfiguration struct {
 	RaidGroupType string
 	RaidGroups    []cstor.RaidGroup

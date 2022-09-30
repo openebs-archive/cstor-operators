@@ -32,7 +32,7 @@ const (
 	Operation = "detach"
 )
 
-//PoolDetach defines structure for pool 'Detach' operation
+// PoolDetach defines structure for pool 'Detach' operation
 type PoolDetach struct {
 	//pool name
 	Pool string

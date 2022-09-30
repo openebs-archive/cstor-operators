@@ -157,8 +157,9 @@ func IsDestroyEvent(bkp *cstorapis.CStorBackup) bool {
 // CStorCompletedBackups stores the information of last two completed backups
 // For example, if schedule `b` has last two backups b-0 and b-1 (b-0 created first and after that b-1 was created) having snapshots
 // b-0 and b-1 respectively then CStorCompletedBackups for the schedule `b` will have following information :
-//	CStorCompletedBackups.Spec.PrevSnapName =  b-1
-//  CStorCompletedBackups.Spec.SnapName = b-0
+//
+//		CStorCompletedBackups.Spec.PrevSnapName =  b-1
+//	 CStorCompletedBackups.Spec.SnapName = b-0
 func (c *BackupController) updateCStorCompletedBackup(bkp *cstorapis.CStorBackup) error {
 	lastbkpname := bkp.Spec.BackupName + "-" + bkp.Spec.VolumeName
 

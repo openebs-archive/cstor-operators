@@ -32,7 +32,7 @@ const (
 	Operation = "send"
 )
 
-//VolumeSnapshotSend defines structure for volume 'Snapshot' operation
+// VolumeSnapshotSend defines structure for volume 'Snapshot' operation
 type VolumeSnapshotSend struct {
 	//name of snapshot
 	Snapshot string

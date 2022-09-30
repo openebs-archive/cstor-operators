@@ -32,7 +32,7 @@ const (
 	ProtocolVersion      = 1
 )
 
-//CommandStatus is the response from istgt for control commands
+// CommandStatus is the response from istgt for control commands
 type CommandStatus struct {
 	Response string `json:"response"`
 }
@@ -46,7 +46,7 @@ type Snapshotter interface {
 // SnapClient is used to perform real snap create and snap delete commands
 type SnapClient struct{}
 
-//CreateSnapshot creates snapshot by executing gRPC call
+// CreateSnapshot creates snapshot by executing gRPC call
 func (s *SnapClient) CreateSnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapCreateResponse, error) {
 	var conn *grpc.ClientConn
 	conn, err := grpc.Dial(net.JoinHostPort(ip, fmt.Sprintf("%d", VolumeGrpcListenPort)), grpc.WithInsecure())
@@ -78,7 +78,7 @@ func (s *SnapClient) CreateSnapshot(ip, volName, snapName string) (*v1proto.Volu
 	return response, nil
 }
 
-//DestroySnapshot destroys snapshots by executing gRPC calls
+// DestroySnapshot destroys snapshots by executing gRPC calls
 func (s *SnapClient) DestroySnapshot(ip, volName, snapName string) (*v1proto.VolumeSnapDeleteResponse, error) {
 	var conn *grpc.ClientConn
 	conn, err := grpc.Dial(net.JoinHostPort(ip, fmt.Sprintf("%d", VolumeGrpcListenPort)), grpc.WithInsecure())

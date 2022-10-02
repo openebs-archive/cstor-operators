@@ -31,7 +31,7 @@ cat deploy/yamls/rbac.yaml >> deploy/cstor-operator.yaml
 # Add cStor related CRDs to the Operator yaml
 cat deploy/crds/all_cstor_crds.yaml >> deploy/cstor-operator.yaml
 
-## Fetch NDM Operator from https://github.com/openebs/node-disk-manager
+## Fetch NDM Operator from https://github.com/openebs/charts
 wget https://raw.githubusercontent.com/openebs/charts/gh-pages/yamls/ndm-operator.yaml -O deploy/yamls/ndm-operator.yaml
 
 ## Update the SPARSE_FILE_COUNT env value in ndm-operator.yaml

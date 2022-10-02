@@ -421,6 +421,17 @@ data:
         state: true
         include: ""
         exclude: "/dev/loop,/dev/fd0,/dev/sr0,/dev/ram,/dev/md,/dev/dm-,/dev/rbd,/dev/zd"
+    # metconfig can be used to decorate the block device with different types of labels
+    # that are available on the node or come in a device properties.
+    # node labels - the node where bd is discovered. A whitlisted label prefixes
+    # attribute labels - a property of the BD can be added as a ndm label as ndm.io/<property>=<property-value>
+    metaconfigs:
+      - key: node-labels
+        name: node labels
+        pattern: ""
+      - key: device-labels
+        name: device labels
+        type: ""
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -466,6 +477,9 @@ spec:
           - -v=4
         # The feature-gate is used to enable the new UUID algorithm.
           - --feature-gates="GPTBasedUUID"
+        # Use partition table UUID instead of create single partition to get
+        # partition UUID. Require `GPTBasedUUID` to be enabled with.
+        # - --feature-gates="PartitionTableUUID"
         # Detect changes to device size, filesystem and mount-points without restart.
         # - --feature-gates="ChangeDetection"
         # The feature gate is used to start the gRPC API service. The gRPC server
@@ -597,7 +611,7 @@ spec:
             - name: OPERATOR_NAME
               value: "node-disk-operator"
             - name: CLEANUP_JOB_IMAGE
-              value: "openebs/linux-utils:3.0.0"
+              value: "openebs/linux-utils:3.4.0"
             # OPENEBS_IO_IMAGE_PULL_SECRETS environment variable is used to pass the image pull secrets
             # to the cleanup pod launched by NDM operator
             #- name: OPENEBS_IO_IMAGE_PULL_SECRETS
@@ -675,7 +689,7 @@ metadata:
   name: openebs-ndm-cluster-exporter-service
   namespace: openebs
   labels:
-    name: openebs-ndm-clsuter-exporter-service
+    name: openebs-ndm-cluster-exporter-service
     openebs.io/component-name: ndm-cluster-exporter
     app: openebs-ndm-exporter
 spec:

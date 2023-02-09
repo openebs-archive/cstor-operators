@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.0
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: cstorvolumereplicas.cstor.openebs.io
 spec:
@@ -127,7 +127,7 @@ spec:
                   properties:
                     logicalReferenced:
                       description: LogicalReferenced describes the amount of space
-                        that is "logically" accessible by this snapshot. This logical
+                        that is "logically" accessable by this snapshot. This logical
                         space ignores the effect of the compression and copies properties,
                         giving a quantity closer to the amount of data that application
                         see. It also includes space consumed by metadata.
@@ -150,7 +150,7 @@ spec:
                   properties:
                     logicalReferenced:
                       description: LogicalReferenced describes the amount of space
-                        that is "logically" accessible by this snapshot. This logical
+                        that is "logically" accessable by this snapshot. This logical
                         space ignores the effect of the compression and copies properties,
                         giving a quantity closer to the amount of data that application
                         see. It also includes space consumed by metadata.
@@ -208,9 +208,3 @@ spec:
     served: true
     storage: true
     subresources: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

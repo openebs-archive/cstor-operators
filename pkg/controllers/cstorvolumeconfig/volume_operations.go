@@ -608,8 +608,7 @@ func sanitizePoolList(list *apis.CStorPoolInstanceList) *apis.CStorPoolInstanceL
 	res := &apis.CStorPoolInstanceList{}
 
 	for _, pool := range list.Items {
-		if pool.Status.Phase == apis.CStorPoolStatusOffline ||
-			pool.Status.ReadOnly == true {
+		if pool.Status.Phase == apis.CStorPoolStatusOffline || pool.Status.ReadOnly {
 			continue
 		}
 

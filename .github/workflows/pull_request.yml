@@ -212,15 +212,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.25.0]
+        kubernetes: [v1.25.4]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.7.0
+        uses: manusa/actions-setup-minikube@v2.7.2
         with:
-          minikube version: 'v1.26.1'
+          minikube version: 'v1.28.0'
           kubernetes version: ${{ matrix.kubernetes }}
           github token: ${{ secrets.GITHUB_TOKEN }}
 

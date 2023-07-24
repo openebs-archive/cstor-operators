@@ -391,6 +391,10 @@ func (c *CVCController) distributeCVRs(
 		usablePoolList = getUsablePoolList(c.clientset, volume.Name, poolList)
 	}
 
+	// sanitizePoolList to remove pool that has status.Phase as offline
+	// or Status.ReadOnly as true from usablePoolList
+	usablePoolList = sanitizePoolList(usablePoolList)
+
 	// randomizePoolList to get the pool list in random order
 	usablePoolList = randomizePoolList(usablePoolList)
 
@@ -595,6 +599,22 @@ func prioritizedPoolList(nodeName string, list *apis.CStorPoolInstanceList) *api
 		break
 	}
 	return list
+}
+
+// sanitizePoolList returns santized pool list
+// 1. It removes the pool from the list if its phase is offline.
+// 2. It removes the pool from the list if its readonly.
+func sanitizePoolList(list *apis.CStorPoolInstanceList) *apis.CStorPoolInstanceList {
+	res := &apis.CStorPoolInstanceList{}
+
+	for _, pool := range list.Items {
+		if pool.Status.Phase == apis.CStorPoolStatusOffline || pool.Status.ReadOnly {
+			continue
+		}
+
+		res.Items = append(res.Items, pool)
+	}
+	return res
 }
 
 // randomizePoolList returns randomized pool list

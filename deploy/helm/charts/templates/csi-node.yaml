@@ -20,7 +20,7 @@ spec:
         {{- end }}
     spec:
       priorityClassName: {{ template "cstor.csiNode.priorityClassName" . }}
-      serviceAccount: {{ .Values.serviceAccount.csiNode.name }}
+      serviceAccountName: {{ .Values.serviceAccount.csiNode.name }}
       hostNetwork: true
       containers:
         - name: {{ .Values.csiNode.driverRegistrar.name }}

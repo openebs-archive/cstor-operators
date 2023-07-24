@@ -22,7 +22,7 @@ spec:
         {{- end }}
     spec:
       priorityClassName: {{ template "cstor.csiController.priorityClassName" . }}
-      serviceAccount: {{ .Values.serviceAccount.csiController.name }}
+      serviceAccountName: {{ .Values.serviceAccount.csiController.name }}
       containers:
         - name: {{ .Values.csiController.resizer.name }}
           image: "{{ .Values.csiController.resizer.image.registry }}{{ .Values.csiController.resizer.image.repository }}:{{ .Values.csiController.resizer.image.tag }}"

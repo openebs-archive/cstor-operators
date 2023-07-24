@@ -218,11 +218,14 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.7.2
+        uses: medyagh/setup-minikube@latest
         with:
-          minikube version: 'v1.28.0'
-          kubernetes version: ${{ matrix.kubernetes }}
-          github token: ${{ secrets.GITHUB_TOKEN }}
+          cache: false
+          minikube-version: 1.31.1
+          driver: none
+          kubernetes-version: ${{ matrix.kubernetes }}
+          cni: calico
+          start-args: '--install-addons=false'
 
       - name: Set tag
         run: |

@@ -441,7 +441,7 @@ metadata:
   labels:
     name: openebs-ndm
     openebs.io/component-name: ndm
-    openebs.io/version: dev
+    openebs.io/version: 3.4.0
 spec:
   selector:
     matchLabels:
@@ -454,7 +454,7 @@ spec:
       labels:
         name: openebs-ndm
         openebs.io/component-name: ndm
-        openebs.io/version: dev
+        openebs.io/version: 3.4.0
     spec:
       # By default the node-disk-manager will be run on all kubernetes nodes
       # If you would like to limit this to only some nodes, say the nodes
@@ -465,14 +465,14 @@ spec:
       # kubectl label node <node-name> "openebs.io/nodegroup"="storage-node"
       #nodeSelector:
       #  "openebs.io/nodegroup": "storage-node"
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       hostNetwork: true
       # host PID is used to check status of iSCSI Service when the NDM
       # API service is enabled
       #hostPID: true
       containers:
       - name: node-disk-manager
-        image: openebs/node-disk-manager:ci
+        image: openebs/node-disk-manager:2.1.0
         args:
           - -v=4
         # The feature-gate is used to enable the new UUID algorithm.
@@ -529,7 +529,7 @@ spec:
           value: "10737418240"
         # Specify the number of sparse files to be created
         - name: SPARSE_FILE_COUNT
-          value: "1"
+          value: "0"
         livenessProbe:
           exec:
             command:
@@ -573,7 +573,7 @@ metadata:
   labels:
     name: openebs-ndm-operator
     openebs.io/component-name: ndm-operator
-    openebs.io/version: dev
+    openebs.io/version: 3.4.0
 spec:
   selector:
     matchLabels:
@@ -587,12 +587,12 @@ spec:
       labels:
         name: openebs-ndm-operator
         openebs.io/component-name: ndm-operator
-        openebs.io/version: dev
+        openebs.io/version: 3.4.0
     spec:
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
         - name: node-disk-operator
-          image: openebs/node-disk-operator:ci
+          image: openebs/node-disk-operator:2.1.0
           imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
@@ -640,7 +640,7 @@ metadata:
   labels:
     name: openebs-ndm-cluster-exporter
     openebs.io/component-name: ndm-cluster-exporter
-    openebs.io/version: dev
+    openebs.io/version: 3.4.0
 spec:
   replicas: 1
   strategy:
@@ -654,12 +654,12 @@ spec:
       labels:
         name: openebs-ndm-cluster-exporter
         openebs.io/component-name: ndm-cluster-exporter
-        openebs.io/version: dev
+        openebs.io/version: 3.4.0
     spec:
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
         - name: ndm-cluster-exporter
-          image: openebs/node-disk-exporter:ci
+          image: openebs/node-disk-exporter:2.1.0
           command:
             - /usr/local/bin/exporter
           args:
@@ -712,7 +712,7 @@ metadata:
   labels:
     name: openebs-ndm-node-exporter
     openebs.io/component-name: ndm-node-exporter
-    openebs.io/version: dev
+    openebs.io/version: 3.4.0
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -725,12 +725,12 @@ spec:
       labels:
         name: openebs-ndm-node-exporter
         openebs.io/component-name: ndm-node-exporter
-        openebs.io/version: dev
+        openebs.io/version: 3.4.0
     spec:
-      serviceAccountName: openebs-cstor-operator
+      serviceAccountName: openebs-maya-operator
       containers:
         - name: node-disk-exporter
-          image: openebs/node-disk-exporter:ci
+          image: openebs/node-disk-exporter:2.1.0
           command:
             - /usr/local/bin/exporter
           args:

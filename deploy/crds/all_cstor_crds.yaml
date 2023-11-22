@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorbackups.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -91,8 +90,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorcompletedbackups.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -166,8 +164,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorpoolclusters.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -223,6 +220,27 @@ spec:
                   cstor-pool pod side car containers.
                 nullable: true
                 properties:
+                  claims:
+                    description: "Claims lists the names of resources, defined in
+                      spec.resourceClaims, that are used by this container. \n This
+                      is an alpha field and requires enabling the DynamicResourceAllocation
+                      feature gate. \n This field is immutable. It can only be set
+                      for containers."
+                    items:
+                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                      properties:
+                        name:
+                          description: Name must match the name of one entry in pod.spec.resourceClaims
+                            of the Pod where this field is used. It makes that resource
+                            available inside a container.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   limits:
                     additionalProperties:
                       anyOf:
@@ -243,7 +261,8 @@ spec:
                     description: 'Requests describes the minimum amount of compute
                       resources required. If Requests is omitted for a container,
                       it defaults to Limits if that is explicitly specified, otherwise
-                      to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      to an implementation-defined value. Requests cannot exceed Limits.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                     type: object
                 type: object
               pools:
@@ -300,6 +319,29 @@ spec:
                             by the cstor-pool pod side car containers.
                           nullable: true
                           properties:
+                            claims:
+                              description: "Claims lists the names of resources, defined
+                                in spec.resourceClaims, that are used by this container.
+                                \n This is an alpha field and requires enabling the
+                                DynamicResourceAllocation feature gate. \n This field
+                                is immutable. It can only be set for containers."
+                              items:
+                                description: ResourceClaim references one entry in
+                                  PodSpec.ResourceClaims.
+                                properties:
+                                  name:
+                                    description: Name must match the name of one entry
+                                      in pod.spec.resourceClaims of the Pod where
+                                      this field is used. It makes that resource available
+                                      inside a container.
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              type: array
+                              x-kubernetes-list-map-keys:
+                              - name
+                              x-kubernetes-list-type: map
                             limits:
                               additionalProperties:
                                 anyOf:
@@ -321,7 +363,7 @@ spec:
                                 of compute resources required. If Requests is omitted
                                 for a container, it defaults to Limits if that is
                                 explicitly specified, otherwise to an implementation-defined
-                                value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                                value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                               type: object
                           type: object
                         compression:
@@ -343,6 +385,29 @@ spec:
                             by the cstor-pool container.
                           nullable: true
                           properties:
+                            claims:
+                              description: "Claims lists the names of resources, defined
+                                in spec.resourceClaims, that are used by this container.
+                                \n This is an alpha field and requires enabling the
+                                DynamicResourceAllocation feature gate. \n This field
+                                is immutable. It can only be set for containers."
+                              items:
+                                description: ResourceClaim references one entry in
+                                  PodSpec.ResourceClaims.
+                                properties:
+                                  name:
+                                    description: Name must match the name of one entry
+                                      in pod.spec.resourceClaims of the Pod where
+                                      this field is used. It makes that resource available
+                                      inside a container.
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              type: array
+                              x-kubernetes-list-map-keys:
+                              - name
+                              x-kubernetes-list-type: map
                             limits:
                               additionalProperties:
                                 anyOf:
@@ -364,7 +429,7 @@ spec:
                                 of compute resources required. If Requests is omitted
                                 for a container, it defaults to Limits if that is
                                 explicitly specified, otherwise to an implementation-defined
-                                value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                                value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                               type: object
                           type: object
                         roThresholdLimit:
@@ -480,6 +545,27 @@ spec:
                   specified, this is written to CSPI PoolConfig.
                 nullable: true
                 properties:
+                  claims:
+                    description: "Claims lists the names of resources, defined in
+                      spec.resourceClaims, that are used by this container. \n This
+                      is an alpha field and requires enabling the DynamicResourceAllocation
+                      feature gate. \n This field is immutable. It can only be set
+                      for containers."
+                    items:
+                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                      properties:
+                        name:
+                          description: Name must match the name of one entry in pod.spec.resourceClaims
+                            of the Pod where this field is used. It makes that resource
+                            available inside a container.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   limits:
                     additionalProperties:
                       anyOf:
@@ -500,7 +586,8 @@ spec:
                     description: 'Requests describes the minimum amount of compute
                       resources required. If Requests is omitted for a container,
                       it defaults to Limits if that is explicitly specified, otherwise
-                      to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      to an implementation-defined value. Requests cannot exceed Limits.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                     type: object
                 type: object
               tolerations:
@@ -652,8 +739,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorpoolinstances.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -781,6 +867,28 @@ spec:
                       the cstor-pool pod side car containers.
                     nullable: true
                     properties:
+                      claims:
+                        description: "Claims lists the names of resources, defined
+                          in spec.resourceClaims, that are used by this container.
+                          \n This is an alpha field and requires enabling the DynamicResourceAllocation
+                          feature gate. \n This field is immutable. It can only be
+                          set for containers."
+                        items:
+                          description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                          properties:
+                            name:
+                              description: Name must match the name of one entry in
+                                pod.spec.resourceClaims of the Pod where this field
+                                is used. It makes that resource available inside a
+                                container.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       limits:
                         additionalProperties:
                           anyOf:
@@ -801,7 +909,8 @@ spec:
                         description: 'Requests describes the minimum amount of compute
                           resources required. If Requests is omitted for a container,
                           it defaults to Limits if that is explicitly specified, otherwise
-                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                          to an implementation-defined value. Requests cannot exceed
+                          Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                         type: object
                     type: object
                   compression:
@@ -823,6 +932,28 @@ spec:
                       cstor-pool container.
                     nullable: true
                     properties:
+                      claims:
+                        description: "Claims lists the names of resources, defined
+                          in spec.resourceClaims, that are used by this container.
+                          \n This is an alpha field and requires enabling the DynamicResourceAllocation
+                          feature gate. \n This field is immutable. It can only be
+                          set for containers."
+                        items:
+                          description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                          properties:
+                            name:
+                              description: Name must match the name of one entry in
+                                pod.spec.resourceClaims of the Pod where this field
+                                is used. It makes that resource available inside a
+                                container.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       limits:
                         additionalProperties:
                           anyOf:
@@ -843,7 +974,8 @@ spec:
                         description: 'Requests describes the minimum amount of compute
                           resources required. If Requests is omitted for a container,
                           it defaults to Limits if that is explicitly specified, otherwise
-                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                          to an implementation-defined value. Requests cannot exceed
+                          Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                         type: object
                     type: object
                   roThresholdLimit:
@@ -1102,8 +1234,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorrestores.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -1203,8 +1334,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorvolumeattachments.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -1326,8 +1456,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorvolumeconfigs.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -1822,6 +1951,28 @@ spec:
                         description: AuxResources are the compute resources required
                           by the cstor-target pod side car containers.
                         properties:
+                          claims:
+                            description: "Claims lists the names of resources, defined
+                              in spec.resourceClaims, that are used by this container.
+                              \n This is an alpha field and requires enabling the
+                              DynamicResourceAllocation feature gate. \n This field
+                              is immutable. It can only be set for containers."
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: Name must match the name of one entry
+                                    in pod.spec.resourceClaims of the Pod where this
+                                    field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
                           limits:
                             additionalProperties:
                               anyOf:
@@ -1843,7 +1994,7 @@ spec:
                               compute resources required. If Requests is omitted for
                               a container, it defaults to Limits if that is explicitly
                               specified, otherwise to an implementation-defined value.
-                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                              Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       luWorkers:
@@ -1878,6 +2029,28 @@ spec:
                         description: Resources are the compute resources required
                           by the cstor-target container.
                         properties:
+                          claims:
+                            description: "Claims lists the names of resources, defined
+                              in spec.resourceClaims, that are used by this container.
+                              \n This is an alpha field and requires enabling the
+                              DynamicResourceAllocation feature gate. \n This field
+                              is immutable. It can only be set for containers."
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: Name must match the name of one entry
+                                    in pod.spec.resourceClaims of the Pod where this
+                                    field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
                           limits:
                             additionalProperties:
                               anyOf:
@@ -1899,7 +2072,7 @@ spec:
                               compute resources required. If Requests is omitted for
                               a container, it defaults to Limits if that is explicitly
                               specified, otherwise to an implementation-defined value.
-                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                              Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
                         type: object
                       tolerations:
@@ -2085,8 +2258,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorvolumepolicies.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -2486,6 +2658,28 @@ spec:
                     description: AuxResources are the compute resources required by
                       the cstor-target pod side car containers.
                     properties:
+                      claims:
+                        description: "Claims lists the names of resources, defined
+                          in spec.resourceClaims, that are used by this container.
+                          \n This is an alpha field and requires enabling the DynamicResourceAllocation
+                          feature gate. \n This field is immutable. It can only be
+                          set for containers."
+                        items:
+                          description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                          properties:
+                            name:
+                              description: Name must match the name of one entry in
+                                pod.spec.resourceClaims of the Pod where this field
+                                is used. It makes that resource available inside a
+                                container.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       limits:
                         additionalProperties:
                           anyOf:
@@ -2506,7 +2700,8 @@ spec:
                         description: 'Requests describes the minimum amount of compute
                           resources required. If Requests is omitted for a container,
                           it defaults to Limits if that is explicitly specified, otherwise
-                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                          to an implementation-defined value. Requests cannot exceed
+                          Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                         type: object
                     type: object
                   luWorkers:
@@ -2540,6 +2735,28 @@ spec:
                     description: Resources are the compute resources required by the
                       cstor-target container.
                     properties:
+                      claims:
+                        description: "Claims lists the names of resources, defined
+                          in spec.resourceClaims, that are used by this container.
+                          \n This is an alpha field and requires enabling the DynamicResourceAllocation
+                          feature gate. \n This field is immutable. It can only be
+                          set for containers."
+                        items:
+                          description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                          properties:
+                            name:
+                              description: Name must match the name of one entry in
+                                pod.spec.resourceClaims of the Pod where this field
+                                is used. It makes that resource available inside a
+                                container.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       limits:
                         additionalProperties:
                           anyOf:
@@ -2560,7 +2777,8 @@ spec:
                         description: 'Requests describes the minimum amount of compute
                           resources required. If Requests is omitted for a container,
                           it defaults to Limits if that is explicitly specified, otherwise
-                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                          to an implementation-defined value. Requests cannot exceed
+                          Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                         type: object
                     type: object
                   tolerations:
@@ -2622,8 +2840,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorvolumereplicas.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -2833,8 +3050,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: cstorvolumes.cstor.openebs.io
 spec:
   group: cstor.openebs.io
@@ -3094,388 +3310,3 @@ spec:
     served: true
     storage: true
     subresources: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.4.0
-  creationTimestamp: null
-  name: upgradetasks.openebs.io
-spec:
-  group: openebs.io
-  names:
-    kind: UpgradeTask
-    listKind: UpgradeTaskList
-    plural: upgradetasks
-    singular: upgradetask
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: UpgradeTask represents an upgrade task
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec i.e. specifications of the UpgradeTask
-            properties:
-              cstorPool:
-                description: CStorPool contains the details of the cstor pool to be
-                  upgraded
-                properties:
-                  options:
-                    description: Options can be used to change the default behaviour
-                      of upgrade
-                    properties:
-                      ignoreStepsOnError:
-                        description: IgnoreStepsOnError allows to ignore steps which
-                          failed
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                  poolName:
-                    description: PoolName contains the name of the cstor pool to be
-                      upgraded
-                    type: string
-                type: object
-              cstorPoolCluster:
-                description: CStorPoolCluster contains the details of the storage
-                  pool claim to be upgraded
-                properties:
-                  cspcName:
-                    description: CSPCName contains the name of the storage pool claim
-                      to be upgraded
-                    type: string
-                  options:
-                    description: Options can be used to change the default behaviour
-                      of upgrade
-                    properties:
-                      ignoreStepsOnError:
-                        description: IgnoreStepsOnError allows to ignore steps which
-                          failed
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                type: object
-              cstorPoolInstance:
-                description: CStorPoolInstance contains the details of the cstor pool
-                  to be upgraded
-                properties:
-                  cspiName:
-                    description: CSPCName contains the name of the storage pool claim
-                      to be upgraded
-                    type: string
-                  options:
-                    description: Options can be used to change the default behaviour
-                      of upgrade
-                    properties:
-                      ignoreStepsOnError:
-                        description: IgnoreStepsOnError allows to ignore steps which
-                          failed
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                type: object
-              cstorVolume:
-                description: CStorVolume contains the details of the cstor volume
-                  to be upgraded
-                properties:
-                  options:
-                    description: Options can be used to change the default behaviour
-                      of upgrade
-                    properties:
-                      ignoreStepsOnError:
-                        description: IgnoreStepsOnError allows to ignore steps which
-                          failed
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                  pvName:
-                    description: PVName contains the name of the pv associated with
-                      the cstor volume
-                    type: string
-                type: object
-              fromVersion:
-                description: FromVersion is the current version of the resource.
-                type: string
-              imagePrefix:
-                description: ImagePrefix contains the url prefix of the image url.
-                  This field is optional. If not present upgrade takes the previously
-                  present ImagePrefix.
-                type: string
-              imageTag:
-                description: ImageTag contains the customized tag for ToVersion if
-                  any. This field is optional. If not present upgrade takes the ToVersion
-                  as the ImageTag
-                type: string
-              jivaVolume:
-                description: JivaVolume contains the details of the jiva volume to
-                  be upgraded
-                properties:
-                  options:
-                    description: Options can be used to change the default behaviour
-                      of upgrade
-                    properties:
-                      ignoreStepsOnError:
-                        description: IgnoreStepsOnError allows to ignore steps which
-                          failed
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                  pvName:
-                    description: PVName contains the name of the pv associated with
-                      the jiva volume
-                    type: string
-                type: object
-              options:
-                description: Options contains the optional flags that can be passed
-                  during upgrade.
-                properties:
-                  timeout:
-                    description: Timeout is maximum seconds to wait at any given step
-                      in the upgrade
-                    type: integer
-                type: object
-              storagePoolClaim:
-                description: StoragePoolClaim contains the details of the storage
-                  pool claim to be upgraded
-                properties:
-                  options:
-                    description: Options can be used to change the default behaviour
-                      of upgrade
-                    properties:
-                      ignoreStepsOnError:
-                        description: IgnoreStepsOnError allows to ignore steps which
-                          failed
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                  spcName:
-                    description: SPCName contains the name of the storage pool claim
-                      to be upgraded
-                    type: string
-                type: object
-              toVersion:
-                description: ToVersion is the upgraded version of the resource. It
-                  should be same as the version of control plane components version.
-                type: string
-            required:
-            - fromVersion
-            - toVersion
-            type: object
-          status:
-            description: Status of UpgradeTask
-            properties:
-              completedTime:
-                description: CompletedTime of Upgrade
-                format: date-time
-                nullable: true
-                type: string
-              phase:
-                description: Phase indicates if a upgradeTask is started, success
-                  or errored
-                type: string
-              retries:
-                description: Retries is the number of times the job attempted to upgrade
-                  the resource
-                type: integer
-              startTime:
-                description: StartTime of Upgrade
-                format: date-time
-                nullable: true
-                type: string
-              upgradeDetailedStatuses:
-                description: UpgradeDetailedStatuses contains the list of statuses
-                  of each step
-                items:
-                  description: UpgradeDetailedStatuses represents the latest available
-                    observations of a UpgradeTask current state.
-                  properties:
-                    lastUpdatedAt:
-                      description: LastUpdatedTime of a UpgradeStep
-                      format: date-time
-                      nullable: true
-                      type: string
-                    message:
-                      description: A human-readable message indicating details about
-                        why the upgradeStep is in this state
-                      type: string
-                    phase:
-                      description: Phase indicates if the UpgradeStep is waiting,
-                        errored or completed.
-                      type: string
-                    reason:
-                      description: Reason is a brief CamelCase string that describes
-                        any failure and is meant for machine parsing and tidy display
-                        in the CLI
-                      type: string
-                    startTime:
-                      description: StartTime of a UpgradeStep
-                      format: date-time
-                      nullable: true
-                      type: string
-                    step:
-                      description: UpgradeStep is the current step being performed
-                        for a particular resource upgrade
-                      type: string
-                  type: object
-                type: array
-            type: object
-        required:
-        - spec
-        type: object
-    served: true
-    storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.4.0
-  creationTimestamp: null
-  name: migrationtasks.openebs.io
-spec:
-  group: openebs.io
-  names:
-    kind: MigrationTask
-    listKind: MigrationTaskList
-    plural: migrationtasks
-    shortNames:
-    - mtask
-    singular: migrationtask
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: MigrationTask represents an migration task
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec i.e. specifications of the MigrationTask
-            properties:
-              cstorPool:
-                description: MigrateCStorPool contains the details of the cstor pool
-                  to be migrated
-                properties:
-                  rename:
-                    description: If a CSPC with the same name as SPC already exists
-                      then we can rename SPC during migration using Rename
-                    type: string
-                  spcName:
-                    description: SPCName contains the name of the storage pool claim
-                      to be migrated
-                    type: string
-                type: object
-              cstorVolume:
-                description: MigrateCStorVolume contains the details of the cstor
-                  volume to be migrated
-                properties:
-                  pvName:
-                    description: PVName contains the name of the pv associated with
-                      the cstor volume to be migrated
-                    type: string
-                type: object
-            type: object
-          status:
-            description: Status of MigrationTask
-            properties:
-              completedTime:
-                description: CompletedTime of Migrate
-                format: date-time
-                nullable: true
-                type: string
-              migrationDetailedStatuses:
-                description: MigrationDetailedStatuses contains the list of statuses
-                  of each step
-                items:
-                  description: MigrationDetailedStatuses represents the latest available
-                    observations of a MigrationTask current state.
-                  properties:
-                    lastUpdatedAt:
-                      description: LastUpdatedTime of a MigrateStep
-                      format: date-time
-                      nullable: true
-                      type: string
-                    message:
-                      description: A human-readable message indicating details about
-                        why the migrationStep is in this state
-                      type: string
-                    phase:
-                      description: Phase indicates if the MigrateStep is waiting,
-                        errored or completed.
-                      type: string
-                    reason:
-                      description: Reason is a brief CamelCase string that describes
-                        any failure and is meant for machine parsing and tidy display
-                        in the CLI
-                      type: string
-                    startTime:
-                      description: StartTime of a MigrateStep
-                      format: date-time
-                      nullable: true
-                      type: string
-                    step:
-                      type: string
-                  type: object
-                type: array
-              phase:
-                description: Phase indicates if a migrationTask is started, success
-                  or errored
-                type: string
-              retries:
-                description: Retries is the number of times the job attempted to migration
-                  the resource
-                type: integer
-              startTime:
-                description: StartTime of Migrate
-                format: date-time
-                nullable: true
-                type: string
-            type: object
-        required:
-        - spec
-        type: object
-    served: true
-    storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

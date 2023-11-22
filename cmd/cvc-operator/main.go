@@ -20,7 +20,7 @@ import (
 	"os"
 
 	cvc "github.com/openebs/cstor-operators/pkg/controllers/cstorvolumeconfig"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func main() {

@@ -27,7 +27,7 @@ import (
 	"net/http"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // LogBuildDetails logs the build details when the cspc-operator starts.

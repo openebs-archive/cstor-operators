@@ -25,7 +25,7 @@ package pool
 //	"time"
 //
 //	"github.com/openebs/api/pkg/util"
-//	"k8s.io/klog"
+//	"k8s.io/klog/v2"
 //)
 //
 //type TestRunner struct {

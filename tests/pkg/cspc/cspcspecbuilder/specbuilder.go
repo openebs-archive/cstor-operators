@@ -23,7 +23,7 @@ import (
 	"github.com/openebs/cstor-operators/tests/pkg/cache/cspccache"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // CSPCSpecBuilder is used to build CSPC spec.

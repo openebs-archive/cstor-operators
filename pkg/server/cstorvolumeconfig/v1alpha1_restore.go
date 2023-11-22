@@ -21,7 +21,7 @@ import (
 	openebsapis "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
 	cstortypes "github.com/openebs/api/v3/pkg/apis/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func (rOps *restoreAPIOps) getV1Alpha1CStorRestoreStatus(

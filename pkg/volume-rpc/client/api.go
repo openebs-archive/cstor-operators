@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/openebs/api/v3/pkg/proto"
 	"github.com/openebs/api/v3/pkg/util"

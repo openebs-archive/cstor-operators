@@ -24,7 +24,7 @@ import (
 	zpool "github.com/openebs/api/v3/pkg/internalapis/apis/cstor"
 	"github.com/openebs/api/v3/pkg/util"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // PoolOperator is the name of the tool that makes pool-related operations.

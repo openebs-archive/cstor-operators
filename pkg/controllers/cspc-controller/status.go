@@ -29,7 +29,7 @@ import (
 
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func (c *Controller) UpdateStatusEventually(cspc *cstor.CStorPoolCluster) error {

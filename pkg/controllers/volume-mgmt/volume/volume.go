@@ -31,7 +31,7 @@ import (
 	"github.com/openebs/api/v3/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (

@@ -24,7 +24,7 @@ import (
 	cspiutil "github.com/openebs/cstor-operators/pkg/controllers/cspi-controller/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 //TODO: Update the code to use patch instead of Update call

@@ -19,7 +19,7 @@ package v1alpha2
 import (
 	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Delete will destroy the pool for given cspi.

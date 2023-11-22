@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	cstorapis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/pkg/controllers/common"

@@ -21,7 +21,7 @@ import (
 	v1proto "github.com/openebs/api/v3/pkg/proto"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Snapshot holds the information required to perform snapshot related operations

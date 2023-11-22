@@ -26,7 +26,7 @@ import (
 	openebsFakeClientset "github.com/openebs/api/v3/pkg/client/clientset/versioned/fake"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // TestCheckForCStorVolumeReplicaCRD validates if CStorVolumeReplica CRD

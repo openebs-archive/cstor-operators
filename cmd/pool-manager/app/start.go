@@ -30,7 +30,7 @@ import (
 	restorecontroller "github.com/openebs/cstor-operators/pkg/controllers/restore-controller"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"

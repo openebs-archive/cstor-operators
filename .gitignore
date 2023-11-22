@@ -8,4 +8,4 @@
 ./ci/sanity/cspc.yaml
 
 # IDE files
-.idea/
+**/.idea/

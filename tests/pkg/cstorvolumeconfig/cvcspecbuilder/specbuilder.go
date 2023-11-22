@@ -20,7 +20,7 @@ import (
 	cstorapis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // CVCSpecBuilder is used to build/update CVC spec.

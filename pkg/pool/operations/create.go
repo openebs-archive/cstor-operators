@@ -21,7 +21,7 @@ import (
 	"github.com/openebs/api/v3/pkg/apis/types"
 	zfs "github.com/openebs/cstor-operators/pkg/zcmd"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Create will create the pool for given csp object

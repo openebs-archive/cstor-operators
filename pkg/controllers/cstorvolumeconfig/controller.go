@@ -29,7 +29,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/util/hash"
 	"github.com/openebs/cstor-operators/pkg/version"
 	"github.com/pkg/errors"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"

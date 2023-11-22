@@ -24,7 +24,7 @@ import (
 	"github.com/openebs/api/v3/pkg/proto"
 	"github.com/openebs/api/v3/pkg/util"
 	"google.golang.org/grpc"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // StartServer instantiates CStorVolume gRPC server

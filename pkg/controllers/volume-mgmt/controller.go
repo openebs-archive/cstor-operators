@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	apis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"

@@ -29,7 +29,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/controllers/common"
 	"github.com/openebs/cstor-operators/pkg/pool"
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	openebsFakeClientset "github.com/openebs/api/v3/pkg/client/clientset/versioned/fake"
 	informers "github.com/openebs/api/v3/pkg/client/informers/externalversions"

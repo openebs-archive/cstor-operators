@@ -25,7 +25,7 @@ import (
 	"github.com/openebs/cstor-operators/tests/pkg/cache/cspccache"
 	"github.com/openebs/cstor-operators/tests/pkg/infra"
 	"github.com/openebs/cstor-operators/tests/pkg/k8sclient"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 /*

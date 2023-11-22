@@ -30,7 +30,7 @@ import (
 	"github.com/openebs/cstor-operators/pkg/volumereplica"
 	zcmd "github.com/openebs/cstor-operators/pkg/zcmd"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // EventReason is used as part of the Event reason when a resource goes through different phases

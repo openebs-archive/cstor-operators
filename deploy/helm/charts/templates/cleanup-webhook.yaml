@@ -37,3 +37,7 @@ spec:
           - >
               kubectl delete validatingWebhookConfiguration openebs-cstor-validation-webhook || true;
       restartPolicy: OnFailure
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 8 }}
+{{- end }}

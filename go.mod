@@ -16,7 +16,7 @@ require (
 	github.com/ugorji/go/codec v1.2.7
 	go.uber.org/zap v1.23.0
 	golang.org/x/net v0.18.0
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.56.3
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.27.2
@@ -54,7 +54,7 @@ require (
 	github.com/ryanuber/columnize v2.1.2+incompatible // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/oauth2 v0.6.0 // indirect
+	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

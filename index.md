@@ -8,7 +8,7 @@ Please refer to Helm's [documentation](https://helm.sh/docs/) to get started.
 Once Helm is set up properly, add the repo as follows:
 
 ```bash
-$ helm repo add openebs-cstor https://openebs.github.io/cstor-operators
+$ helm repo add openebs-cstor https://openebs-archive.github.io/cstor-operators
 ```
 
 You can then run `helm search repo openebs-cstor` to see the charts.
@@ -43,7 +43,7 @@ By default this chart installs additional, dependent charts:
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://openebs.github.io/node-disk-manager | openebs-ndm | 1.2.0 |
+| https://openebs-archive.github.io/node-disk-manager | openebs-ndm | 1.2.0 |
 
 
 To disable the dependency during installation, set `openebsNDM.enabled` to `false`.
@@ -80,7 +80,7 @@ kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/maste
 helm upgrade <your-release-name> openebs-cstor/cstor --namespace=openebs
 ```
 
-- To upgrade the data plane components follow [this](https://github.com/openebs/upgrade/blob/master/docs/upgrade.md) doc. 
+- To upgrade the data plane components follow [this](https://github.com/openebs-archive/upgrade/blob/master/docs/upgrade.md) doc. 
 
 ## Configuration
 

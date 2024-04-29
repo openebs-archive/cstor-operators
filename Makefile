@@ -240,8 +240,8 @@ include Makefile.buildx.mk
 
 .PHONY: k8s-deploy
 k8s-deploy:
-	kubectl apply -f https://openebs.github.io/charts/openebs-operator.yaml
-	kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
+	kubectl apply -f https://openebs-archive.github.io/charts/openebs-operator.yaml
+	kubectl apply -f https://openebs-archive.github.io/charts/cstor-operator.yaml
 
 .PHONY: k8s-deploy-devel
 k8s-deploy-devel:

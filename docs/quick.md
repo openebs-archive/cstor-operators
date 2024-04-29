@@ -44,7 +44,7 @@ openebs-ndm-sfczv                                                 1/1     Runnin
 openebs-ndm-vgdnv                                                 1/1     Running   0          6d6h
 ```
 
-If you have got an output as displayed above, then it is recommended that you proceed with installation using the [CStor operators helm chart](https://openebs.github.io/cstor-operators). You will have to exclude `openebs-ndm` charts from the installation. Sample command:
+If you have got an output as displayed above, then it is recommended that you proceed with installation using the [CStor operators helm chart](https://openebs-archive.github.io/cstor-operators). You will have to exclude `openebs-ndm` charts from the installation. Sample command:
 ```bash
 helm install openebs-cstor openebs-cstor/cstor -n openebs --set openebsNDM.enabled=false
 ```
@@ -60,7 +60,7 @@ If you did not get any meaningful output (as above), then you do not have NDM co
 
 ### Using Helm Charts:
  
-Install CStor operators and CSI driver components using the [CStor Operators helm charts](https://openebs.github.io/cstor-operators). Sample command:
+Install CStor operators and CSI driver components using the [CStor Operators helm charts](https://openebs-archive.github.io/cstor-operators). Sample command:
 
 ```bash
 helm install openebs-cstor openebs-cstor/cstor -n openebs --create-namespace
@@ -81,13 +81,13 @@ helm install openebs-cstor openebs-cstor/cstor -n openebs --create-namespace
 Install the latest release using CStor Operator yaml.
 
 ```bash
-kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
+kubectl apply -f https://openebs-archive.github.io/charts/cstor-operator.yaml
 ```
 <details>
   <summary>Click here if you're using MicroK8s.</summary>
 
   ```bash
-  microk8s kubectl apply -f https://openebs.github.io/charts/microk8s-cstor-operator.yaml
+  microk8s kubectl apply -f https://openebs-archive.github.io/charts/microk8s-cstor-operator.yaml
   ```
 </details>
 

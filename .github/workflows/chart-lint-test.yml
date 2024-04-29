@@ -51,7 +51,7 @@ jobs:
 
       - name: Add dependency chart repos
         run: |
-          helm repo add openebs-ndm https://openebs.github.io/node-disk-manager
+          helm repo add openebs-ndm https://openebs-archive.github.io/node-disk-manager
           helm repo update
 
       - name: Run chart-testing (install)

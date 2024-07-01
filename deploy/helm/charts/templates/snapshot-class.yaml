@@ -1,9 +1,9 @@
 {{ if or (.Capabilities.APIVersions.Has "snapshot.storage.k8s.io/v1beta1/VolumeSnapshotClass") (.Capabilities.APIVersions.Has "snapshot.storage.k8s.io/v1/VolumeSnapshotClass") }}
 kind: VolumeSnapshotClass
-apiVersion: {{ if .Capabilities.APIVersions.Has "snapshot.storage.k8s.io/v1beta1/VolumeSnapshotClass" -}}
-  snapshot.storage.k8s.io/v1beta1
-{{- else -}}
+apiVersion: {{ if .Capabilities.APIVersions.Has "snapshot.storage.k8s.io/v1/VolumeSnapshotClass" -}}
   snapshot.storage.k8s.io/v1
+{{- else -}}
+  snapshot.storage.k8s.io/v1beta1
 {{- end }}
 metadata:
   name: csi-cstor-snapshotclass
